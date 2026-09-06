@@ -1,15 +1,12 @@
-/// Research: what the system measured about itself.
-///
-/// Negative results are shown as prominently as positive ones. The headline
-/// figure is deliberately the ratio - how many hypotheses were tested versus
-/// how many survived - because that ratio is what makes a surviving result
-/// meaningful.
+/// Recherche: validation empirique des signaux.
 library;
+
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/mobile_kit.dart';
 
 class ResearchScreen extends StatefulWidget {
   final ApiClient client;
@@ -30,7 +27,6 @@ class _ResearchScreenState extends State<ResearchScreen> {
   }
 
   Future<Map<String, dynamic>> _load() async {
-    // Each study is optional: a missing one is reported, not fatal.
     Future<Map<String, dynamic>?> safe(Future<Map<String, dynamic>> f) async {
       try {
         return await f;
@@ -55,258 +51,364 @@ class _ResearchScreenState extends State<ResearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async => _reload(),
-      child: FutureBuilder<Map<String, dynamic>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingView(what: 'resultats de recherche');
-          }
-          if (snapshot.hasError) {
-            return ErrorView(error: snapshot.error!, onRetry: _reload);
-          }
-          final data = snapshot.data!;
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              _MarginalCard(data: data['marginal'] as Map<String, dynamic>?),
-              _StructuralCard(data: data['structural'] as Map<String, dynamic>?),
-              _ReplicationCard(data: data['replication'] as Map<String, dynamic>?),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _MarginalCard extends StatelessWidget {
-  final Map<String, dynamic>? data;
-
-  const _MarginalCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    if (data == null) {
-      return const SectionCard(
-        title: 'LA LECTURE GRAPHIQUE AJOUTE-T-ELLE QUELQUE CHOSE ?',
-        child: UnavailableText(reason: 'Etude pas encore lancee sur ce backend.'),
-      );
-    }
-    final assets = (data!['assets'] as Map?)?.cast<String, dynamic>() ?? const {};
-    return SectionCard(
-      title: 'LA LECTURE GRAPHIQUE AJOUTE-T-ELLE QUELQUE CHOSE ?',
-      subtitle:
-          'Position dans le range et figures comparees a des variables numeriques simples, hors echantillon.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final entry in assets.entries)
-            _MarginalAsset(asset: entry.key, payload: entry.value as Map<String, dynamic>),
-        ],
-      ),
-    );
-  }
-}
-
-class _MarginalAsset extends StatelessWidget {
-  final String asset;
-  final Map<String, dynamic> payload;
-
-  const _MarginalAsset({required this.asset, required this.payload});
-
-  @override
-  Widget build(BuildContext context) {
-    final layers = (payload['layers'] as Map?)?.cast<String, dynamic>();
-    final marginal = (payload['location_marginal_value'] as Map?)?.cast<String, dynamic>();
-    final layerMap = (layers?['layers'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final verdict = (layers?['verdict'] as Map?)?.cast<String, dynamic>();
-    final answer = (marginal?['answer'] as Map?)?.cast<String, dynamic>();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(asset, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-          const SizedBox(height: 6),
-          for (final entry in layerMap.entries)
-            if ((entry.value as Map)['status'] == 'OK')
-              LabelledRow(
-                label: entry.key.replaceAll('_', ' '),
-                value: Text(
-                  'OOS R² ${fmtSigned(((entry.value as Map)['oos_r2'] as num?)?.toDouble(), digits: 4, suffix: '')}',
-                  style: TextStyle(
-                    color: ((entry.value as Map)['oos_r2'] as num? ?? -1) > 0
-                        ? AppColors.measured
-                        : AppColors.bad,
-                  ),
+    return MobileGradientFrame(
+      child: RefreshIndicator(
+        onRefresh: () async => _reload(),
+        child: FutureBuilder<Map<String, dynamic>>(
+          future: _future,
+          builder: (context, snapshot) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+              children: [
+                MobileHeader(
+                  title: 'Recherche',
+                  subtitle: 'Validation des signaux et lecture empirique',
+                  onInfo: () => _showInfo(context),
                 ),
-              ),
-          if (verdict != null) ...[
-            const SizedBox(height: 4),
-            StatePill(label: '${verdict['answer']}', color: AppColors.warn, compact: true),
-            const SizedBox(height: 4),
-            Text(
-              '${verdict['summary']}',
-              style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted, height: 1.35),
-            ),
-          ],
-          if (answer != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${answer['statement']}',
-              style: const TextStyle(fontSize: 11.5, height: 1.4),
-            ),
-          ],
+                const SizedBox(height: 22),
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  const SizedBox(height: 440, child: LoadingView(what: 'resultats de recherche'))
+                else if (snapshot.hasError)
+                  SizedBox(
+                    height: 440,
+                    child: ErrorView(error: snapshot.error!, onRetry: _reload),
+                  )
+                else ...[
+                  _MarginalPanel(data: snapshot.data!['marginal'] as Map<String, dynamic>?),
+                  const SizedBox(height: 22),
+                  _SecondaryStudies(
+                    structural: snapshot.data!['structural'] as Map<String, dynamic>?,
+                    replication: snapshot.data!['replication'] as Map<String, dynamic>?,
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showInfo(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Recherche'),
+        content: const Text(
+          'Les cartes comparent les couches de lecture graphique aux variables '
+          'numeriques simples. Un OOS R² negatif signifie que la couche predit '
+          'moins bien que la moyenne d’entrainement.',
+          style: TextStyle(color: AppColors.textMuted, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
         ],
       ),
     );
   }
 }
 
-class _StructuralCard extends StatelessWidget {
+class _MarginalPanel extends StatelessWidget {
   final Map<String, dynamic>? data;
 
-  const _StructuralCard({required this.data});
+  const _MarginalPanel({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    if (data == null) {
-      return const SectionCard(
-        title: 'HYPOTHESES STRUCTURELLES',
-        child: UnavailableText(reason: 'Etude pas encore lancee sur ce backend.'),
-      );
-    }
-    final results = (data!['results'] as Map?)?.cast<String, dynamic>() ?? const {};
-    return SectionCard(
-      title: 'HYPOTHESES STRUCTURELLES',
-      subtitle: 'Chaque label est teste contre une base adaptee au regime, avec FDR.',
+    final assets = (data?['assets'] as Map?)?.cast<String, dynamic>() ?? const {};
+    return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final entry in results.entries)
-            if ((entry.value as Map)['status'] == 'OK')
-              _StructuralRow(
-                key_: entry.key,
-                payload: (entry.value as Map).cast<String, dynamic>(),
-              ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StructuralRow extends StatelessWidget {
-  final String key_;
-  final Map<String, dynamic> payload;
-
-  const _StructuralRow({required this.key_, required this.payload});
-
-  @override
-  Widget build(BuildContext context) {
-    final testing = (payload['multiple_testing'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final labels = (payload['labels'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final edges = labels.entries
-        .where((e) => ['POSITIVE_EDGE', 'NEGATIVE_EDGE']
-            .contains((e.value as Map)['edge_state']))
-        .toList();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(key_, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-          const SizedBox(height: 4),
-          Text(
-            '${testing['hypotheses_tested']} hypotheses · '
-            '${testing['raw_significant']} brutes · '
-            '${testing['fdr_significant']} apres FDR · '
-            '${testing['expected_false_positives']} faux positifs attendus',
-            style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 6),
-          if (edges.isEmpty)
-            const Text(
-              'Aucun label ne passe tous les filtres.',
-              style: TextStyle(fontSize: 12, color: AppColors.warn),
-            )
-          else
-            for (final entry in edges)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              IconTile(icon: Icons.science_outlined),
+              SizedBox(width: 24),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        entry.key.replaceAll('|', ' · '),
-                        style: const TextStyle(fontSize: 12),
+                    Text(
+                      'La lecture graphique apporte-t-elle quelque chose ?',
+                      style: TextStyle(
+                        color: AppColors.text,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        height: 1.15,
                       ),
                     ),
-                    StatePill(
-                      label: '${(entry.value as Map)['edge_state']}',
-                      color: (entry.value as Map)['edge_state'] == 'POSITIVE_EDGE'
-                          ? AppColors.measured
-                          : AppColors.bad,
-                      compact: true,
+                    SizedBox(height: 10),
+                    Text(
+                      'Comparaison hors échantillon entre variables numériques, '
+                      'position dans le range et figures chartistes.',
+                      style: TextStyle(color: mobileMuted, fontSize: 21, height: 1.24),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          if (assets.isEmpty)
+            const Text(
+              'Étude indisponible sur ce backend.',
+              style: TextStyle(color: mobileMuted, fontSize: 18),
+            )
+          else
+            for (final entry in assets.entries) ...[
+              _MarginalAssetCard(
+                asset: entry.key,
+                payload: (entry.value as Map).cast<String, dynamic>(),
+              ),
+              if (entry.key != assets.keys.last) const SizedBox(height: 16),
+            ],
         ],
       ),
     );
   }
 }
 
-class _ReplicationCard extends StatelessWidget {
-  final Map<String, dynamic>? data;
+class _MarginalAssetCard extends StatelessWidget {
+  final String asset;
+  final Map<String, dynamic> payload;
 
-  const _ReplicationCard({required this.data});
+  const _MarginalAssetCard({required this.asset, required this.payload});
 
   @override
   Widget build(BuildContext context) {
-    if (data == null) {
-      return const SectionCard(
-        title: 'REPLICATION',
-        child: UnavailableText(reason: 'Etude pas encore lancee sur ce backend.'),
-      );
-    }
-    final findings = (data!['findings'] as Map?)?.cast<String, dynamic>() ?? const {};
-    return SectionCard(
-      title: 'REPLICATION',
-      subtitle: 'Les resultats precedents survivent-ils a un changement de definition du detecteur ?',
+    final visuals = AssetVisuals.forAsset(asset);
+    final layersPayload = (payload['layers'] as Map?)?.cast<String, dynamic>();
+    final layers = (layersPayload?['layers'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final verdict = (layersPayload?['verdict'] as Map?)?.cast<String, dynamic>();
+    final answer = ((payload['location_marginal_value'] as Map?)?['answer'] as Map?)
+        ?.cast<String, dynamic>();
+
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: mobilePanelAlt.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: const Color(0xFF2A4868), width: 1.25),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final entry in findings.entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.key.replaceAll('_', ' '),
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 3),
-                  StatePill(
-                    label: '${((entry.value as Map)['comparison'] as Map?)?['verdict'] ?? '—'}',
-                    compact: true,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${((entry.value as Map)['comparison'] as Map?)?['statement'] ?? ''}',
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted, height: 1.35),
-                  ),
-                ],
+          Row(
+            children: [
+              CryptoLogo(asset: asset, size: 68),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      asset,
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      visuals.name,
+                      style: const TextStyle(color: mobileMuted, fontSize: 21, height: 1),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              MobilePill(label: 'Analyse hors échantillon', color: const Color(0xFF7DB7FF)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _LayerTable(layers: layers),
+          const SizedBox(height: 10),
+          MobilePill(
+            label: _verdictLabel('${verdict?['answer'] ?? answer?['verdict'] ?? ''}'),
+            color: AppColors.warn,
+          ),
+          const SizedBox(height: 14),
+          Text(
+            _verdictSummary('${verdict?['summary'] ?? ''}'),
+            style: const TextStyle(color: AppColors.text, fontSize: 20, height: 1.31),
+          ),
+          if (answer?['statement'] != null) ...[
+            const SizedBox(height: 16),
+            _InfoCallout(text: _marginalStatement('${answer!['statement']}')),
+          ],
         ],
       ),
     );
   }
+}
+
+class _LayerTable extends StatelessWidget {
+  final Map<String, dynamic> layers;
+
+  const _LayerTable({required this.layers});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = [
+      _LayerRowData('A.  Variables numériques', layers['A_numeric'] as Map?),
+      _LayerRowData('B.  + Position dans le range', layers['B_plus_location'] as Map?),
+      _LayerRowData('C.  + Figures chartistes', layers['C_plus_patterns'] as Map?),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0C1725).withValues(alpha: 0.48),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF2A4868), width: 1.1),
+      ),
+      child: Column(
+        children: [
+          for (final row in rows) _LayerScoreRow(row: row),
+        ],
+      ),
+    );
+  }
+}
+
+class _LayerScoreRow extends StatelessWidget {
+  final _LayerRowData row;
+
+  const _LayerScoreRow({required this.row});
+
+  @override
+  Widget build(BuildContext context) {
+    final value = (row.payload?['oos_r2'] as num?)?.toDouble();
+    final positive = (value ?? -1) >= 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF22374D))),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(row.label, style: const TextStyle(color: mobileMuted, fontSize: 20)),
+          ),
+          Text(
+            'OOS R² ${signedFr(value, digits: 4)}',
+            style: TextStyle(
+              color: positive ? const Color(0xFF56E68B) : const Color(0xFFFF5D55),
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LayerRowData {
+  final String label;
+  final Map? payload;
+
+  const _LayerRowData(this.label, this.payload);
+}
+
+class _InfoCallout extends StatelessWidget {
+  final String text;
+
+  const _InfoCallout({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF132235).withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2E4D6E), width: 1.05),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded, color: Color(0xFFBFD2F2), size: 32),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(text, style: const TextStyle(color: mobileMuted, fontSize: 18, height: 1.32)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecondaryStudies extends StatelessWidget {
+  final Map<String, dynamic>? structural;
+  final Map<String, dynamic>? replication;
+
+  const _SecondaryStudies({required this.structural, required this.replication});
+
+  @override
+  Widget build(BuildContext context) {
+    final structuralResults = (structural?['results'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final findings = (replication?['findings'] as Map?)?.cast<String, dynamic>() ?? const {};
+
+    return GlassPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Études complémentaires',
+            style: TextStyle(color: AppColors.text, fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${structuralResults.length} familles structurelles suivies · '
+            '${findings.length} tests de réplication disponibles',
+            style: const TextStyle(color: mobileMuted, fontSize: 18, height: 1.3),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _verdictLabel(String value) => switch (value) {
+      'NO_LAYER_ADDS_VALUE' => 'AUCUNE COUCHE N’APPORTE DE VALEUR',
+      'NEITHER_ADDS_VALUE' => 'NI LA POSITION NI LES FIGURES N’AJOUTENT DE VALEUR',
+      'LOCATION_ADDS_VALUE' => 'LA POSITION AJOUTE DE LA VALEUR',
+      'PATTERNS_ADD_VALUE' => 'LES FIGURES AJOUTENT DE LA VALEUR',
+      'NO_MARGINAL_INFORMATION' => 'AUCUNE INFORMATION MARGINALE',
+      _ => value.isEmpty ? 'RÉSULTAT INDISPONIBLE' : readableLabel(value),
+    };
+
+String _verdictSummary(String value) {
+  if (value.contains('Every layer has NEGATIVE')) {
+    return 'Chaque couche présente un R² hors échantillon négatif, ce qui signifie que toutes prédisent des rendements futurs moins bien que la moyenne d’entraînement. Aucune couche n’améliore la qualité prédictive à cet horizon.';
+  }
+  if (value.contains('Neither structural location nor patterns')) {
+    return 'Ni la position structurelle dans le range, ni les figures chartistes n’améliorent l’ajustement hors échantillon par rapport aux simples variables numériques.';
+  }
+  if (value.isEmpty) return 'Résultat empirique indisponible.';
+  return value;
+}
+
+String _marginalStatement(String value) {
+  final nMatch = RegExp(r'n=(\d+)').firstMatch(value);
+  final pMatch = RegExp(r'p=([0-9.]+)').firstMatch(value);
+  final n = nMatch?.group(1) ?? '—';
+  final p = pMatch?.group(1)?.replaceAll('.', ',') ?? '—';
+  final bottom = RegExp(r'Being near a range bottom preceded returns ([^%]+)% relative to the unconditional average, and ([^%]+)% relative to a REGIME-MATCHED baseline')
+      .firstMatch(value);
+  if (bottom != null) {
+    return 'Être proche d’un plus bas de range précédait des rendements '
+        '${bottom.group(1)!.trim().replaceAll('.', ',')} % par rapport à la moyenne inconditionnelle, '
+        'et ${bottom.group(2)!.trim().replaceAll('.', ',')} % par rapport à une base appariée par régime '
+        '(n = $n, p = $p). Une fois le régime pris en compte, la position dans le range '
+        'n’apporte aucun effet mesurable : l’effet apparent venait du régime lui-même.';
+  }
+  return value;
 }

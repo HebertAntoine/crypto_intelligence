@@ -1,15 +1,13 @@
-/// Chart Intelligence: the structure the system sees, and what it verified.
-///
-/// Each pattern shows its recognition confidence and its edge state on the
-/// same row. A 91/100 recognition next to NO_MEASURABLE_EDGE is the intended
-/// reading: the shape is unambiguous and its consequences are unknown.
+/// Intelligence graphique: lecture structurelle et opportunite d'entree.
 library;
+
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
 import '../api/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/mobile_kit.dart';
 
 class ChartScreen extends StatefulWidget {
   final ApiClient client;
@@ -40,7 +38,6 @@ class _ChartScreenState extends State<ChartScreen> {
     try {
       opportunity = await widget.client.entryOpportunity(_asset, timeframe: _timeframe);
     } catch (_) {
-      // The structure is still worth showing without the opportunity read.
       opportunity = null;
     }
     return (structure, opportunity);
@@ -48,179 +45,354 @@ class _ChartScreenState extends State<ChartScreen> {
 
   void _reload() => setState(() => _future = _load());
 
+  void _selectAsset(String value) {
+    setState(() {
+      _asset = value;
+      _future = _load();
+    });
+  }
+
+  void _selectTimeframe(String value) {
+    setState(() {
+      _timeframe = value;
+      _future = _load();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _Selector(
-          assets: _assets,
-          timeframes: _timeframes,
-          asset: _asset,
-          timeframe: _timeframe,
-          onAsset: (value) {
-            setState(() => _asset = value);
-            _reload();
-          },
-          onTimeframe: (value) {
-            setState(() => _timeframe = value);
-            _reload();
+    return MobileGradientFrame(
+      child: RefreshIndicator(
+        onRefresh: () async => _reload(),
+        child: FutureBuilder<(StructureRead, EntryOpportunity?)>(
+          future: _future,
+          builder: (context, snapshot) {
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+              children: [
+                MobileHeader(
+                  title: 'Intelligence graphique',
+                  onInfo: () => _showInfo(context),
+                ),
+                const SizedBox(height: 28),
+                _AssetSelector(
+                  assets: _assets,
+                  selected: _asset,
+                  onSelected: _selectAsset,
+                ),
+                const SizedBox(height: 24),
+                _TimeframeSelector(
+                  timeframes: _timeframes,
+                  selected: _timeframe,
+                  onSelected: _selectTimeframe,
+                ),
+                const SizedBox(height: 26),
+                if (snapshot.connectionState == ConnectionState.waiting)
+                  const SizedBox(height: 360, child: LoadingView(what: 'structure graphique'))
+                else if (snapshot.hasError)
+                  SizedBox(
+                    height: 360,
+                    child: ErrorView(error: snapshot.error!, onRetry: _reload),
+                  )
+                else ...[
+                  _OpportunityPanel(
+                    opportunity: snapshot.data!.$2,
+                    asset: _asset,
+                    timeframe: _timeframe,
+                  ),
+                  const SizedBox(height: 24),
+                  _RangePanel(location: snapshot.data!.$1.location),
+                  const SizedBox(height: 24),
+                  _StructurePanel(structure: snapshot.data!.$1.marketStructure),
+                  const SizedBox(height: 24),
+                  _PatternsPanel(patterns: snapshot.data!.$1.patterns),
+                ],
+              ],
+            );
           },
         ),
-        Expanded(
-          child: FutureBuilder<(StructureRead, EntryOpportunity?)>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return LoadingView(what: 'structure $_asset $_timeframe');
-              }
-              if (snapshot.hasError) {
-                return ErrorView(error: snapshot.error!, onRetry: _reload);
-              }
-              final (structure, opportunity) = snapshot.data!;
-              return ListView(
-                padding: const EdgeInsets.only(bottom: 24),
-                children: [
-                  if (opportunity != null) _OpportunityCard(opportunity: opportunity),
-                  _RangeCard(location: structure.location),
-                  _StructureCard(structure: structure.marketStructure),
-                  _PatternsCard(
-                    patterns: structure.patterns,
-                    separationNote: structure.separationNote,
+      ),
+    );
+  }
+
+  void _showInfo(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Intelligence graphique'),
+        content: const Text(
+          'Cet onglet affiche la structure detectee, le contexte d’entree et '
+          'l’edge mesure separement. Une configuration lisible ne devient pas '
+          'automatiquement une recommandation.',
+          style: TextStyle(color: AppColors.textMuted, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AssetSelector extends StatelessWidget {
+  final List<String> assets;
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  const _AssetSelector({
+    required this.assets,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 650;
+        return Wrap(
+          spacing: 18,
+          runSpacing: 14,
+          children: [
+            for (final asset in assets)
+              _AssetChoice(
+                asset: asset,
+                selected: selected == asset,
+                width: compact ? (constraints.maxWidth - 18) / 2 : 205,
+                onTap: () => onSelected(asset),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AssetChoice extends StatelessWidget {
+  final String asset;
+  final bool selected;
+  final double width;
+  final VoidCallback onTap;
+
+  const _AssetChoice({
+    required this.asset,
+    required this.selected,
+    required this.width,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width.clamp(142, 215),
+      height: 88,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(15),
+          onTap: onTap,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: selected
+                  ? const Color(0xFF173B66).withValues(alpha: 0.88)
+                  : mobilePanel.withValues(alpha: 0.70),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: selected ? mobileBlue : const Color(0xFF334660),
+                width: selected ? 1.55 : 1.25,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CryptoLogo(asset: asset, size: 54),
+                const SizedBox(width: 18),
+                Text(
+                  asset,
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
                   ),
-                ],
-              );
-            },
+                ),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TimeframeSelector extends StatelessWidget {
+  final List<String> timeframes;
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  const _TimeframeSelector({
+    required this.timeframes,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 18,
+      runSpacing: 14,
+      children: [
+        for (final timeframe in timeframes)
+          SizedBox(
+            width: 150,
+            height: 74,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(13),
+                onTap: () => onSelected(timeframe),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: selected == timeframe
+                        ? const Color(0xFF194B80).withValues(alpha: 0.85)
+                        : mobilePanel.withValues(alpha: 0.70),
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                      color: selected == timeframe ? mobileBlue : const Color(0xFF334660),
+                      width: selected == timeframe ? 1.55 : 1.25,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      _timeframeLabel(timeframe),
+                      style: TextStyle(
+                        color: selected == timeframe ? const Color(0xFF9CCBFF) : AppColors.text,
+                        fontSize: 26,
+                        fontWeight: selected == timeframe ? FontWeight.w800 : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
-class _Selector extends StatelessWidget {
-  final List<String> assets;
-  final List<String> timeframes;
+class _OpportunityPanel extends StatelessWidget {
+  final EntryOpportunity? opportunity;
   final String asset;
   final String timeframe;
-  final ValueChanged<String> onAsset;
-  final ValueChanged<String> onTimeframe;
 
-  const _Selector({
-    required this.assets,
-    required this.timeframes,
+  const _OpportunityPanel({
+    required this.opportunity,
     required this.asset,
     required this.timeframe,
-    required this.onAsset,
-    required this.onTimeframe,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              for (final value in assets)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(value),
-                    selected: value == asset,
-                    onSelected: (_) => onAsset(value),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final value in timeframes)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(value),
-                      selected: value == timeframe,
-                      onSelected: (_) => onTimeframe(value),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+    final item = opportunity;
+    if (item == null) {
+      return const GlassPanel(
+        child: Text(
+          'Opportunite d’entree indisponible pour cette selection.',
+          style: TextStyle(color: mobileMuted, fontSize: 18),
+        ),
+      );
+    }
 
-class _OpportunityCard extends StatelessWidget {
-  final EntryOpportunity opportunity;
-
-  const _OpportunityCard({required this.opportunity});
-
-  @override
-  Widget build(BuildContext context) {
-    return SectionCard(
-      title: 'OPPORTUNITE D’ENTREE',
-      trailing: EdgeBadge(state: opportunity.measuredEdge, compact: true),
+    return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              StatePill(label: opportunity.state),
-              const SizedBox(width: 8),
-              if (opportunity.score != null)
-                Text(
-                  fmtSigned(opportunity.score, digits: 0, suffix: ''),
-                  style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted),
+              const Expanded(
+                child: Text(
+                  'OPPORTUNITÉ D’ENTRÉE',
+                  style: TextStyle(
+                    color: Color(0xFFBFC9E4),
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
                 ),
+              ),
+              const SizedBox(width: 10),
+              MobilePill(label: _edgeLabel(item.measuredEdge), color: AppColors.warn),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Invalidation comes first, before anything that sounds favourable.
-          Container(
-            padding: const EdgeInsets.only(left: 10),
-            decoration: const BoxDecoration(
-              border: Border(left: BorderSide(color: AppColors.warn, width: 3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ce qui invaliderait ce signal',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.warn),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  opportunity.invalidation,
-                  style: const TextStyle(fontSize: 12, height: 1.4),
-                ),
-              ],
-            ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              MobilePill(label: _opportunityState(item.state), color: mobileBlue, filled: true),
+              const SizedBox(width: 16),
+              Text(
+                _scoreText(item.score),
+                style: const TextStyle(color: AppColors.text, fontSize: 23),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-
-          const Text(
-            'Pourquoi maintenant',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted),
-          ),
-          const SizedBox(height: 4),
-          for (final reason in opportunity.whyNow)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Text('• $reason', style: const TextStyle(fontSize: 12, height: 1.35)),
+          if (item.invalidation.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.only(left: 20),
+              decoration: const BoxDecoration(
+                border: Border(left: BorderSide(color: AppColors.warn, width: 6)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Ce qui invaliderait ce scénario',
+                    style: TextStyle(
+                      color: Color(0xFFFFC63B),
+                      fontSize: 23,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    _translateEntryText(item.invalidation, timeframe),
+                    style: const TextStyle(color: AppColors.text, fontSize: 22, height: 1.28),
+                  ),
+                ],
+              ),
             ),
-          const SizedBox(height: 10),
+          ],
+          if (item.whyNow.isNotEmpty) ...[
+            const SizedBox(height: 28),
+            const Text(
+              'Pourquoi maintenant',
+              style: TextStyle(
+                color: Color(0xFFBFC9E4),
+                fontSize: 23,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final reason in item.whyNow)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '• ${_translateEntryText(reason, timeframe)}',
+                  style: const TextStyle(color: AppColors.text, fontSize: 20, height: 1.32),
+                ),
+              ),
+          ],
+          const SizedBox(height: 24),
           Text(
-            opportunity.disclaimer,
+            _entryDisclaimer(item.disclaimer),
             style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textMuted,
+              color: Color(0xFF99A8C0),
+              fontSize: 18,
               fontStyle: FontStyle.italic,
               height: 1.35,
             ),
@@ -231,67 +403,64 @@ class _OpportunityCard extends StatelessWidget {
   }
 }
 
-class _RangeCard extends StatelessWidget {
+class _RangePanel extends StatelessWidget {
   final StructuralLocation location;
 
-  const _RangeCard({required this.location});
+  const _RangePanel({required this.location});
 
   @override
   Widget build(BuildContext context) {
     final range = location.range;
-    return SectionCard(
-      title: 'RANGE ET POSITION',
-      trailing: StatePill(label: location.state, compact: true),
+    return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (range == null || !range.valid) ...[
-            UnavailableText(
-              reason: range?.reason.isNotEmpty == true
-                  ? range!.reason
-                : 'Aucun range valide sur cette unite de temps.',
-            ),
-          ] else ...[
-            Text(location.rangeSummary, style: const TextStyle(fontSize: 12.5, height: 1.4)),
-            const SizedBox(height: 12),
-            _ZoneRow(zone: range.topZone, label: 'Top zone'),
-            _ZoneRow(zone: range.bottomZone, label: 'Bottom zone'),
-            const SizedBox(height: 8),
-            LabelledRow(
-              label: 'Position dans le range',
-              value: Text(fmt(location.relativePosition, digits: 3)),
-            ),
-            LabelledRow(
-              label: 'Distance au bas',
-              value: Text(fmt(location.distanceToBottomAtr, digits: 2, suffix: ' ATR')),
-            ),
-            LabelledRow(
-              label: 'Distance au haut',
-              value: Text(fmt(location.distanceToTopAtr, digits: 2, suffix: ' ATR')),
-            ),
-            LabelledRow(
-              label: 'Reconnaissance',
-              value: Text('${range.confidence.toStringAsFixed(0)}/100 — forme uniquement'),
-            ),
-            if (location.explanation.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              const Text(
-                'Pourquoi ces bornes',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted),
-              ),
-              const SizedBox(height: 4),
-              for (final line in location.explanation)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: Text('• $line', style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Text(
+                  'ZONE & POSITION',
+                  style: TextStyle(
+                    color: Color(0xFFBFC9E4),
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
+              ),
+              const SizedBox(width: 10),
+              MobilePill(label: _locationLabel(location.state), color: mobileBlue),
             ],
-          ],
-          if (location.invalidation.isNotEmpty) ...[
-            const SizedBox(height: 12),
+          ),
+          const SizedBox(height: 22),
+          if (range == null || !range.valid)
             Text(
-              location.invalidation,
-              style: const TextStyle(fontSize: 11.5, color: AppColors.warn, height: 1.35),
+              location.rangeSummary.isNotEmpty
+                  ? location.rangeSummary
+                  : 'Aucun range valide sur cette unite de temps.',
+              style: const TextStyle(color: mobileMuted, fontSize: 20, height: 1.35),
+            )
+          else ...[
+            Text(
+              _rangeSummary(range),
+              style: const TextStyle(color: AppColors.text, fontSize: 22, height: 1.36),
+            ),
+            const SizedBox(height: 18),
+            _RangeMetricRow(
+              left: 'Position',
+              right: fmtFr(location.relativePosition, digits: 3),
+            ),
+            _RangeMetricRow(
+              left: 'Distance au haut',
+              right: '${fmtFr(location.distanceToTopAtr, digits: 2)} ATR',
+            ),
+            _RangeMetricRow(
+              left: 'Distance au bas',
+              right: '${fmtFr(location.distanceToBottomAtr, digits: 2)} ATR',
+            ),
+            _RangeMetricRow(
+              left: 'Confiance',
+              right: '${fmtFr(range.confidence, digits: 0)}/100',
             ),
           ],
         ],
@@ -300,65 +469,63 @@ class _RangeCard extends StatelessWidget {
   }
 }
 
-class _ZoneRow extends StatelessWidget {
-  final Zone? zone;
-  final String label;
+class _RangeMetricRow extends StatelessWidget {
+  final String left;
+  final String right;
 
-  const _ZoneRow({required this.zone, required this.label});
+  const _RangeMetricRow({required this.left, required this.right});
 
   @override
   Widget build(BuildContext context) {
-    if (zone == null) return LabelledRow(label: label, value: const UnavailableText());
-    return LabelledRow(
-      label: label,
-      value: Text(
-        '${zone!.low.toStringAsFixed(2)} – ${zone!.high.toStringAsFixed(2)}   '
-        '(${zone!.quality.touches} touches, qualite ${zone!.quality.score.toStringAsFixed(0)}/100)',
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(left, style: const TextStyle(color: mobileMuted, fontSize: 17)),
+          ),
+          Text(right, style: const TextStyle(color: AppColors.text, fontSize: 17)),
+        ],
       ),
     );
   }
 }
 
-class _StructureCard extends StatelessWidget {
+class _StructurePanel extends StatelessWidget {
   final MarketStructure structure;
 
-  const _StructureCard({required this.structure});
+  const _StructurePanel({required this.structure});
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      title: 'STRUCTURE DES SWINGS',
-      trailing: StatePill(label: structure.state, compact: true),
+    return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(structure.interpretation, style: const TextStyle(fontSize: 12.5, height: 1.4)),
-          const SizedBox(height: 10),
-          LabelledRow(label: 'Dernier HH confirme', value: Text(fmt(structure.lastConfirmedHh))),
-          LabelledRow(label: 'Dernier HL confirme', value: Text(fmt(structure.lastConfirmedHl))),
-          LabelledRow(label: 'Dernier LH confirme', value: Text(fmt(structure.lastConfirmedLh))),
-          LabelledRow(label: 'Dernier LL confirme', value: Text(fmt(structure.lastConfirmedLl))),
-          if (structure.events.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            for (final event in structure.events)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3),
+          Row(
+            children: [
+              const Expanded(
                 child: Text(
-                  '${event.kind} ${event.direction} a ${event.level.toStringAsFixed(2)} '
-                  '(confirme ${event.confirmationTime.split('T').first})',
-                  style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                  'STRUCTURE DES SWINGS',
+                  style: TextStyle(color: Color(0xFFBFC9E4), fontSize: 24, fontWeight: FontWeight.w800),
                 ),
               ),
-          ],
-          const SizedBox(height: 10),
+              MobilePill(label: _structureLabel(structure.state), color: mobileBlue),
+            ],
+          ),
+          const SizedBox(height: 18),
           Text(
-            structure.caveat,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textMuted,
-              fontStyle: FontStyle.italic,
-              height: 1.35,
-            ),
+            _translateStructureText(structure.interpretation),
+            style: const TextStyle(color: AppColors.text, fontSize: 18, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final label in structure.labels)
+                MobilePill(label: label, color: const Color(0xFF7DAFFF), dense: true),
+            ],
           ),
         ],
       ),
@@ -366,126 +533,204 @@ class _StructureCard extends StatelessWidget {
   }
 }
 
-class _PatternsCard extends StatelessWidget {
+class _PatternsPanel extends StatelessWidget {
   final List<DetectedPattern> patterns;
-  final String separationNote;
 
-  const _PatternsCard({required this.patterns, required this.separationNote});
+  const _PatternsPanel({required this.patterns});
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      title: 'FIGURES (${patterns.length})',
+    return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'FIGURES DÉTECTÉES (${patterns.length})',
+            style: const TextStyle(color: Color(0xFFBFC9E4), fontSize: 24, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 14),
           if (patterns.isEmpty)
-            const UnavailableText(
-              reason: 'Aucune figure detectee. C’est le resultat normal la plupart du temps.',
+            const Text(
+              'Aucune figure detectee sur cette selection.',
+              style: TextStyle(color: mobileMuted, fontSize: 18),
             )
           else
-            for (final pattern in patterns) _PatternTile(pattern: pattern),
-          if (separationNote.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              separationNote,
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textMuted,
-                fontStyle: FontStyle.italic,
-                height: 1.35,
-              ),
-            ),
-          ],
+            for (final pattern in patterns)
+              _PatternRow(pattern: pattern),
         ],
       ),
     );
   }
 }
 
-class _PatternTile extends StatelessWidget {
+class _PatternRow extends StatelessWidget {
   final DetectedPattern pattern;
 
-  const _PatternTile({required this.pattern});
+  const _PatternRow({required this.pattern});
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(left: 4, bottom: 10),
-        title: Text(
-          pattern.name.replaceAll('_', ' '),
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              StatePill(label: pattern.state, compact: true),
-              StatePill(
-                label: 'reconnaissance ${pattern.recognitionConfidence.toStringAsFixed(0)}',
-                color: AppColors.textMuted,
-                compact: true,
-              ),
-              // Always beside the recognition score, never on its own line.
-              EdgeBadge(state: pattern.edgeState, compact: true),
-            ],
-          ),
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF20344C))),
+      ),
+      child: Row(
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                LabelledRow(
-                  label: 'Classe detectee',
-                  value: Text('${pattern.patternClass} — ${pattern.classHint}'),
-                ),
-                LabelledRow(
-                  label: 'Lecture theorique',
-                  value: Text(pattern.directionIfTextbook),
-                ),
-                LabelledRow(
-                  label: 'Edge mesure',
-                  value: EdgeBadge(state: pattern.edgeState, compact: true),
-                ),
-                for (final entry in pattern.keyLevels.entries)
-                  LabelledRow(
-                    label: entry.key.replaceAll('_', ' '),
-                    value: Text(entry.value.toStringAsFixed(2)),
-                  ),
-                if (pattern.invalidationRule.isNotEmpty)
-                  LabelledRow(
-                    label: 'Invalidation',
-                    value: Text(pattern.invalidationRule),
-                  ),
-                if (pattern.notes.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    pattern.notes,
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted, height: 1.35),
-                  ),
-                ],
-                const SizedBox(height: 6),
                 Text(
-                  pattern.separationNote,
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    color: AppColors.textMuted,
-                    fontStyle: FontStyle.italic,
-                    height: 1.3,
-                  ),
+                  _patternLabel(pattern.name),
+                  style: const TextStyle(color: AppColors.text, fontSize: 19, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_patternState(pattern.state)} · reconnaissance ${fmtFr(pattern.recognitionConfidence, digits: 0)}/100',
+                  style: const TextStyle(color: mobileMuted, fontSize: 15),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          MobilePill(label: _edgeLabel(pattern.edgeState), color: _edgeColor(pattern.edgeState), dense: true),
         ],
       ),
     );
   }
+}
+
+String _timeframeLabel(String value) => switch (value) {
+      '15m' => '15 min',
+      '1h' => '1 h',
+      '4h' => '4 h',
+      '1d' => '1 j',
+      '1w' => '1 sem.',
+      _ => value,
+    };
+
+String _opportunityState(String value) => switch (value.toUpperCase()) {
+      'NEUTRAL' => 'NEUTRE',
+      'FAVOURABLE' || 'FAVORABLE' => 'FAVORABLE',
+      'UNFAVOURABLE' || 'UNFAVORABLE' => 'DÉFAVORABLE',
+      'INSUFFICIENT_DATA' => 'DONNÉES INSUFFISANTES',
+      _ => readableLabel(value),
+    };
+
+String _scoreText(num? score) {
+  if (score == null) return '—';
+  return score.toStringAsFixed(0).replaceAll('+', '');
+}
+
+String _edgeLabel(EdgeState state) => switch (state) {
+      EdgeState.positiveEdge => 'EDGE MESURABLE',
+      EdgeState.negativeEdge => 'EDGE DÉFAVORABLE',
+      EdgeState.noMeasurableEdge => 'AUCUN EDGE MESURABLE',
+      EdgeState.unstable => 'INSTABLE',
+      EdgeState.insufficientData => 'DONNÉES INSUFFISANTES',
+      EdgeState.notYetTested => 'PAS ENCORE TESTÉ',
+      EdgeState.unknown => 'INCONNU',
+    };
+
+Color _edgeColor(EdgeState state) => switch (state) {
+      EdgeState.positiveEdge => AppColors.measured,
+      EdgeState.negativeEdge => AppColors.bad,
+      EdgeState.noMeasurableEdge || EdgeState.unstable => AppColors.warn,
+      _ => mobileMuted,
+    };
+
+String _locationLabel(String value) => switch (value.toUpperCase()) {
+      'NEAR_RANGE_TOP' => 'PROCHE DU HAUT DU RANGE',
+      'NEAR_RANGE_BOTTOM' => 'PROCHE DU BAS DU RANGE',
+      'MID_RANGE' => 'MILIEU DU RANGE',
+      'ABOVE_RANGE' => 'AU-DESSUS DU RANGE',
+      'BELOW_RANGE' => 'SOUS LE RANGE',
+      'NO_VALID_RANGE' => 'AUCUN RANGE VALIDE',
+      _ => readableLabel(value),
+    };
+
+String _structureLabel(String value) => switch (value.toUpperCase()) {
+      'TRANSITION' => 'TRANSITION',
+      'BULLISH' => 'HAUSSIER',
+      'BEARISH' => 'BAISSIER',
+      'RANGE' => 'RANGE',
+      'UNCLEAR' => 'INCERTAIN',
+      _ => readableLabel(value),
+    };
+
+String _patternState(String value) => switch (value.toUpperCase()) {
+      'CONFIRMED' => 'confirmée',
+      'CANDIDATE' => 'candidate',
+      _ => readableLabel(value).toLowerCase(),
+    };
+
+String _patternLabel(String value) => switch (value) {
+      'double_top' => 'Double sommet',
+      'double_bottom' => 'Double creux',
+      'triple_top' => 'Triple sommet',
+      'triple_bottom' => 'Triple creux',
+      'head_and_shoulders' => 'Tête et épaules',
+      'inverse_head_and_shoulders' => 'Tête et épaules inversée',
+      'ascending_triangle' => 'Triangle ascendant',
+      'descending_triangle' => 'Triangle descendant',
+      'rising_wedge' => 'Biseau ascendant',
+      'falling_wedge' => 'Biseau descendant',
+      _ => readableLabel(value),
+    };
+
+String _rangeSummary(DetectedRange range) {
+  final bottom = range.bottomZone;
+  final top = range.topZone;
+  if (bottom == null || top == null) return readableLabel(range.rangeType);
+  return '${range.rangeType} entre ${_priceFr(bottom.low)}–${_priceFr(bottom.high)} et '
+      '${_priceFr(top.low)}–${_priceFr(top.high)}, largeur de '
+      '${fmtFr(range.widthAtr, digits: 1)} ATR, maintenu pendant '
+      '${range.durationBars} bougies avec ${range.bottomTouches} touches basses '
+      'et ${range.topTouches} touches hautes.';
+}
+
+String _priceFr(num? value) {
+  if (value == null || value.isNaN) return '—';
+  final parts = value.toStringAsFixed(2).replaceAll('.', ',').split(',');
+  final whole = parts.first;
+  final buffer = StringBuffer();
+  for (var i = 0; i < whole.length; i += 1) {
+    final remaining = whole.length - i;
+    buffer.write(whole[i]);
+    if (remaining > 1 && remaining % 3 == 1) buffer.write(' ');
+  }
+  return '${buffer.toString()},${parts.last}';
+}
+
+String _translateEntryText(String raw, String timeframe) {
+  var text = raw;
+  text = text.replaceAll('${timeframe} close above', 'clôture $timeframe au-dessus de');
+  text = text.replaceAll('A clôture', 'Une clôture');
+  text = text.replaceAll('would break the range top zone and invalidate the current range reading', 'casserait la zone haute du range et invaliderait la lecture actuelle du range');
+  text = text.replaceAll('${timeframe} price is near range top, zone quality', 'Le prix en $timeframe est proche du haut du range, qualité de zone');
+  text = text.replaceAll('1d structure is bullish', 'La structure 1 j est haussière');
+  text = text.replaceAll('funding is mid-range at the', 'le funding est au milieu de sa fourchette, au');
+  text = text.replaceAll('volatility LOW at the', 'la volatilité est FAIBLE, au');
+  text = text.replaceAll('th percentile - moves are small, which cuts both ways', 'e percentile : les mouvements sont limités, dans les deux sens');
+  text = text.replaceAll('th percentile', 'e percentile');
+  return text.replaceAll('.', ',');
+}
+
+String _entryDisclaimer(String raw) {
+  if (raw.isEmpty) {
+    return 'L’opportunité d’entrée décrit la configuration actuelle. Elle doit être lue avec l’edge mesurable affiché séparément.';
+  }
+  return 'L’opportunité d’entrée décrit comment la configuration actuelle se compare aux conditions normales. '
+      'Ce n’est ni l’affirmation que le prix est intéressant, ni une recommandation d’agir. '
+      'À lire avec l’edge mesurable, affiché séparément, qui est le plus souvent : AUCUN EDGE MESURABLE.';
+}
+
+String _translateStructureText(String raw) {
+  if (raw.isEmpty) return 'Structure indisponible.';
+  return raw
+      .replaceAll('TRANSITION from the confirmed swing sequence', 'Transition depuis la sequence de swings confirmes')
+      .replaceAll('across', 'sur')
+      .replaceAll('confirmed pivots', 'pivots confirmes')
+      .replaceAll('Structural events', 'Evenements structurels');
 }
