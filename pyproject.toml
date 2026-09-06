@@ -48,3 +48,6 @@ markers = ["network: requires internet access (deselect with -m 'not network')"]
 python_version = "3.11"
 mypy_path = "backend"
 ignore_missing_imports = true
+
+[tool.vercel]
+entrypoint = "backend.crypto_intel.main:app"
