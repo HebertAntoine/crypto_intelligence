@@ -103,11 +103,29 @@ void main() {
     });
 
     test('same-origin HTML falls back to a bundled static snapshot', () async {
+      var requestCount = 0;
       final client = ApiClient(
         baseUrl: '',
-        client: StubClient(
-          (_) async => http.Response('<html>app shell</html>', 200),
-        ),
+        client: StubClient((_) async {
+          requestCount += 1;
+          return http.Response('<html>app shell</html>', 200);
+        }),
+        loadAsset: (path) async {
+          expect(path, 'assets/static_api/health.json');
+          return '{"status":"ok","source":"static"}';
+        },
+      );
+
+      final health = await client.health();
+      expect(health['status'], 'ok');
+      expect(health['source'], 'static');
+      expect(requestCount, 0);
+    });
+
+    test('configured API HTML can still fall back to a bundled snapshot', () async {
+      final client = ApiClient(
+        baseUrl: 'https://wrong.example.com',
+        client: StubClient((_) async => http.Response('<html>app shell</html>', 200)),
         loadAsset: (path) async {
           expect(path, 'assets/static_api/health.json');
           return '{"status":"ok","source":"static"}';

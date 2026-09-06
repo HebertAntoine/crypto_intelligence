@@ -75,9 +75,10 @@ exist in `app/vercel.json`.
 has none. `API_BASE_URL` is compiled into the bundle at build time — changing
 it requires a redeploy, not just an environment change.
 
-Without `API_BASE_URL`, the app first calls its own origin. On Vercel that
-returns the static app shell rather than JSON, so the Flutter client falls back
-to the bundled snapshots in `app/assets/static_api/`.
+Without `API_BASE_URL`, the app reads the bundled snapshots in
+`app/assets/static_api/` directly. If `API_BASE_URL` points at a backend that is
+down or accidentally returns HTML, the client also falls back to those
+snapshots.
 
 Regenerate those snapshots from a running local backend with:
 
@@ -87,6 +88,9 @@ python scripts/export_flutter_static_api.py --base-url http://127.0.0.1:8100
 
 That mode is useful for a read-only demo. For live market data, set
 `API_BASE_URL` to a real backend and redeploy.
+
+The Vercel build uses `--pwa-strategy=none` so browsers do not keep serving an
+old offline Flutter bundle after a redeploy.
 
 ### Local equivalent
 

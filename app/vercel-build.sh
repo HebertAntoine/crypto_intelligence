@@ -27,16 +27,14 @@ flutter --version
 flutter config --enable-web --no-analytics
 flutter pub get
 
-# API_BASE_URL must be set in the Vercel project's environment variables and
-# point at the backend, which runs elsewhere - Vercel's serverless runtime
-# cannot host it (see docs/deployment.md). Building without it produces an app
-# that calls its own origin and fails visibly rather than silently.
+# API_BASE_URL can point at a live backend. If it is missing, the app renders
+# the bundled read-only snapshots generated into assets/static_api/.
 if [ -z "${API_BASE_URL:-}" ]; then
-  echo "WARNING: API_BASE_URL is not set. The app will call its own origin," >&2
-  echo "         which on Vercel has no API and will return 404s." >&2
+  echo "API_BASE_URL is not set. Building with bundled static API snapshots." >&2
 fi
 
 flutter build web --release \
-  --dart-define=API_BASE_URL="${API_BASE_URL:-}"
+  --dart-define=API_BASE_URL="${API_BASE_URL:-}" \
+  --pwa-strategy=none
 
 echo "Built to build/web"

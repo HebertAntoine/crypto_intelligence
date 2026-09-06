@@ -54,6 +54,11 @@ class ApiClient {
   }
 
   Future<dynamic> _get(String path, [Map<String, String>? query]) async {
+    if (_useStaticSnapshotFirst) {
+      final snapshot = await _tryStaticSnapshot(path, query);
+      if (snapshot != null) return snapshot;
+    }
+
     late final http.Response response;
     try {
       response = await _http.get(_uri(path, query)).timeout(timeout);
@@ -103,7 +108,9 @@ class ApiClient {
     }
   }
 
-  bool get _canUseStaticSnapshot =>
+  bool get _canUseStaticSnapshot => AppConfig.staticApiFallbackEnabled;
+
+  bool get _useStaticSnapshotFirst =>
       baseUrl.isEmpty && AppConfig.staticApiFallbackEnabled;
 
   String _staticSnapshotPath(String path, Map<String, String>? query) {
