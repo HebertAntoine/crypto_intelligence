@@ -117,7 +117,7 @@ class _HomeShellState extends State<HomeShell> {
           children: [
             Text(
               AppConfig.usesSameOrigin
-                  ? 'Same origin as this page'
+                  ? 'Same origin, with bundled snapshot fallback'
                   : AppConfig.apiBaseUrl,
               style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),

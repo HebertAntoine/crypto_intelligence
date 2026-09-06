@@ -1,0 +1,150 @@
+{
+  "asset": "ETH",
+  "location": {
+    "asset": "ETH",
+    "distance_to_bottom_atr": 9.112,
+    "distance_to_top_atr": 0.781,
+    "explanation": [
+      "resistance zone tested 2 times",
+      "touches agree within 0.14 ATR",
+      "median reaction from the zone 0.51 ATR",
+      "never closed through the zone",
+      "last tested 8 bars ago",
+      "range active for 91 bars"
+    ],
+    "invalidation": "A 1d close above 2581.86 would break the range top zone and invalidate the current range reading.",
+    "price": 2452.74,
+    "range": {
+      "bars_outside_recent": 0,
+      "bottom_touches": 2,
+      "bottom_zone": {
+        "first_touch": "2026-06-06T00:00:00+00:00",
+        "high": 1534.04547935,
+        "kind": "support",
+        "last_touch": "2026-06-26T00:00:00+00:00",
+        "low": 1483.63452065,
+        "midpoint": 1508.84,
+        "quality": {
+          "age_bars": 91,
+          "close_penetrations": 0,
+          "components": {
+            "integrity": 100.0,
+            "reaction_depth": 37.8,
+            "recency": 65.0,
+            "touch_agreement": 92.7,
+            "touches": 25.0
+          },
+          "dispersion_atr": 0.044,
+          "median_reaction_atr": 0.944,
+          "recency_bars": 70,
+          "score": 64.1,
+          "touches": 2,
+          "wick_penetrations": 0
+        },
+        "touch_count": 2
+      },
+      "close_penetrations": 0,
+      "confidence": 78.6,
+      "deviations": [],
+      "duration_bars": 91,
+      "false_breakouts": 0,
+      "midpoint": 2032.7475000000002,
+      "range_type": "BROAD_RANGE",
+      "reason": "",
+      "reintegrations": 0,
+      "started_at": "2026-06-06T00:00:00+00:00",
+      "top_touches": 5,
+      "top_zone": {
+        "first_touch": "2026-08-21T00:00:00+00:00",
+        "high": 2581.86047935,
+        "kind": "resistance",
+        "last_touch": "2026-08-27T00:00:00+00:00",
+        "low": 2531.44952065,
+        "midpoint": 2556.655,
+        "quality": {
+          "age_bars": 15,
+          "close_penetrations": 0,
+          "components": {
+            "integrity": 100.0,
+            "reaction_depth": 20.6,
+            "recency": 96.0,
+            "touch_agreement": 76.8,
+            "touches": 25.0
+          },
+          "dispersion_atr": 0.139,
+          "median_reaction_atr": 0.514,
+          "recency_bars": 8,
+          "score": 63.7,
+          "touches": 2,
+          "wick_penetrations": 0
+        },
+        "touch_count": 2
+      },
+      "trend_before": "DOWNTREND",
+      "valid": true,
+      "volatility_inside": 2.995,
+      "wick_penetrations": 0,
+      "width_atr": 10.39,
+      "width_pct": 69.445
+    },
+    "range_summary": "BROAD_RANGE between 1483.63-1534.05 and 2531.45-2581.86, 10.4 ATR wide, held for 91 bars with 2 bottom and 5 top touches. Recognition confidence 79/100.",
+    "relative_position": 0.9008,
+    "state": "NEAR_RANGE_TOP",
+    "timeframe": "1d"
+  },
+  "market_structure": {
+    "asset": "ETH",
+    "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+    "events": [
+      {
+        "broken_at": "2026-08-27T00:00:00+00:00",
+        "confirmation_time": "2026-09-01T00:00:00+00:00",
+        "direction": "bullish",
+        "kind": "BOS",
+        "level": 2546.78,
+        "note": "a confirmed swing high exceeded the previous confirmed high"
+      }
+    ],
+    "interpretation": "BULLISH_STRUCTURE from the confirmed swing sequence [HH HH HL HL] across 409 confirmed pivots. Structural events: BOS bullish.",
+    "labels": [
+      "HH",
+      "HH",
+      "HL",
+      "HL"
+    ],
+    "last_confirmed_hh": 2566.53,
+    "last_confirmed_hl": 1853.62,
+    "last_confirmed_lh": null,
+    "last_confirmed_ll": null,
+    "state": "BULLISH_STRUCTURE",
+    "swings_used": 409,
+    "timeframe": "1d"
+  },
+  "patterns": [
+    {
+      "components": {
+        "flag_atr": -0.29,
+        "pole_atr": 5.55
+      },
+      "confirmation_time": null,
+      "detected_at": "2026-09-04T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "edge_note": "",
+      "edge_state": "NOT_YET_TESTED",
+      "invalidation_level": null,
+      "invalidation_rule": "a close beyond the start of the pole invalidates the continuation reading",
+      "key_levels": {
+        "pole_end": 2463.41,
+        "pole_start": 1904.1
+      },
+      "name": "bull_flag",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "pattern_class": "EXPERIMENTAL",
+      "recognition_confidence": 92.5,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "state": "CANDIDATE"
+    }
+  ],
+  "separation_note": "recognition_confidence measures shape match only. Read edge_state for whether the pattern predicts anything.",
+  "timeframe": "1d"
+}

@@ -1,0 +1,220 @@
+{
+  "asset": "SOL",
+  "crowding": {
+    "asset": "SOL",
+    "components": {
+      "funding_stretch": 37.2,
+      "oi_percentile": 85.2,
+      "oi_velocity": 0.0
+    },
+    "direction": "UNKNOWN",
+    "funding_percentile": 31.4,
+    "interpretation": "crowding NORMAL (41/100) from funding_stretch, oi_percentile, oi_velocity. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
+    "level": "NORMAL",
+    "missing": [],
+    "oi_change_7d_pct": -17.7,
+    "oi_percentile": 85.2,
+    "score": 40.8
+  },
+  "decision_summary": {
+    "actionable": false,
+    "asset": "SOL",
+    "caveats": [
+      "Not actionable: no measured edge clears the evidence bar, so any position would rest on the narrative, not on a tested relationship.",
+      "Market direction and measured edge are computed independently; a bullish regime is not evidence of predictive ability."
+    ],
+    "crowding": "NORMAL",
+    "direction_confidence": "75.0",
+    "edge_state": "NO_MEASURABLE_EDGE",
+    "entry_timing": "UNDETERMINED",
+    "generated_at": "2026-09-06T20:01:07.116981Z",
+    "market_direction": "STRONGLY_BULLISH",
+    "statement": "SOL is strongly bullish, but we currently hold no robust directional edge.",
+    "uncertainty": 60.0,
+    "volatility_regime": "VERY_LOW"
+  },
+  "direction_source": "reconstructed from price structure (trend, EMA position, momentum, ADX); not the full multi-domain regime engine, which needs a pipeline run",
+  "edge": {
+    "admitted_count": 0,
+    "asset": "SOL",
+    "criteria": {
+      "min_effect_pct": 0.5,
+      "min_effective_observations": 20,
+      "round_trip_cost_pct": 0.2,
+      "stability": "excess must hold in the majority of years, not one era",
+      "survives_fdr": "Benjamini-Hochberg at alpha=0.05 across the whole study"
+    },
+    "effect_pct": null,
+    "evidence": [
+      {
+        "admitted": false,
+        "effect_pct": 5.8732,
+        "effective_n": 3.9,
+        "horizon_days": 7,
+        "p_value": 0.0006163298675735307,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "uncond|EXTREME_POSITIVE|7d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 12.9954,
+        "effective_n": 3.9,
+        "horizon_days": 14,
+        "p_value": 1.3125332458986877e-05,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "uncond|EXTREME_POSITIVE|14d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 27.9106,
+        "effective_n": 3.9,
+        "horizon_days": 30,
+        "p_value": 6.1520834869466774e-06,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "uncond|EXTREME_POSITIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 9.6067,
+        "effective_n": 3.9,
+        "horizon_days": 14,
+        "p_value": 5.248201779697868e-05,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "regime|NEUTRAL|NEGATIVE|14d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 20.0938,
+        "effective_n": 3.9,
+        "horizon_days": 30,
+        "p_value": 0.0014840634119256241,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "regime|NEUTRAL|NEGATIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -12.6605,
+        "effective_n": 3.9,
+        "horizon_days": 14,
+        "p_value": 0.0010093756810396982,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "regime|BEARISH|POSITIVE|14d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -12.6358,
+        "effective_n": 3.9,
+        "horizon_days": 30,
+        "p_value": 0.0019046662799193852,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "regime|BEARISH|POSITIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 11.3888,
+        "effective_n": 3.9,
+        "horizon_days": 14,
+        "p_value": 0.002477450174453472,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "momentum|RISING|EXTREME_POSITIVE|14d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 24.215,
+        "effective_n": 3.9,
+        "horizon_days": 30,
+        "p_value": 0.002111173020760853,
+        "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+        "signal": "momentum|RISING|EXTREME_POSITIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "MODERATELY_PERSISTENT",
+        "survives_fdr": true
+      }
+    ],
+    "horizon_days": null,
+    "independent_of_regime": true,
+    "rejected_count": 9,
+    "state": "NO_MEASURABLE_EDGE",
+    "statement": "9 candidate relationships were tested for SOL and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict forward returns. This says nothing about where the market is going - only that we cannot claim to know."
+  },
+  "funding": {
+    "annualised_pct": -3.83,
+    "asset": "SOL",
+    "band": "NEUTRAL",
+    "history_days": 2183,
+    "note": "funding -0.000035 sits at the 31th percentile of 2183 days of this asset's own history",
+    "percentile": 31.4,
+    "sufficient_history": true,
+    "value": -3.498e-05
+  },
+  "leverage_state": {
+    "asset": "SOL",
+    "confidence": "MEDIUM",
+    "funding_band": "NEUTRAL",
+    "inputs_missing": [],
+    "inputs_used": [
+      "price",
+      "funding",
+      "open_interest"
+    ],
+    "interpretation": "price and open interest both fell: existing longs are being closed out",
+    "oi_change_pct": -17.7,
+    "price_change_pct": -2.36,
+    "state": "LONG_LIQUIDATION"
+  },
+  "uncertainty": {
+    "asset": "SOL",
+    "drivers": [
+      {
+        "contribution": 40,
+        "detail": "no relationship survived the full filter chain",
+        "driver": "no measured edge"
+      },
+      {
+        "contribution": 20,
+        "detail": "directional read is not established",
+        "driver": "regime undetermined"
+      }
+    ],
+    "level": "HIGH",
+    "score": 60.0,
+    "statement": "Uncertainty HIGH (60/100), driven by: no measured edge, regime undetermined."
+  },
+  "volatility": {
+    "asset": "SOL",
+    "atr_percent": 5.062,
+    "atr_percentile": 10.0,
+    "direction": "STABLE",
+    "expansion_ratio": 1.051,
+    "history_days": 2216,
+    "interpretation": "ATR is 5.06% of price, the 10th percentile of 2203 days, so volatility is VERY_LOW and stable. Annualised realised volatility is 64%. This describes the size of moves, not their direction.",
+    "note": "",
+    "realised_vol_30d": 3.35,
+    "realised_vol_annualised": 64.01,
+    "regime": "VERY_LOW"
+  }
+}

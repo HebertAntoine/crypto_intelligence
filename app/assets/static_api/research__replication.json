@@ -1,0 +1,117 @@
+{
+  "findings": {
+    "BTC_double_top_14d": {
+      "comparison": {
+        "honesty_note": "The LOT 5 detectors were written from their definitions and were NOT adjusted to reproduce these numbers.",
+        "lot4_effective_n": 21.0,
+        "lot5_effective_n": 43.0,
+        "magnitude_ratio": 0.813,
+        "same_sign": true,
+        "statement": "The effect survives the change of definition: -3.18% became -2.58% (same sign, 81% of the original magnitude). Effective sample went from 21.0 to 43.0.",
+        "verdict": "REPLICATED"
+      },
+      "finding": "BTC_double_top_14d",
+      "lot4": {
+        "asset": "BTC",
+        "horizon": 14,
+        "lot4_effective_n": 21.0,
+        "lot4_excess_pct": -3.18,
+        "lot4_p_value": 3e-07,
+        "lot4_raw_n": 316,
+        "lot4_verdict": "MEASURABLE_EDGE",
+        "lot4_years_negative": "6/7",
+        "note": "the only LOT 4 pattern result that passed every filter",
+        "pattern": "double_top"
+      },
+      "lot5": {
+        "baseline_mean_pct": 2.226,
+        "by_year": {
+          "2018": -10.508,
+          "2019": 1.997,
+          "2020": -4.282,
+          "2021": -7.382,
+          "2022": 0.84,
+          "2023": -5.754,
+          "2024": -4.013,
+          "2025": 4.925,
+          "2026": 1.475
+        },
+        "effective_n": 43.0,
+        "episodes": 43,
+        "excess_vs_same_regime_pct": -2.585,
+        "mean_return_pct": -0.358,
+        "p_value": 1.885824690085914e-07,
+        "raw_n": 772,
+        "sign_consistency_pct": 55.6,
+        "t_stat": -5.234,
+        "years_negative": "5/9"
+      },
+      "status": "OK"
+    },
+    "BTC_inverse_head_and_shoulders_14d": {
+      "comparison": {
+        "honesty_note": "The LOT 5 detectors were written from their definitions and were NOT adjusted to reproduce these numbers.",
+        "lot4_effective_n": 11.0,
+        "lot5_effective_n": 13.0,
+        "magnitude_ratio": 1.272,
+        "same_sign": true,
+        "statement": "The effect survives the change of definition: -3.44% became -4.38% (same sign, 127% of the original magnitude). Effective sample went from 11.0 to 13.0.",
+        "verdict": "REPLICATED"
+      },
+      "finding": "BTC_inverse_head_and_shoulders_14d",
+      "lot4": {
+        "asset": "BTC",
+        "horizon": 14,
+        "lot4_effective_n": 11.0,
+        "lot4_excess_pct": -3.44,
+        "lot4_p_value": 0.00065,
+        "lot4_verdict": "NO_MEASURABLE_EDGE (failed effective sample)",
+        "note": "contradicted the textbook bullish reading; rejected on sample size",
+        "pattern": "inverse_head_and_shoulders"
+      },
+      "lot5": {
+        "baseline_mean_pct": 2.07,
+        "by_year": {
+          "2018": -9.25,
+          "2019": -8.465,
+          "2020": 11.231,
+          "2021": -0.064,
+          "2022": 14.12,
+          "2024": -3.713,
+          "2025": -2.025,
+          "2026": 1.381
+        },
+        "effective_n": 13.0,
+        "episodes": 13,
+        "excess_vs_same_regime_pct": -4.377,
+        "mean_return_pct": -2.307,
+        "p_value": 1.5892788164727208e-06,
+        "raw_n": 230,
+        "sign_consistency_pct": 62.5,
+        "t_stat": -4.911,
+        "years_negative": "5/8"
+      },
+      "status": "OK"
+    },
+    "SOL_breakout_7d": {
+      "comparison": {
+        "statement": "The LOT 5 breakout detector never fires on SOL. The LOT 4 result cannot be replicated because the stricter, ATR-normalised definition does not recognise those configurations as this pattern.",
+        "verdict": "DISAPPEARED"
+      },
+      "finding": "SOL_breakout_7d",
+      "lot4": {
+        "asset": "SOL",
+        "horizon": 7,
+        "lot4_effective_n": 29.6,
+        "lot4_excess_pct": 3.99,
+        "lot4_verdict": "NO_MEASURABLE_EDGE (failed stability)",
+        "note": "survived FDR but was positive in only 4 of 6 years",
+        "pattern": "breakout"
+      },
+      "status": "PATTERN_NOT_DETECTED"
+    }
+  },
+  "generated_at": "2026-09-06T16:45:42.663882+00:00",
+  "method_note": "Each LOT 4 finding is re-measured with the LOT 5 structural detector, using the same same-regime baseline and the same effective-sample correction. No detector threshold was changed to improve agreement.",
+  "source": "stored"
+}

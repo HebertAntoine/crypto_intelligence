@@ -1,0 +1,386 @@
+{
+  "assets": {
+    "BTC": {
+      "admitted_count": 0,
+      "asset": "BTC",
+      "criteria": {
+        "min_effect_pct": 0.5,
+        "min_effective_observations": 20,
+        "round_trip_cost_pct": 0.2,
+        "stability": "excess must hold in the majority of years, not one era",
+        "survives_fdr": "Benjamini-Hochberg at alpha=0.05 across the whole study"
+      },
+      "effect_pct": null,
+      "evidence": [
+        {
+          "admitted": false,
+          "effect_pct": -1.6915,
+          "effective_n": 3.7,
+          "horizon_days": 14,
+          "p_value": 0.0007717425822069179,
+          "rejection_reason": "only ~3.7 independent windows, below 20; effect concentrated in a minority of years; positive in only 2/5 years",
+          "signal": "uncond|NEUTRAL|14d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 4.6059,
+          "effective_n": 3.7,
+          "horizon_days": 30,
+          "p_value": 0.0007810463736928075,
+          "rejection_reason": "only ~3.7 independent windows, below 20; effect concentrated in a minority of years; positive in only 2/5 years",
+          "signal": "uncond|EXTREME_POSITIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -3.8827,
+          "effective_n": 3.7,
+          "horizon_days": 30,
+          "p_value": 0.0009472248145647553,
+          "rejection_reason": "only ~3.7 independent windows, below 20; effect concentrated in a minority of years; positive in only 2/5 years",
+          "signal": "regime|STRONGLY_BEARISH|NEUTRAL|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        }
+      ],
+      "horizon_days": null,
+      "independent_of_regime": true,
+      "rejected_count": 3,
+      "state": "NO_MEASURABLE_EDGE",
+      "statement": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict forward returns. This says nothing about where the market is going - only that we cannot claim to know."
+    },
+    "ETH": {
+      "admitted_count": 0,
+      "asset": "ETH",
+      "criteria": {
+        "min_effect_pct": 0.5,
+        "min_effective_observations": 20,
+        "round_trip_cost_pct": 0.2,
+        "stability": "excess must hold in the majority of years, not one era",
+        "survives_fdr": "Benjamini-Hochberg at alpha=0.05 across the whole study"
+      },
+      "effect_pct": null,
+      "evidence": [
+        {
+          "admitted": false,
+          "effect_pct": -3.8596,
+          "effective_n": 4.0,
+          "horizon_days": 14,
+          "p_value": 0.0011886303921604072,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "uncond|EXTREME_NEGATIVE|14d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -7.1957,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 4.0720896594990997e-05,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "uncond|EXTREME_NEGATIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 5.6777,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 0.00022371059940739046,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "uncond|POSITIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 4.0302,
+          "effective_n": 4.0,
+          "horizon_days": 14,
+          "p_value": 0.0040386214002462225,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "uncond|EXTREME_POSITIVE|14d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 15.0821,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 2.3947652112331812e-05,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "regime|STRONGLY_BULLISH|NEGATIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 7.2466,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 0.00023306162113817836,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "regime|STRONGLY_BULLISH|POSITIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -7.4004,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 0.002356022010623537,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "regime|NEUTRAL|NEUTRAL|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 7.4479,
+          "effective_n": 4.0,
+          "horizon_days": 14,
+          "p_value": 2.7060215293771683e-05,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "regime|BEARISH|NEUTRAL|14d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 10.5743,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 0.0002661444828854494,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "regime|BEARISH|NEUTRAL|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -3.4373,
+          "effective_n": 4.0,
+          "horizon_days": 3,
+          "p_value": 0.0005701781593959781,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "regime|STRONGLY_BEARISH|POSITIVE|3d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -6.3333,
+          "effective_n": 4.0,
+          "horizon_days": 7,
+          "p_value": 0.0001536731505274283,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "regime|STRONGLY_BEARISH|POSITIVE|7d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -6.4236,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 0.0016559694195376182,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "momentum|RISING|NEUTRAL|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 7.4027,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 0.0008473298423400645,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "momentum|RISING|POSITIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -7.7239,
+          "effective_n": 4.0,
+          "horizon_days": 14,
+          "p_value": 1.9204733483984205e-06,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "momentum|FLAT|EXTREME_NEGATIVE|14d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -8.9977,
+          "effective_n": 4.0,
+          "horizon_days": 30,
+          "p_value": 0.00011958509607433154,
+          "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+          "signal": "momentum|FLAT|EXTREME_NEGATIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "CONCENTRATED",
+          "survives_fdr": true
+        }
+      ],
+      "horizon_days": null,
+      "independent_of_regime": true,
+      "rejected_count": 15,
+      "state": "NO_MEASURABLE_EDGE",
+      "statement": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict forward returns. This says nothing about where the market is going - only that we cannot claim to know."
+    },
+    "SOL": {
+      "admitted_count": 0,
+      "asset": "SOL",
+      "criteria": {
+        "min_effect_pct": 0.5,
+        "min_effective_observations": 20,
+        "round_trip_cost_pct": 0.2,
+        "stability": "excess must hold in the majority of years, not one era",
+        "survives_fdr": "Benjamini-Hochberg at alpha=0.05 across the whole study"
+      },
+      "effect_pct": null,
+      "evidence": [
+        {
+          "admitted": false,
+          "effect_pct": 5.8732,
+          "effective_n": 3.9,
+          "horizon_days": 7,
+          "p_value": 0.0006163298675735307,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "uncond|EXTREME_POSITIVE|7d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 12.9954,
+          "effective_n": 3.9,
+          "horizon_days": 14,
+          "p_value": 1.3125332458986877e-05,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "uncond|EXTREME_POSITIVE|14d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 27.9106,
+          "effective_n": 3.9,
+          "horizon_days": 30,
+          "p_value": 6.1520834869466774e-06,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "uncond|EXTREME_POSITIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 9.6067,
+          "effective_n": 3.9,
+          "horizon_days": 14,
+          "p_value": 5.248201779697868e-05,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "regime|NEUTRAL|NEGATIVE|14d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 20.0938,
+          "effective_n": 3.9,
+          "horizon_days": 30,
+          "p_value": 0.0014840634119256241,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "regime|NEUTRAL|NEGATIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -12.6605,
+          "effective_n": 3.9,
+          "horizon_days": 14,
+          "p_value": 0.0010093756810396982,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "regime|BEARISH|POSITIVE|14d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": -12.6358,
+          "effective_n": 3.9,
+          "horizon_days": 30,
+          "p_value": 0.0019046662799193852,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "regime|BEARISH|POSITIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 11.3888,
+          "effective_n": 3.9,
+          "horizon_days": 14,
+          "p_value": 0.002477450174453472,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "momentum|RISING|EXTREME_POSITIVE|14d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        },
+        {
+          "admitted": false,
+          "effect_pct": 24.215,
+          "effective_n": 3.9,
+          "horizon_days": 30,
+          "p_value": 0.002111173020760853,
+          "rejection_reason": "only ~3.9 independent windows, below 20; positive in only 4/6 years",
+          "signal": "momentum|RISING|EXTREME_POSITIVE|30d",
+          "source": "funding_conditioned",
+          "stability": "MODERATELY_PERSISTENT",
+          "survives_fdr": true
+        }
+      ],
+      "horizon_days": null,
+      "independent_of_regime": true,
+      "rejected_count": 9,
+      "state": "NO_MEASURABLE_EDGE",
+      "statement": "9 candidate relationships were tested for SOL and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict forward returns. This says nothing about where the market is going - only that we cannot claim to know."
+    }
+  },
+  "note": "EdgeState is computed from research output alone and never from the current regime. A bullish market with NO_MEASURABLE_EDGE is a coherent and common result, not a contradiction."
+}

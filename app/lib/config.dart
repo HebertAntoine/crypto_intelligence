@@ -22,4 +22,14 @@ class AppConfig {
   /// Shown wherever the app could be mistaken for a trading tool.
   static const String disclaimer =
       'Analysis only. This app never places orders and gives no financial advice.';
+
+  /// Embedded snapshots let the Vercel build work without a public API.
+  ///
+  /// When API_BASE_URL is provided the live backend remains the source of
+  /// truth. When it is empty, the client first tries same-origin `/api`, then
+  /// falls back to the bundled JSON snapshots if Vercel serves index.html.
+  static const bool staticApiFallbackEnabled = bool.fromEnvironment(
+    'STATIC_API_FALLBACK',
+    defaultValue: true,
+  );
 }

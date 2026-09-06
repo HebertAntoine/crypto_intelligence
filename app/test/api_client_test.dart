@@ -101,6 +101,23 @@ void main() {
             .having((e) => e.message, 'message', contains('Could not reach'))),
       );
     });
+
+    test('same-origin HTML falls back to a bundled static snapshot', () async {
+      final client = ApiClient(
+        baseUrl: '',
+        client: StubClient(
+          (_) async => http.Response('<html>app shell</html>', 200),
+        ),
+        loadAsset: (path) async {
+          expect(path, 'assets/static_api/health.json');
+          return '{"status":"ok","source":"static"}';
+        },
+      );
+
+      final health = await client.health();
+      expect(health['status'], 'ok');
+      expect(health['source'], 'static');
+    });
   });
 
   group('Payload parsing', () {

@@ -1,0 +1,64 @@
+{
+  "rule": "A source may only override one of a strictly higher tier number. Equal tiers disagreeing is reported, never silently resolved. Educational and human sources (tiers 4-6) can never override measured data (tiers 1-3).",
+  "tiers": {
+    "1": {
+      "is_primary_data": true,
+      "label": "blockchain / protocol native",
+      "providers": [
+        "bitcoin_rpc",
+        "blockchain_info",
+        "blockchair",
+        "ethereum_rpc",
+        "solana_rpc"
+      ]
+    },
+    "2": {
+      "is_primary_data": true,
+      "label": "official API or documentation",
+      "providers": [
+        "alfred",
+        "binance",
+        "binance_futures",
+        "bybit",
+        "bybit_backfill",
+        "coinbase",
+        "fred",
+        "okx",
+        "stooq",
+        "yahoo"
+      ]
+    },
+    "3": {
+      "is_primary_data": true,
+      "label": "specialist data provider",
+      "providers": [
+        "coingecko",
+        "coinglass",
+        "defillama",
+        "farside"
+      ]
+    },
+    "4": {
+      "is_primary_data": false,
+      "label": "research or educational literature",
+      "providers": [
+        "goodcrypto",
+        "personal_course"
+      ]
+    },
+    "5": {
+      "is_primary_data": false,
+      "label": "human trader analysis",
+      "providers": [
+        "lexa_moon",
+        "trader_analysis",
+        "user_annotation"
+      ]
+    },
+    "6": {
+      "is_primary_data": false,
+      "label": "general media or commentary",
+      "providers": []
+    }
+  }
+}

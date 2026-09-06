@@ -1,0 +1,292 @@
+{
+  "asset": "ETH",
+  "crowding": {
+    "asset": "ETH",
+    "components": {
+      "funding_stretch": 23.8,
+      "oi_percentile": 74.2,
+      "oi_velocity": 0.0
+    },
+    "direction": "UNKNOWN",
+    "funding_percentile": 38.1,
+    "interpretation": "crowding NORMAL (33/100) from funding_stretch, oi_percentile, oi_velocity. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
+    "level": "NORMAL",
+    "missing": [],
+    "oi_change_7d_pct": -0.19,
+    "oi_percentile": 74.2,
+    "score": 32.7
+  },
+  "decision_summary": {
+    "actionable": false,
+    "asset": "ETH",
+    "caveats": [
+      "Not actionable: no measured edge clears the evidence bar, so any position would rest on the narrative, not on a tested relationship.",
+      "Market direction and measured edge are computed independently; a bullish regime is not evidence of predictive ability."
+    ],
+    "crowding": "NORMAL",
+    "direction_confidence": "85.0",
+    "edge_state": "NO_MEASURABLE_EDGE",
+    "entry_timing": "UNDETERMINED",
+    "generated_at": "2026-09-06T20:01:03.721517Z",
+    "market_direction": "STRONGLY_BULLISH",
+    "statement": "ETH is strongly bullish, but we currently hold no robust directional edge.",
+    "uncertainty": 60.0,
+    "volatility_regime": "LOW"
+  },
+  "direction_source": "reconstructed from price structure (trend, EMA position, momentum, ADX); not the full multi-domain regime engine, which needs a pipeline run",
+  "edge": {
+    "admitted_count": 0,
+    "asset": "ETH",
+    "criteria": {
+      "min_effect_pct": 0.5,
+      "min_effective_observations": 20,
+      "round_trip_cost_pct": 0.2,
+      "stability": "excess must hold in the majority of years, not one era",
+      "survives_fdr": "Benjamini-Hochberg at alpha=0.05 across the whole study"
+    },
+    "effect_pct": null,
+    "evidence": [
+      {
+        "admitted": false,
+        "effect_pct": -3.8596,
+        "effective_n": 4.0,
+        "horizon_days": 14,
+        "p_value": 0.0011886303921604072,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "uncond|EXTREME_NEGATIVE|14d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -7.1957,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 4.0720896594990997e-05,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "uncond|EXTREME_NEGATIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 5.6777,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 0.00022371059940739046,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "uncond|POSITIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 4.0302,
+        "effective_n": 4.0,
+        "horizon_days": 14,
+        "p_value": 0.0040386214002462225,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "uncond|EXTREME_POSITIVE|14d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 15.0821,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 2.3947652112331812e-05,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "regime|STRONGLY_BULLISH|NEGATIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 7.2466,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 0.00023306162113817836,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "regime|STRONGLY_BULLISH|POSITIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -7.4004,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 0.002356022010623537,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "regime|NEUTRAL|NEUTRAL|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 7.4479,
+        "effective_n": 4.0,
+        "horizon_days": 14,
+        "p_value": 2.7060215293771683e-05,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "regime|BEARISH|NEUTRAL|14d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 10.5743,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 0.0002661444828854494,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "regime|BEARISH|NEUTRAL|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -3.4373,
+        "effective_n": 4.0,
+        "horizon_days": 3,
+        "p_value": 0.0005701781593959781,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "regime|STRONGLY_BEARISH|POSITIVE|3d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -6.3333,
+        "effective_n": 4.0,
+        "horizon_days": 7,
+        "p_value": 0.0001536731505274283,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "regime|STRONGLY_BEARISH|POSITIVE|7d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -6.4236,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 0.0016559694195376182,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "momentum|RISING|NEUTRAL|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 7.4027,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 0.0008473298423400645,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "momentum|RISING|POSITIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -7.7239,
+        "effective_n": 4.0,
+        "horizon_days": 14,
+        "p_value": 1.9204733483984205e-06,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "momentum|FLAT|EXTREME_NEGATIVE|14d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -8.9977,
+        "effective_n": 4.0,
+        "horizon_days": 30,
+        "p_value": 0.00011958509607433154,
+        "rejection_reason": "only ~4.0 independent windows, below 20; effect concentrated in a minority of years; positive in only 3/6 years",
+        "signal": "momentum|FLAT|EXTREME_NEGATIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      }
+    ],
+    "horizon_days": null,
+    "independent_of_regime": true,
+    "rejected_count": 15,
+    "state": "NO_MEASURABLE_EDGE",
+    "statement": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict forward returns. This says nothing about where the market is going - only that we cannot claim to know."
+  },
+  "funding": {
+    "annualised_pct": 0.65,
+    "asset": "ETH",
+    "band": "NEUTRAL",
+    "history_days": 2334,
+    "note": "funding 0.000006 sits at the 38th percentile of 2334 days of this asset's own history",
+    "percentile": 38.1,
+    "sufficient_history": true,
+    "value": 5.94e-06
+  },
+  "leverage_state": {
+    "asset": "ETH",
+    "confidence": "MEDIUM",
+    "funding_band": "NEUTRAL",
+    "inputs_missing": [],
+    "inputs_used": [
+      "price",
+      "funding",
+      "open_interest"
+    ],
+    "interpretation": "neither price nor open interest moved decisively",
+    "oi_change_pct": -0.19,
+    "price_change_pct": 0.41,
+    "state": "QUIET"
+  },
+  "uncertainty": {
+    "asset": "ETH",
+    "drivers": [
+      {
+        "contribution": 40,
+        "detail": "no relationship survived the full filter chain",
+        "driver": "no measured edge"
+      },
+      {
+        "contribution": 20,
+        "detail": "directional read is not established",
+        "driver": "regime undetermined"
+      }
+    ],
+    "level": "HIGH",
+    "score": 60.0,
+    "statement": "Uncertainty HIGH (60/100), driven by: no measured edge, regime undetermined."
+  },
+  "volatility": {
+    "asset": "ETH",
+    "atr_percent": 4.111,
+    "atr_percentile": 15.6,
+    "direction": "STABLE",
+    "expansion_ratio": 0.951,
+    "history_days": 3306,
+    "interpretation": "ATR is 4.11% of price, the 16th percentile of 3293 days, so volatility is LOW and stable. Annualised realised volatility is 75%. This describes the size of moves, not their direction.",
+    "note": "",
+    "realised_vol_30d": 3.901,
+    "realised_vol_annualised": 74.53,
+    "regime": "LOW"
+  }
+}

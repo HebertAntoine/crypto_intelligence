@@ -1,0 +1,148 @@
+{
+  "asset": "BTC",
+  "crowding": {
+    "asset": "BTC",
+    "components": {
+      "funding_stretch": 8.6,
+      "oi_percentile": 61.0,
+      "oi_velocity": 58.2
+    },
+    "direction": "UNKNOWN",
+    "funding_percentile": 45.7,
+    "interpretation": "crowding NORMAL (43/100) from funding_stretch, oi_percentile, oi_velocity. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
+    "level": "NORMAL",
+    "missing": [],
+    "oi_change_7d_pct": 11.63,
+    "oi_percentile": 61.0,
+    "score": 42.6
+  },
+  "decision_summary": {
+    "actionable": false,
+    "asset": "BTC",
+    "caveats": [
+      "Not actionable: no measured edge clears the evidence bar, so any position would rest on the narrative, not on a tested relationship.",
+      "Market direction and measured edge are computed independently; a bullish regime is not evidence of predictive ability."
+    ],
+    "crowding": "NORMAL",
+    "direction_confidence": "80.0",
+    "edge_state": "NO_MEASURABLE_EDGE",
+    "entry_timing": "UNDETERMINED",
+    "generated_at": "2026-09-06T20:01:00.284164Z",
+    "market_direction": "STRONGLY_BULLISH",
+    "statement": "BTC is strongly bullish, but we currently hold no robust directional edge.",
+    "uncertainty": 60.0,
+    "volatility_regime": "LOW"
+  },
+  "direction_source": "reconstructed from price structure (trend, EMA position, momentum, ADX); not the full multi-domain regime engine, which needs a pipeline run",
+  "edge": {
+    "admitted_count": 0,
+    "asset": "BTC",
+    "criteria": {
+      "min_effect_pct": 0.5,
+      "min_effective_observations": 20,
+      "round_trip_cost_pct": 0.2,
+      "stability": "excess must hold in the majority of years, not one era",
+      "survives_fdr": "Benjamini-Hochberg at alpha=0.05 across the whole study"
+    },
+    "effect_pct": null,
+    "evidence": [
+      {
+        "admitted": false,
+        "effect_pct": -1.6915,
+        "effective_n": 3.7,
+        "horizon_days": 14,
+        "p_value": 0.0007717425822069179,
+        "rejection_reason": "only ~3.7 independent windows, below 20; effect concentrated in a minority of years; positive in only 2/5 years",
+        "signal": "uncond|NEUTRAL|14d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": 4.6059,
+        "effective_n": 3.7,
+        "horizon_days": 30,
+        "p_value": 0.0007810463736928075,
+        "rejection_reason": "only ~3.7 independent windows, below 20; effect concentrated in a minority of years; positive in only 2/5 years",
+        "signal": "uncond|EXTREME_POSITIVE|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      },
+      {
+        "admitted": false,
+        "effect_pct": -3.8827,
+        "effective_n": 3.7,
+        "horizon_days": 30,
+        "p_value": 0.0009472248145647553,
+        "rejection_reason": "only ~3.7 independent windows, below 20; effect concentrated in a minority of years; positive in only 2/5 years",
+        "signal": "regime|STRONGLY_BEARISH|NEUTRAL|30d",
+        "source": "funding_conditioned",
+        "stability": "CONCENTRATED",
+        "survives_fdr": true
+      }
+    ],
+    "horizon_days": null,
+    "independent_of_regime": true,
+    "rejected_count": 3,
+    "state": "NO_MEASURABLE_EDGE",
+    "statement": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict forward returns. This says nothing about where the market is going - only that we cannot claim to know."
+  },
+  "funding": {
+    "annualised_pct": 4.88,
+    "asset": "BTC",
+    "band": "NEUTRAL",
+    "history_days": 2334,
+    "note": "funding 0.000045 sits at the 46th percentile of 2334 days of this asset's own history",
+    "percentile": 45.7,
+    "sufficient_history": true,
+    "value": 4.455e-05
+  },
+  "leverage_state": {
+    "asset": "BTC",
+    "confidence": "MEDIUM",
+    "funding_band": "NEUTRAL",
+    "inputs_missing": [],
+    "inputs_used": [
+      "price",
+      "funding",
+      "open_interest"
+    ],
+    "interpretation": "price and open interest both rose: new positions are being opened into the move rather than old ones closing",
+    "oi_change_pct": 11.63,
+    "price_change_pct": 2.39,
+    "state": "NEW_LONGS"
+  },
+  "uncertainty": {
+    "asset": "BTC",
+    "drivers": [
+      {
+        "contribution": 40,
+        "detail": "no relationship survived the full filter chain",
+        "driver": "no measured edge"
+      },
+      {
+        "contribution": 20,
+        "detail": "directional read is not established",
+        "driver": "regime undetermined"
+      }
+    ],
+    "level": "HIGH",
+    "score": 60.0,
+    "statement": "Uncertainty HIGH (60/100), driven by: no measured edge, regime undetermined."
+  },
+  "volatility": {
+    "asset": "BTC",
+    "atr_percent": 3.165,
+    "atr_percentile": 20.9,
+    "direction": "STABLE",
+    "expansion_ratio": 0.97,
+    "history_days": 3306,
+    "interpretation": "ATR is 3.17% of price, the 21th percentile of 3293 days, so volatility is LOW and stable. Annualised realised volatility is 47%. This describes the size of moves, not their direction.",
+    "note": "",
+    "realised_vol_30d": 2.483,
+    "realised_vol_annualised": 47.44,
+    "regime": "LOW"
+  }
+}

@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
@@ -28,10 +29,17 @@ class ApiClient {
   final http.Client _http;
   final String baseUrl;
   final Duration timeout;
+  final Future<String> Function(String) _loadAsset;
 
-  ApiClient({http.Client? client, String? baseUrl, this.timeout = const Duration(seconds: 30)})
+  ApiClient({
+    http.Client? client,
+    String? baseUrl,
+    this.timeout = const Duration(seconds: 30),
+    Future<String> Function(String)? loadAsset,
+  })
       : _http = client ?? http.Client(),
-        baseUrl = baseUrl ?? AppConfig.apiBaseUrl;
+        baseUrl = baseUrl ?? AppConfig.apiBaseUrl,
+        _loadAsset = loadAsset ?? rootBundle.loadString;
 
   Uri _uri(String path, [Map<String, String>? query]) {
     final normalised = path.startsWith('/') ? path : '/$path';
@@ -50,15 +58,21 @@ class ApiClient {
     try {
       response = await _http.get(_uri(path, query)).timeout(timeout);
     } on TimeoutException {
+      final snapshot = await _tryStaticSnapshot(path, query);
+      if (snapshot != null) return snapshot;
       throw ApiException(
         'The backend did not answer within ${timeout.inSeconds}s. '
         'Some research endpoints are genuinely slow on a cold cache.',
       );
     } catch (error) {
+      final snapshot = await _tryStaticSnapshot(path, query);
+      if (snapshot != null) return snapshot;
       throw ApiException('Could not reach the backend: $error');
     }
 
     if (response.statusCode >= 400) {
+      final snapshot = await _tryStaticSnapshot(path, query);
+      if (snapshot != null) return snapshot;
       String detail = response.reasonPhrase ?? 'request failed';
       try {
         final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -68,7 +82,40 @@ class ApiClient {
       }
       throw ApiException(detail, statusCode: response.statusCode);
     }
-    return jsonDecode(response.body);
+    try {
+      return jsonDecode(response.body);
+    } catch (error) {
+      final snapshot = await _tryStaticSnapshot(path, query);
+      if (snapshot != null) return snapshot;
+      throw ApiException('The backend returned invalid JSON: $error');
+    }
+  }
+
+  Future<dynamic> _tryStaticSnapshot(
+    String path,
+    Map<String, String>? query,
+  ) async {
+    if (!_canUseStaticSnapshot) return null;
+    try {
+      return jsonDecode(await _loadAsset(_staticSnapshotPath(path, query)));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get _canUseStaticSnapshot =>
+      baseUrl.isEmpty && AppConfig.staticApiFallbackEnabled;
+
+  String _staticSnapshotPath(String path, Map<String, String>? query) {
+    var name = path.startsWith('/') ? path.substring(1) : path;
+    name = name.replaceAll('/', '__');
+    if (query != null && query.isNotEmpty) {
+      final pairs = query.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+      final suffix = pairs.map((e) => '${e.key}-${e.value}').join('__');
+      name = '${name}__$suffix';
+    }
+    return 'assets/static_api/$name.json';
   }
 
   Future<Map<String, dynamic>> health() async =>

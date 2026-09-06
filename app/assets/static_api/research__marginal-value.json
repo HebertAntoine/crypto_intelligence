@@ -1,0 +1,687 @@
+{
+  "assets": {
+    "BTC": {
+      "layers": {
+        "asset": "BTC",
+        "horizon_days": 7,
+        "layers": {
+          "A_numeric": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7"
+            ],
+            "majority_class_accuracy": 0.5173,
+            "n_features": 11,
+            "oos_accuracy": 0.4661,
+            "oos_auc": 0.4614,
+            "oos_r2": -0.0531,
+            "status": "OK",
+            "test_period": "2024-11-04 to 2026-08-28",
+            "test_rows": 663,
+            "train_period": "2020-08-12 to 2024-11-03",
+            "train_rows": 1545
+          },
+          "B_plus_location": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7",
+              "location_code",
+              "range_position",
+              "range_width_atr",
+              "range_confidence"
+            ],
+            "majority_class_accuracy": 0.5011,
+            "n_features": 15,
+            "oos_accuracy": 0.3861,
+            "oos_auc": 0.3732,
+            "oos_r2": -0.4154,
+            "status": "OK",
+            "test_period": "2024-10-26 to 2026-08-28",
+            "test_rows": 461,
+            "train_period": "2020-08-15 to 2024-10-25",
+            "train_rows": 1073
+          },
+          "C_plus_patterns": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7",
+              "location_code",
+              "range_position",
+              "range_width_atr",
+              "range_confidence",
+              "pattern_count",
+              "pattern_bullish",
+              "pattern_bearish",
+              "pattern_confidence"
+            ],
+            "majority_class_accuracy": 0.5011,
+            "n_features": 19,
+            "oos_accuracy": 0.3905,
+            "oos_auc": 0.3863,
+            "oos_r2": -0.463,
+            "status": "OK",
+            "test_period": "2024-10-26 to 2026-08-28",
+            "test_rows": 461,
+            "train_period": "2020-08-15 to 2024-10-25",
+            "train_rows": 1073
+          }
+        },
+        "note": "Layer D (human annotations) is not evaluated: the annotated dataset does not yet contain enough verified examples. It is INSUFFICIENT_DATA, not a negative result.",
+        "status": "OK",
+        "timeframe": "1d",
+        "verdict": {
+          "answer": "NO_LAYER_ADDS_VALUE",
+          "details": [
+            "Adding structural location moves out-of-sample R2 from -0.0531 to -0.4154 (no improvement).",
+            "Adding patterns moves it from -0.4154 to -0.4630 (no improvement).",
+            "Direction AUC: A 0.461, B 0.373, C 0.386."
+          ],
+          "location_improves_r2": false,
+          "patterns_improve_r2": false,
+          "summary": "Every layer has NEGATIVE out-of-sample R2, meaning each predicts forward returns worse than simply using the training mean. Ranking them is ranking degrees of failure: no layer carries usable predictive information at this horizon."
+        }
+      },
+      "location_marginal_value": {
+        "answer": {
+          "direction_vs_theory": "AGREES",
+          "statement": "Being near a range bottom preceded returns -0.15% relative to the unconditional average, and +0.11% relative to a REGIME-MATCHED baseline (n=684, p=0.766). Once the regime is known, range location adds nothing measurable: the apparent effect was the regime itself.",
+          "verdict": "NO_MARGINAL_INFORMATION"
+        },
+        "asset": "BTC",
+        "comparisons": {
+          "range_bottom": {
+            "adds_information": false,
+            "direction_vs_theory": "AGREES",
+            "excess_vs_regime_matched_pct": 0.111,
+            "excess_vs_unconditional_pct": -0.155,
+            "mean_return_pct": 0.232,
+            "n": 684,
+            "p_value_vs_regime_matched": 0.765752513853097,
+            "regime_matched_baseline_pct": 0.121,
+            "regime_strata": [
+              {
+                "baseline_mean_pct": 0.005,
+                "event_mean_pct": 0.312,
+                "excess_pct": 0.307,
+                "n_baseline": 321,
+                "n_events": 425,
+                "regime_code": -2.0
+              },
+              {
+                "baseline_mean_pct": 1.026,
+                "event_mean_pct": 1.04,
+                "excess_pct": 0.014,
+                "n_baseline": 193,
+                "n_events": 110,
+                "regime_code": -1.0
+              },
+              {
+                "baseline_mean_pct": -0.32,
+                "event_mean_pct": -0.928,
+                "excess_pct": -0.608,
+                "n_baseline": 157,
+                "n_events": 79,
+                "regime_code": 0.0
+              },
+              {
+                "baseline_mean_pct": -0.513,
+                "event_mean_pct": -0.325,
+                "excess_pct": 0.188,
+                "n_baseline": 263,
+                "n_events": 51,
+                "regime_code": 1.0
+              },
+              {
+                "baseline_mean_pct": 1.024,
+                "event_mean_pct": 0.103,
+                "excess_pct": -0.922,
+                "n_baseline": 547,
+                "n_events": 19,
+                "regime_code": 2.0
+              }
+            ],
+            "regimes_used": 5,
+            "status": "OK",
+            "t_stat": 0.298,
+            "unconditional_baseline_pct": 0.388
+          },
+          "range_top": {
+            "adds_information": false,
+            "direction_vs_theory": "AGREES",
+            "excess_vs_regime_matched_pct": -0.258,
+            "excess_vs_unconditional_pct": 0.24,
+            "mean_return_pct": 0.527,
+            "n": 463,
+            "p_value_vs_regime_matched": 0.5584280294914507,
+            "regime_matched_baseline_pct": 0.785,
+            "regime_strata": [
+              {
+                "baseline_mean_pct": 0.179,
+                "event_mean_pct": 0.19,
+                "excess_pct": 0.011,
+                "n_baseline": 724,
+                "n_events": 22,
+                "regime_code": -2.0
+              },
+              {
+                "baseline_mean_pct": 0.804,
+                "event_mean_pct": 1.707,
+                "excess_pct": 0.903,
+                "n_baseline": 227,
+                "n_events": 76,
+                "regime_code": -1.0
+              },
+              {
+                "baseline_mean_pct": -0.928,
+                "event_mean_pct": 1.653,
+                "excess_pct": 2.581,
+                "n_baseline": 199,
+                "n_events": 37,
+                "regime_code": 0.0
+              },
+              {
+                "baseline_mean_pct": -0.342,
+                "event_mean_pct": -0.93,
+                "excess_pct": -0.588,
+                "n_baseline": 239,
+                "n_events": 75,
+                "regime_code": 1.0
+              },
+              {
+                "baseline_mean_pct": 1.417,
+                "event_mean_pct": 0.47,
+                "excess_pct": -0.947,
+                "n_baseline": 313,
+                "n_events": 253,
+                "regime_code": 2.0
+              }
+            ],
+            "regimes_used": 5,
+            "status": "OK",
+            "t_stat": -0.585,
+            "unconditional_baseline_pct": 0.287
+          }
+        },
+        "horizon_days": 7,
+        "status": "OK",
+        "timeframe": "1d"
+      }
+    },
+    "ETH": {
+      "layers": {
+        "asset": "ETH",
+        "horizon_days": 7,
+        "layers": {
+          "A_numeric": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7"
+            ],
+            "majority_class_accuracy": 0.518,
+            "n_features": 11,
+            "oos_accuracy": 0.5008,
+            "oos_auc": 0.5422,
+            "oos_r2": 0.0011,
+            "status": "OK",
+            "test_period": "2024-11-28 to 2026-08-28",
+            "test_rows": 639,
+            "train_period": "2020-10-29 to 2024-11-27",
+            "train_rows": 1491
+          },
+          "B_plus_location": {
+            "beats_majority": true,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7",
+              "location_code",
+              "range_position",
+              "range_width_atr",
+              "range_confidence"
+            ],
+            "majority_class_accuracy": 0.5,
+            "n_features": 15,
+            "oos_accuracy": 0.5025,
+            "oos_auc": 0.4918,
+            "oos_r2": -0.0908,
+            "status": "OK",
+            "test_period": "2025-02-11 to 2026-08-28",
+            "test_rows": 408,
+            "train_period": "2020-10-29 to 2025-02-10",
+            "train_rows": 951
+          },
+          "C_plus_patterns": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7",
+              "location_code",
+              "range_position",
+              "range_width_atr",
+              "range_confidence",
+              "pattern_count",
+              "pattern_bullish",
+              "pattern_bearish",
+              "pattern_confidence"
+            ],
+            "majority_class_accuracy": 0.5,
+            "n_features": 19,
+            "oos_accuracy": 0.451,
+            "oos_auc": 0.4542,
+            "oos_r2": -0.2163,
+            "status": "OK",
+            "test_period": "2025-02-11 to 2026-08-28",
+            "test_rows": 408,
+            "train_period": "2020-10-29 to 2025-02-10",
+            "train_rows": 951
+          }
+        },
+        "note": "Layer D (human annotations) is not evaluated: the annotated dataset does not yet contain enough verified examples. It is INSUFFICIENT_DATA, not a negative result.",
+        "status": "OK",
+        "timeframe": "1d",
+        "verdict": {
+          "answer": "NEITHER_ADDS_VALUE",
+          "details": [
+            "Adding structural location moves out-of-sample R2 from +0.0011 to -0.0908 (no improvement).",
+            "Adding patterns moves it from -0.0908 to -0.2163 (no improvement).",
+            "Direction AUC: A 0.542, B 0.492, C 0.454."
+          ],
+          "location_improves_r2": false,
+          "patterns_improve_r2": false,
+          "summary": "Neither structural location nor patterns improved out-of-sample fit over the simple numeric features."
+        }
+      },
+      "location_marginal_value": {
+        "answer": {
+          "direction_vs_theory": "AGREES",
+          "statement": "Being near a range bottom preceded returns -0.81% relative to the unconditional average, and +1.03% relative to a REGIME-MATCHED baseline (n=513, p=0.087). Once the regime is known, range location adds nothing measurable: the apparent effect was the regime itself.",
+          "verdict": "NO_MARGINAL_INFORMATION"
+        },
+        "asset": "ETH",
+        "comparisons": {
+          "range_bottom": {
+            "adds_information": false,
+            "direction_vs_theory": "AGREES",
+            "excess_vs_regime_matched_pct": 1.027,
+            "excess_vs_unconditional_pct": -0.809,
+            "mean_return_pct": 0.675,
+            "n": 513,
+            "p_value_vs_regime_matched": 0.08698797489093502,
+            "regime_matched_baseline_pct": -0.426,
+            "regime_strata": [
+              {
+                "baseline_mean_pct": -0.775,
+                "event_mean_pct": 0.597,
+                "excess_pct": 1.372,
+                "n_baseline": 255,
+                "n_events": 313,
+                "regime_code": -2.0
+              },
+              {
+                "baseline_mean_pct": 1.893,
+                "event_mean_pct": 2.589,
+                "excess_pct": 0.696,
+                "n_baseline": 169,
+                "n_events": 83,
+                "regime_code": -1.0
+              },
+              {
+                "baseline_mean_pct": -1.951,
+                "event_mean_pct": -1.282,
+                "excess_pct": 0.669,
+                "n_baseline": 220,
+                "n_events": 79,
+                "regime_code": 0.0
+              },
+              {
+                "baseline_mean_pct": 0.681,
+                "event_mean_pct": 0.169,
+                "excess_pct": -0.512,
+                "n_baseline": 181,
+                "n_events": 34,
+                "regime_code": 1.0
+              }
+            ],
+            "regimes_used": 4,
+            "status": "OK",
+            "t_stat": 1.713,
+            "unconditional_baseline_pct": 1.484
+          },
+          "range_top": {
+            "adds_information": false,
+            "direction_vs_theory": "AGREES",
+            "excess_vs_regime_matched_pct": -1.119,
+            "excess_vs_unconditional_pct": 0.633,
+            "mean_return_pct": 1.727,
+            "n": 463,
+            "p_value_vs_regime_matched": 0.05835648415688572,
+            "regime_matched_baseline_pct": 2.846,
+            "regime_strata": [
+              {
+                "baseline_mean_pct": 0.01,
+                "event_mean_pct": -1.509,
+                "excess_pct": -1.52,
+                "n_baseline": 557,
+                "n_events": 11,
+                "regime_code": -2.0
+              },
+              {
+                "baseline_mean_pct": 1.651,
+                "event_mean_pct": 3.807,
+                "excess_pct": 2.156,
+                "n_baseline": 197,
+                "n_events": 55,
+                "regime_code": -1.0
+              },
+              {
+                "baseline_mean_pct": -1.528,
+                "event_mean_pct": -2.451,
+                "excess_pct": -0.923,
+                "n_baseline": 219,
+                "n_events": 80,
+                "regime_code": 0.0
+              },
+              {
+                "baseline_mean_pct": 0.11,
+                "event_mean_pct": 1.335,
+                "excess_pct": 1.225,
+                "n_baseline": 129,
+                "n_events": 86,
+                "regime_code": 1.0
+              },
+              {
+                "baseline_mean_pct": 5.8,
+                "event_mean_pct": 2.98,
+                "excess_pct": -2.82,
+                "n_baseline": 254,
+                "n_events": 231,
+                "regime_code": 2.0
+              }
+            ],
+            "regimes_used": 5,
+            "status": "OK",
+            "t_stat": -1.896,
+            "unconditional_baseline_pct": 1.094
+          }
+        },
+        "horizon_days": 7,
+        "status": "OK",
+        "timeframe": "1d"
+      }
+    },
+    "SOL": {
+      "layers": {
+        "asset": "SOL",
+        "horizon_days": 7,
+        "layers": {
+          "A_numeric": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7"
+            ],
+            "majority_class_accuracy": 0.5301,
+            "n_features": 11,
+            "oos_accuracy": 0.4539,
+            "oos_auc": 0.4477,
+            "oos_r2": -0.1395,
+            "status": "OK",
+            "test_period": "2025-02-11 to 2026-08-28",
+            "test_rows": 564,
+            "train_period": "2021-07-07 to 2025-02-10",
+            "train_rows": 1315
+          },
+          "B_plus_location": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7",
+              "location_code",
+              "range_position",
+              "range_width_atr",
+              "range_confidence"
+            ],
+            "majority_class_accuracy": 0.5565,
+            "n_features": 15,
+            "oos_accuracy": 0.5152,
+            "oos_auc": 0.5429,
+            "oos_r2": -0.1505,
+            "status": "OK",
+            "test_period": "2025-07-15 to 2026-08-28",
+            "test_rows": 363,
+            "train_period": "2021-07-07 to 2025-07-14",
+            "train_rows": 844
+          },
+          "C_plus_patterns": {
+            "beats_majority": false,
+            "features_used": [
+              "rsi_14",
+              "adx_14",
+              "atr_pct",
+              "dist_ema50",
+              "dist_ema200",
+              "return_7",
+              "return_30",
+              "rel_volume",
+              "regime_code",
+              "funding",
+              "oi_change_7",
+              "location_code",
+              "range_position",
+              "range_width_atr",
+              "range_confidence",
+              "pattern_count",
+              "pattern_bullish",
+              "pattern_bearish",
+              "pattern_confidence"
+            ],
+            "majority_class_accuracy": 0.5565,
+            "n_features": 19,
+            "oos_accuracy": 0.4766,
+            "oos_auc": 0.4969,
+            "oos_r2": -0.1767,
+            "status": "OK",
+            "test_period": "2025-07-15 to 2026-08-28",
+            "test_rows": 363,
+            "train_period": "2021-07-07 to 2025-07-14",
+            "train_rows": 844
+          }
+        },
+        "note": "Layer D (human annotations) is not evaluated: the annotated dataset does not yet contain enough verified examples. It is INSUFFICIENT_DATA, not a negative result.",
+        "status": "OK",
+        "timeframe": "1d",
+        "verdict": {
+          "answer": "NO_LAYER_ADDS_VALUE",
+          "details": [
+            "Adding structural location moves out-of-sample R2 from -0.1395 to -0.1505 (no improvement).",
+            "Adding patterns moves it from -0.1505 to -0.1767 (no improvement).",
+            "Direction AUC: A 0.448, B 0.543, C 0.497."
+          ],
+          "location_improves_r2": false,
+          "patterns_improve_r2": false,
+          "summary": "Every layer has NEGATIVE out-of-sample R2, meaning each predicts forward returns worse than simply using the training mean. Ranking them is ranking degrees of failure: no layer carries usable predictive information at this horizon."
+        }
+      },
+      "location_marginal_value": {
+        "answer": {
+          "direction_vs_theory": "AGREES",
+          "statement": "Being near a range bottom preceded returns -1.75% relative to the unconditional average, and +0.40% relative to a REGIME-MATCHED baseline (n=381, p=0.637). Once the regime is known, range location adds nothing measurable: the apparent effect was the regime itself.",
+          "verdict": "NO_MARGINAL_INFORMATION"
+        },
+        "asset": "SOL",
+        "comparisons": {
+          "range_bottom": {
+            "adds_information": false,
+            "direction_vs_theory": "AGREES",
+            "excess_vs_regime_matched_pct": 0.403,
+            "excess_vs_unconditional_pct": -1.749,
+            "mean_return_pct": -0.704,
+            "n": 381,
+            "p_value_vs_regime_matched": 0.6368073048355388,
+            "regime_matched_baseline_pct": -0.934,
+            "regime_strata": [
+              {
+                "baseline_mean_pct": -1.035,
+                "event_mean_pct": -2.008,
+                "excess_pct": -0.973,
+                "n_baseline": 192,
+                "n_events": 229,
+                "regime_code": -2.0
+              },
+              {
+                "baseline_mean_pct": -0.963,
+                "event_mean_pct": 1.772,
+                "excess_pct": 2.735,
+                "n_baseline": 91,
+                "n_events": 125,
+                "regime_code": -1.0
+              },
+              {
+                "baseline_mean_pct": 0.407,
+                "event_mean_pct": 1.988,
+                "excess_pct": 1.582,
+                "n_baseline": 137,
+                "n_events": 20,
+                "regime_code": 0.0
+              }
+            ],
+            "regimes_used": 3,
+            "status": "OK",
+            "t_stat": 0.472,
+            "unconditional_baseline_pct": 1.046
+          },
+          "range_top": {
+            "adds_information": false,
+            "direction_vs_theory": "AGREES",
+            "excess_vs_regime_matched_pct": -2.147,
+            "excess_vs_unconditional_pct": -0.632,
+            "mean_return_pct": 0.035,
+            "n": 294,
+            "p_value_vs_regime_matched": 0.06758361238324127,
+            "regime_matched_baseline_pct": 2.379,
+            "regime_strata": [
+              {
+                "baseline_mean_pct": 1.535,
+                "event_mean_pct": -7.457,
+                "excess_pct": -8.992,
+                "n_baseline": 194,
+                "n_events": 22,
+                "regime_code": -1.0
+              },
+              {
+                "baseline_mean_pct": 3.044,
+                "event_mean_pct": -4.76,
+                "excess_pct": -7.804,
+                "n_baseline": 108,
+                "n_events": 49,
+                "regime_code": 0.0
+              },
+              {
+                "baseline_mean_pct": 3.883,
+                "event_mean_pct": -0.556,
+                "excess_pct": -4.439,
+                "n_baseline": 99,
+                "n_events": 73,
+                "regime_code": 1.0
+              },
+              {
+                "baseline_mean_pct": 1.512,
+                "event_mean_pct": 3.527,
+                "excess_pct": 2.014,
+                "n_baseline": 159,
+                "n_events": 143,
+                "regime_code": 2.0
+              }
+            ],
+            "regimes_used": 4,
+            "status": "OK",
+            "t_stat": -1.832,
+            "unconditional_baseline_pct": 0.666
+          }
+        },
+        "horizon_days": 7,
+        "status": "OK",
+        "timeframe": "1d"
+      }
+    }
+  },
+  "generated_at": "2026-09-06T16:41:53.773560+00:00",
+  "horizon_days": 7,
+  "source": "stored",
+  "timeframe": "1d"
+}
