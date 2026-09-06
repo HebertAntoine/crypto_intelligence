@@ -138,6 +138,8 @@ void main() {
     });
   });
 
+  _provenanceTests();
+
   group('Payload parsing', () {
     test('a today payload maps into the model', () async {
       final client = ApiClient(
@@ -168,6 +170,61 @@ void main() {
       expect(read.edgeState.isMeasured, isFalse);
       expect(read.rejectedCount, 3);
       expect(read.crowdingDirection, 'UNKNOWN');
+    });
+  });
+}
+
+/// Provenance: the app must never present a frozen snapshot as live data.
+void _provenanceTests() {
+  group('Data provenance', () {
+    test('a live response is marked live', () async {
+      final client = ApiClient(
+        baseUrl: 'https://api.example.com',
+        client: StubClient((_) async => http.Response('{"status":"ok"}', 200)),
+      );
+      await client.health();
+      expect(client.lastProvenance.origin, DataOrigin.live);
+      expect(client.lastProvenance.isSnapshot, isFalse);
+    });
+
+    test('a snapshot is marked as such, with its generation time', () async {
+      final generated = DateTime.utc(2026, 9, 6, 20, 1);
+      final client = ApiClient(
+        baseUrl: 'https://api.example.com',
+        client: StubClient((_) async => throw Exception('offline')),
+        loadAsset: (_) async => '{"generated_at":"${generated.toIso8601String()}"}',
+      );
+      await client.health();
+      expect(client.lastProvenance.isSnapshot, isTrue);
+      expect(client.lastProvenance.generatedAt, generated);
+    });
+
+    test('a snapshot older than twelve hours is stale', () {
+      final old = DataProvenance(
+        DataOrigin.snapshot,
+        generatedAt: DateTime.now().toUtc().subtract(const Duration(days: 3)),
+      );
+      expect(old.isStale, isTrue);
+      expect(old.describe(), contains('3 jours'));
+    });
+
+    test('an undated snapshot is never treated as fresh', () {
+      const undated = DataProvenance(DataOrigin.snapshot);
+      // Unknown age must not read as "just now".
+      expect(undated.isStale, isFalse);
+      expect(undated.describe(), contains('date inconnue'));
+      expect(undated.age, isNull);
+    });
+
+    test('the decision_summary timestamp is read when present', () async {
+      final client = ApiClient(
+        baseUrl: 'https://api.example.com',
+        client: StubClient((_) async => throw Exception('offline')),
+        loadAsset: (_) async =>
+            '{"decision_summary":{"generated_at":"2026-09-06T20:01:00Z"}}',
+      );
+      await client.today('BTC');
+      expect(client.lastProvenance.generatedAt, DateTime.utc(2026, 9, 6, 20, 1));
     });
   });
 }

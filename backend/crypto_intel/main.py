@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .api.routes import router
+from .api.routes_analysis import router as analysis_router
 from .api.routes_lot2 import router as lot2_router
 from .api.routes_lot3 import router as lot3_router
 from .api.routes_lot4 import router as lot4_router
@@ -72,6 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(lot3_router, prefix="/api")
     app.include_router(lot4_router, prefix="/api")
     app.include_router(lot5_router, prefix="/api")
+    app.include_router(analysis_router, prefix="/api")
 
     @app.exception_handler(Exception)
     async def unhandled(request, exc: Exception):

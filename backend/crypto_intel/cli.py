@@ -937,6 +937,48 @@ def cmd_export(args) -> int:
     return 0
 
 
+def cmd_daily_v2(args) -> int:
+    """The full daily read for each asset."""
+    from .engines.daily_report import DailyReportEngine
+
+    assets = [_asset(args.asset)] if args.asset else Asset.tradables()
+    engine = DailyReportEngine()
+    for asset in assets:
+        print(engine.build(asset)["text"])
+        print()
+    return 0
+
+
+def cmd_revalidate(args) -> int:
+    """Re-test the pre-registered candidates under the LOT 6A framework."""
+    import json
+    import pathlib as _pathlib
+
+    from .research.revalidation import run_all
+
+    result = run_all()
+    print(f"verdicts: {result['verdict_counts']}")
+    for entry in result["results"]:
+        if entry.get("status") != "OK":
+            print(f"  {entry['id']:34s} {entry.get('status')}")
+            continue
+        strat = entry.get("stratified", {})
+        sample = entry.get("effective_sample", {})
+        print(
+            f"  {entry['id']:34s} {entry.get('verdict', '?'):18s} "
+            f"LOT5 {entry['lot5_excess_pct']:+.2f}% -> "
+            f"strat {strat.get('excess_pct')}% / resid {entry.get('residual_excess_pct')}% "
+            f"(eff_n {sample.get('effective_n')})"
+        )
+        print(f"      {entry.get('binding_reason', '')}")
+
+    out = _pathlib.Path("data/research/revalidation.json")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(result, indent=2, default=str))
+    print(f"\nWritten to {out}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="crypto-intel",
@@ -1053,6 +1095,13 @@ def main() -> int:
     p.add_argument("--out")
     p.add_argument("--format", choices=["json", "csv", "parquet"], default="json")
     p.set_defaults(func=cmd_export, is_async=False)
+
+    p = sub.add_parser("daily-v2", help="Full daily read, sixteen sections")
+    p.add_argument("--asset")
+    p.set_defaults(func=cmd_daily_v2, is_async=False)
+
+    p = sub.add_parser("revalidate", help="Re-test candidates under LOT 6A rules")
+    p.set_defaults(func=cmd_revalidate, is_async=False)
 
     p = sub.add_parser("init-db", help="Create database tables")
     p.set_defaults(func=cmd_init_db, is_async=False)

@@ -10,6 +10,7 @@ import '../api/client.dart';
 import '../api/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/mobile_kit.dart';
 
 class TodayScreen extends StatefulWidget {
   final ApiClient client;
@@ -76,6 +77,11 @@ class _TodayScreenState extends State<TodayScreen> {
                     children: [
                       const _TodayHeader(),
                       const SizedBox(height: 20),
+                      // The app bundles snapshots so it can render without a
+                      // backend. A snapshot is a photograph of a past moment;
+                      // showing it as "today" without saying so would be the
+                      // one thing this project exists not to do.
+                      _ProvenanceBanner(provenance: widget.client.lastProvenance),
                       for (final read in reads) ...[
                         _MarketCard(read: read),
                         const SizedBox(height: 22),
@@ -86,6 +92,72 @@ class _TodayScreenState extends State<TodayScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// Says plainly where the numbers came from and how old they are.
+class _ProvenanceBanner extends StatelessWidget {
+  final DataProvenance provenance;
+
+  const _ProvenanceBanner({required this.provenance});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!provenance.isSnapshot) return const SizedBox.shrink();
+
+    final stale = provenance.isStale;
+    final colour = stale ? AppColors.warn : mobileMuted;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: colour.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: colour.withValues(alpha: 0.55), width: 1.2),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              stale ? Icons.history_toggle_off : Icons.snippet_folder_outlined,
+              color: colour,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    provenance.describe(),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: colour,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    stale
+                        ? "Ces chiffres ne décrivent pas le marché actuel. Aucun "
+                          "backend n'est joignable depuis cette page."
+                        : "Aucun backend joignable: lecture issue de l'instantané "
+                          'intégré à la version publiée.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: mobileMuted,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

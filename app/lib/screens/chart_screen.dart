@@ -705,10 +705,10 @@ String _priceFr(num? value) {
 
 String _translateEntryText(String raw, String timeframe) {
   var text = raw;
-  text = text.replaceAll('${timeframe} close above', 'clôture $timeframe au-dessus de');
+  text = text.replaceAll('$timeframe close above', 'clôture $timeframe au-dessus de');
   text = text.replaceAll('A clôture', 'Une clôture');
   text = text.replaceAll('would break the range top zone and invalidate the current range reading', 'casserait la zone haute du range et invaliderait la lecture actuelle du range');
-  text = text.replaceAll('${timeframe} price is near range top, zone quality', 'Le prix en $timeframe est proche du haut du range, qualité de zone');
+  text = text.replaceAll('$timeframe price is near range top, zone quality', 'Le prix en $timeframe est proche du haut du range, qualité de zone');
   text = text.replaceAll('1d structure is bullish', 'La structure 1 j est haussière');
   text = text.replaceAll('funding is mid-range at the', 'le funding est au milieu de sa fourchette, au');
   text = text.replaceAll('volatility LOW at the', 'la volatilité est FAIBLE, au');

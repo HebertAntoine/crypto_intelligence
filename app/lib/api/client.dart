@@ -14,6 +14,46 @@ import 'package:http/http.dart' as http;
 import '../config.dart';
 import 'models.dart';
 
+/// Where the last response actually came from.
+///
+/// The app bundles JSON snapshots so it can render on a host with no backend.
+/// That is a legitimate fallback, but a snapshot is a photograph of a past
+/// moment: it must never be presented as today's reading without saying so.
+/// Before this existed, `_get` returned identical shapes for live and frozen
+/// data and the UI had no way to tell them apart.
+enum DataOrigin { live, snapshot, unknown }
+
+class DataProvenance {
+  final DataOrigin origin;
+  final DateTime? generatedAt;
+
+  const DataProvenance(this.origin, {this.generatedAt});
+
+  static const unknown = DataProvenance(DataOrigin.unknown);
+
+  bool get isSnapshot => origin == DataOrigin.snapshot;
+
+  /// How stale the snapshot is. Null when the data is live or undated.
+  Duration? get age =>
+      generatedAt == null ? null : DateTime.now().toUtc().difference(generatedAt!);
+
+  /// A snapshot older than this is misleading if labelled "today".
+  bool get isStale {
+    final elapsed = age;
+    return elapsed != null && elapsed > const Duration(hours: 12);
+  }
+
+  String describe() {
+    if (origin == DataOrigin.live) return 'Données en direct';
+    if (origin != DataOrigin.snapshot) return 'Origine inconnue';
+    final elapsed = age;
+    if (elapsed == null) return 'Instantané intégré, date inconnue';
+    if (elapsed.inHours < 1) return 'Instantané intégré, il y a ${elapsed.inMinutes} min';
+    if (elapsed.inHours < 48) return 'Instantané intégré, il y a ${elapsed.inHours} h';
+    return 'Instantané intégré, il y a ${elapsed.inDays} jours';
+  }
+}
+
 class ApiException implements Exception {
   final int? statusCode;
   final String message;
@@ -30,6 +70,10 @@ class ApiClient {
   final String baseUrl;
   final Duration timeout;
   final Future<String> Function(String) _loadAsset;
+
+  /// Provenance of the most recent successful response. Read it after a call
+  /// to know whether the UI is showing live data or a bundled snapshot.
+  DataProvenance lastProvenance = DataProvenance.unknown;
 
   ApiClient({
     http.Client? client,
@@ -88,7 +132,9 @@ class ApiClient {
       throw ApiException(detail, statusCode: response.statusCode);
     }
     try {
-      return jsonDecode(response.body);
+      final decoded = jsonDecode(response.body);
+      lastProvenance = const DataProvenance(DataOrigin.live);
+      return decoded;
     } catch (error) {
       final snapshot = await _tryStaticSnapshot(path, query);
       if (snapshot != null) return snapshot;
@@ -102,10 +148,36 @@ class ApiClient {
   ) async {
     if (!_canUseStaticSnapshot) return null;
     try {
-      return jsonDecode(await _loadAsset(_staticSnapshotPath(path, query)));
+      final decoded = jsonDecode(await _loadAsset(_staticSnapshotPath(path, query)));
+      lastProvenance = DataProvenance(
+        DataOrigin.snapshot,
+        generatedAt: _snapshotTimestamp(decoded),
+      );
+      return decoded;
     } catch (_) {
       return null;
     }
+  }
+
+  /// Pull the generation time out of a snapshot payload.
+  ///
+  /// The exporter stamps `decision_summary.generated_at`; other endpoints use
+  /// `generated_at`. A snapshot without either is treated as undated rather
+  /// than as fresh - an unknown age must never read as "just now".
+  DateTime? _snapshotTimestamp(dynamic payload) {
+    if (payload is! Map) return null;
+    final candidates = <dynamic>[
+      payload['generated_at'],
+      (payload['decision_summary'] as Map?)?['generated_at'],
+      payload['exported_at'],
+    ];
+    for (final value in candidates) {
+      if (value is String) {
+        final parsed = DateTime.tryParse(value);
+        if (parsed != null) return parsed.toUtc();
+      }
+    }
+    return null;
   }
 
   bool get _canUseStaticSnapshot => AppConfig.staticApiFallbackEnabled;

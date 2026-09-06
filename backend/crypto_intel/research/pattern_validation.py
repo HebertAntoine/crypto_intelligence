@@ -23,7 +23,7 @@ from typing import Any
 import pandas as pd
 from scipy.stats import ttest_ind
 
-from ..core.enums import Asset, Timeframe
+from ..core.enums import Asset, ConfirmationState, Timeframe
 from ..engines.technical.patterns import PatternContext, all_detectors
 from ..engines.technical.structure import find_swings
 from ..history import store
@@ -75,7 +75,11 @@ def detect_history(
                 "timestamp": df.index[i],
                 "pattern": detector.name,
                 "confidence": float(getattr(match, "confidence", 0.0) or 0.0),
-                "confirmed": bool(getattr(match, "confirmed", False)),
+                # PatternMatch reports `confirmation_state`, never a `confirmed`
+                # flag. Reading the flag returned False for every detection ever
+                # recorded, which silently pinned confirmed_share_pct at 0.0 and
+                # made `confirmed_only=True` return an empty study.
+                "confirmed": match.confirmation_state is ConfirmationState.CONFIRMED,
                 "direction": str(getattr(match, "direction", "") or ""),
             })
 

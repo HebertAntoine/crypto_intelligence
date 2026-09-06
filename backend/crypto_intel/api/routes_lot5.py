@@ -230,3 +230,36 @@ async def source_hierarchy() -> dict[str, Any]:
             "human sources (tiers 4-6) can never override measured data (tiers 1-3)."
         ),
     }
+
+
+# --- LOT 6A ---------------------------------------------------------------
+
+
+@router.get("/multi-timeframe/{symbol}")
+async def multi_timeframe_reading(symbol: str) -> dict[str, Any]:
+    """One reading per timeframe, plus what they say together."""
+    from ..engines.multi_timeframe import MultiTimeframeEngine
+
+    asset = _parse_asset(symbol)
+    return (await asyncio.to_thread(MultiTimeframeEngine().assess, asset)).to_dict()
+
+
+@router.get("/daily-report-v2")
+async def daily_report_v2(asset: str | None = None) -> dict[str, Any]:
+    """The full daily read: sixteen sections in reading order, then a conclusion."""
+    from ..engines.daily_report import build_all
+
+    assets = [_parse_asset(asset)] if asset else None
+    return await asyncio.to_thread(build_all, assets)
+
+
+@router.get("/research/revalidation")
+async def research_revalidation(recompute: bool = False) -> dict[str, Any]:
+    """The ten pre-registered candidates, re-tested under the LOT 6A framework."""
+    if not recompute:
+        stored = _stored("revalidation.json")
+        if stored:
+            return {**stored, "source": "stored"}
+    from ..research.revalidation import run_all
+
+    return await asyncio.to_thread(run_all)
