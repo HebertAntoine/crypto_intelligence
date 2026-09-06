@@ -21,7 +21,7 @@ class AppConfig {
 
   /// Shown wherever the app could be mistaken for a trading tool.
   static const String disclaimer =
-      'Analysis only. This app never places orders and gives no financial advice.';
+      'Analyse uniquement. Cette app ne passe jamais d’ordres et ne fournit pas de conseil financier.';
 
   /// Embedded snapshots let the Vercel build work without a public API.
   ///

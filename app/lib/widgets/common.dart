@@ -172,7 +172,7 @@ class LoadingView extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Loading $what…',
+            'Chargement : $what...',
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
           ),
         ],
@@ -198,7 +198,7 @@ class ErrorView extends StatelessWidget {
             const Icon(Icons.cloud_off, color: AppColors.textMuted, size: 32),
             const SizedBox(height: 12),
             const Text(
-              'The backend is unreachable',
+              'Données indisponibles',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
@@ -209,14 +209,13 @@ class ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Nothing is shown from cache or guessed: the app renders only what '
-              'the backend actually returned.',
+              'Rien n’est inventé : l’app affiche les données backend ou le snapshot intégré disponible.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontStyle: FontStyle.italic),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
-              OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+              OutlinedButton(onPressed: onRetry, child: const Text('Réessayer')),
             ],
           ],
         ),
@@ -229,7 +228,7 @@ class ErrorView extends StatelessWidget {
 class UnavailableText extends StatelessWidget {
   final String reason;
 
-  const UnavailableText({super.key, this.reason = 'UNAVAILABLE'});
+  const UnavailableText({super.key, this.reason = 'INDISPONIBLE'});
 
   @override
   Widget build(BuildContext context) => Text(

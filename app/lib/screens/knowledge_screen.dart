@@ -68,7 +68,7 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingView(what: 'trader knowledge');
+            return const LoadingView(what: 'connaissances trader');
           }
           if (snapshot.hasError) {
             return ErrorView(error: snapshot.error!, onRetry: _reload);
@@ -94,13 +94,13 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
             children: [
               _HierarchyCard(hierarchy: hierarchy),
               SectionCard(
-                title: 'THEORY VERSUS DATA',
+                title: 'THEORIE VERSUS DONNEES',
                 subtitle: claims?['note'] as String?,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (claims == null)
-                      const UnavailableText(reason: 'Claims not available.')
+                      const UnavailableText(reason: 'Assertions indisponibles.')
                     else
                       for (final claim in (claims['claims'] as List? ?? const [])
                           .where((c) => (c as Map)['claim_type'] == 'EDUCATIONAL_CLAIM'))
@@ -130,13 +130,13 @@ class _HierarchyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (hierarchy == null) {
       return const SectionCard(
-        title: 'SOURCE HIERARCHY',
+        title: 'HIERARCHIE DES SOURCES',
         child: UnavailableText(),
       );
     }
     final tiers = (hierarchy!['tiers'] as Map?)?.cast<String, dynamic>() ?? const {};
     return SectionCard(
-      title: 'SOURCE HIERARCHY',
+      title: 'HIERARCHIE DES SOURCES',
       subtitle: hierarchy!['rule'] as String?,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,8 +149,8 @@ class _HierarchyCard extends StatelessWidget {
                   Expanded(child: Text('${(entry.value as Map)['label']}')),
                   StatePill(
                     label: (entry.value as Map)['is_primary_data'] == true
-                        ? 'data'
-                        : 'claims only',
+                        ? 'donnees'
+                        : 'affirmations seules',
                     color: (entry.value as Map)['is_primary_data'] == true
                         ? AppColors.measured
                         : AppColors.textMuted,
@@ -195,7 +195,7 @@ class _ClaimRow extends StatelessWidget {
           const SizedBox(height: 5),
           if (measured.isEmpty)
             const Text(
-              'not tested',
+              'non teste',
               style: TextStyle(fontSize: 11, color: AppColors.textMuted, fontStyle: FontStyle.italic),
             )
           else
@@ -225,11 +225,11 @@ class _DatasetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (dataset == null) {
-      return const SectionCard(title: 'HUMAN EXAMPLES', child: UnavailableText());
+      return const SectionCard(title: 'EXEMPLES HUMAINS', child: UnavailableText());
     }
     if (dataset!['status'] == 'EMPTY') {
       return SectionCard(
-        title: 'HUMAN EXAMPLES',
+        title: 'EXEMPLES HUMAINS',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -244,18 +244,18 @@ class _DatasetCard extends StatelessWidget {
       );
     }
     return SectionCard(
-      title: 'HUMAN EXAMPLES',
+      title: 'EXEMPLES HUMAINS',
       subtitle: dataset!['note'] as String?,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LabelledRow(label: 'Examples', value: Text('${dataset!['number_examples']}')),
-          LabelledRow(label: 'Market episodes', value: Text('${dataset!['market_episodes']}')),
+          LabelledRow(label: 'Exemples', value: Text('${dataset!['number_examples']}')),
+          LabelledRow(label: 'Episodes de marche', value: Text('${dataset!['market_episodes']}')),
           LabelledRow(
-            label: 'Effective sample',
+            label: 'Echantillon effectif',
             value: Text('${dataset!['effective_sample_size']}'),
           ),
-          LabelledRow(label: 'Human verified', value: Text('${dataset!['human_verified']}')),
+          LabelledRow(label: 'Verifie humainement', value: Text('${dataset!['human_verified']}')),
         ],
       ),
     );

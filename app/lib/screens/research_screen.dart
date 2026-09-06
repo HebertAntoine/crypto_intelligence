@@ -61,7 +61,7 @@ class _ResearchScreenState extends State<ResearchScreen> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const LoadingView(what: 'research results');
+            return const LoadingView(what: 'resultats de recherche');
           }
           if (snapshot.hasError) {
             return ErrorView(error: snapshot.error!, onRetry: _reload);
@@ -90,16 +90,15 @@ class _MarginalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (data == null) {
       return const SectionCard(
-        title: 'DOES CHART READING ADD ANYTHING?',
-        child: UnavailableText(reason: 'Study not yet run on this backend.'),
+        title: 'LA LECTURE GRAPHIQUE AJOUTE-T-ELLE QUELQUE CHOSE ?',
+        child: UnavailableText(reason: 'Etude pas encore lancee sur ce backend.'),
       );
     }
     final assets = (data!['assets'] as Map?)?.cast<String, dynamic>() ?? const {};
     return SectionCard(
-      title: 'DOES CHART READING ADD ANYTHING?',
+      title: 'LA LECTURE GRAPHIQUE AJOUTE-T-ELLE QUELQUE CHOSE ?',
       subtitle:
-          'Range location and patterns compared against simple numeric features, '
-          'out of sample.',
+          'Position dans le range et figures comparees a des variables numeriques simples, hors echantillon.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -176,14 +175,14 @@ class _StructuralCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (data == null) {
       return const SectionCard(
-        title: 'STRUCTURAL HYPOTHESES',
-        child: UnavailableText(reason: 'Study not yet run on this backend.'),
+        title: 'HYPOTHESES STRUCTURELLES',
+        child: UnavailableText(reason: 'Etude pas encore lancee sur ce backend.'),
       );
     }
     final results = (data!['results'] as Map?)?.cast<String, dynamic>() ?? const {};
     return SectionCard(
-      title: 'STRUCTURAL HYPOTHESES',
-      subtitle: 'Every label tested against a regime-matched baseline, with FDR.',
+      title: 'HYPOTHESES STRUCTURELLES',
+      subtitle: 'Chaque label est teste contre une base adaptee au regime, avec FDR.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -223,15 +222,15 @@ class _StructuralRow extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${testing['hypotheses_tested']} hypotheses · '
-            '${testing['raw_significant']} raw · '
-            '${testing['fdr_significant']} after FDR · '
-            '${testing['expected_false_positives']} false positives expected',
+            '${testing['raw_significant']} brutes · '
+            '${testing['fdr_significant']} apres FDR · '
+            '${testing['expected_false_positives']} faux positifs attendus',
             style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
           ),
           const SizedBox(height: 6),
           if (edges.isEmpty)
             const Text(
-              'No label passes every filter.',
+              'Aucun label ne passe tous les filtres.',
               style: TextStyle(fontSize: 12, color: AppColors.warn),
             )
           else
@@ -273,13 +272,13 @@ class _ReplicationCard extends StatelessWidget {
     if (data == null) {
       return const SectionCard(
         title: 'REPLICATION',
-        child: UnavailableText(reason: 'Study not yet run on this backend.'),
+        child: UnavailableText(reason: 'Etude pas encore lancee sur ce backend.'),
       );
     }
     final findings = (data!['findings'] as Map?)?.cast<String, dynamic>() ?? const {};
     return SectionCard(
       title: 'REPLICATION',
-      subtitle: 'Do earlier findings survive a change of detector definition?',
+      subtitle: 'Les resultats precedents survivent-ils a un changement de definition du detecteur ?',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

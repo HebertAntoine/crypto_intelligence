@@ -136,7 +136,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: UnavailableText())),
       );
-      expect(find.text('UNAVAILABLE'), findsOneWidget);
+      expect(find.text('INDISPONIBLE'), findsOneWidget);
     });
   });
 }

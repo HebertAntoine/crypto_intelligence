@@ -71,7 +71,7 @@ class _ChartScreenState extends State<ChartScreen> {
             future: _future,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return LoadingView(what: '$_asset $_timeframe structure');
+                return LoadingView(what: 'structure $_asset $_timeframe');
               }
               if (snapshot.hasError) {
                 return ErrorView(error: snapshot.error!, onRetry: _reload);
@@ -164,7 +164,7 @@ class _OpportunityCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      title: 'ENTRY OPPORTUNITY',
+      title: 'OPPORTUNITE D’ENTREE',
       trailing: EdgeBadge(state: opportunity.measuredEdge, compact: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,7 +192,7 @@ class _OpportunityCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'What would invalidate this',
+                  'Ce qui invaliderait ce signal',
                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.warn),
                 ),
                 const SizedBox(height: 3),
@@ -206,7 +206,7 @@ class _OpportunityCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           const Text(
-            'Why now',
+            'Pourquoi maintenant',
             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted),
           ),
           const SizedBox(height: 4),
@@ -240,7 +240,7 @@ class _RangeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final range = location.range;
     return SectionCard(
-      title: 'RANGE & LOCATION',
+      title: 'RANGE ET POSITION',
       trailing: StatePill(label: location.state, compact: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +249,7 @@ class _RangeCard extends StatelessWidget {
             UnavailableText(
               reason: range?.reason.isNotEmpty == true
                   ? range!.reason
-                  : 'No validated range on this timeframe.',
+                : 'Aucun range valide sur cette unite de temps.',
             ),
           ] else ...[
             Text(location.rangeSummary, style: const TextStyle(fontSize: 12.5, height: 1.4)),
@@ -258,25 +258,25 @@ class _RangeCard extends StatelessWidget {
             _ZoneRow(zone: range.bottomZone, label: 'Bottom zone'),
             const SizedBox(height: 8),
             LabelledRow(
-              label: 'Position in range',
+              label: 'Position dans le range',
               value: Text(fmt(location.relativePosition, digits: 3)),
             ),
             LabelledRow(
-              label: 'Distance to bottom',
+              label: 'Distance au bas',
               value: Text(fmt(location.distanceToBottomAtr, digits: 2, suffix: ' ATR')),
             ),
             LabelledRow(
-              label: 'Distance to top',
+              label: 'Distance au haut',
               value: Text(fmt(location.distanceToTopAtr, digits: 2, suffix: ' ATR')),
             ),
             LabelledRow(
-              label: 'Recognition',
-              value: Text('${range.confidence.toStringAsFixed(0)}/100 — shape match only'),
+              label: 'Reconnaissance',
+              value: Text('${range.confidence.toStringAsFixed(0)}/100 — forme uniquement'),
             ),
             if (location.explanation.isNotEmpty) ...[
               const SizedBox(height: 10),
               const Text(
-                'Why these are the boundaries',
+                'Pourquoi ces bornes',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textMuted),
               ),
               const SizedBox(height: 4),
@@ -313,7 +313,7 @@ class _ZoneRow extends StatelessWidget {
       label: label,
       value: Text(
         '${zone!.low.toStringAsFixed(2)} – ${zone!.high.toStringAsFixed(2)}   '
-        '(${zone!.quality.touches} touches, quality ${zone!.quality.score.toStringAsFixed(0)}/100)',
+        '(${zone!.quality.touches} touches, qualite ${zone!.quality.score.toStringAsFixed(0)}/100)',
       ),
     );
   }
@@ -327,25 +327,25 @@ class _StructureCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      title: 'SWING STRUCTURE',
+      title: 'STRUCTURE DES SWINGS',
       trailing: StatePill(label: structure.state, compact: true),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(structure.interpretation, style: const TextStyle(fontSize: 12.5, height: 1.4)),
           const SizedBox(height: 10),
-          LabelledRow(label: 'Last confirmed HH', value: Text(fmt(structure.lastConfirmedHh))),
-          LabelledRow(label: 'Last confirmed HL', value: Text(fmt(structure.lastConfirmedHl))),
-          LabelledRow(label: 'Last confirmed LH', value: Text(fmt(structure.lastConfirmedLh))),
-          LabelledRow(label: 'Last confirmed LL', value: Text(fmt(structure.lastConfirmedLl))),
+          LabelledRow(label: 'Dernier HH confirme', value: Text(fmt(structure.lastConfirmedHh))),
+          LabelledRow(label: 'Dernier HL confirme', value: Text(fmt(structure.lastConfirmedHl))),
+          LabelledRow(label: 'Dernier LH confirme', value: Text(fmt(structure.lastConfirmedLh))),
+          LabelledRow(label: 'Dernier LL confirme', value: Text(fmt(structure.lastConfirmedLl))),
           if (structure.events.isNotEmpty) ...[
             const SizedBox(height: 10),
             for (final event in structure.events)
               Padding(
                 padding: const EdgeInsets.only(bottom: 3),
                 child: Text(
-                  '${event.kind} ${event.direction} at ${event.level.toStringAsFixed(2)} '
-                  '(confirmed ${event.confirmationTime.split('T').first})',
+                  '${event.kind} ${event.direction} a ${event.level.toStringAsFixed(2)} '
+                  '(confirme ${event.confirmationTime.split('T').first})',
                   style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
                 ),
               ),
@@ -375,13 +375,13 @@ class _PatternsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionCard(
-      title: 'PATTERNS (${patterns.length})',
+      title: 'FIGURES (${patterns.length})',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (patterns.isEmpty)
             const UnavailableText(
-              reason: 'No pattern detected. This is the normal outcome most of the time.',
+              reason: 'Aucune figure detectee. C’est le resultat normal la plupart du temps.',
             )
           else
             for (final pattern in patterns) _PatternTile(pattern: pattern),
@@ -427,7 +427,7 @@ class _PatternTile extends StatelessWidget {
             children: [
               StatePill(label: pattern.state, compact: true),
               StatePill(
-                label: 'recognition ${pattern.recognitionConfidence.toStringAsFixed(0)}',
+                label: 'reconnaissance ${pattern.recognitionConfidence.toStringAsFixed(0)}',
                 color: AppColors.textMuted,
                 compact: true,
               ),
@@ -443,15 +443,15 @@ class _PatternTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 LabelledRow(
-                  label: 'Detection class',
+                  label: 'Classe detectee',
                   value: Text('${pattern.patternClass} — ${pattern.classHint}'),
                 ),
                 LabelledRow(
-                  label: 'Textbook reading',
+                  label: 'Lecture theorique',
                   value: Text(pattern.directionIfTextbook),
                 ),
                 LabelledRow(
-                  label: 'Measured edge',
+                  label: 'Edge mesure',
                   value: EdgeBadge(state: pattern.edgeState, compact: true),
                 ),
                 for (final entry in pattern.keyLevels.entries)

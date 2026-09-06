@@ -27,13 +27,13 @@ enum EdgeState {
       };
 
   String get label => switch (this) {
-        EdgeState.positiveEdge => 'Measured edge',
-        EdgeState.negativeEdge => 'Edge runs against the signal',
-        EdgeState.noMeasurableEdge => 'No measurable edge',
-        EdgeState.unstable => 'Unstable',
-        EdgeState.insufficientData => 'Insufficient data',
-        EdgeState.notYetTested => 'Not yet tested',
-        EdgeState.unknown => 'Unknown',
+        EdgeState.positiveEdge => 'Edge mesurable',
+        EdgeState.negativeEdge => 'Edge opposé au signal',
+        EdgeState.noMeasurableEdge => 'Aucun edge mesurable',
+        EdgeState.unstable => 'Instable',
+        EdgeState.insufficientData => 'Données insuffisantes',
+        EdgeState.notYetTested => 'Pas encore testé',
+        EdgeState.unknown => 'Inconnu',
       };
 
   /// Only a positive edge is ever grounds for calling something actionable.

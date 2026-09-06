@@ -65,32 +65,35 @@ class _HomeShellState extends State<HomeShell> {
       ResearchScreen(client: widget.client),
       KnowledgeScreen(client: widget.client),
     ];
-    const titles = ['Today', 'Chart Intelligence', 'Research', 'Trader Knowledge'];
+    const titles = ['Aujourd’hui', 'Marchés', 'Recherche', 'Connaissances'];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          titles[_index],
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Backend status',
-            icon: const Icon(Icons.info_outline, size: 20),
-            onPressed: () => _showBackendInfo(context),
-          ),
-        ],
-      ),
+      appBar: _index == 0
+          ? null
+          : AppBar(
+              title: Text(
+                titles[_index],
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              actions: [
+                IconButton(
+                  tooltip: 'État du backend',
+                  icon: const Icon(Icons.info_outline, size: 20),
+                  onPressed: () => _showBackendInfo(context),
+                ),
+              ],
+            ),
       body: IndexedStack(index: _index, children: screens),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
-        backgroundColor: AppColors.surface,
+        backgroundColor: const Color(0xFF111A24),
+        indicatorColor: const Color(0xFF213D66),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.today_outlined), label: 'Today'),
-          NavigationDestination(icon: Icon(Icons.candlestick_chart_outlined), label: 'Chart'),
-          NavigationDestination(icon: Icon(Icons.science_outlined), label: 'Research'),
-          NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Knowledge'),
+          NavigationDestination(icon: Icon(Icons.home_rounded), label: 'Aujourd’hui'),
+          NavigationDestination(icon: Icon(Icons.bar_chart_rounded), label: 'Marchés'),
+          NavigationDestination(icon: Icon(Icons.science_outlined), label: 'Recherche'),
+          NavigationDestination(icon: Icon(Icons.menu_book_outlined), label: 'Connaissances'),
         ],
       ),
     );
@@ -117,18 +120,18 @@ class _HomeShellState extends State<HomeShell> {
           children: [
             Text(
               AppConfig.usesSameOrigin
-                  ? 'Same origin, with bundled snapshot fallback'
+                  ? 'Même origine, avec snapshots intégrés en secours'
                   : AppConfig.apiBaseUrl,
               style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
             ),
             const SizedBox(height: 10),
             if (error != null)
-              Text('Unreachable: $error', style: const TextStyle(fontSize: 12, color: AppColors.bad))
+              Text('Injoignable : $error', style: const TextStyle(fontSize: 12, color: AppColors.bad))
             else ...[
-              Text('Status: ${health?['status']}', style: const TextStyle(fontSize: 12)),
+              Text('Statut : ${health?['status']}', style: const TextStyle(fontSize: 12)),
               Text('Version: ${health?['version']}', style: const TextStyle(fontSize: 12)),
               Text(
-                'Mock mode: ${health?['mock_mode']}',
+                'Mode simulation : ${health?['mock_mode']}',
                 style: const TextStyle(fontSize: 12),
               ),
             ],
@@ -142,7 +145,7 @@ class _HomeShellState extends State<HomeShell> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: const Text('Fermer'),
           ),
         ],
       ),
