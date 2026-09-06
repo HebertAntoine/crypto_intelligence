@@ -1,0 +1,157 @@
+# Chaines de fallback par capacite. Le premier disponible gagne.
+# Remplacer une source = editer ce fichier. Aucun code metier a modifier.
+
+capabilities:
+  market.ohlcv:        [binance_spot, kraken_spot]
+  market.ticker:       [binance_spot, coinbase_spot, kraken_spot]
+  market.marketcap:    [coingecko]
+  market.global:       [coingecko]
+
+  derivatives.funding: [binance_futures]
+  derivatives.oi:      [binance_futures]
+  derivatives.ratio:   [binance_futures]
+  derivatives.liquidations: [coinglass]        # cle requise
+
+  etf.flows:           [etf_csv, coinglass_etf, sosovalue, farside]
+
+  onchain.btc:         [blockchain_info, blockchair_btc]
+  onchain.eth:         [blockchair_eth, etherscan]
+  onchain.sol:         [solana_rpc]
+
+  defi.tvl:            [defillama]
+  defi.dex:            [defillama]
+  defi.fees:           [defillama]
+  defi.rwa:            [defillama_rwa]
+  stablecoins.supply:  [defillama_stables]
+
+  macro.series:        [fred]
+  macro.indices:       [yahoo_finance, stooq]
+  macro.calendar:      [macro_calendar]
+
+  news.feed:           [rss_news]
+  regulation.feed:     [rss_regulation]
+
+  whales.flows:        [glassnode, cryptoquant, nansen, arkham]
+
+providers:
+  binance_spot:
+    base_url: https://api.binance.com
+    cache_ttl: {15m: 120, 1h: 300, 4h: 900, 1d: 3600, 1w: 7200, ticker: 60}
+    rate_limit_per_min: 100
+  coinbase_spot:
+    base_url: https://api.coinbase.com
+    cache_ttl: {ticker: 60}
+    rate_limit_per_min: 60
+  kraken_spot:
+    base_url: https://api.kraken.com
+    cache_ttl: {default: 300}
+    rate_limit_per_min: 30
+  coingecko:
+    base_url: https://api.coingecko.com/api/v3
+    cache_ttl: {default: 600}       # API gratuite tres limitee -> cache long
+    rate_limit_per_min: 8
+  binance_futures:
+    base_url: https://fapi.binance.com
+    cache_ttl: {default: 300}
+    rate_limit_per_min: 60
+  defillama:
+    base_url: https://api.llama.fi
+    cache_ttl: {default: 1800}
+    rate_limit_per_min: 30
+  defillama_stables:
+    base_url: https://stablecoins.llama.fi
+    cache_ttl: {default: 3600}
+    rate_limit_per_min: 20
+  blockchain_info:
+    base_url: https://blockchain.info
+    cache_ttl: {default: 900}
+    rate_limit_per_min: 20
+  blockchair_btc:
+    base_url: https://api.blockchair.com/bitcoin
+    cache_ttl: {default: 900}
+    rate_limit_per_min: 10
+  blockchair_eth:
+    base_url: https://api.blockchair.com/ethereum
+    cache_ttl: {default: 900}
+    rate_limit_per_min: 10
+  solana_rpc:
+    base_url: ${SOLANA_RPC_URL}
+    cache_ttl: {default: 900}
+    rate_limit_per_min: 10          # RPC public : usage parcimonieux
+  fred:
+    base_url: https://api.stlouisfed.org/fred
+    cache_ttl: {default: 3600}
+    requires_key: FRED_API_KEY
+  yahoo_finance:
+    base_url: https://query1.finance.yahoo.com
+    cache_ttl: {default: 1800}
+    rate_limit_per_min: 30
+  stooq:
+    # Serves a JS proof-of-work challenge to non-browser clients (2026-09-04).
+    # Kept as a fallback; never bypassed.
+    base_url: https://stooq.com
+    cache_ttl: {default: 1800}
+  etherscan:
+    base_url: https://api.etherscan.io/api
+    requires_key: ETHERSCAN_API_KEY
+    cache_ttl: {default: 900}
+
+  # --- ETF ---------------------------------------------------------------
+  etf_csv:
+    kind: local_import
+    path: data/imports/etf
+  farside:
+    base_url: https://farside.co.uk
+    # Source protegee par anti-bot (403 verifie le 2026-09-04).
+    # polite_only : une seule tentative, aucune rotation d'UA, aucun proxy,
+    # aucun navigateur headless. Sur blocage -> BLOCKED_BY_SOURCE, definitif.
+    polite_only: true
+    max_attempts: 1
+    cache_ttl: {default: 21600}
+  coinglass_etf:
+    base_url: https://open-api-v3.coinglass.com
+    requires_key: COINGLASS_API_KEY
+  sosovalue:
+    base_url: https://api.sosovalue.xyz
+    requires_key: SOSOVALUE_API_KEY
+  coinglass:
+    base_url: https://open-api-v3.coinglass.com
+    requires_key: COINGLASS_API_KEY
+
+  # --- Whales : tous optionnels, tous payants -----------------------------
+  glassnode:
+    base_url: https://api.glassnode.com/v1
+    requires_key: GLASSNODE_API_KEY
+  cryptoquant:
+    base_url: https://api.cryptoquant.com/v1
+    requires_key: CRYPTOQUANT_API_KEY
+  nansen:
+    base_url: https://api.nansen.ai/api/beta
+    requires_key: NANSEN_API_KEY
+  arkham:
+    base_url: https://api.arkhamintelligence.com
+    requires_key: ARKHAM_API_KEY
+
+# --- Flux RSS -------------------------------------------------------------
+# Uniquement des flux publics. Aucun scraping d'article, aucun paywall.
+feeds:
+  regulation:
+    - {name: "SEC Press Releases", url: "https://www.sec.gov/news/pressreleases.rss", institution: SEC, tier: 1}
+    - {name: "SEC Litigation",     url: "https://www.sec.gov/rss/litigation/litreleases.xml", institution: SEC, tier: 1}
+    - {name: "Federal Reserve",    url: "https://www.federalreserve.gov/feeds/press_all.xml", institution: FED, tier: 1}
+    - {name: "CFTC",               url: "https://www.cftc.gov/RSS/RSSGP/rssgp.xml", institution: CFTC, tier: 1}
+    - {name: "US Treasury",        url: "https://home.treasury.gov/system/files/126/press-releases.xml", institution: TREASURY, tier: 1}
+    - {name: "White House",        url: "https://www.whitehouse.gov/feed/", institution: WHITE_HOUSE, tier: 1}
+  news:
+    - {name: "CoinDesk",     url: "https://www.coindesk.com/arc/outboundfeeds/rss/", tier: 3}
+    - {name: "The Block",    url: "https://www.theblock.co/rss.xml", tier: 3}
+    - {name: "Cointelegraph",url: "https://cointelegraph.com/rss", tier: 3}
+    - {name: "Decrypt",      url: "https://decrypt.co/feed", tier: 3}
+    - {name: "CNBC Finance", url: "https://www.cnbc.com/id/10000664/device/rss/rss.html", tier: 2}
+    - {name: "Reuters Business", url: "https://feeds.reuters.com/reuters/businessNews", tier: 2}
+
+source_tiers:
+  1: {label: "Officiel / regulateur", weight: 1.00}
+  2: {label: "Media financier reconnu", weight: 0.80}
+  3: {label: "Media crypto serieux", weight: 0.55}
+  4: {label: "Autre", weight: 0.25}

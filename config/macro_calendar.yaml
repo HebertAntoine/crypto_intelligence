@@ -1,0 +1,21 @@
+# Calendrier macro. Fichier tenu a la main volontairement :
+# les dates FOMC/CPI sont publiees a l'avance et un YAML verifiable vaut mieux
+# qu'un scraping fragile qui inventerait des dates.
+# Source : federalreserve.gov/monetarypolicy/fomccalendars.htm et bls.gov/schedule
+# A mettre a jour periodiquement.
+
+events:
+  - {date: "2026-09-16", time: "18:00", tz: UTC, name: "FOMC Rate Decision", kind: FOMC, importance: CRITICAL}
+  - {date: "2026-09-16", time: "18:30", tz: UTC, name: "FOMC Press Conference", kind: FOMC, importance: IMPORTANT}
+  - {date: "2026-09-10", time: "12:30", tz: UTC, name: "US CPI (Aug)", kind: CPI, importance: CRITICAL}
+  - {date: "2026-09-05", time: "12:30", tz: UTC, name: "US Nonfarm Payrolls (Aug)", kind: NFP, importance: CRITICAL}
+  - {date: "2026-09-26", time: "12:30", tz: UTC, name: "US PCE Price Index (Aug)", kind: PCE, importance: IMPORTANT}
+  - {date: "2026-10-08", time: "12:30", tz: UTC, name: "US CPI (Sep)", kind: CPI, importance: CRITICAL}
+  - {date: "2026-10-28", time: "18:00", tz: UTC, name: "FOMC Rate Decision", kind: FOMC, importance: CRITICAL}
+  - {date: "2026-11-06", time: "13:30", tz: UTC, name: "US Nonfarm Payrolls (Oct)", kind: NFP, importance: CRITICAL}
+
+kinds:
+  FOMC: {description: "Decision de taux de la Fed", assets_impact: [BTC, ETH, SOL], typical_volatility: high}
+  CPI:  {description: "Inflation US", assets_impact: [BTC, ETH, SOL], typical_volatility: high}
+  PCE:  {description: "Inflation preferee de la Fed", assets_impact: [BTC, ETH, SOL], typical_volatility: medium}
+  NFP:  {description: "Emploi US", assets_impact: [BTC, ETH, SOL], typical_volatility: medium}

@@ -1,0 +1,265 @@
+"""Periodic collection, snapshotting and evaluation.
+
+Design constraints that shaped this module:
+
+  * Cadences match how fast each source actually changes. Polling ETF flows
+    every minute would only get us rate-limited.
+  * Every job is wrapped so a failing provider degrades one job rather than
+    killing the scheduler.
+  * `max_instances=1` plus `coalesce=True` means a slow run is never stacked on
+    top of itself, and a backlog after a pause collapses into a single run.
+  * Restart safety comes from snapshot bucketing: a run repeated inside the
+    same bucket updates rather than duplicates, so a crash-restart loop cannot
+    corrupt history.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+
+from .core.enums import Asset, Timeframe
+from .history import snapshots
+from .logging_setup import get_logger
+
+log = get_logger("scheduler")
+
+# Guards against two jobs writing the same rows at once. SQLite tolerates
+# concurrent readers, but concurrent writers on the same tables deserve a lock.
+_ANALYSIS_LOCK = asyncio.Lock()
+
+_STATE: dict[str, Any] = {
+    "started_at": None,
+    "runs": {},
+    "last_error": None,
+}
+
+
+def _record(job: str, ok: bool, detail: str = "") -> None:
+    _STATE["runs"][job] = {
+        "at": datetime.now(UTC).isoformat(),
+        "ok": ok,
+        "detail": detail[:300],
+    }
+    if not ok:
+        _STATE["last_error"] = {"job": job, "at": _STATE["runs"][job]["at"], "detail": detail[:300]}
+
+
+def scheduler_state() -> dict[str, Any]:
+    return dict(_STATE)
+
+
+async def job_analysis() -> None:
+    """Full analysis for every asset, snapshotted at each domain's own cadence.
+
+    This is the job that builds the system's memory: it produces the same
+    analysis the API serves, then persists it so the evaluation layer has
+    something to score later.
+    """
+    if _ANALYSIS_LOCK.locked():
+        log.info("analysis_job_skipped", reason="previous run still in progress")
+        return
+
+    async with _ANALYSIS_LOCK:
+        from .db import repo
+        from .pipeline.orchestrator import get_pipeline
+        from .reports.renderer import render_report
+
+        pipeline = get_pipeline()
+        created_total = 0
+        errors: list[str] = []
+
+        try:
+            gdata = await pipeline.collect_global()
+            pipeline.persist(gdata)
+        except Exception as exc:
+            log.warning("global_collection_failed", error=str(exc))
+            errors.append(f"global: {exc}")
+            gdata = {}
+
+        for asset in Asset.tradables():
+            try:
+                analysis = await pipeline.analyze_asset(asset, gdata or None)
+                created = snapshots.capture_analysis(analysis)
+                created_total += sum(1 for v in created.values() if v)
+
+                conviction = analysis.conviction
+                repo.save_report(
+                    report_id=analysis.report_id, asset=asset,
+                    payload=analysis.model_dump(mode="json"),
+                    text_report=render_report(analysis),
+                    price=analysis.price,
+                    convictions={
+                        "short": conviction["short"]["score"],
+                        "medium": conviction["medium"]["score"],
+                        "long": conviction["long"]["score"],
+                    },
+                    scores=analysis.scores,
+                    confidence=conviction.get("overall_confidence", 0.0),
+                    market_regime=analysis.market_regime,
+                    llm_used=analysis.llm_used,
+                )
+                log.info(
+                    "analysis_snapshot", asset=asset.value,
+                    regime=(analysis.regime or {}).get("regime"),
+                    timing=(analysis.entry_timing or {}).get("timing"),
+                )
+            except Exception as exc:
+                log.warning("analysis_failed", asset=asset.value, error=str(exc))
+                errors.append(f"{asset.value}: {exc}")
+
+        _record("analysis", not errors, "; ".join(errors) or f"{created_total} new snapshots")
+
+
+async def job_market_only() -> None:
+    """Fast price-only refresh between full analyses.
+
+    Cheap enough to run often, which keeps the market snapshot series dense
+    without re-running the whole pipeline.
+    """
+    from .providers.base import FetchRequest
+    from .providers.registry import get_registry
+
+    registry = get_registry()
+    errors: list[str] = []
+
+    for asset in Asset.tradables():
+        try:
+            res = await registry.fetch(
+                FetchRequest(capability="market.ticker", asset=asset)
+            )
+            if not res.ok:
+                continue
+            values = {o.metric: o.numeric_value for o in res.observations}
+            snapshots.save_snapshot(
+                "market", asset,
+                {
+                    "price": values.get("price.last"),
+                    "change_24h_pct": values.get("price.change_24h_pct"),
+                    "high_24h": values.get("price.high_24h"),
+                    "low_24h": values.get("price.low_24h"),
+                    "volume_24h": values.get("price.volume_24h_quote"),
+                    "source": "ticker",
+                },
+                price=values.get("price.last"),
+            )
+        except Exception as exc:
+            errors.append(f"{asset.value}: {exc}")
+
+    _record("market", not errors, "; ".join(errors))
+
+
+async def job_ohlcv_sync() -> None:
+    """Keep the local candle store current, so research never runs on stale bars."""
+    from .history.backfill import backfill_ohlcv
+
+    errors: list[str] = []
+    for asset in Asset.tradables():
+        for timeframe in (Timeframe.D1, Timeframe.H4, Timeframe.H1):
+            try:
+                # Small depth: this tops up recent bars rather than re-fetching
+                # years of history on every cycle.
+                await backfill_ohlcv(asset, timeframe, depth_days=5, max_requests=2)
+            except Exception as exc:
+                errors.append(f"{asset.value}/{timeframe.value}: {exc}")
+    _record("ohlcv_sync", not errors, "; ".join(errors))
+
+
+async def job_etf_sync() -> None:
+    """ETF flows publish once a day; check a few times, not continuously."""
+    from .providers.base import FetchRequest
+    from .providers.registry import get_registry
+
+    registry = get_registry()
+    errors: list[str] = []
+    for asset in (Asset.BTC, Asset.ETH):
+        try:
+            res = await registry.fetch(FetchRequest(capability="etf.flows", asset=asset))
+            if not res.ok:
+                errors.append(f"{asset.value}: {res.user_message[:80]}")
+        except Exception as exc:
+            errors.append(f"{asset.value}: {exc}")
+    _record("etf_sync", not errors, "; ".join(errors))
+
+
+async def job_evaluate() -> None:
+    """Score past reports against prices that have since been realised."""
+    from .evaluation.outcomes import OutcomeEvaluator
+    from .history import store
+
+    try:
+        series: dict[Asset, Any] = {}
+        for asset in Asset.tradables():
+            df = store.load_candles(asset, Timeframe.H1)
+            series[asset] = df if not df.empty else None
+
+        def lookup(asset: Asset, at: datetime) -> float | None:
+            df = series.get(asset)
+            if df is None or df.empty:
+                return None
+            subset = df[df.index <= at]
+            return float(subset["close"].iloc[-1]) if len(subset) else None
+
+        written = await asyncio.to_thread(OutcomeEvaluator().evaluate_pending, lookup)
+        _record("evaluate", True, f"{written} outcomes written")
+        if written:
+            log.info("outcomes_evaluated", count=written)
+    except Exception as exc:
+        log.warning("evaluation_failed", error=str(exc))
+        _record("evaluate", False, str(exc))
+
+
+async def job_purge() -> None:
+    """Keep the database from growing without bound."""
+    from .db import repo
+
+    try:
+        removed = repo.purge_old_observations(days=400)
+        for kind in ("market", "derivatives", "news"):
+            removed += snapshots.purge_old(kind, keep_days=400)
+        _record("purge", True, f"{removed} rows removed")
+    except Exception as exc:
+        _record("purge", False, str(exc))
+
+
+def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
+    """Start every periodic job.
+
+    `coalesce=True` collapses a backlog into one run after a pause, and
+    `misfire_grace_time` keeps a job that was late from being dropped silently
+    - both matter for a laptop that sleeps.
+    """
+    scheduler = AsyncIOScheduler(
+        timezone="UTC",
+        job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 300},
+    )
+
+    jobs = [
+        ("market", job_market_only, 5),
+        ("analysis", job_analysis, 30),
+        ("ohlcv_sync", job_ohlcv_sync, 60),
+        ("etf_sync", job_etf_sync, 240),
+        ("evaluate", job_evaluate, 60),
+        ("purge", job_purge, 1440),
+    ]
+
+    now = datetime.now(UTC)
+    for job_id, func, minutes in jobs:
+        # Stagger first runs so startup does not fire every job at once.
+        offset = {"market": 1, "analysis": 2, "ohlcv_sync": 5,
+                  "etf_sync": 8, "evaluate": 11, "purge": 20}[job_id]
+        scheduler.add_job(
+            func,
+            IntervalTrigger(minutes=minutes),
+            id=job_id,
+            next_run_time=now + timedelta(minutes=offset) if run_immediately else None,
+        )
+
+    scheduler.start()
+    _STATE["started_at"] = now.isoformat()
+    log.info("scheduler_started", jobs=[j[0] for j in jobs])
+    return scheduler

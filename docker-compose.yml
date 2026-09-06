@@ -1,0 +1,47 @@
+# Crypto Intelligence - local or single-server deployment.
+#
+#   docker compose up -d --build
+#   open http://localhost:8100
+#
+# Analysis only. This service never places orders.
+
+services:
+  app:
+    build: .
+    image: crypto-intelligence:latest
+    container_name: crypto-intelligence
+    restart: unless-stopped
+    ports:
+      # Bound to localhost by default. Put a reverse proxy in front before
+      # exposing this to a network - there is no authentication layer.
+      - "127.0.0.1:8100:8100"
+    environment:
+      ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 8100
+      DATABASE_URL: sqlite:///data/crypto_intel.db
+      # Same origin serves the UI, so no cross-origin entry is needed.
+      CORS_ORIGINS: ""
+      # Off by default: enable only when you want background collection.
+      SCHEDULER_ENABLED: "false"
+      LOG_LEVEL: INFO
+    env_file:
+      # Optional. Copy .env.example to .env and fill in the keys you have;
+      # every provider degrades to UNAVAILABLE without one.
+      - path: .env
+        required: false
+    volumes:
+      # Durable state. Without this, a rebuild discards the database, the
+      # research outputs and the structural cache.
+      - crypto-data:/app/data
+      - crypto-knowledge:/app/knowledge
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8100/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  crypto-data:
+  crypto-knowledge:

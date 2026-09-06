@@ -1,0 +1,113 @@
+# Seuils d'interpretation. Modifiables sans toucher au code.
+
+freshness:
+  # Age max (secondes) par classe de metrique avant de passer au niveau suivant.
+  # Un prix de 30 min est perime ; un flux ETF de 30 min est parfaitement frais.
+  price:       {live: 120, min_15: 900, hour_1: 3600, today: 86400}
+  derivatives: {live: 300, min_15: 900, hour_1: 3600, today: 86400}
+  onchain:     {live: 900, min_15: 3600, hour_1: 14400, today: 172800}
+  etf:         {live: 3600, min_15: 21600, hour_1: 86400, today: 259200}
+  defi:        {live: 1800, min_15: 7200, hour_1: 21600, today: 172800}
+  macro:       {live: 3600, min_15: 21600, hour_1: 86400, today: 604800}
+  news:        {live: 900, min_15: 3600, hour_1: 21600, today: 172800}
+  regulation:  {live: 3600, min_15: 21600, hour_1: 86400, today: 604800}
+  default:     {live: 300, min_15: 900, hour_1: 3600, today: 86400}
+
+technical:
+  rsi: {oversold: 30, overbought: 70, extreme_low: 20, extreme_high: 80}
+  volume: {high_ratio: 1.5, low_ratio: 0.6, spike_ratio: 2.5}
+  atr_pct: {low: 1.0, normal: 3.0, high: 5.0}
+  trend:
+    ema_separation_min_pct: 0.35   # en dessous : EMAs enchevetrees -> range
+    adx_trending: 25
+  swings:
+    lookback: 5           # barres de chaque cote pour valider un pivot
+    min_swings_for_structure: 4
+  levels:
+    cluster_tolerance_pct: 0.6     # niveaux a moins de 0.6% = meme niveau
+    min_touches: 2
+    max_levels: 6
+  divergence:
+    lookback_bars: 60
+    min_pivot_distance: 5
+    min_price_move_pct: 1.0
+
+patterns:
+  # Aucune figure n'est annoncee sous ces seuils. Mieux vaut ne rien dire.
+  min_confidence: 55
+  double_top:    {peak_tolerance_pct: 2.0, min_valley_depth_pct: 3.0, min_bars_between: 8}
+  double_bottom: {peak_tolerance_pct: 2.0, min_valley_depth_pct: 3.0, min_bars_between: 8}
+  range:         {max_width_pct: 12.0, min_bars: 20, min_touches: 4}
+  breakout:      {min_volume_ratio: 1.4, min_close_beyond_pct: 0.5}
+  fake_breakout: {max_bars_back_inside: 3}
+
+derivatives:
+  funding:
+    # Taux par periode de 8h.
+    neutral_abs: 0.0005      # 0.05%
+    elevated: 0.0010         # 0.10%
+    extreme: 0.0025          # 0.25% -> marche surcharge en longs
+    extreme_negative: -0.0015
+  open_interest:
+    spike_pct_24h: 12.0
+    drop_pct_24h: -10.0
+  long_short_ratio:
+    crowded_long: 2.0
+    crowded_short: 0.55
+
+etf:
+  # En millions de dollars.
+  strong_inflow_daily: 300
+  inflow_daily: 80
+  outflow_daily: -80
+  strong_outflow_daily: -300
+  streak_significant: 3
+  acceleration_significant_pct: 25.0
+  divergence_lookback_days: 7
+
+liquidity:
+  stablecoin_supply:
+    expansion_7d_pct: 0.8
+    contraction_7d_pct: -0.8
+    strong_expansion_7d_pct: 2.0
+    strong_contraction_7d_pct: -2.0
+
+defi:
+  tvl:
+    strong_growth_7d_pct: 8.0
+    growth_7d_pct: 2.5
+    decline_7d_pct: -2.5
+    strong_decline_7d_pct: -8.0
+
+macro:
+  dxy: {strong_move_pct: 1.0}
+  yields: {significant_move_bps: 15}
+  event_proximity:
+    # Un evenement dans 20 min ne pese pas comme un chiffre vieux de 10 jours.
+    imminent_hours: 4
+    near_hours: 48
+    upcoming_days: 14
+
+news:
+  cluster_similarity: 0.62      # Jaccard sur titres normalises
+  max_cluster_age_hours: 48
+  importance_decay_hours: 24
+
+geopolitics:
+  risk_levels: [LOW, MODERATE, HIGH, EXTREME]
+
+contradictions:
+  min_strength_to_report: 40
+  high_contradiction_threshold: 65   # au-dela : la conviction globale est bridee
+
+historical:
+  min_similarity: 0.80
+  top_k: 8
+  min_history_bars: 200
+  forward_horizons_days: [1, 3, 7, 30]
+
+alerts:
+  etf_inflow_spike_musd: 500
+  etf_outflow_spike_musd: -500
+  oi_spike_pct: 15
+  breakout_volume_ratio: 1.8

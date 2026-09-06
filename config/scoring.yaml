@@ -1,0 +1,103 @@
+# Ponderations du MarketConvictionEngine.
+# Elles NE SONT PAS identiques d'un actif a l'autre : BTC est domine par les
+# flux ETF et la macro, ETH par son ecosysteme on-chain/DeFi, SOL par son
+# activite reseau et sa technique (pas d'ETF spot US).
+# La somme est normalisee automatiquement - inutile qu'elle fasse 1.0.
+
+assets:
+  BTC:
+    technical:   0.18
+    etf:         0.24      # dominant : demande institutionnelle
+    derivatives: 0.13
+    onchain:     0.09
+    liquidity:   0.10
+    macro:       0.14      # BTC reagit fortement aux taux / DXY
+    regulation:  0.07
+    news:        0.03
+    whale:       0.02
+
+  ETH:
+    technical:   0.17
+    etf:         0.15      # ETF ETH existants mais flux plus faibles que BTC
+    derivatives: 0.12
+    onchain:     0.16      # burn, staking, gas, L2
+    liquidity:   0.12
+    defi:        0.10      # TVL/DEX : specifique ETH
+    macro:       0.09
+    regulation:  0.06
+    news:        0.02
+    whale:       0.01
+
+  SOL:
+    technical:   0.26      # plus de poids : moins de fondamentaux institutionnels
+    etf:         0.00      # pas d'ETF spot US -> exclu, jamais invente
+    derivatives: 0.16
+    onchain:     0.20      # activite reseau reelle = cle pour SOL
+    liquidity:   0.10
+    defi:        0.13
+    macro:       0.08
+    regulation:  0.04
+    news:        0.02
+    whale:       0.01
+
+# Poids par horizon : un RSI 15m ne pilote pas le long terme,
+# une decision du FOMC ne pilote pas la prochaine heure.
+horizons:
+  short:   # 1h -> 24h
+    technical: 1.40
+    derivatives: 1.35
+    news: 1.30
+    etf: 0.85
+    liquidity: 0.70
+    onchain: 0.55
+    defi: 0.45
+    macro: 0.60
+    regulation: 0.50
+    whale: 0.90
+  medium:  # jours -> semaines
+    technical: 1.00
+    derivatives: 0.95
+    news: 0.75
+    etf: 1.30
+    liquidity: 1.15
+    onchain: 1.10
+    defi: 1.05
+    macro: 1.15
+    regulation: 1.00
+    whale: 1.00
+  long:    # semaines -> mois
+    technical: 0.65
+    derivatives: 0.40
+    news: 0.30
+    etf: 1.35
+    liquidity: 1.25
+    onchain: 1.30
+    defi: 1.25
+    macro: 1.40
+    regulation: 1.45
+    whale: 0.85
+
+# Un score tres confiant doit peser davantage qu'un score incertain.
+# effective_weight = base * confidence_factor * freshness_factor * horizon
+confidence:
+  # score_confidence -> multiplicateur
+  curve: [[0, 0.05], [20, 0.20], [40, 0.50], [60, 0.75], [80, 0.92], [100, 1.0]]
+  min_confidence_to_include: 15   # en dessous : signale mais exclu du calcul
+
+freshness:
+  LIVE: 1.00
+  MIN_15: 0.98
+  HOUR_1: 0.92
+  TODAY: 0.80
+  STALE: 0.35
+  UNAVAILABLE: 0.0
+
+# Bornes d'interpretation du score final
+labels:
+  - {min: -100, max: -60, label: "STRONGLY BEARISH"}
+  - {min: -60,  max: -25, label: "BEARISH"}
+  - {min: -25,  max: -8,  label: "SLIGHTLY BEARISH"}
+  - {min: -8,   max: 8,   label: "NEUTRAL"}
+  - {min: 8,    max: 25,  label: "SLIGHTLY BULLISH"}
+  - {min: 25,   max: 60,  label: "BULLISH"}
+  - {min: 60,   max: 100, label: "STRONGLY BULLISH"}

@@ -1,0 +1,102 @@
+_meta:
+  generated_at: '2026-09-06T16:58:24.597436+00:00'
+  generator: research.candidate_weights
+  status: CANDIDATE - not in use
+  how_to_promote: Review the rationale below, then copy the desired 'assets' block
+    into config/scoring.yaml manually. Promotion is deliberately a human action; nothing
+    in the code applies this file.
+  formula: weight is proportional to predictive_strength x stability x confidence
+    x data_quality x shape_bonus, normalised across measured domains. Unmeasured domains
+    keep their current weight.
+assets:
+  BTC:
+    technical: 0.5
+    etf: 0.5
+verdicts:
+  BTC:
+    verdict: INCONCLUSIVE
+    reason: not evaluated
+    summary: null
+rationale:
+  BTC:
+    changes: {}
+    budget: {}
+    domains: {}
+horizons:
+  short:
+    technical: 1.4
+    derivatives: 1.35
+    news: 1.3
+    etf: 0.85
+    liquidity: 0.7
+    onchain: 0.55
+    defi: 0.45
+    macro: 0.6
+    regulation: 0.5
+    whale: 0.9
+  medium:
+    technical: 1.0
+    derivatives: 0.95
+    news: 0.75
+    etf: 1.3
+    liquidity: 1.15
+    onchain: 1.1
+    defi: 1.05
+    macro: 1.15
+    regulation: 1.0
+    whale: 1.0
+  long:
+    technical: 0.65
+    derivatives: 0.4
+    news: 0.3
+    etf: 1.35
+    liquidity: 1.25
+    onchain: 1.3
+    defi: 1.25
+    macro: 1.4
+    regulation: 1.45
+    whale: 0.85
+confidence:
+  curve:
+  - - 0
+    - 0.05
+  - - 20
+    - 0.2
+  - - 40
+    - 0.5
+  - - 60
+    - 0.75
+  - - 80
+    - 0.92
+  - - 100
+    - 1.0
+  min_confidence_to_include: 15
+freshness:
+  LIVE: 1.0
+  MIN_15: 0.98
+  HOUR_1: 0.92
+  TODAY: 0.8
+  STALE: 0.35
+  UNAVAILABLE: 0.0
+labels:
+- min: -100
+  max: -60
+  label: STRONGLY BEARISH
+- min: -60
+  max: -25
+  label: BEARISH
+- min: -25
+  max: -8
+  label: SLIGHTLY BEARISH
+- min: -8
+  max: 8
+  label: NEUTRAL
+- min: 8
+  max: 25
+  label: SLIGHTLY BULLISH
+- min: 25
+  max: 60
+  label: BULLISH
+- min: 60
+  max: 100
+  label: STRONGLY BULLISH

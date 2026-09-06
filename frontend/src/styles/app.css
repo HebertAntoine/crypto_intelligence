@@ -1,0 +1,142 @@
+
+/* --- LOT 4: the "what do we know" panel -------------------------------- */
+/* Direction and edge are deliberately separated by a rule, so the eye reads
+   them as two answers rather than one combined verdict. */
+.knowledge-statement {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--accent, #4a9eff);
+}
+
+.knowledge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.knowledge-cell .stat-label {
+  margin-bottom: 0.35rem;
+}
+
+.knowledge-cell .small {
+  margin-top: 0.35rem;
+}
+
+.knowledge-divider {
+  border-left: 1px dashed var(--border, #333);
+  padding-left: 1rem;
+}
+
+.knowledge-details {
+  margin: 0.5rem 0;
+}
+
+.knowledge-details summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.caveats {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.caveats li {
+  margin-bottom: 0.25rem;
+}
+
+/* Tabs used by the structure page's per-asset switcher. */
+.tabs { margin-left: 1rem; display: inline-flex; gap: 0.35rem; }
+.tab {
+  background: transparent; border: 1px solid var(--border, #333);
+  color: inherit; padding: 0.15rem 0.6rem; border-radius: 4px;
+  cursor: pointer; font-size: 0.8rem;
+}
+.tab-active { border-color: var(--accent, #4a9eff); color: var(--accent, #4a9eff); }
+
+/* --- LOT 5: chart intelligence ---------------------------------------- */
+/* Recognition and edge always appear on the same row, so a high confidence
+   can never be read without the verdict that qualifies it. */
+.pattern-card {
+  border: 1px solid var(--border, #333);
+  border-radius: 6px;
+  margin-bottom: 0.6rem;
+}
+
+.pattern-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.8rem;
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pattern-name {
+  font-weight: 600;
+  min-width: 12rem;
+}
+
+.pattern-body {
+  padding: 0 0.8rem 0.8rem;
+  border-top: 1px solid var(--border, #333);
+}
+
+.separation {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.invalidation-box {
+  border-left: 3px solid var(--warn, #d9a441);
+  padding-left: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.layer-toggles {
+  display: flex;
+  gap: 1rem;
+  margin: 0.5rem 0 0.75rem;
+  flex-wrap: wrap;
+}
+
+.layer-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Compact structure block on the Today page. */
+.structure-block {
+  border-top: 1px solid var(--border, #333);
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.structure-row {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.12rem 0;
+}
+
+.structure-label {
+  min-width: 10rem;
+  opacity: 0.7;
+}
+
+.structure-row.emphasis {
+  font-weight: 600;
+  border-top: 1px dashed var(--border, #333);
+  margin-top: 0.3rem;
+  padding-top: 0.35rem;
+}

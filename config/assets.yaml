@@ -1,0 +1,60 @@
+# Actifs suivis + connaissance structurelle par blockchain.
+# Les metriques on-chain ne sont PAS les memes d'une chaine a l'autre :
+# appliquer "hashrate" a Solana ou "TVL" a Bitcoin n'aurait aucun sens.
+
+assets:
+  BTC:
+    name: Bitcoin
+    symbol: BTC
+    binance_symbol: BTCUSDT
+    coinbase_pair: BTC-USD
+    kraken_pair: XXBTZUSD
+    coingecko_id: bitcoin
+    defillama_chain: Bitcoin
+    consensus: proof_of_work
+    has_etf: true
+    etf_ticker_group: bitcoin
+    whale_threshold: 100          # BTC
+    whale_threshold_unit: BTC
+    onchain_metrics: [hashrate, difficulty, tx_count, fees, mempool, active_addresses, utxo_count]
+    irrelevant_metrics: [tvl, staking_ratio, gas_price, burn_rate, tps]
+
+  ETH:
+    name: Ethereum
+    symbol: ETH
+    binance_symbol: ETHUSDT
+    coinbase_pair: ETH-USD
+    kraken_pair: XETHZUSD
+    coingecko_id: ethereum
+    defillama_chain: Ethereum
+    consensus: proof_of_stake
+    has_etf: true
+    etf_ticker_group: ethereum
+    whale_threshold: 1000         # ETH
+    whale_threshold_unit: ETH
+    onchain_metrics: [tx_count, active_addresses, fees, gas_price, burn_rate, issuance, staking_ratio, validators, l2_activity, tvl]
+    irrelevant_metrics: [hashrate, difficulty, utxo_count]
+
+  SOL:
+    name: Solana
+    symbol: SOL
+    binance_symbol: SOLUSDT
+    coinbase_pair: SOL-USD
+    kraken_pair: SOLUSD
+    coingecko_id: solana
+    defillama_chain: Solana
+    consensus: proof_of_history_pos
+    has_etf: false                # pas d'ETF spot US au 2026-09 -> module ETF = N/A pour SOL
+    whale_threshold: 50000        # SOL
+    whale_threshold_unit: SOL
+    # ATTENTION Solana : le tx_count brut inclut les votes des validateurs et
+    # est trompeur. On distingue explicitement tps_total et tps_non_vote.
+    onchain_metrics: [tps_non_vote, tps_total, fees, priority_fees, validators, staking_ratio, epoch_progress, tvl]
+    irrelevant_metrics: [hashrate, difficulty, utxo_count, gas_price]
+
+timeframes:
+  - {code: "15m", minutes: 15,   mtf_weight: 0.05, bars: 300}
+  - {code: "1h",  minutes: 60,   mtf_weight: 0.15, bars: 300}
+  - {code: "4h",  minutes: 240,  mtf_weight: 0.25, bars: 300}
+  - {code: "1d",  minutes: 1440, mtf_weight: 0.35, bars: 400}
+  - {code: "1w",  minutes: 10080, mtf_weight: 0.20, bars: 200}

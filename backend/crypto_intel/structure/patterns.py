@@ -1,0 +1,572 @@
+"""Structural pattern detection, ATR-normalised and causally confirmed.
+
+Two rules govern this module.
+
+First, RECOGNITION IS NOT EDGE. Every detection carries a
+`recognition_confidence` describing how cleanly the shape matches its
+definition, and a separate `edge_state` describing whether that pattern has
+been shown to precede anything. A double bottom can be textbook-perfect
+(confidence 91) and carry NO_MEASURABLE_EDGE. Turning 91 into "91% chance of
+going up" is the exact error this separation exists to prevent.
+
+Second, QUALITY OVER QUANTITY. A pattern whose definition cannot be written
+down without hand-waving is marked EXPERIMENTAL rather than shipped as if it
+were reliable. Detecting fifty fragile shapes is worse than detecting eight
+solid ones.
+
+All tolerances scale with ATR, so "two comparable highs" means the same
+structural thing on BTC at 90,000 and SOL at 95.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import StrEnum
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from ..core.enums import Timeframe
+from ..logging_setup import get_logger
+from .swings import SwingSeries
+
+log = get_logger("structure.patterns")
+
+
+class PatternClass(StrEnum):
+    """How trustworthy the DETECTION is - not the prediction."""
+
+    DETERMINISTIC = "DETERMINISTIC"   # geometry fully specified, no judgement
+    HEURISTIC = "HEURISTIC"           # specified, but thresholds are choices
+    HUMAN_LIKE = "HUMAN_LIKE"         # approximates what an analyst draws
+    EXPERIMENTAL = "EXPERIMENTAL"     # definition still too subjective to trust
+
+
+class PatternState(StrEnum):
+    CANDIDATE = "CANDIDATE"           # shape present, trigger not reached
+    CONFIRMED = "CONFIRMED"           # trigger reached (e.g. neckline broken)
+    FAILED = "FAILED"                 # invalidation reached instead
+
+
+class PatternEdgeState(StrEnum):
+    """Whether the pattern predicts anything. Filled from research, not here."""
+
+    POSITIVE_EDGE = "POSITIVE_EDGE"
+    NEGATIVE_EDGE = "NEGATIVE_EDGE"
+    NO_MEASURABLE_EDGE = "NO_MEASURABLE_EDGE"
+    UNSTABLE = "UNSTABLE"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    NOT_YET_TESTED = "NOT_YET_TESTED"
+
+
+@dataclass(slots=True)
+class StructuralPattern:
+    """One detected pattern, with recognition and edge kept apart."""
+
+    name: str
+    pattern_class: PatternClass
+    state: PatternState
+    recognition_confidence: float          # 0-100, shape match only
+    detected_at: datetime
+    confirmation_time: datetime | None = None
+    direction_if_textbook: str = "NEUTRAL"  # what THEORY says, not what we claim
+    key_levels: dict[str, float] = field(default_factory=dict)
+    invalidation_level: float | None = None
+    invalidation_rule: str = ""
+    components: dict[str, Any] = field(default_factory=dict)
+    edge_state: PatternEdgeState = PatternEdgeState.NOT_YET_TESTED
+    edge_note: str = ""
+    notes: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "pattern_class": self.pattern_class.value,
+            "state": self.state.value,
+            "recognition_confidence": self.recognition_confidence,
+            "detected_at": self.detected_at.isoformat(),
+            "confirmation_time": (
+                self.confirmation_time.isoformat() if self.confirmation_time else None
+            ),
+            "direction_if_textbook": self.direction_if_textbook,
+            "key_levels": self.key_levels,
+            "invalidation_level": self.invalidation_level,
+            "invalidation_rule": self.invalidation_rule,
+            "components": self.components,
+            "edge_state": self.edge_state.value,
+            "edge_note": self.edge_note,
+            "notes": self.notes,
+            "separation_note": (
+                "recognition_confidence describes how cleanly the shape matches its "
+                "definition. It is NOT a probability of any price outcome."
+            ),
+        }
+
+    def describe(self) -> str:
+        return (
+            f"{self.name} [{self.state.value}] recognition {self.recognition_confidence:.0f}/100, "
+            f"class {self.pattern_class.value}. Textbook reading: "
+            f"{self.direction_if_textbook.lower()}. Measured edge: {self.edge_state.value}."
+        )
+
+
+@dataclass(slots=True)
+class PatternContext:
+    """Everything a detector may read. Strictly bars up to the current one."""
+
+    high: pd.Series
+    low: pd.Series
+    close: pd.Series
+    volume: pd.Series
+    atr: pd.Series
+    swings: SwingSeries
+    timeframe: Timeframe
+
+    @property
+    def current_atr(self) -> float:
+        value = float(self.atr.iloc[-1]) if len(self.atr.dropna()) else np.nan
+        return value if np.isfinite(value) and value > 0 else 0.0
+
+    @property
+    def last_close(self) -> float:
+        return float(self.close.iloc[-1])
+
+    @property
+    def now(self) -> datetime:
+        return self.close.index[-1]
+
+
+# --- individual detectors ------------------------------------------------
+
+
+def detect_double_bottom(ctx: PatternContext) -> StructuralPattern | None:
+    """Two comparable lows with a real reaction between them.
+
+    Tolerances are in ATR rather than percent, and the neckline break is what
+    moves the pattern from CANDIDATE to CONFIRMED - never the shape alone.
+    """
+    return _detect_double(ctx, kind="bottom")
+
+
+def detect_double_top(ctx: PatternContext) -> StructuralPattern | None:
+    return _detect_double(ctx, kind="top")
+
+
+def _detect_double(ctx: PatternContext, kind: str) -> StructuralPattern | None:
+    atr = ctx.current_atr
+    if atr <= 0:
+        return None
+    swings = ctx.swings.lows if kind == "bottom" else ctx.swings.highs
+    if len(swings) < 2:
+        return None
+
+    second, first = swings[-1], swings[-2]
+    separation_bars = second.pivot_index - first.pivot_index
+    if separation_bars < 8:
+        return None
+
+    # The two extremes must agree within a fraction of ATR.
+    difference_atr = abs(second.price - first.price) / atr
+    if difference_atr > 1.0:
+        return None
+
+    # There must be a genuine reaction between them, otherwise it is one broad
+    # base rather than two distinct tests.
+    between = ctx.close.iloc[first.pivot_index:second.pivot_index + 1]
+    if between.empty:
+        return None
+    if kind == "bottom":
+        neckline = float(between.max())
+        reaction_atr = (neckline - max(first.price, second.price)) / atr
+        textbook = "BULLISH"
+    else:
+        neckline = float(between.min())
+        reaction_atr = (min(first.price, second.price) - neckline) / atr
+        textbook = "BEARISH"
+
+    if reaction_atr < 1.2:
+        return None
+
+    last = ctx.last_close
+    if kind == "bottom":
+        confirmed = last > neckline
+        failed = last < min(first.price, second.price) - atr * 0.3
+        invalidation = min(first.price, second.price)
+        rule = (
+            f"a {ctx.timeframe.value} close below {invalidation:.2f} would break both "
+            "lows and invalidate the double bottom"
+        )
+    else:
+        confirmed = last < neckline
+        failed = last > max(first.price, second.price) + atr * 0.3
+        invalidation = max(first.price, second.price)
+        rule = (
+            f"a {ctx.timeframe.value} close above {invalidation:.2f} would break both "
+            "highs and invalidate the double top"
+        )
+
+    state = (
+        PatternState.CONFIRMED if confirmed
+        else PatternState.FAILED if failed
+        else PatternState.CANDIDATE
+    )
+
+    # Recognition: how textbook the shape is. Tighter extremes, a deeper
+    # reaction and better time separation all make it cleaner.
+    components = {
+        "extreme_agreement": round(float(np.clip((1.0 - difference_atr) * 100, 0, 100)), 1),
+        "reaction_depth": round(float(np.clip(reaction_atr / 3.0 * 100, 0, 100)), 1),
+        "time_separation": round(float(np.clip(separation_bars / 40 * 100, 0, 100)), 1),
+    }
+    confidence = round(float(np.mean(list(components.values()))), 1)
+
+    return StructuralPattern(
+        name=f"double_{kind}",
+        pattern_class=PatternClass.DETERMINISTIC,
+        state=state,
+        recognition_confidence=confidence,
+        detected_at=ctx.now,
+        confirmation_time=second.confirmation_time,
+        direction_if_textbook=textbook,
+        key_levels={
+            "first_extreme": round(first.price, 6),
+            "second_extreme": round(second.price, 6),
+            "neckline": round(neckline, 6),
+        },
+        invalidation_level=round(invalidation, 6),
+        invalidation_rule=rule,
+        components={
+            **components,
+            "difference_atr": round(difference_atr, 3),
+            "reaction_atr": round(reaction_atr, 3),
+            "bars_between": separation_bars,
+        },
+        notes=(
+            f"two {kind}s within {difference_atr:.2f} ATR of each other, separated by "
+            f"{separation_bars} bars, with a {reaction_atr:.2f} ATR reaction between them"
+        ),
+    )
+
+
+def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPattern | None:
+    """Three comparable extremes. Rarer and stricter than the double."""
+    atr = ctx.current_atr
+    if atr <= 0:
+        return None
+    swings = ctx.swings.lows if kind == "bottom" else ctx.swings.highs
+    if len(swings) < 3:
+        return None
+
+    third, second, first = swings[-1], swings[-2], swings[-3]
+    prices = [first.price, second.price, third.price]
+    spread_atr = (max(prices) - min(prices)) / atr
+    if spread_atr > 1.2:
+        return None
+    if third.pivot_index - first.pivot_index < 20:
+        return None
+
+    between = ctx.close.iloc[first.pivot_index:third.pivot_index + 1]
+    neckline = float(between.max()) if kind == "bottom" else float(between.min())
+    last = ctx.last_close
+    confirmed = last > neckline if kind == "bottom" else last < neckline
+    invalidation = min(prices) if kind == "bottom" else max(prices)
+
+    confidence = round(float(np.clip((1.2 - spread_atr) / 1.2 * 100, 0, 100)), 1)
+    return StructuralPattern(
+        name=f"triple_{kind}",
+        pattern_class=PatternClass.DETERMINISTIC,
+        state=PatternState.CONFIRMED if confirmed else PatternState.CANDIDATE,
+        recognition_confidence=confidence,
+        detected_at=ctx.now,
+        confirmation_time=third.confirmation_time,
+        direction_if_textbook="BULLISH" if kind == "bottom" else "BEARISH",
+        key_levels={
+            "extremes": round(float(np.mean(prices)), 6),
+            "neckline": round(neckline, 6),
+        },
+        invalidation_level=round(invalidation, 6),
+        invalidation_rule=(
+            f"a {ctx.timeframe.value} close beyond {invalidation:.2f} invalidates the "
+            f"triple {kind}"
+        ),
+        components={"spread_atr": round(spread_atr, 3)},
+        notes=f"three {kind}s within {spread_atr:.2f} ATR across {third.pivot_index - first.pivot_index} bars",
+    )
+
+
+def detect_head_and_shoulders(
+    ctx: PatternContext, inverse: bool = False
+) -> StructuralPattern | None:
+    """Three extremes where the middle one dominates and the sides agree.
+
+    Marked HEURISTIC: the geometry is specifiable, but "shoulders roughly
+    equal" is a judgement call that different analysts make differently.
+    """
+    atr = ctx.current_atr
+    if atr <= 0:
+        return None
+    swings = ctx.swings.lows if inverse else ctx.swings.highs
+    if len(swings) < 3:
+        return None
+
+    right, head, left = swings[-1], swings[-2], swings[-3]
+    if inverse:
+        if not (head.price < left.price and head.price < right.price):
+            return None
+        prominence_atr = (min(left.price, right.price) - head.price) / atr
+    else:
+        if not (head.price > left.price and head.price > right.price):
+            return None
+        prominence_atr = (head.price - max(left.price, right.price)) / atr
+
+    if prominence_atr < 0.8:
+        return None
+    shoulder_difference_atr = abs(left.price - right.price) / atr
+    if shoulder_difference_atr > 1.5:
+        return None
+
+    between = ctx.close.iloc[left.pivot_index:right.pivot_index + 1]
+    neckline = float(between.max()) if inverse else float(between.min())
+    last = ctx.last_close
+    confirmed = last > neckline if inverse else last < neckline
+
+    components = {
+        "head_prominence": round(float(np.clip(prominence_atr / 2.5 * 100, 0, 100)), 1),
+        "shoulder_symmetry": round(
+            float(np.clip((1.5 - shoulder_difference_atr) / 1.5 * 100, 0, 100)), 1
+        ),
+    }
+    return StructuralPattern(
+        name="inverse_head_and_shoulders" if inverse else "head_and_shoulders",
+        pattern_class=PatternClass.HEURISTIC,
+        state=PatternState.CONFIRMED if confirmed else PatternState.CANDIDATE,
+        recognition_confidence=round(float(np.mean(list(components.values()))), 1),
+        detected_at=ctx.now,
+        confirmation_time=right.confirmation_time,
+        direction_if_textbook="BULLISH" if inverse else "BEARISH",
+        key_levels={
+            "left_shoulder": round(left.price, 6), "head": round(head.price, 6),
+            "right_shoulder": round(right.price, 6), "neckline": round(neckline, 6),
+        },
+        invalidation_level=round(head.price, 6),
+        invalidation_rule=(
+            f"a {ctx.timeframe.value} close beyond the head at {head.price:.2f} "
+            "invalidates the pattern"
+        ),
+        components={
+            **components,
+            "prominence_atr": round(prominence_atr, 3),
+            "shoulder_difference_atr": round(shoulder_difference_atr, 3),
+        },
+        notes=(
+            f"head stands {prominence_atr:.2f} ATR beyond shoulders that agree within "
+            f"{shoulder_difference_atr:.2f} ATR"
+        ),
+    )
+
+
+def detect_triangle(ctx: PatternContext) -> StructuralPattern | None:
+    """Converging highs and lows. HEURISTIC - trendline fitting is a choice."""
+    atr = ctx.current_atr
+    if atr <= 0 or len(ctx.swings.highs) < 3 or len(ctx.swings.lows) < 3:
+        return None
+
+    highs = ctx.swings.highs[-3:]
+    lows = ctx.swings.lows[-3:]
+    high_slope = np.polyfit([s.pivot_index for s in highs], [s.price for s in highs], 1)[0]
+    low_slope = np.polyfit([s.pivot_index for s in lows], [s.price for s in lows], 1)[0]
+
+    first_width = abs(highs[0].price - lows[0].price)
+    last_width = abs(highs[-1].price - lows[-1].price)
+    if first_width <= 0 or last_width >= first_width * 0.85:
+        return None
+
+    if high_slope < -1e-9 and abs(low_slope) < abs(high_slope) * 0.35:
+        name, textbook = "descending_triangle", "BEARISH"
+    elif low_slope > 1e-9 and abs(high_slope) < abs(low_slope) * 0.35:
+        name, textbook = "ascending_triangle", "BULLISH"
+    elif high_slope < 0 < low_slope:
+        name, textbook = "symmetrical_triangle", "NEUTRAL"
+    else:
+        return None
+
+    convergence = 1.0 - (last_width / first_width)
+    return StructuralPattern(
+        name=name,
+        pattern_class=PatternClass.HEURISTIC,
+        state=PatternState.CANDIDATE,
+        recognition_confidence=round(float(np.clip(convergence * 130, 0, 100)), 1),
+        detected_at=ctx.now,
+        confirmation_time=max(highs[-1].confirmation_time, lows[-1].confirmation_time),
+        direction_if_textbook=textbook,
+        key_levels={
+            "upper": round(highs[-1].price, 6), "lower": round(lows[-1].price, 6),
+        },
+        invalidation_level=None,
+        invalidation_rule=(
+            "a close outside the converging boundaries resolves the triangle; direction "
+            "is not implied by the shape alone"
+        ),
+        components={
+            "convergence": round(convergence, 3),
+            "high_slope": round(float(high_slope), 6),
+            "low_slope": round(float(low_slope), 6),
+        },
+        notes=f"boundaries converged {convergence * 100:.0f}% across the last three swings",
+    )
+
+
+def detect_wedge(ctx: PatternContext) -> StructuralPattern | None:
+    """Both boundaries sloping the same way while converging.
+
+    EXPERIMENTAL. Wedges are genuinely hard to pin down: the same price action
+    is drawn as a wedge, a channel or a triangle by different analysts, and no
+    threshold choice here is defensible enough to call reliable.
+    """
+    atr = ctx.current_atr
+    if atr <= 0 or len(ctx.swings.highs) < 3 or len(ctx.swings.lows) < 3:
+        return None
+
+    highs = ctx.swings.highs[-3:]
+    lows = ctx.swings.lows[-3:]
+    high_slope = np.polyfit([s.pivot_index for s in highs], [s.price for s in highs], 1)[0]
+    low_slope = np.polyfit([s.pivot_index for s in lows], [s.price for s in lows], 1)[0]
+
+    if np.sign(high_slope) != np.sign(low_slope) or high_slope == 0:
+        return None
+    first_width = abs(highs[0].price - lows[0].price)
+    last_width = abs(highs[-1].price - lows[-1].price)
+    if first_width <= 0 or last_width >= first_width * 0.85:
+        return None
+
+    rising = high_slope > 0
+    return StructuralPattern(
+        name="rising_wedge" if rising else "falling_wedge",
+        pattern_class=PatternClass.EXPERIMENTAL,
+        state=PatternState.CANDIDATE,
+        recognition_confidence=round(
+            float(np.clip((1 - last_width / first_width) * 120, 0, 100)), 1
+        ),
+        detected_at=ctx.now,
+        confirmation_time=max(highs[-1].confirmation_time, lows[-1].confirmation_time),
+        direction_if_textbook="BEARISH" if rising else "BULLISH",
+        key_levels={"upper": round(highs[-1].price, 6), "lower": round(lows[-1].price, 6)},
+        invalidation_rule="a close outside the wedge boundaries resolves it",
+        components={
+            "high_slope": round(float(high_slope), 6),
+            "low_slope": round(float(low_slope), 6),
+        },
+        notes=(
+            "classified EXPERIMENTAL: wedge boundaries are drawn differently by "
+            "different analysts and no threshold here is well justified"
+        ),
+    )
+
+
+def detect_flag(ctx: PatternContext) -> StructuralPattern | None:
+    """A sharp move followed by a shallow counter-drift.
+
+    EXPERIMENTAL for the same reason as wedges - "sharp" and "shallow" are
+    judgements, and the pattern is easy to see after the fact.
+    """
+    atr = ctx.current_atr
+    if atr <= 0 or len(ctx.close) < 40:
+        return None
+
+    pole = ctx.close.iloc[-30:-12]
+    flag = ctx.close.iloc[-12:]
+    if len(pole) < 10 or len(flag) < 8:
+        return None
+
+    pole_move = (pole.iloc[-1] - pole.iloc[0]) / atr
+    flag_move = (flag.iloc[-1] - flag.iloc[0]) / atr
+    if abs(pole_move) < 3.0:
+        return None
+    # The consolidation must be shallow and against the pole.
+    if abs(flag_move) > abs(pole_move) * 0.4 or np.sign(flag_move) == np.sign(pole_move):
+        return None
+
+    bullish = pole_move > 0
+    return StructuralPattern(
+        name="bull_flag" if bullish else "bear_flag",
+        pattern_class=PatternClass.EXPERIMENTAL,
+        state=PatternState.CANDIDATE,
+        recognition_confidence=round(
+            float(np.clip(abs(pole_move) / 6 * 100, 0, 100)), 1
+        ),
+        detected_at=ctx.now,
+        direction_if_textbook="BULLISH" if bullish else "BEARISH",
+        key_levels={
+            "pole_start": round(float(pole.iloc[0]), 6),
+            "pole_end": round(float(pole.iloc[-1]), 6),
+        },
+        invalidation_rule=(
+            "a close beyond the start of the pole invalidates the continuation reading"
+        ),
+        components={
+            "pole_atr": round(float(pole_move), 2),
+            "flag_atr": round(float(flag_move), 2),
+        },
+        notes="classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+    )
+
+
+DETECTORS: dict[str, Any] = {
+    "double_bottom": detect_double_bottom,
+    "double_top": detect_double_top,
+    "triple_bottom": lambda ctx: detect_triple(ctx, "bottom"),
+    "triple_top": lambda ctx: detect_triple(ctx, "top"),
+    "head_and_shoulders": lambda ctx: detect_head_and_shoulders(ctx, inverse=False),
+    "inverse_head_and_shoulders": lambda ctx: detect_head_and_shoulders(ctx, inverse=True),
+    "triangle": detect_triangle,
+    "wedge": detect_wedge,
+    "flag": detect_flag,
+}
+
+# Reliability of DETECTION, declared up front rather than implied.
+PATTERN_CLASSES: dict[str, PatternClass] = {
+    "double_bottom": PatternClass.DETERMINISTIC,
+    "double_top": PatternClass.DETERMINISTIC,
+    "triple_bottom": PatternClass.DETERMINISTIC,
+    "triple_top": PatternClass.DETERMINISTIC,
+    "head_and_shoulders": PatternClass.HEURISTIC,
+    "inverse_head_and_shoulders": PatternClass.HEURISTIC,
+    "triangle": PatternClass.HEURISTIC,
+    "wedge": PatternClass.EXPERIMENTAL,
+    "flag": PatternClass.EXPERIMENTAL,
+}
+
+
+def detect_all(ctx: PatternContext) -> list[StructuralPattern]:
+    """Run every detector. Returning nothing is a normal, common outcome."""
+    found: list[StructuralPattern] = []
+    for name, detector in DETECTORS.items():
+        try:
+            pattern = detector(ctx)
+        except Exception as exc:
+            log.debug("detector_failed", detector=name, error=str(exc))
+            continue
+        if pattern is not None:
+            found.append(pattern)
+    return sorted(found, key=lambda p: -p.recognition_confidence)
+
+
+def build_context(
+    df: pd.DataFrame, timeframe: Timeframe, lookback: int = 5
+) -> PatternContext | None:
+    """Assemble a context from bars up to and including the last one."""
+    from ..engines.technical import indicators as ind
+    from .swings import find_causal_swings
+
+    if df.empty or len(df) < 40:
+        return None
+    atr = ind.atr(df["high"], df["low"], df["close"], 14)
+    swings = find_causal_swings(df["high"], df["low"], df["close"], atr, lookback=lookback)
+    # Only pivots confirmed by the final bar may inform a detection made now.
+    swings = swings.as_of(df.index[-1])
+    return PatternContext(
+        high=df["high"], low=df["low"], close=df["close"], volume=df["volume"],
+        atr=atr, swings=swings, timeframe=timeframe,
+    )

@@ -1,0 +1,30 @@
+# Never ship secrets or local state into an image.
+.env
+.env.local
+*.env
+!.env.example
+
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+frontend/node_modules/
+frontend/dist/
+
+# The database and caches are runtime state and belong in a volume, not the
+# image. Shipping them would bake one machine's data into every deployment.
+data/
+knowledge/
+!knowledge/README.md
+
+.git/
+.github/
+docs/
+tests/
+*.md
+!README.md
