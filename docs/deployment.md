@@ -56,13 +56,19 @@ docker compose exec app crypto-intel research-structural
 
 ## 2. Flutter app on Vercel
 
-The Vercel project root must be `app/`.
+The repository root is safe to deploy directly to Vercel. The root
+`vercel.json` builds the Flutter app in `app/` and publishes only `app/build/web`.
+This prevents Vercel from trying to run the Python backend as a serverless
+function.
+
+If the Vercel project root is already set to `app/`, the same settings also
+exist in `app/vercel.json`.
 
 | Setting | Value |
 | --- | --- |
-| Root directory | `app` |
-| Build command | `bash vercel-build.sh` (already in `vercel.json`) |
-| Output directory | `build/web` |
+| Root directory | repository root, or `app` |
+| Build command | root: `cd app && bash vercel-build.sh`; app root: `bash vercel-build.sh` |
+| Output directory | root: `app/build/web`; app root: `build/web` |
 | Environment variable | `API_BASE_URL` = your backend URL |
 
 `vercel-build.sh` fetches a pinned Flutter SDK, because Vercel's build image
