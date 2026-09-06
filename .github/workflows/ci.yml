@@ -58,6 +58,37 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+  flutter:
+    name: Flutter app (analyze, test, build web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Pinned: an unpinned "stable" silently changes the toolchain
+          # between two builds of identical source.
+          flutter-version: "3.27.1"
+          channel: stable
+          cache: true
+
+      - name: Install
+        working-directory: app
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: app
+        run: flutter analyze
+
+      - name: Test
+        working-directory: app
+        run: flutter test
+
+      - name: Build web
+        working-directory: app
+        # No API_BASE_URL in CI: the build must succeed without a backend.
+        run: flutter build web --release
+
   docker:
     name: Docker image builds
     runs-on: ubuntu-latest
