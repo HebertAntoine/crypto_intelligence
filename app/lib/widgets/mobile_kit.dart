@@ -44,14 +44,25 @@ class MobileGradientFrame extends StatelessWidget {
   }
 }
 
+/// Largeur de reference du design, avant reduction a la largeur de l'ecran.
+///
+/// Le contenu est mis en page a cette largeur puis reduit par
+/// `availableWidth / designWidth`. Sur un telephone d'environ 400 px logiques,
+/// une reference a 900 donnait un facteur de 0,44: un texte declare a 12,5 px
+/// s'affichait a 5,5 px, illisible. A 450 le facteur passe a environ 0,9, soit
+/// exactement le double, et les proportions du design sont conservees.
+const double kMobileDesignWidth = 450;
+
 class MobileScrollView extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final List<Widget> children;
+  final double designWidth;
 
   const MobileScrollView({
     super.key,
     required this.padding,
     required this.children,
+    this.designWidth = kMobileDesignWidth,
   });
 
   @override
@@ -61,9 +72,9 @@ class MobileScrollView extends StatelessWidget {
       child: Align(
         alignment: Alignment.topCenter,
         child: _ScaleDownToWidth(
-          designWidth: 900,
+          designWidth: designWidth,
           child: SizedBox(
-            width: 900,
+            width: designWidth,
             child: Padding(
               padding: padding,
               child: Column(

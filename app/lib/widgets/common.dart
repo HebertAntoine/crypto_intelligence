@@ -63,6 +63,11 @@ class StatePill extends StatelessWidget {
       ),
       child: Text(
         label.replaceAll('_', ' '),
+        // Deux lignes plutot qu'une elision: un verdict tronque se lit mal, et
+        // ces libelles sont parfois longs (PIPELINE CALIBRATED BUT
+        // INSENSITIVE).
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: tone,
           fontSize: compact ? 10.5 : 12,
@@ -100,6 +105,8 @@ class SectionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -108,7 +115,10 @@ class SectionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (trailing != null) trailing!,
+                // Flexible: un trailing fige (souvent une pastille portant un
+                // verdict long) poussait le titre hors de la carte des que la
+                // largeur de reference du design a ete reduite.
+                if (trailing != null) Flexible(child: trailing!),
               ],
             ),
             if (subtitle != null) ...[

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../api/client.dart';
 import '../api/freshness.dart';
+import '../diagnostics/today_diagnostics.dart';
 import '../api/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -99,7 +100,7 @@ class _TodayScreenState extends State<TodayScreen> {
                 // one thing this project exists not to do.
                 _ProvenanceBanner(provenance: provenance),
                 for (final read in reads) ...[
-                  _MarketCard(read: read),
+                  _MarketCard(read: read, provenance: provenance),
                   const SizedBox(height: 22),
                 ],
               ],
@@ -195,13 +196,20 @@ class _TodayHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Aujourd’hui',
-                style: TextStyle(
-                  color: AppColors.text,
-                  fontSize: 40,
-                  fontWeight: FontWeight.w800,
-                  height: 0.98,
+              // Le titre retrecit plutot que de pousser les boutons hors de
+              // l'ecran: il debordait de 14 px sur un telephone etroit.
+              const FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Aujourd’hui',
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: AppColors.text,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    height: 0.98,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -216,22 +224,27 @@ class _TodayHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 14),
-        Wrap(
-          spacing: 12,
-          runSpacing: 10,
-          alignment: WrapAlignment.end,
-          children: [
-            _HeaderButton(
-              icon: Icons.calendar_today_rounded,
-              label: _formatFrenchDate(DateTime.now()),
-              onTap: () => _showDateInfo(context, provenance),
-            ),
-            _SquareHeaderButton(
-              icon: Icons.settings_outlined,
-              onTap: () => _showSettings(context, provenance, onRefresh),
-            ),
-          ],
+        const SizedBox(width: 10),
+        // Flexible: un Wrap prend sa largeur naturelle et ne descend jamais
+        // sous celle de son plus grand enfant, donc il poussait le titre hors
+        // de l'ecran au lieu de se replier.
+        Flexible(
+          child: Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.end,
+            children: [
+              _HeaderButton(
+                icon: Icons.calendar_today_rounded,
+                label: _formatFrenchDate(DateTime.now()),
+                onTap: () => _showDateInfo(context, provenance),
+              ),
+              _SquareHeaderButton(
+                icon: Icons.settings_outlined,
+                onTap: () => _showSettings(context, provenance, onRefresh),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -310,7 +323,10 @@ class _TodayHeader extends StatelessWidget {
 class _MarketCard extends StatelessWidget {
   final TodayRead read;
 
-  const _MarketCard({required this.read});
+  /// D'ou vient ce payload: le diagnostic ouvert au clic en a besoin.
+  final DataProvenance provenance;
+
+  const _MarketCard({required this.read, required this.provenance});
 
   @override
   Widget build(BuildContext context) {
@@ -319,7 +335,7 @@ class _MarketCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(17),
-        onTap: () => _showDetails(context, read, meta),
+        onTap: () => _showDetails(context, read, meta, provenance),
         child: Ink(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -360,7 +376,12 @@ class _MarketCard extends StatelessWidget {
     );
   }
 
-  void _showDetails(BuildContext context, TodayRead read, _AssetMeta meta) {
+  void _showDetails(
+    BuildContext context,
+    TodayRead read,
+    _AssetMeta meta,
+    DataProvenance provenance,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -389,6 +410,13 @@ class _MarketCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 18),
+            // Le diagnostic passe avant les valeurs: savoir d'ou elles
+            // viennent et si elles tiennent conditionne la lecture de tout
+            // ce qui suit.
+            _DiagnosticsPanel(
+              diagnostics: buildDiagnostics(read, provenance),
             ),
             const SizedBox(height: 18),
             _TodaySheetLine(
@@ -504,6 +532,169 @@ class _MarketCard extends StatelessWidget {
   }
 }
 
+/// Ce que l'app a recu pour cet actif, et si c'est exploitable.
+///
+/// Deroule par defaut plutot que replie: quand un chiffre parait faux, la
+/// premiere question est d'ou il vient, et il ne faut pas avoir a la chercher.
+class _DiagnosticsPanel extends StatelessWidget {
+  final TodayDiagnostics diagnostics;
+
+  const _DiagnosticsPanel({required this.diagnostics});
+
+  static Color _colour(CheckStatus status) => switch (status) {
+        CheckStatus.ok => AppColors.measured,
+        CheckStatus.warning => AppColors.warn,
+        CheckStatus.failed => AppColors.bad,
+        CheckStatus.unknown => AppColors.textMuted,
+      };
+
+  static IconData _icon(CheckStatus status) => switch (status) {
+        CheckStatus.ok => Icons.check_circle_outline,
+        CheckStatus.warning => Icons.error_outline,
+        CheckStatus.failed => Icons.cancel_outlined,
+        CheckStatus.unknown => Icons.help_outline,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = _colour(diagnostics.overall);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tone.withValues(alpha: 0.45), width: 1.2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(_icon(diagnostics.overall), color: tone, size: 26),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'DONNÉES REÇUES · ${diagnostics.asset}',
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      diagnostics.summary,
+                      style: TextStyle(color: tone, fontSize: 15),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          for (final section in diagnostics.sections) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Text(
+                  section.title.toUpperCase(),
+                  style: const TextStyle(
+                    color: mobileMuted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: AppColors.border.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+            for (final check in section.checks)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        _icon(check.status),
+                        color: _colour(check.status),
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  check.name,
+                                  style: const TextStyle(
+                                    color: AppColors.text,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                check.status.label,
+                                style: TextStyle(
+                                  color: _colour(check.status),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          // La valeur brute telle qu'elle est arrivee, pas une
+                          // reformulation: c'est elle qu'on veut pouvoir
+                          // comparer a la source.
+                          SelectableText(
+                            check.received,
+                            style: const TextStyle(
+                              color: AppColors.text,
+                              fontSize: 15,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            check.detail,
+                            style: const TextStyle(
+                              color: mobileMuted,
+                              fontSize: 14,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _TodaySheetLine extends StatelessWidget {
   final String label;
   final String value;
@@ -568,44 +759,59 @@ class _AssetHeader extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 meta.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                     color: Color(0xFFB6C1D2), fontSize: 24, height: 1),
               ),
             ],
           ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              _marketPriceLabel(read.marketData),
-              style: const TextStyle(
-                color: AppColors.text,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
+        // Flexible, pas Column nue: le bloc de droite contient un prix, une
+        // pastille et une ligne de fraicheur dont la largeur depend des
+        // donnees. Fige, il debordait de 211 px des que la largeur de
+        // reference du design a ete reduite pour agrandir le texte.
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  _marketPriceLabel(read.marketData),
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            _ChangePill(
-              label: _marketChangeLabel(read.marketData),
-              positive: (read.marketData?.change24hPct ?? 0) >= 0,
-              // La variation reste lisible, mais perd sa couleur dès que
-              // l'horodatage n'est plus fiable: en vert ou en rouge elle se
-              // lirait comme un mouvement en cours.
-              available: read.marketData?.change24hPct != null &&
-                  (read.marketData?.derived().isTrustworthy ?? false),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              _marketFreshnessShort(read.marketData),
-              textAlign: TextAlign.right,
-              style: const TextStyle(color: mobileMuted, fontSize: 12),
-            ),
-          ],
+              const SizedBox(height: 8),
+              _ChangePill(
+                label: _marketChangeLabel(read.marketData),
+                positive: (read.marketData?.change24hPct ?? 0) >= 0,
+                // La variation reste lisible, mais perd sa couleur dès que
+                // l'horodatage n'est plus fiable: en vert ou en rouge elle se
+                // lirait comme un mouvement en cours.
+                available: read.marketData?.change24hPct != null &&
+                    (read.marketData?.derived().isTrustworthy ?? false),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _marketFreshnessShort(read.marketData),
+                textAlign: TextAlign.right,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: mobileMuted, fontSize: 12),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 10),
         const Icon(Icons.chevron_right_rounded,
-            color: AppColors.text, size: 34),
+            color: AppColors.text, size: 30),
       ],
     );
   }
@@ -1193,7 +1399,7 @@ class _HeaderButton extends StatelessWidget {
         onTap: onTap,
         child: Ink(
           height: 66,
-          padding: const EdgeInsets.symmetric(horizontal: 22),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: const Color(0xFF121D2B).withValues(alpha: 0.82),
             borderRadius: BorderRadius.circular(14),
@@ -1203,9 +1409,15 @@ class _HeaderButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, color: AppColors.text, size: 26),
-              const SizedBox(width: 16),
-              Text(label,
-                  style: const TextStyle(color: AppColors.text, fontSize: 19)),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppColors.text, fontSize: 19),
+                ),
+              ),
             ],
           ),
         ),
