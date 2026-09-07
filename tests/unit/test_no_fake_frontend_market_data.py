@@ -182,3 +182,32 @@ def test_the_export_script_writes_where_the_app_reads():
     assert f'"{directory}"' in script, (
         f"the export script does not write into assets/{directory}"
     )
+
+
+def test_a_stale_price_is_labelled_not_erased():
+    """Hiding the number is as unhelpful as pretending it is current.
+
+    A deployment without a reachable backend serves bundled snapshots, so its
+    data is always ageing - that is the normal state, not a fault. Replacing
+    the price with the word "PÉRIMÉ" past a day emptied the page entirely.
+    The value stays; the freshness label beside it carries the age.
+    """
+    text = (APP_LIB / "screens" / "today_screen.dart").read_text(encoding="utf-8")
+    price_fn = text.split("String _marketPriceLabel(", 1)[1].split("\n}", 1)[0]
+    assert "'PÉRIMÉ'" not in price_fn, (
+        "the price label substitutes a status word for the value"
+    )
+    assert "'INDISPONIBLE'" in price_fn, (
+        "a genuinely absent price must still read as unavailable"
+    )
+
+
+def test_a_dated_analysis_says_so_rather_than_claiming_the_present():
+    text = (APP_LIB / "screens" / "today_screen.dart").read_text(encoding="utf-8")
+    verdict = text.split("String _verdictBody(", 1)[1].split("\n}", 1)[0]
+    assert "blocksAnalysis" in verdict, (
+        "the verdict sentence ignores whether its data is still current"
+    )
+    assert "pas le marché actuel" in verdict, (
+        "a stale reading must state that it does not describe the present"
+    )

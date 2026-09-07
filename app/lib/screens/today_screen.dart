@@ -589,11 +589,11 @@ class _AssetHeader extends StatelessWidget {
             _ChangePill(
               label: _marketChangeLabel(read.marketData),
               positive: (read.marketData?.change24hPct ?? 0) >= 0,
-              // Une variation 24 h est aussi une donnée de marché: elle suit
-              // le sort de l'horodatage. Sinon la carte affiche « PÉRIMÉ »
-              // au-dessus d'un pourcentage qui, lui, a l'air actuel.
+              // La variation reste lisible, mais perd sa couleur dès que
+              // l'horodatage n'est plus fiable: en vert ou en rouge elle se
+              // lirait comme un mouvement en cours.
               available: read.marketData?.change24hPct != null &&
-                  !(read.marketData?.derived().blocksAnalysis ?? true),
+                  (read.marketData?.derived().isTrustworthy ?? false),
             ),
             const SizedBox(height: 6),
             Text(
@@ -700,13 +700,17 @@ class _VerdictTone {
   });
 
   static _VerdictTone of(TodayRead read, DerivedFreshness? freshness) {
+    // Une analyse datée n'est pas une analyse suspendue. Celle-ci a bien été
+    // calculée, sur des données qui étaient valides à l'époque; ce qu'il faut
+    // empêcher, c'est qu'elle se présente comme actuelle. D'où le ton
+    // d'avertissement plutôt que le vert ou le rouge du régime.
     if (freshness != null && freshness.blocksAnalysis) {
-      return const _VerdictTone(
+      return _VerdictTone(
         accent: AppColors.warn,
         bright: AppColors.warn,
-        backdrop: Color(0xFF2A2313),
+        backdrop: const Color(0xFF2A2313),
         icon: Icons.history_toggle_off,
-        heading: 'ANALYSE SUSPENDUE',
+        heading: _directionLabel(read.summary.marketDirection),
       );
     }
 
@@ -1524,9 +1528,11 @@ String _marketPriceLabel(MarketPriceRead? market) {
   if (market == null || !market.available || market.displayPrice == null) {
     return 'INDISPONIBLE';
   }
-  // Un prix dont l'horodatage est expiré n'est plus un prix de marché. Il
-  // reste consultable dans la trace d'explicabilité, pas en gros sur la carte.
-  if (market.derived().blocksAnalysis) return 'PÉRIMÉ';
+  // Un prix périmé reste affiché: cacher le chiffre derrière le mot
+  // « PÉRIMÉ » rendait la page vide dès que l'instantané dépassait 24 h, ce
+  // qui est l'état normal d'un déploiement sans backend. La valeur est
+  // conservée à titre informatif et c'est l'étiquette de fraîcheur, juste
+  // en dessous, qui dit son âge.
   final value = market.displayPrice!;
   final symbol = market.displayUnit == 'EUR' ? '€' : r'$';
   final digits = value >= 1000 ? 0 : 2;
@@ -1687,9 +1693,10 @@ String _verdictBody(TodayRead read, {DerivedFreshness? freshness}) {
   final ticker = read.asset;
 
   if (freshness != null && freshness.blocksAnalysis) {
-    return 'Les données disponibles pour le $ticker sont trop anciennes pour '
-        'établir une analyse. L’analyse est suspendue afin de ne pas produire '
-        'de signal à partir de données périmées.';
+    final quand = freshness.ageLabel ?? 'à une date inconnue';
+    return 'Lecture figée: cette analyse du $ticker a été calculée $quand et '
+        'n’a pas été rafraîchie. Les chiffres ci-dessous décrivent ce moment-là, '
+        'pas le marché actuel.';
   }
 
   final regime = _regimePhrase(read.summary.marketDirection);
