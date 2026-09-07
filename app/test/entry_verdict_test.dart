@@ -12,6 +12,9 @@ TodayRead _read({
   double uncertainty = 40,
   bool actionable = false,
   bool allowsAction = true,
+  double? timingScore,
+  List<MacroEvent> macro = const [],
+  MarketPressure pressure = MarketPressure.unavailable,
 }) =>
     TodayRead(
       asset: 'BTC',
@@ -45,9 +48,13 @@ TodayRead _read({
       fundingPercentile: 25,
       volatilityRegime: 'LOW',
       allowsAction: allowsAction,
+      timingScore: timingScore,
+      upcomingMacro: macro,
+      pressure: pressure,
     );
 
 void main() {
+  _pointsTests();
   group('La réponse est un non, pas un haussement d’épaules', () {
     test('trois relations testées, zéro validée: NON', () {
       final verdict = entryVerdict(_read());
@@ -152,5 +159,69 @@ void main() {
         expect(texte.contains(interdit), isFalse, reason: interdit);
       }
     }
+  });
+}
+
+// Les points de justification: chacun vient d'une mesure, et ce qui manque
+// est montré comme manquant.
+void _pointsTests() {
+  group('Justification', () {
+    test('l’absence d’avantage est le premier point contre', () {
+      final points = verdictPoints(_read());
+      expect(points.first.sign, PointSign.against);
+      expect(points.first.title, contains('Aucun avantage'));
+    });
+
+    test('une échéance macro critique proche pèse contre', () {
+      final points = verdictPoints(_read(
+        macro: const [
+          MacroEvent(
+            kind: 'FOMC', name: 'FOMC Rate Decision',
+            importance: 'CRITICAL', daysUntil: 2,
+          ),
+        ],
+      ));
+      final fomc = points.firstWhere((p) => p.title.contains('FOMC'));
+      expect(fomc.sign, PointSign.against);
+    });
+
+    test('une échéance lointaine et mineure n’encombre pas la liste', () {
+      final points = verdictPoints(_read(
+        macro: const [
+          MacroEvent(
+            kind: 'PCE', name: 'US PCE', importance: 'IMPORTANT',
+            daysUntil: 19,
+          ),
+        ],
+      ));
+      expect(points.any((p) => p.title.contains('PCE')), isFalse);
+    });
+
+    test('une composante indisponible est montrée, pas tue', () {
+      final points = verdictPoints(_read(
+        pressure: const MarketPressure(
+          balance: 50, label: 'ÉQUILIBRÉ', measured: 0, missing: ['Baleines'],
+          note: '',
+          components: [
+            PressureComponent(
+              name: 'baleines', label: 'Baleines (gros portefeuilles)',
+              available: false, score: null, detail: '',
+              source: 'fournisseur on-chain',
+              reason: 'aucun fournisseur on-chain n’est configuré',
+            ),
+          ],
+        ),
+      ));
+      final whales = points.firstWhere((p) => p.title.contains('Baleines'));
+      expect(whales.sign, PointSign.missing);
+      expect(whales.detail, contains('aucun fournisseur'));
+    });
+
+    test('le score de timing apparaît avec son sens', () {
+      final points = verdictPoints(_read(timingScore: -60));
+      final timing = points.firstWhere((p) => p.title.contains('Moment'));
+      expect(timing.sign, PointSign.against);
+      expect(timing.title, contains('-60/100'));
+    });
   });
 }

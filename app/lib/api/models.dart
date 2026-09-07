@@ -378,6 +378,31 @@ class MarketPressure {
       );
 }
 
+/// Une échéance macro programmée. Elle ne prédit rien; elle explique
+/// pourquoi attendre peut être raisonnable.
+class MacroEvent {
+  final String kind;
+  final String name;
+  final String importance;
+  final double daysUntil;
+
+  const MacroEvent({
+    required this.kind,
+    required this.name,
+    required this.importance,
+    required this.daysUntil,
+  });
+
+  bool get isCritical => importance.toUpperCase() == 'CRITICAL';
+
+  factory MacroEvent.fromJson(Map<String, dynamic> json) => MacroEvent(
+        kind: json['kind'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        importance: json['importance'] as String? ?? '',
+        daysUntil: (json['days_until'] as num?)?.toDouble() ?? 0,
+      );
+}
+
 class TodayRead {
   final String asset;
   final MarketPriceRead? marketData;
@@ -418,6 +443,9 @@ class TodayRead {
   final double? timingScore;
   final String timingSummary;
 
+  /// Échéances macro programmées, du calendrier maintenu côté backend.
+  final List<MacroEvent> upcomingMacro;
+
   const TodayRead({
     required this.asset,
     required this.marketData,
@@ -444,6 +472,7 @@ class TodayRead {
     this.pressure = MarketPressure.unavailable,
     this.timingScore,
     this.timingSummary = '',
+    this.upcomingMacro = const [],
   });
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
@@ -473,6 +502,9 @@ class TodayRead {
           ?.toDouble(),
       timingSummary:
           (json['entry_timing'] as Map?)?['summary'] as String? ?? '',
+      upcomingMacro: ((json['upcoming_macro'] as List?) ?? const [])
+          .map((item) => MacroEvent.fromJson((item as Map).cast<String, dynamic>()))
+          .toList(),
       asset: json['asset'] as String? ?? '',
       marketData: json['market_data'] == null
           ? null

@@ -749,7 +749,12 @@ class _EntryAnswerPanel extends StatelessWidget {
       EntryAnswer.impossible => (AppColors.textMuted, Icons.help_outline),
     };
 
-    return Container(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showJustification(context, read, verdict, tone),
+        child: Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: 0.08),
@@ -800,10 +805,159 @@ class _EntryAnswerPanel extends StatelessWidget {
               height: 1.38,
             ),
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Text(
+                'Voir le détail',
+                style: TextStyle(
+                  color: tone,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(Icons.chevron_right_rounded, color: tone, size: 20),
+            ],
+          ),
         ],
+      ),
+        ),
       ),
     );
   }
+
+  /// Le détail: deux lignes de résumé, puis les points qui pèsent, chacun
+  /// avec son sens. Un point manquant est montré comme manquant - ne pas
+  /// savoir est aussi une raison de ne pas agir.
+  void _showJustification(
+    BuildContext context,
+    TodayRead read,
+    EntryVerdict verdict,
+    Color tone,
+  ) {
+    final points = verdictPoints(read);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: mobilePanel,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (context, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 32),
+          children: [
+            Text(
+              verdictQuestion(read),
+              style: const TextStyle(
+                color: Color(0xFFB6C1D2),
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              verdict.headline,
+              style: TextStyle(
+                color: tone,
+                fontSize: 32,
+                fontWeight: FontWeight.w800,
+                height: 1.05,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              verdict.reason,
+              style: const TextStyle(
+                color: AppColors.text,
+                fontSize: 17,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 22),
+            const Text(
+              'CE QUI PÈSE',
+              style: TextStyle(
+                color: Color(0xFFB6C1D2),
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 10),
+            for (final point in points)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Icon(
+                        _pointIcon(point.sign),
+                        color: _pointColour(point.sign),
+                        size: 19,
+                      ),
+                    ),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            point.title,
+                            style: const TextStyle(
+                              color: AppColors.text,
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (point.detail.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              point.detail,
+                              style: const TextStyle(
+                                color: mobileMuted,
+                                fontSize: 15,
+                                height: 1.32,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 10),
+            const Text(
+              'Cette page n’est pas un conseil et ne passe jamais d’ordre. '
+              'Elle dit ce qui a été mesuré, et ce qui ne l’a pas été.',
+              style: TextStyle(color: mobileMuted, fontSize: 14, height: 1.35),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static IconData _pointIcon(PointSign sign) => switch (sign) {
+        PointSign.favourable => Icons.add_circle_outline,
+        PointSign.against => Icons.remove_circle_outline,
+        PointSign.neutral => Icons.remove,
+        PointSign.missing => Icons.help_outline,
+      };
+
+  static Color _pointColour(PointSign sign) => switch (sign) {
+        PointSign.favourable => AppColors.measured,
+        PointSign.against => AppColors.bad,
+        PointSign.neutral => AppColors.accent,
+        PointSign.missing => AppColors.textMuted,
+      };
 }
 
 /// Qui achète, qui vend, et sur quelles sources.

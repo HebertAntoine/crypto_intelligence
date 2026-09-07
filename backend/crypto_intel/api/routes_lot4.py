@@ -239,6 +239,34 @@ def _timing_context(asset: Asset) -> dict[str, Any]:
     return {"snapshots": snapshots}
 
 
+def _upcoming_macro(asset: Asset, days: int = 14) -> list[dict[str, Any]]:
+    """Événements macro programmés qui touchent cet actif.
+
+    Le calendrier est maintenu dans `config/macro_calendar.yaml`: des dates
+    publiées à l'avance, pas une estimation. Une échéance proche ne prédit
+    rien, mais elle explique pourquoi attendre peut être raisonnable.
+    """
+    from ..db import repo
+
+    out: list[dict[str, Any]] = []
+    for event in repo.upcoming_events(days=days):
+        assets = event.get("assets") or []
+        if isinstance(assets, str):
+            assets = [a.strip(" '\"[]") for a in assets.split(",")]
+        if assets and asset.value not in assets:
+            continue
+        hours = float(event.get("hours_until") or 0.0)
+        out.append({
+            "kind": event.get("kind"),
+            "name": event.get("name"),
+            "scheduled_at": str(event.get("scheduled_at")),
+            "importance": event.get("importance"),
+            "hours_until": round(hours, 1),
+            "days_until": round(hours / 24.0, 1),
+        })
+    return out[:5]
+
+
 @router.get("/today/{symbol}")
 async def today(symbol: str) -> dict[str, Any]:
     """The decision summary: direction, timing, edge, crowding, uncertainty.
@@ -323,6 +351,7 @@ async def today(symbol: str) -> dict[str, Any]:
         return {
             "asset": asset.value,
             "entry_timing": timing.model_dump(mode="json"),
+            "upcoming_macro": _upcoming_macro(asset),
             "market_pressure": pressure.to_dict(),
             "overall_status": status.value,
             "overall_status_reason": status_reason,

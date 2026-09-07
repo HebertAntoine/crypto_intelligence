@@ -177,3 +177,137 @@ EntryVerdict entryVerdict(TodayRead read) {
         'jamais d’ordre et ne dit pas quoi faire.',
   );
 }
+
+/// Le sens d'un point de justification.
+enum PointSign { favourable, against, neutral, missing }
+
+class VerdictPoint {
+  final PointSign sign;
+  final String title;
+  final String detail;
+
+  const VerdictPoint({
+    required this.sign,
+    required this.title,
+    required this.detail,
+  });
+}
+
+/// Les points qui justifient le verdict, dans l'ordre où ils pèsent.
+///
+/// Chacun vient d'une mesure du payload. Un point « manquant » est affiché
+/// comme manquant plutôt que passé sous silence: ne pas savoir est aussi une
+/// raison de ne pas agir.
+List<VerdictPoint> verdictPoints(TodayRead read) {
+  final points = <VerdictPoint>[];
+  final teste = read.admittedCount + read.rejectedCount;
+
+  // 1. L'avantage statistique décide du verdict, il vient donc en premier.
+  if (teste == 0) {
+    points.add(const VerdictPoint(
+      sign: PointSign.missing,
+      title: 'Aucune relation testée',
+      detail: 'Rien n’a encore été mesuré sur cet actif.',
+    ));
+  } else if (read.admittedCount == 0) {
+    points.add(VerdictPoint(
+      sign: PointSign.against,
+      title: 'Aucun avantage statistique',
+      detail: '$teste relation${teste > 1 ? 's' : ''} testée'
+          '${teste > 1 ? 's' : ''}, aucune n’a franchi les filtres.',
+    ));
+  } else {
+    points.add(VerdictPoint(
+      sign: PointSign.favourable,
+      title: '${read.admittedCount} relation validée',
+      detail: 'sur $teste testées.',
+    ));
+  }
+
+  // 2. Le moment d'entrée, avec son score.
+  final timing = read.timingScore;
+  if (timing != null) {
+    points.add(VerdictPoint(
+      sign: timing >= 25
+          ? PointSign.favourable
+          : timing <= -25
+              ? PointSign.against
+              : PointSign.neutral,
+      title: 'Moment d’entrée ${timing >= 0 ? '+' : ''}'
+          '${timing.toStringAsFixed(0)}/100',
+      detail: timing.abs() < 25
+          ? 'Ni favorable ni défavorable: rien n’appelle à agir maintenant.'
+          : timing > 0
+              ? 'Conditions techniques plutôt favorables.'
+              : 'Conditions techniques défavorables.',
+    ));
+  }
+
+  // 3. Qui achète et qui vend, composante par composante.
+  for (final component in read.pressure.components) {
+    if (!component.available) {
+      points.add(VerdictPoint(
+        sign: PointSign.missing,
+        title: component.label,
+        detail: component.reason,
+      ));
+      continue;
+    }
+    final score = component.score ?? 0;
+    points.add(VerdictPoint(
+      sign: score > 15
+          ? PointSign.favourable
+          : score < -15
+              ? PointSign.against
+              : PointSign.neutral,
+      title: component.label,
+      detail: component.detail,
+    ));
+  }
+
+  // 4. Les échéances macro proches: elles ne prédisent rien, mais attendre
+  //    une publication programmée est une raison défendable de ne pas entrer.
+  for (final event in read.upcomingMacro) {
+    if (event.daysUntil > 7 && !event.isCritical) continue;
+    points.add(VerdictPoint(
+      sign: event.daysUntil <= 3 && event.isCritical
+          ? PointSign.against
+          : PointSign.neutral,
+      title: '${event.name} dans ${event.daysUntil.toStringAsFixed(0)} j',
+      detail: event.isCritical
+          ? 'Échéance majeure: la volatilité augmente souvent autour.'
+          : 'Échéance programmée à connaître.',
+    ));
+  }
+
+  // 5. L'incertitude, et ce qu'elle veut dire.
+  final incertitude = read.uncertaintyScore;
+  points.add(VerdictPoint(
+    sign: incertitude <= 25
+        ? PointSign.favourable
+        : incertitude >= 60
+            ? PointSign.against
+            : PointSign.neutral,
+    title: 'Incertitude ${incertitude.toStringAsFixed(0)}/100',
+    detail: incertitude <= 25
+        ? 'Les signaux concordent.'
+        : incertitude >= 60
+            ? 'Plusieurs éléments manquent ou se contredisent.'
+            : 'Lecture exploitable, sans être nette.',
+  ));
+
+  // 6. Les entrées trop anciennes pour servir.
+  final perimees = read.families.entries
+      .where((entry) => !entry.value.usableNow())
+      .map((entry) => entry.key)
+      .toList();
+  if (perimees.isNotEmpty) {
+    points.add(VerdictPoint(
+      sign: PointSign.against,
+      title: '${perimees.length} donnée(s) trop ancienne(s)',
+      detail: 'Elles ne décrivent plus le marché actuel.',
+    ));
+  }
+
+  return points;
+}
