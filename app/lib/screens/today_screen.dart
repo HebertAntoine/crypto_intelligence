@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../api/client.dart';
 import '../api/freshness.dart';
+import '../diagnostics/entry_verdict.dart';
 import '../diagnostics/today_diagnostics.dart';
 import '../api/models.dart';
 import '../theme/app_theme.dart';
@@ -385,6 +386,10 @@ class _MarketCard extends StatelessWidget {
               _AssetHeader(read: read, meta: meta),
               const SizedBox(height: 22),
               _VerdictPanel(read: read),
+              const SizedBox(height: 14),
+              // La réponse directe est placée juste sous le régime, parce que
+              // c'est la question que la page doit trancher.
+              _EntryAnswerPanel(read: read),
               const SizedBox(height: 16),
               _MetricGrid(read: read),
               const SizedBox(height: 20),
@@ -473,12 +478,12 @@ class _MarketCard extends StatelessWidget {
                       'multi-domaines complet, qui exige un cycle de pipeline.',
             ),
             _TodaySheetLine(
-              label: 'Edge',
+              label: 'Avantage statistique',
               value:
                   '${_edgeLabel(read.edgeState)} · ${read.admittedCount} validé, ${read.rejectedCount} rejeté',
             ),
             _TodaySheetLine(
-                label: 'Crowding', value: _crowdingLabel(read.crowdingLevel)),
+                label: 'Encombrement du marché', value: _crowdingLabel(read.crowdingLevel)),
             _TodaySheetLine(label: 'Funding', value: _fundingLabel(read)),
             _TodaySheetLine(
               label: 'Volatilité',
@@ -844,6 +849,84 @@ class _AssetHeader extends StatelessWidget {
   }
 }
 
+/// La reponse directe: peut-on acheter, oui ou non.
+///
+/// Elle est mise en evidence parce que c'est la question posee, et que la
+/// reponse habituelle - non - se lisait auparavant comme un « indetermine »
+/// qui n'engageait a rien. Un non teste est une information; un haussement
+/// d'epaules n'en est pas une.
+class _EntryAnswerPanel extends StatelessWidget {
+  final TodayRead read;
+
+  const _EntryAnswerPanel({required this.read});
+
+  @override
+  Widget build(BuildContext context) {
+    final verdict = entryVerdict(read);
+    final (tone, icon) = switch (verdict.answer) {
+      EntryAnswer.active => (AppColors.measured, Icons.check_circle_outline),
+      EntryAnswer.watch => (AppColors.warn, Icons.visibility_outlined),
+      EntryAnswer.no => (AppColors.bad, Icons.do_not_disturb_on_outlined),
+      EntryAnswer.impossible => (AppColors.textMuted, Icons.help_outline),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tone.withValues(alpha: 0.55), width: 1.4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: tone, size: 30),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'EST-CE UNE OPPORTUNITÉ D’ACHAT ?',
+                      style: TextStyle(
+                        color: Color(0xFFB6C1D2),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      verdict.headline,
+                      style: TextStyle(
+                        color: tone,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w800,
+                        height: 1.05,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            verdict.reason,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 17,
+              height: 1.38,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _VerdictPanel extends StatelessWidget {
   final TodayRead read;
 
@@ -1126,7 +1209,7 @@ class _DetailRows extends StatelessWidget {
         ),
         _InfoRow(
           icon: Icons.check_box_rounded,
-          label: 'Opportunité d’entrée',
+          label: 'Moment d’entrée',
           value: _entryTimingLabel(read.summary.entryTiming),
         ),
       ],
@@ -1943,9 +2026,9 @@ String _verdictBody(TodayRead read, {DerivedFreshness? freshness}) {
 }
 
 String _edgeLabel(EdgeState state) => switch (state) {
-      EdgeState.positiveEdge => 'EDGE MESURABLE',
-      EdgeState.negativeEdge => 'EDGE DÉFAVORABLE',
-      EdgeState.noMeasurableEdge => 'AUCUN EDGE MESURABLE',
+      EdgeState.positiveEdge => 'AVANTAGE MESURABLE',
+      EdgeState.negativeEdge => 'AVANTAGE DÉFAVORABLE',
+      EdgeState.noMeasurableEdge => 'AUCUN AVANTAGE MESURABLE',
       EdgeState.unstable => 'INSTABLE',
       EdgeState.insufficientData => 'DONNÉES INSUFFISANTES',
       EdgeState.notYetTested => 'PAS ENCORE TESTÉ',
