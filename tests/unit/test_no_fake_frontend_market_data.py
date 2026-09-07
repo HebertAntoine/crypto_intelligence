@@ -110,3 +110,38 @@ def test_bundled_snapshots_still_carry_an_observation_timestamp():
         assert market.get("as_of") or market.get("timestamp"), (
             f"{path.name} carries a price with no observation timestamp"
         )
+
+
+def test_deployment_never_caches_data_snapshots_as_immutable():
+    """Flutter does not hash asset filenames, so `immutable` freezes the data.
+
+    The deployment marked `/assets/(.*)` as immutable for a year while serving
+    `main.dart.js` with no-cache. The result was a browser running new code
+    against snapshots captured before those snapshots even carried a price:
+    the page showed a funding percentile and an uncertainty score from an
+    older build, above a price rendered UNAVAILABLE. Code and data must age at
+    the same rate, or they contradict each other.
+    """
+    import json
+
+    root = Path(__file__).resolve().parents[2]
+    for name in ("vercel.json", "app/vercel.json"):
+        path = root / name
+        if not path.exists():
+            continue
+        config = json.loads(path.read_text(encoding="utf-8"))
+        for rule in config.get("headers", []):
+            source = rule.get("source", "")
+            if "/assets/" not in source:
+                continue
+            for header in rule.get("headers", []):
+                if header.get("key", "").lower() != "cache-control":
+                    continue
+                value = header["value"].lower()
+                assert "immutable" not in value, (
+                    f"{name} serves {source} as immutable; asset filenames are "
+                    "not content-hashed, so bundled data can never refresh"
+                )
+                assert "max-age=31536000" not in value, (
+                    f"{name} pins {source} for a year"
+                )

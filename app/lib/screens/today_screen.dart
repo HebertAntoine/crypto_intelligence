@@ -1796,7 +1796,11 @@ String _entryTimingLabel(String raw) => switch (raw.toUpperCase()) {
       'FAVORABLE' => 'FAVORABLE',
       'VERY_FAVORABLE' => 'TRÈS FAVORABLE',
       'INSUFFICIENT_DATA' => 'DONNÉES INSUFFISANTES',
-      'UNDETERMINED' => 'INDISPONIBLE',
+      // UNDETERMINED est un résultat, pas une absence: le moteur a tourné et
+      // n'a pas pu trancher. Le rendre par « INDISPONIBLE » confondait les
+      // deux, alors que la distinction est celle que tout le reste du système
+      // défend — DONNÉES INSUFFISANTES reste juste au-dessus.
+      'UNDETERMINED' => 'INDÉTERMINÉ',
       _ => raw.replaceAll('_', ' '),
     };
 
