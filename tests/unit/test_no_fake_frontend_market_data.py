@@ -63,7 +63,16 @@ def test_fixtures_cannot_reach_the_production_runtime_path():
     root = Path(__file__).resolve().parents[2] / "backend" / "crypto_intel"
     for path in root.rglob("*.py"):
         text = path.read_text(encoding="utf-8")
-        if "fixtures" in text and path != fixtures:
+        # Importer le module est un accès; le nommer dans un commentaire n'en
+        # est pas un. Le filtre précédent se déclenchait sur de la prose.
+        imports_fixtures = (
+            "from .providers import fixtures" in text
+            or "from ..providers import fixtures" in text
+            or "from .providers.fixtures import" in text
+            or "from ..providers.fixtures import" in text
+            or "import providers.fixtures" in text
+        )
+        if imports_fixtures and path != fixtures:
             callers.append((path, text))
 
     for path, text in callers:

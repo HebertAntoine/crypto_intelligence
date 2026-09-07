@@ -272,6 +272,9 @@ class _MarketCard extends StatelessWidget {
     );
   }
 
+  // Kept as an internal diagnostic renderer for targeted debugging; the
+  // production card no longer opens it because its public detail is concise.
+  // ignore: unused_element
   void _showDetails(
     BuildContext context,
     TodayRead read,
@@ -892,6 +895,8 @@ class _EntryAnswerPanel extends StatelessWidget {
   /// Le détail: deux lignes de résumé, puis les points qui pèsent, chacun
   /// avec son sens. Un point manquant est montré comme manquant - ne pas
   /// savoir est aussi une raison de ne pas agir.
+  // Compatibility renderer for older snapshot tests.
+  // ignore: unused_element
   void _showJustification(
     BuildContext context,
     TodayRead read,
@@ -995,11 +1000,63 @@ class _EntryAnswerPanel extends StatelessWidget {
                   ],
                 ),
               ),
-            const SizedBox(height: 10),
-            const Text(
-              'Cette page n’est pas un conseil et ne passe jamais d’ordre. '
-              'Elle dit ce qui a été mesuré, et ce qui ne l’a pas été.',
-              style: TextStyle(color: mobileMuted, fontSize: 14, height: 1.35),
+            if (read.opportunity.whatWouldImprove.isNotEmpty ||
+                read.opportunity.whatWouldDeteriorate.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const Text(
+                'QU’EST-CE QUI FERAIT CHANGER CETTE LECTURE ?',
+                style: TextStyle(
+                  color: Color(0xFFB6C1D2),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 10),
+              for (final condition in read.opportunity.whatWouldImprove)
+                _ChangeLine(
+                  text: condition,
+                  colour: AppColors.measured,
+                  icon: Icons.trending_up_rounded,
+                ),
+              for (final condition in read.opportunity.whatWouldDeteriorate)
+                _ChangeLine(
+                  text: condition,
+                  colour: AppColors.bad,
+                  icon: Icons.trending_down_rounded,
+                ),
+            ],
+            if (read.opportunity.guardRails.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const Text(
+                'CE QUI PLAFONNE LA LECTURE',
+                style: TextStyle(
+                  color: Color(0xFFB6C1D2),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final rail in read.opportunity.guardRails)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    '• $rail',
+                    style: const TextStyle(
+                        color: mobileMuted, fontSize: 15, height: 1.32),
+                  ),
+                ),
+            ],
+            const SizedBox(height: 16),
+            Text(
+              read.opportunity.disclaimer.isEmpty
+                  ? 'Cette page n’est pas un conseil et ne passe jamais '
+                      'd’ordre. Elle dit ce qui a été mesuré, et ce qui ne l’a '
+                      'pas été.'
+                  : read.opportunity.disclaimer,
+              style: const TextStyle(
+                  color: mobileMuted, fontSize: 14, height: 1.35),
             ),
           ],
         ),
@@ -1022,11 +1079,500 @@ class _EntryAnswerPanel extends StatelessWidget {
       };
 }
 
+String _opportunityLabel(String state) => switch (state.toUpperCase()) {
+      'VERY_FAVORABLE' || 'STRONG_OPPORTUNITY' => 'TRÈS FAVORABLE',
+      'FAVORABLE' || 'OPPORTUNITY' => 'FAVORABLE',
+      'WATCH' => 'À SURVEILLER',
+      'WAIT' => 'ATTENDRE',
+      'UNFAVORABLE' => 'DÉFAVORABLE',
+      _ => 'DONNÉES INSUFFISANTES',
+    };
+
+Color _opportunityColour(String state) => switch (state.toUpperCase()) {
+      'VERY_FAVORABLE' ||
+      'FAVORABLE' ||
+      'STRONG_OPPORTUNITY' ||
+      'OPPORTUNITY' =>
+        AppColors.measured,
+      'WATCH' || 'WAIT' => AppColors.warn,
+      'UNFAVORABLE' => AppColors.bad,
+      _ => AppColors.textMuted,
+    };
+
+IconData _opportunityIcon(String state) => switch (state.toUpperCase()) {
+      'VERY_FAVORABLE' ||
+      'FAVORABLE' ||
+      'STRONG_OPPORTUNITY' ||
+      'OPPORTUNITY' =>
+        Icons.check_circle_outline,
+      'WATCH' => Icons.visibility_outlined,
+      'WAIT' => Icons.schedule_rounded,
+      'UNFAVORABLE' => Icons.do_not_disturb_on_outlined,
+      _ => Icons.help_outline,
+    };
+
+void _showOpportunityDetails(
+  BuildContext context,
+  TodayRead read,
+  Color tone,
+) {
+  final opportunity = read.opportunity;
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: mobilePanel,
+    builder: (context) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: .82,
+      minChildSize: .45,
+      maxChildSize: .96,
+      builder: (context, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.fromLTRB(22, 20, 22, 36),
+        children: [
+          Text(
+            'POURQUOI ${_opportunityLabel(opportunity.state)} ?',
+            style: TextStyle(
+              color: tone,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              height: 1.05,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            opportunity.summary.isEmpty
+                ? 'Les données majeures ne permettent pas une explication fiable.'
+                : opportunity.summary,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 17,
+              height: 1.4,
+            ),
+          ),
+          _FactorGroup(
+            title: 'CE QUI AIDE',
+            factors: opportunity.positives,
+            icon: Icons.add_circle_outline,
+            tone: AppColors.measured,
+          ),
+          _FactorGroup(
+            title: 'CE QUI FAIT ATTENDRE',
+            factors: opportunity.waits,
+            icon: Icons.schedule_rounded,
+            tone: AppColors.warn,
+          ),
+          _FactorGroup(
+            title: 'CE QUI PÈSE NÉGATIVEMENT',
+            factors: opportunity.negatives,
+            icon: Icons.remove_circle_outline,
+            tone: AppColors.bad,
+          ),
+          _FactorGroup(
+            title: 'CE QUI MANQUE',
+            factors: opportunity.missing,
+            icon: Icons.help_outline,
+            tone: AppColors.textMuted,
+          ),
+          _ConditionsBlock(
+            improve: opportunity.whatWouldImprove,
+            deteriorate: opportunity.whatWouldDeteriorate,
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _FactorGroup extends StatelessWidget {
+  final String title;
+  final List<OpportunityFactor> factors;
+  final IconData icon;
+  final Color tone;
+
+  const _FactorGroup({
+    required this.title,
+    required this.factors,
+    required this.icon,
+    required this.tone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (factors.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: tone,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: .55,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final factor in factors.take(5))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(icon, color: tone, size: 19),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          factor.title,
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (factor.explanation.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            factor.explanation,
+                            style: const TextStyle(
+                              color: mobileMuted,
+                              fontSize: 14,
+                              height: 1.32,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 4),
+                        Text(
+                          _factorSourceLine(factor),
+                          style: const TextStyle(
+                            color: Color(0xFF7F90A7),
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+String _factorSourceLine(OpportunityFactor factor) {
+  final parts = <String>[
+    factor.source.isEmpty ? 'Source non précisée' : factor.source,
+    if (factor.timeframe.isNotEmpty) factor.timeframe,
+    _factorFreshnessLabel(factor.freshness),
+    if (factor.asOf != null && factor.asOf!.isNotEmpty)
+      _dateTimeLabel(factor.asOf!),
+  ];
+  return parts.join(' · ');
+}
+
+String _factorFreshnessLabel(String raw) => switch (raw.toUpperCase()) {
+      'LIVE' => 'temps réel',
+      'RECENT' || 'MIN_15' || 'HOUR_1' || 'TODAY' => 'récent',
+      'DELAYED' => 'retardé',
+      'STALE' => 'périmé',
+      _ => 'indisponible',
+    };
+
+class _ConditionsBlock extends StatelessWidget {
+  final List<String> improve;
+  final List<String> deteriorate;
+
+  const _ConditionsBlock({required this.improve, required this.deteriorate});
+
+  @override
+  Widget build(BuildContext context) {
+    if (improve.isEmpty && deteriorate.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF101927),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: const Color(0xFF23364C)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (improve.isNotEmpty) ...[
+              const Text('CE QUI AMÉLIORERAIT LA LECTURE',
+                  style: TextStyle(
+                    color: AppColors.measured,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  )),
+              const SizedBox(height: 7),
+              for (final condition in improve.take(4))
+                Text('• $condition',
+                    style: const TextStyle(
+                        color: AppColors.text, fontSize: 14, height: 1.35)),
+            ],
+            if (improve.isNotEmpty && deteriorate.isNotEmpty)
+              const SizedBox(height: 16),
+            if (deteriorate.isNotEmpty) ...[
+              const Text('CE QUI DÉGRADERAIT LA LECTURE',
+                  style: TextStyle(
+                    color: AppColors.bad,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  )),
+              const SizedBox(height: 7),
+              for (final condition in deteriorate.take(4))
+                Text('• $condition',
+                    style: const TextStyle(
+                        color: AppColors.text, fontSize: 14, height: 1.35)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MarketPressureSummary extends StatelessWidget {
+  final MarketPressure pressure;
+
+  const _MarketPressureSummary({required this.pressure});
+
+  @override
+  Widget build(BuildContext context) {
+    final balance = pressure.balance;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => _showPressureDetails(context, pressure),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF101927).withValues(alpha: .55),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF23364C)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'QUI ACHÈTE, QUI VEND ?',
+                      style: TextStyle(
+                        color: Color(0xFFB6C1D2),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .4,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    pressure.label,
+                    style: TextStyle(
+                      color: _PressurePanel._balanceColour(balance),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              if (balance != null) ...[
+                const SizedBox(height: 12),
+                _PressureBar(balance: balance),
+              ],
+              const SizedBox(height: 9),
+              Text(
+                pressure.summary.isEmpty
+                    ? '${pressure.measured} source(s) mesurée(s).'
+                    : pressure.summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: mobileMuted, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              const Row(
+                children: [
+                  Text('Voir les sources',
+                      style: TextStyle(
+                        color: AppColors.accent,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      )),
+                  Icon(Icons.chevron_right_rounded,
+                      color: AppColors.accent, size: 19),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showPressureDetails(BuildContext context, MarketPressure pressure) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: mobilePanel,
+    builder: (context) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: .74,
+      minChildSize: .4,
+      maxChildSize: .94,
+      builder: (context, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.fromLTRB(22, 20, 22, 34),
+        children: [
+          const Text('QUI ACHÈTE, QUI VEND ?',
+              style: TextStyle(color: mobileMuted, fontSize: 14)),
+          const SizedBox(height: 4),
+          Text(pressure.label,
+              style: TextStyle(
+                color: _PressurePanel._balanceColour(pressure.balance),
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+              )),
+          if (pressure.balance != null) ...[
+            const SizedBox(height: 14),
+            _PressureBar(balance: pressure.balance!),
+          ],
+          const SizedBox(height: 12),
+          Text(pressure.summary,
+              style: const TextStyle(
+                  color: AppColors.text, fontSize: 16, height: 1.35)),
+          const SizedBox(height: 22),
+          for (final component in pressure.components)
+            _PressureSourceRow(component: component),
+          if (pressure.contradictions.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text('CONTRADICTIONS',
+                style: TextStyle(
+                    color: AppColors.warn,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            for (final item in pressure.contradictions)
+              Text('• $item',
+                  style: const TextStyle(
+                      color: AppColors.text, fontSize: 14, height: 1.35)),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+class _PressureSourceRow extends StatelessWidget {
+  final PressureComponent component;
+
+  const _PressureSourceRow({required this.component});
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = component.available
+        ? _PressurePanel._scoreColour(component.score)
+        : AppColors.textMuted;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            component.available
+                ? Icons.check_circle_outline
+                : Icons.help_outline,
+            color: tone,
+            size: 19,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(component.label,
+                    style: const TextStyle(
+                        color: AppColors.text,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(component.available ? component.detail : component.reason,
+                    style: const TextStyle(
+                        color: mobileMuted, fontSize: 14, height: 1.3)),
+                const SizedBox(height: 3),
+                Text(
+                  '${component.source.isEmpty ? 'Source non précisée' : component.source} · '
+                  '${_factorFreshnessLabel(component.freshness)}',
+                  style:
+                      const TextStyle(color: Color(0xFF7F90A7), fontSize: 12.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Qui achète, qui vend, et sur quelles sources.
 ///
 /// La barre ne descend jamais d'une intuition: chaque composante affichée est
 /// une mesure, avec sa source. Ce qui manque est écrit comme manquant plutôt
 /// que compté comme neutre - ignorer n'est pas équilibrer.
+/// Une condition qui ferait bouger la lecture, dans un sens ou dans l'autre.
+class _ChangeLine extends StatelessWidget {
+  final String text;
+  final Color colour;
+  final IconData icon;
+
+  const _ChangeLine({
+    required this.text,
+    required this.colour,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, color: colour, size: 17),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                  color: AppColors.text, fontSize: 15.5, height: 1.32),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PressurePanel extends StatelessWidget {
   final MarketPressure pressure;
 
@@ -1213,6 +1759,7 @@ class _PressureBar extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _VerdictPanel extends StatelessWidget {
   final TodayRead read;
 
@@ -1349,6 +1896,7 @@ class _VerdictTone {
   }
 }
 
+// ignore: unused_element
 class _MetricGrid extends StatelessWidget {
   final TodayRead read;
 
@@ -1452,6 +2000,7 @@ class _MetricBox extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _DetailRows extends StatelessWidget {
   final TodayRead read;
 
@@ -1614,6 +2163,7 @@ class _SideNote extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _WhyPanel extends StatelessWidget {
   final TodayRead read;
 

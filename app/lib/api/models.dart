@@ -247,6 +247,7 @@ class FamilyState {
   final String family;
   final bool available;
   final bool valid;
+
   /// Tel que reçu: figé à l'instant du calcul backend. Ne pas afficher.
   /// Utiliser `derived()` et `usableNow()`.
   final String freshness;
@@ -323,14 +324,14 @@ class PressureComponent {
     required this.label,
     required this.available,
     required this.score,
-    required this.rawValue,
-    required this.weight,
-    required this.confidence,
+    this.rawValue,
+    this.weight = 1,
+    this.confidence = .5,
     required this.detail,
     required this.source,
     required this.reason,
-    required this.asOf,
-    required this.freshness,
+    this.asOf,
+    this.freshness = 'UNAVAILABLE',
   });
 
   factory PressureComponent.fromJson(Map<String, dynamic> json) =>
@@ -354,6 +355,7 @@ class PressureComponent {
 class MarketPressure {
   final String state;
   final double? pressureScore;
+
   /// 0 = vente totale, 50 = équilibre, 100 = achat total. Null si rien
   /// n'est mesurable: une absence ne vaut pas un équilibre.
   final double? balance;
@@ -367,17 +369,17 @@ class MarketPressure {
   final String? asOf;
 
   const MarketPressure({
-    required this.state,
-    required this.pressureScore,
+    this.state = 'INSUFFICIENT_DATA',
+    this.pressureScore,
     required this.balance,
     required this.label,
     required this.components,
     required this.measured,
     required this.missing,
     required this.note,
-    required this.contradictions,
-    required this.summary,
-    required this.asOf,
+    this.contradictions = const [],
+    this.summary = '',
+    this.asOf,
   });
 
   static const unavailable = MarketPressure(
@@ -403,8 +405,8 @@ class MarketPressure {
                 : ((json['pressure_score'] as num).toDouble() + 100) / 2),
         label: json['label'] as String? ?? 'INDÉTERMINÉ',
         components: ((json['components'] as List?) ?? const [])
-            .map((item) =>
-                PressureComponent.fromJson((item as Map).cast<String, dynamic>()))
+            .map((item) => PressureComponent.fromJson(
+                (item as Map).cast<String, dynamic>()))
             .toList(),
         measured: (json['components_measured'] as num?)?.toInt() ?? 0,
         missing: ((json['components_missing'] as List?) ?? const [])
@@ -486,7 +488,8 @@ class OpportunityFactor {
         category: json['category'] as String? ?? '',
         title: json['title'] as String? ?? '',
         explanation: json['short_text'] as String? ??
-            json['explanation'] as String? ?? '',
+            json['explanation'] as String? ??
+            '',
         rawValue: json['raw_value'],
         normalizedValue: (json['normalized_value'] as num?)?.toDouble(),
         polarity: json['polarity'] as String? ?? 'NEUTRAL',
@@ -540,8 +543,13 @@ class BuyOpportunity {
     state: 'INSUFFICIENT_DATA',
     headline: 'DONNÉES INSUFFISANTES',
     summary: '',
-    positives: [], waits: [], negatives: [], missing: [],
-    whatWouldImprove: [], whatWouldDeteriorate: [], guardRails: [],
+    positives: [],
+    waits: [],
+    negatives: [],
+    missing: [],
+    whatWouldImprove: [],
+    whatWouldDeteriorate: [],
+    guardRails: [],
     measuredEdgeState: 'NO_MEASURABLE_EDGE',
     disclaimer: '',
     asOf: null,
@@ -563,7 +571,8 @@ class BuyOpportunity {
         state: json['state'] as String? ?? 'INSUFFICIENT_DATA',
         headline: json['headline'] as String? ?? '',
         summary: json['summary'] as String? ??
-            json['short_summary'] as String? ?? '',
+            json['short_summary'] as String? ??
+            '',
         positives: _list(json['positives']),
         waits: _list(json['waits']),
         negatives: _list(json['negatives']),
@@ -571,15 +580,14 @@ class BuyOpportunity {
         whatWouldImprove: _strings(
             json['improvement_conditions'] ?? json['what_would_improve']),
         whatWouldDeteriorate: _strings(
-            json['deterioration_conditions'] ??
-                json['what_would_deteriorate']),
+            json['deterioration_conditions'] ?? json['what_would_deteriorate']),
         guardRails: _strings(json['guard_rails_applied']),
         measuredEdgeState:
             json['measured_edge_state'] as String? ?? 'NO_MEASURABLE_EDGE',
         disclaimer: json['disclaimer'] as String? ?? '',
         asOf: json['as_of'] as String?,
-        provenance: ((json['provenance'] as Map?) ?? const {})
-            .cast<String, dynamic>(),
+        provenance:
+            ((json['provenance'] as Map?) ?? const {}).cast<String, dynamic>(),
       );
 }
 
@@ -682,8 +690,8 @@ class TodayRead {
       pressure: MarketPressure.fromJson(
         ((json['market_pressure'] as Map?) ?? const {}).cast<String, dynamic>(),
       ),
-      timingScore: ((json['entry_timing'] as Map?)?['timing_score'] as num?)
-          ?.toDouble(),
+      timingScore:
+          ((json['entry_timing'] as Map?)?['timing_score'] as num?)?.toDouble(),
       timingSummary:
           (json['entry_timing'] as Map?)?['summary'] as String? ?? '',
       opportunity: BuyOpportunity.fromJson(
@@ -691,7 +699,8 @@ class TodayRead {
             .cast<String, dynamic>(),
       ),
       upcomingMacro: ((json['upcoming_macro'] as List?) ?? const [])
-          .map((item) => MacroEvent.fromJson((item as Map).cast<String, dynamic>()))
+          .map((item) =>
+              MacroEvent.fromJson((item as Map).cast<String, dynamic>()))
           .toList(),
       asset: json['asset'] as String? ?? '',
       marketData: json['market_data'] == null

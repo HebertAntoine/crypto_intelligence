@@ -1,6 +1,384 @@
 {
   "allows_action": true,
   "asset": "ETH",
+  "breakout": {
+    "asset": "ETH",
+    "bars_since_break": null,
+    "close_beyond_atr": null,
+    "components": {},
+    "direction": "NONE",
+    "edge_note": "Quality measures how convincing the break is. It is NOT a probability that price continues, and carries no directional recommendation.",
+    "follow_through_pct": null,
+    "higher_timeframe_aligned": null,
+    "interpretation": "no level break detected in the recent window; price is inside its established range",
+    "level": null,
+    "level_touches": 0,
+    "missing": [],
+    "quality_score": null,
+    "relative_volume": null,
+    "retest_occurred": false,
+    "state": "NONE",
+    "timeframe": "4h"
+  },
+  "buy_opportunity": "OPPORTUNITY",
+  "buy_opportunity_explanation": {
+    "as_of": "2026-09-07T19:45:21.744840+00:00",
+    "deterioration_conditions": [
+      "la rupture de la structure haussi\u00e8re valid\u00e9e",
+      "A 4h close outside 2348.55-2547.86 would invalidate the current range reading.",
+      "une expansion de volatilit\u00e9 avec rupture baissi\u00e8re"
+    ],
+    "disclaimer": "\u00c9valuation d\u00e9terministe du contexte, pas une garantie de performance ni un conseil. L\u2019application ne passe aucun ordre.",
+    "guard_rails_applied": [],
+    "headline": "OUI, CONTEXTE FAVORABLE",
+    "improvement_conditions": [
+      "un avantage qui franchisse les baselines et contr\u00f4les de stabilit\u00e9"
+    ],
+    "measured_edge_state": "NO_MEASURABLE_EDGE",
+    "missing": [
+      {
+        "as_of": "2026-09-07T19:45:21.744840+00:00",
+        "available": false,
+        "category": "WHALES",
+        "confidence": 1.0,
+        "evidence_level": "MISSING",
+        "explanation": "UNAVAILABLE - aucun fournisseur baleines fiable configur\u00e9",
+        "freshness": "UNAVAILABLE",
+        "id": "pressure.baleines",
+        "importance": 35,
+        "normalized_value": null,
+        "polarity": "MISSING",
+        "raw_value": null,
+        "short_text": "UNAVAILABLE - aucun fournisseur baleines fiable configur\u00e9",
+        "source": "fournisseur on-chain v\u00e9rifi\u00e9",
+        "timeframe": "NOW",
+        "title": "Baleines"
+      },
+      {
+        "as_of": "2026-09-07T19:45:21.744840+00:00",
+        "available": false,
+        "category": "LIQUIDITY",
+        "confidence": 1.0,
+        "evidence_level": "MISSING",
+        "explanation": "aucune s\u00e9rie fiable de flux net spot/exchange n\u2019est configur\u00e9e",
+        "freshness": "UNAVAILABLE",
+        "id": "pressure.flux_spot",
+        "importance": 35,
+        "normalized_value": null,
+        "polarity": "MISSING",
+        "raw_value": null,
+        "short_text": "aucune s\u00e9rie fiable de flux net spot/exchange n\u2019est configur\u00e9e",
+        "source": "connecteur de flux spot/exchange",
+        "timeframe": "NOW",
+        "title": "Flux spot / exchanges"
+      }
+    ],
+    "negatives": [
+      {
+        "as_of": "2026-09-07T16:00:00.003000+00:00",
+        "available": true,
+        "category": "FUNDING",
+        "confidence": 0.7,
+        "evidence_level": "FACT",
+        "explanation": "27e percentile, variation 24 h +0.000010. Le c\u00f4t\u00e9 qui paie est mesur\u00e9; un extr\u00eame signale surtout un co\u00fbt et un encombrement, pas la suite du prix.",
+        "freshness": "RECENT",
+        "id": "pressure.levier",
+        "importance": 45,
+        "normalized_value": -45.2,
+        "polarity": "NEGATIVE",
+        "raw_value": -45.2,
+        "short_text": "27e percentile, variation 24 h +0.000010. Le c\u00f4t\u00e9 qui paie est mesur\u00e9; un extr\u00eame signale surtout un co\u00fbt et un encombrement, pas la suite du prix.",
+        "source": "funding.rate, percentile trailing par actif",
+        "timeframe": "NOW/5D",
+        "title": "Funding perp\u00e9tuel"
+      }
+    ],
+    "positives": [
+      {
+        "as_of": "2026-09-07T19:45:21.744840+00:00",
+        "available": true,
+        "category": "REGIME",
+        "confidence": 1.0,
+        "evidence_level": "COMPUTATION",
+        "explanation": "Tendance, structure et momentum concordent \u00e0 100%.",
+        "freshness": "RECENT",
+        "id": "regime.market",
+        "importance": 78,
+        "normalized_value": 55,
+        "polarity": "POSITIVE",
+        "raw_value": {
+          "confidence": 100.0,
+          "regime": "STRONGLY_BULLISH"
+        },
+        "short_text": "Tendance, structure et momentum concordent \u00e0 100%.",
+        "source": "MarketRegimeEngine",
+        "timeframe": "1D",
+        "title": "R\u00e9gime strongly bullish"
+      },
+      {
+        "as_of": "2026-09-07T19:45:20.324491+00:00",
+        "available": true,
+        "category": "STRUCTURE",
+        "confidence": 0.25,
+        "evidence_level": "COMPUTATION",
+        "explanation": "Haussi\u00e8re: 1d; baissi\u00e8re: aucune.",
+        "freshness": "RECENT",
+        "id": "structure.multi_timeframe",
+        "importance": 84,
+        "normalized_value": 100.0,
+        "polarity": "POSITIVE",
+        "raw_value": {
+          "bearish": [],
+          "bullish": [
+            "1d"
+          ],
+          "contradiction": 0.0
+        },
+        "short_text": "Haussi\u00e8re: 1d; baissi\u00e8re: aucune.",
+        "source": "MarketStructureEngine",
+        "timeframe": "1W/1D/4H/1H",
+        "title": "Structure dominante sur 1 unit\u00e9(s)"
+      },
+      {
+        "as_of": "2026-09-07T19:45:21.744840+00:00",
+        "available": true,
+        "category": "STRUCTURE",
+        "confidence": 0.72,
+        "evidence_level": "COMPUTATION",
+        "explanation": "1d structure is bullish (HH HH HL HL)",
+        "freshness": "RECENT",
+        "id": "entry.higher_timeframe_structure",
+        "importance": 60,
+        "normalized_value": 30.0,
+        "polarity": "POSITIVE",
+        "raw_value": 30.0,
+        "short_text": "1d structure is bullish (HH HH HL HL)",
+        "source": "structure",
+        "timeframe": "4H/1D",
+        "title": "Higher timeframe structure"
+      },
+      {
+        "as_of": "2026-09-03T00:00:00+00:00",
+        "available": true,
+        "category": "ETF",
+        "confidence": 0.95,
+        "evidence_level": "FACT",
+        "explanation": "+124 M$ derni\u00e8re s\u00e9ance; +274 M$ sur 5 et +1,727 M$ sur 20; s\u00e9rie 1 s\u00e9ance(s). Flux observ\u00e9s; leur avantage causal n\u2019est pas suppos\u00e9.",
+        "freshness": "RECENT",
+        "id": "pressure.institutions",
+        "importance": 30,
+        "normalized_value": 27.400000000000002,
+        "polarity": "POSITIVE",
+        "raw_value": 27.400000000000002,
+        "short_text": "+124 M$ derni\u00e8re s\u00e9ance; +274 M$ sur 5 et +1,727 M$ sur 20; s\u00e9rie 1 s\u00e9ance(s). Flux observ\u00e9s; leur avantage causal n\u2019est pas suppos\u00e9.",
+        "source": "Farside Investors, flux par \u00e9metteur",
+        "timeframe": "NOW/5D",
+        "title": "Institutions (ETF spot)"
+      }
+    ],
+    "provenance": {
+      "decision_engine": "BuyOpportunityDecisionEngine/v2",
+      "factor_ranker": "DecisionFactorRanker/v1",
+      "factors_considered": 22,
+      "llm_used": false,
+      "selected_factor_ids": [
+        "regime.market",
+        "structure.multi_timeframe",
+        "entry.higher_timeframe_structure",
+        "pressure.institutions",
+        "edge.none",
+        "structure.pattern",
+        "track.live",
+        "history.analogs",
+        "pressure.levier",
+        "pressure.baleines",
+        "pressure.flux_spot"
+      ]
+    },
+    "score": 11.5,
+    "short_summary": "La configuration est plus favorable que la normale, sans garantie de performance. Facteur principal: Funding perp\u00e9tuel.",
+    "state": "OPPORTUNITY",
+    "summary": "La configuration est plus favorable que la normale, sans garantie de performance. Facteur principal: Funding perp\u00e9tuel.",
+    "waits": [
+      {
+        "as_of": "2026-09-07T19:45:21.744840+00:00",
+        "available": true,
+        "category": "MEASURED_EDGE",
+        "confidence": 1.0,
+        "evidence_level": "COMPUTATION",
+        "explanation": "0 valid\u00e9e(s), 15 rejet\u00e9e(s). Cela ne dit pas que le prix va baisser; aucun avantage n\u2019a \u00e9t\u00e9 d\u00e9montr\u00e9.",
+        "freshness": "RECENT",
+        "id": "edge.none",
+        "importance": 88,
+        "normalized_value": 0,
+        "polarity": "WAIT",
+        "raw_value": {
+          "admitted": 0,
+          "rejected": 15
+        },
+        "short_text": "0 valid\u00e9e(s), 15 rejet\u00e9e(s). Cela ne dit pas que le prix va baisser; aucun avantage n\u2019a \u00e9t\u00e9 d\u00e9montr\u00e9.",
+        "source": "EdgeEngine",
+        "timeframe": "HISTORIQUE",
+        "title": "Aucun avantage statistique d\u00e9montr\u00e9"
+      },
+      {
+        "as_of": "2026-09-07T16:00:00+00:00",
+        "available": true,
+        "category": "STRUCTURE",
+        "confidence": 0.7,
+        "evidence_level": "COMPUTATION",
+        "explanation": "Reconnaissance 77/100, \u00e9tat candidate; edge s\u00e9par\u00e9: NOT_YET_TESTED. La reconnaissance n\u2019est pas une probabilit\u00e9.",
+        "freshness": "RECENT",
+        "id": "structure.pattern",
+        "importance": 48,
+        "normalized_value": 77.0,
+        "polarity": "WAIT",
+        "raw_value": {
+          "edge_state": "NOT_YET_TESTED",
+          "recognition_confidence": 77.0,
+          "state": "CANDIDATE"
+        },
+        "short_text": "Reconnaissance 77/100, \u00e9tat candidate; edge s\u00e9par\u00e9: NOT_YET_TESTED. La reconnaissance n\u2019est pas une probabilit\u00e9.",
+        "source": "StructuralPatternDetector",
+        "timeframe": "4H",
+        "title": "Figure reconnue: double_top"
+      },
+      {
+        "as_of": "2026-09-07T19:45:21.744840+00:00",
+        "available": true,
+        "category": "LIVE_TRACK_RECORD",
+        "confidence": 1.0,
+        "evidence_level": "FACT",
+        "explanation": "0 pr\u00e9diction(s) arriv\u00e9e(s) \u00e0 maturit\u00e9.",
+        "freshness": "RECENT",
+        "id": "track.live",
+        "importance": 60,
+        "normalized_value": null,
+        "polarity": "WAIT",
+        "raw_value": {
+          "matured_predictions": 0,
+          "status": "TOO_EARLY"
+        },
+        "short_text": "0 pr\u00e9diction(s) arriv\u00e9e(s) \u00e0 maturit\u00e9.",
+        "source": "LiveTrackRecord",
+        "timeframe": "LIVE",
+        "title": "Suivi live encore trop jeune"
+      },
+      {
+        "as_of": "2026-09-07T19:45:21.744840+00:00",
+        "available": true,
+        "category": "HISTORICAL_ANALOGS",
+        "confidence": 0.267,
+        "evidence_level": "COMPUTATION",
+        "explanation": "n brut 8; m\u00e9diane 6.23, MFE 6.23, MAE -1.23.",
+        "freshness": "RECENT",
+        "id": "history.analogs",
+        "importance": 62,
+        "normalized_value": null,
+        "polarity": "WAIT",
+        "raw_value": {
+          "effective_n": 8.0,
+          "historical_evidence": 0.26666666666666666,
+          "hit_rate": 87.5,
+          "mae": -1.23,
+          "median_return": 6.23,
+          "mfe": 6.23,
+          "raw_n": 8
+        },
+        "short_text": "n brut 8; m\u00e9diane 6.23, MFE 6.23, MAE -1.23.",
+        "source": "HistoricalSimilarityEngine",
+        "timeframe": "HISTORIQUE",
+        "title": "Analogues: n effectif 8.0"
+      }
+    ],
+    "what_would_deteriorate": [
+      "la rupture de la structure haussi\u00e8re valid\u00e9e",
+      "A 4h close outside 2348.55-2547.86 would invalidate the current range reading.",
+      "une expansion de volatilit\u00e9 avec rupture baissi\u00e8re"
+    ],
+    "what_would_improve": [
+      "un avantage qui franchisse les baselines et contr\u00f4les de stabilit\u00e9"
+    ]
+  },
+  "cross_asset": {
+    "asset": "ETH",
+    "correlations": [
+      {
+        "beta": 0.856,
+        "correlation": 0.331,
+        "label": "Nasdaq",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 48.2,
+        "series": "macro.nasdaq",
+        "window_days": 90
+      },
+      {
+        "beta": 1.362,
+        "correlation": 0.336,
+        "label": "S&P 500",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 50.7,
+        "series": "macro.sp500",
+        "window_days": 90
+      },
+      {
+        "beta": -5.335,
+        "correlation": -0.503,
+        "label": "US dollar index",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 0.0,
+        "series": "macro.dxy",
+        "window_days": 90
+      },
+      {
+        "beta": -0.175,
+        "correlation": -0.41,
+        "label": "VIX",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 39.2,
+        "series": "macro.vix",
+        "window_days": 90
+      },
+      {
+        "beta": 1.033,
+        "correlation": 0.492,
+        "label": "Gold",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 100.0,
+        "series": "macro.gold",
+        "window_days": 90
+      },
+      {
+        "beta": -0.023,
+        "correlation": -0.024,
+        "label": "WTI crude",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 27.6,
+        "series": "macro.oil_wti",
+        "window_days": 90
+      },
+      {
+        "beta": -0.613,
+        "correlation": -0.176,
+        "label": "US 10Y yield",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 6.3,
+        "series": "macro.us10y_yahoo",
+        "window_days": 90
+      }
+    ],
+    "dominant_relationship": "US dollar index",
+    "interpretation": "Over the last 90 days, ETH moves most closely with US dollar index (correlation -0.50, beta -5.33). Correlation with the Nasdaq is +0.33, so a move of this size is not well explained by equities alone. Correlation is not causation and says nothing about direction.",
+    "missing": [],
+    "risk_proxy_correlation": 0.331
+  },
   "crowding": {
     "asset": "ETH",
     "components": {
@@ -28,7 +406,7 @@
     "direction_confidence": "100.0",
     "edge_state": "NO_MEASURABLE_EDGE",
     "entry_timing": "WAIT",
-    "generated_at": "2026-09-07T17:29:58.734481Z",
+    "generated_at": "2026-09-07T19:45:20.324457Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "ETH is strongly bullish, but we currently hold no robust directional edge.",
     "uncertainty": 40.0,
@@ -309,6 +687,54 @@
       "usable": true
     }
   },
+  "entry_opportunity": {
+    "asset": "ETH",
+    "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
+    "factors": [
+      {
+        "contribution": 30.0,
+        "detail": "1d structure is bullish (HH HH HL HL)",
+        "is_measured_edge": false,
+        "name": "higher timeframe structure",
+        "source": "structure"
+      },
+      {
+        "contribution": 8.0,
+        "detail": "funding is mid-range at the 27th percentile",
+        "is_measured_edge": false,
+        "name": "funding normalised",
+        "source": "derivatives"
+      },
+      {
+        "contribution": 8.0,
+        "detail": "volatility LOW at the 10.8th percentile - moves are small, which cuts both ways",
+        "is_measured_edge": false,
+        "name": "volatility compressed",
+        "source": "volatility"
+      },
+      {
+        "contribution": 0.0,
+        "detail": "4h price is mid range, zone quality 74/100",
+        "is_measured_edge": false,
+        "name": "structural location",
+        "source": "structure"
+      }
+    ],
+    "invalidation": "A 4h close outside 2348.55-2547.86 would invalidate the current range reading.",
+    "measured_edge_note": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict f",
+    "measured_edge_state": "NO_MEASURABLE_EDGE",
+    "missing": [],
+    "score": 11.5,
+    "state": "FAVORABLE",
+    "statement": "ETH 4h configuration is FAVORABLE (+12). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+    "timeframe": "4h",
+    "why_now": [
+      "1d structure is bullish (HH HH HL HL)",
+      "funding is mid-range at the 27th percentile",
+      "volatility LOW at the 10.8th percentile - moves are small, which cuts both ways",
+      "4h price is mid range, zone quality 74/100"
+    ]
+  },
   "entry_timing": {
     "asset": "ETH",
     "confidence": 58.0,
@@ -368,7 +794,7 @@
     "invalidation_level": 2199.01,
     "invalidation_reason": "Daily close below the nearest support (2 touches from swing clustering) invalidates the constructive case",
     "missing": [
-      "volume confirmation (current daily bar only 73% elapsed)",
+      "volume confirmation (current daily bar only 82% elapsed)",
       "derivatives (funding / open interest)",
       "ETF flows"
     ],
@@ -409,7 +835,7 @@
   },
   "families": {
     "dvol": {
-      "age_seconds": 62998.7,
+      "age_seconds": 71121.7,
       "available": true,
       "family": "dvol",
       "freshness": "RECENT",
@@ -421,7 +847,7 @@
       "valid": true
     },
     "funding": {
-      "age_seconds": 5398.7,
+      "age_seconds": 13521.7,
       "available": true,
       "family": "funding",
       "freshness": "RECENT",
@@ -433,7 +859,7 @@
       "valid": true
     },
     "ohlcv_daily": {
-      "age_seconds": 62998.7,
+      "age_seconds": 71121.7,
       "available": true,
       "family": "ohlcv_daily",
       "freshness": "LIVE",
@@ -445,7 +871,7 @@
       "valid": true
     },
     "open_interest": {
-      "age_seconds": 62998.7,
+      "age_seconds": 71121.7,
       "available": true,
       "family": "open_interest",
       "freshness": "RECENT",
@@ -457,11 +883,11 @@
       "valid": true
     },
     "price": {
-      "age_seconds": 0.8,
+      "age_seconds": 2.2,
       "available": true,
       "family": "price",
       "freshness": "LIVE",
-      "observed_at": "2026-09-07T17:29:57.985492+00:00",
+      "observed_at": "2026-09-07T19:45:19.574045+00:00",
       "points": 3,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
       "source": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
@@ -479,6 +905,30 @@
     "sufficient_history": true,
     "value": 2.859e-05
   },
+  "historical_analogs": {
+    "effective_n": 8.0,
+    "hit_rate": 87.5,
+    "mae": -1.23,
+    "median_return": 6.23,
+    "mfe": 6.23,
+    "raw_n": 8
+  },
+  "implied_volatility": {
+    "asset": "ETH",
+    "available": true,
+    "compression": "STABLE",
+    "dvol": 52.6,
+    "dvol_change_30d": 4.52,
+    "dvol_percentile": 13.5,
+    "edge_note": "The variance premium is a description of how options are priced. Whether it precedes anything has not been established for this project and must not be assumed.",
+    "history_days": 1994,
+    "interpretation": "Implied volatility 52.6 sits 22.3 points below the 30-day realised volatility of 74.9. That premium is at the 8th percentile of its own history (1994 days), so options are priced cheap relative to what has actually happened. Implied volatility itself is in stable. This describes the price of protection, not a direction.",
+    "premium_percentile": 7.6,
+    "pricing": "CHEAP",
+    "realised_vol_annualised": 74.884,
+    "unavailable_reason": "",
+    "variance_premium": -22.284
+  },
   "leverage_state": {
     "asset": "ETH",
     "confidence": "MEDIUM",
@@ -494,129 +944,576 @@
     "price_change_pct": 0.16,
     "state": "QUIET"
   },
+  "liquidity": {
+    "available": false,
+    "by_chain": {},
+    "by_issuer": {},
+    "change_1d_pct": null,
+    "change_7d_pct": null,
+    "direction": "INCONCLUSIVE",
+    "evidence_ids": [],
+    "findings": [],
+    "freshness": "UNAVAILABLE",
+    "regime": "UNKNOWN",
+    "strength": 0.0,
+    "total_supply": null,
+    "unavailable_reason": "UNAVAILABLE - no stablecoin data"
+  },
+  "live_track_record": {
+    "matured_predictions": 0,
+    "status": "TOO_EARLY"
+  },
+  "macro_context": {
+    "available": false,
+    "changes": {},
+    "direction": "INCONCLUSIVE",
+    "dollar_trend": "UNKNOWN",
+    "evidence_ids": [],
+    "findings": [],
+    "freshness": "UNAVAILABLE",
+    "imminent_event": null,
+    "metrics": {},
+    "missing": [
+      "macro series (set FRED_API_KEY) and/or indices"
+    ],
+    "rates_trend": "UNKNOWN",
+    "risk_appetite": "UNKNOWN",
+    "strength": 0.0,
+    "unavailable_reason": "UNAVAILABLE - no macro data",
+    "upcoming_events": [
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 64.74435430805555,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "CPI",
+        "name": "US CPI (Aug)",
+        "scheduled_at": "2026-09-10T12:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 214.24435430805553,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "FOMC",
+        "name": "FOMC Rate Decision",
+        "scheduled_at": "2026-09-16T18:00:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 214.74435430805553,
+        "importance": "IMPORTANT",
+        "is_past": false,
+        "kind": "FOMC",
+        "name": "FOMC Press Conference",
+        "scheduled_at": "2026-09-16T18:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 448.74435430805556,
+        "importance": "IMPORTANT",
+        "is_past": false,
+        "kind": "PCE",
+        "name": "US PCE Price Index (Aug)",
+        "scheduled_at": "2026-09-26T12:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 736.7443543080556,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "CPI",
+        "name": "US CPI (Sep)",
+        "scheduled_at": "2026-10-08T12:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 1222.2443543080556,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "FOMC",
+        "name": "FOMC Rate Decision",
+        "scheduled_at": "2026-10-28T18:00:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 1433.7443543080556,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "NFP",
+        "name": "US Nonfarm Payrolls (Oct)",
+        "scheduled_at": "2026-11-06T13:30:00Z"
+      }
+    ]
+  },
   "market_data": {
-    "age_seconds": 0.000501,
-    "as_of": "2026-09-07T17:29:57.985492Z",
+    "age_seconds": 0.000465,
+    "as_of": "2026-09-07T19:45:19.574045Z",
     "asset": "ETH",
-    "change_24h_pct": -0.038,
-    "dispersion_pct": 0.0255,
-    "fetched_at": "2026-09-07T17:29:57.985993Z",
+    "change_24h_pct": 0.241,
+    "dispersion_pct": 0.015,
+    "fetched_at": "2026-09-07T19:45:19.574510Z",
     "freshness": "LIVE",
-    "fx_rate": 0.86062879,
+    "fx_rate": 0.86062142,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T17:29:57.985873Z",
+    "fx_timestamp": "2026-09-07T19:45:19.574405Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 2141.735,
-    "price_usd": 2488.57,
+    "price_eur": 2148.025,
+    "price_usd": 2495.9,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": -0.038,
-        "fetched_at": "2026-09-07T17:29:57.984534Z",
+        "change_24h_pct": 0.241,
+        "fetched_at": "2026-09-07T19:45:19.573035Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2488.57,
+        "price": 2496.18,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T17:29:57.984512Z",
+        "timestamp": "2026-09-07T19:45:19.573013Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T17:29:57.985148Z",
+        "fetched_at": "2026-09-07T19:45:19.573659Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2488.635,
+        "price": 2495.805,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T17:29:57.985136Z",
+        "timestamp": "2026-09-07T19:45:19.573647Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T17:29:57.985501Z",
+        "fetched_at": "2026-09-07T19:45:19.574055Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2488.0,
+        "price": 2495.9,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T17:29:57.985492Z",
+        "timestamp": "2026-09-07T19:45:19.574045Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T17:29:57.985884Z",
+        "fetched_at": "2026-09-07T19:45:19.574413Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2141.735,
+        "price": 2148.025,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T17:29:57.985873Z",
+        "timestamp": "2026-09-07T19:45:19.574405Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T17:29:57.985492Z"
+    "timestamp": "2026-09-07T19:45:19.574045Z"
   },
   "market_pressure": {
+    "as_of": "2026-09-07T19:45:21.426468+00:00",
     "asset": "ETH",
-    "balance": 47.0,
+    "balance": 52.0,
     "components": [
       {
+        "as_of": "2026-09-03T00:00:00+00:00",
         "available": true,
-        "detail": "+274 M$ sur 5 s\u00e9ances \u2014 achat net",
+        "confidence": 0.95,
+        "detail": "+124 M$ derni\u00e8re s\u00e9ance; +274 M$ sur 5 et +1,727 M$ sur 20; s\u00e9rie 1 s\u00e9ance(s). Flux observ\u00e9s; leur avantage causal n\u2019est pas suppos\u00e9.",
+        "freshness": "RECENT",
         "label": "Institutions (ETF spot)",
         "name": "institutions",
-        "reason": "derni\u00e8re publication 2026-09-03",
+        "normalized_pressure": 27.400000000000002,
+        "raw_value": {
+          "extreme": false,
+          "latest_musd": 123.9,
+          "net_20d_musd": 1726.8,
+          "net_5d_musd": 274.0,
+          "streak_sessions": 1
+        },
+        "reason": "",
         "score": 27.400000000000002,
-        "source": "farside, flux publi\u00e9s par \u00e9metteur"
+        "source": "Farside Investors, flux par \u00e9metteur",
+        "weight": 0.35
       },
       {
+        "as_of": "2026-09-07T16:00:00.003000+00:00",
         "available": true,
-        "detail": "27e percentile \u2014 les shorts paient \u2014 pression vendeuse",
-        "label": "Levier (funding perp\u00e9tuel)",
+        "confidence": 0.7,
+        "detail": "27e percentile, variation 24 h +0.000010. Le c\u00f4t\u00e9 qui paie est mesur\u00e9; un extr\u00eame signale surtout un co\u00fbt et un encombrement, pas la suite du prix.",
+        "freshness": "RECENT",
+        "label": "Funding perp\u00e9tuel",
         "name": "levier",
+        "normalized_pressure": -45.2,
+        "raw_value": {
+          "change_24h": 1.009e-05,
+          "percentile": 27.4,
+          "value": 2.859e-05
+        },
         "reason": "",
         "score": -45.2,
-        "source": "funding.rate, percentile sur l'historique de l'actif"
+        "source": "funding.rate, percentile trailing par actif",
+        "weight": 0.2
       },
       {
+        "as_of": "2026-09-07T00:00:00+00:00",
         "available": true,
-        "detail": "aucun mouvement de positionnement marqu\u00e9",
-        "label": "Positionnement (prix + open interest)",
+        "confidence": 0.75,
+        "detail": "aucun changement de positionnement marqu\u00e9; OI -1.7% sur 7 j",
+        "freshness": "RECENT",
+        "label": "Prix + open interest",
         "name": "positionnement",
+        "normalized_pressure": 0.0,
+        "raw_value": {
+          "acceleration_pct": -7.5090285282454765,
+          "change_7d_pct": -1.6669217153420623,
+          "open_interest": 730803.05,
+          "state": "QUIET"
+        },
         "reason": "",
         "score": 0.0,
-        "source": "bougies journali\u00e8res et open interest"
+        "source": "OHLCV et open interest multi-exchange",
+        "weight": 0.3
       },
       {
+        "as_of": null,
         "available": false,
+        "confidence": 0.5,
         "detail": "",
-        "label": "Baleines (gros portefeuilles)",
+        "freshness": "UNAVAILABLE",
+        "label": "Baleines",
         "name": "baleines",
-        "reason": "aucun fournisseur on-chain n'est configur\u00e9. Suivre les gros portefeuilles demande un service payant; rien n'est estim\u00e9 \u00e0 la place.",
+        "normalized_pressure": null,
+        "raw_value": null,
+        "reason": "UNAVAILABLE - aucun fournisseur baleines fiable configur\u00e9",
         "score": null,
-        "source": "fournisseur on-chain"
+        "source": "fournisseur on-chain v\u00e9rifi\u00e9",
+        "weight": 0.25
+      },
+      {
+        "as_of": null,
+        "available": false,
+        "confidence": 0.5,
+        "detail": "",
+        "freshness": "UNAVAILABLE",
+        "label": "Flux spot / exchanges",
+        "name": "flux_spot",
+        "normalized_pressure": null,
+        "raw_value": null,
+        "reason": "aucune s\u00e9rie fiable de flux net spot/exchange n\u2019est configur\u00e9e",
+        "score": null,
+        "source": "connecteur de flux spot/exchange",
+        "weight": 0.15
       }
     ],
     "components_measured": 3,
     "components_missing": [
-      "Baleines (gros portefeuilles)"
+      "Baleines",
+      "Flux spot / exchanges"
+    ],
+    "contradictions": [
+      "Institutions (ETF spot) indique une pression acheteuse tandis que Funding perp\u00e9tuel indique une pression vendeuse."
     ],
     "label": "\u00c9QUILIBR\u00c9",
-    "note": "3 composante(s) mesur\u00e9e(s) sur 4. Une composante absente est retir\u00e9e du calcul, jamais compt\u00e9e comme neutre: ignorer n'est pas \u00e9quilibrer."
+    "missing": [
+      "Baleines",
+      "Flux spot / exchanges"
+    ],
+    "note": "\u00c9QUILIBR\u00c9 (+4/100), mesur\u00e9 par 3 composante(s) sur 5. Les sources ne concordent pas enti\u00e8rement.",
+    "pressure_score": 4.0,
+    "state": "BALANCED",
+    "summary": "\u00c9QUILIBR\u00c9 (+4/100), mesur\u00e9 par 3 composante(s) sur 5. Les sources ne concordent pas enti\u00e8rement."
+  },
+  "multi_timeframe_structure": {
+    "asset": "ETH",
+    "bearish_timeframes": [],
+    "bullish_timeframes": [
+      "1d"
+    ],
+    "conflict": null,
+    "timeframes": {
+      "1d": {
+        "asset": "ETH",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-08-27T00:00:00+00:00",
+            "confirmation_time": "2026-09-01T00:00:00+00:00",
+            "direction": "bullish",
+            "kind": "BOS",
+            "level": 2546.78,
+            "note": "a confirmed swing high exceeded the previous confirmed high"
+          }
+        ],
+        "interpretation": "BULLISH_STRUCTURE from the confirmed swing sequence [HH HH HL HL] across 410 confirmed pivots. Structural events: BOS bullish.",
+        "labels": [
+          "HH",
+          "HH",
+          "HL",
+          "HL"
+        ],
+        "last_confirmed_hh": 2566.53,
+        "last_confirmed_hl": 2356.41,
+        "last_confirmed_lh": null,
+        "last_confirmed_ll": null,
+        "state": "BULLISH_STRUCTURE",
+        "swings_used": 410,
+        "timeframe": "1d"
+      },
+      "1h": {
+        "asset": "ETH",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-09-07T02:00:00+00:00",
+            "confirmation_time": "2026-09-07T07:00:00+00:00",
+            "direction": "bullish",
+            "kind": "BOS",
+            "level": 2523.97,
+            "note": "a confirmed swing high exceeded the previous confirmed high"
+          },
+          {
+            "broken_at": "2026-09-07T07:00:00+00:00",
+            "confirmation_time": "2026-09-07T12:00:00+00:00",
+            "direction": "bullish",
+            "kind": "CHOCH",
+            "level": 2475.12,
+            "note": "a higher low appeared after a sequence of lower lows"
+          }
+        ],
+        "interpretation": "RANGE_STRUCTURE from the confirmed swing sequence [LH HH LL HL] across 1286 confirmed pivots. Structural events: BOS bullish, CHOCH bullish.",
+        "labels": [
+          "LH",
+          "HH",
+          "LL",
+          "HL"
+        ],
+        "last_confirmed_hh": 2536.64,
+        "last_confirmed_hl": 2475.12,
+        "last_confirmed_lh": 2523.97,
+        "last_confirmed_ll": 2460.92,
+        "state": "RANGE_STRUCTURE",
+        "swings_used": 1286,
+        "timeframe": "1h"
+      },
+      "1w": {
+        "asset": "ETH",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-06-01T00:00:00+00:00",
+            "confirmation_time": "2026-07-06T00:00:00+00:00",
+            "direction": "bearish",
+            "kind": "BOS",
+            "level": 1747.8,
+            "note": "a confirmed swing low broke below the previous confirmed low"
+          }
+        ],
+        "interpretation": "TRANSITION from the confirmed swing sequence [HH LH LL LL] across 45 confirmed pivots. Structural events: BOS bearish.",
+        "labels": [
+          "HH",
+          "LH",
+          "LL",
+          "LL"
+        ],
+        "last_confirmed_hh": 4956.78,
+        "last_confirmed_hl": null,
+        "last_confirmed_lh": 2464.91,
+        "last_confirmed_ll": 1505.68,
+        "state": "TRANSITION",
+        "swings_used": 45,
+        "timeframe": "1w"
+      },
+      "4h": {
+        "asset": "ETH",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-09-04T08:00:00+00:00",
+            "confirmation_time": "2026-09-05T04:00:00+00:00",
+            "direction": "bullish",
+            "kind": "BOS",
+            "level": 2534.98,
+            "note": "a confirmed swing high exceeded the previous confirmed high"
+          },
+          {
+            "broken_at": "2026-09-04T12:00:00+00:00",
+            "confirmation_time": "2026-09-05T08:00:00+00:00",
+            "direction": "bullish",
+            "kind": "CHOCH",
+            "level": 2431.61,
+            "note": "a higher low appeared after a sequence of lower lows"
+          }
+        ],
+        "interpretation": "RANGE_STRUCTURE from the confirmed swing sequence [LH HH LL HL] across 774 confirmed pivots. Structural events: BOS bullish, CHOCH bullish.",
+        "labels": [
+          "LH",
+          "HH",
+          "LL",
+          "HL"
+        ],
+        "last_confirmed_hh": 2546.66,
+        "last_confirmed_hl": 2431.61,
+        "last_confirmed_lh": 2534.98,
+        "last_confirmed_ll": 2356.41,
+        "state": "RANGE_STRUCTURE",
+        "swings_used": 774,
+        "timeframe": "4h"
+      }
+    }
+  },
+  "onchain": {
+    "asset": "ETH",
+    "available": false,
+    "chain_type": "",
+    "direction": "INCONCLUSIVE",
+    "evidence_ids": [],
+    "findings": [],
+    "freshness": "UNAVAILABLE",
+    "metrics": {},
+    "not_applicable": [],
+    "strength": 0.0,
+    "trends": {},
+    "unavailable_reason": "UNAVAILABLE - no on-chain data for ETH",
+    "units": {}
   },
   "overall_status": "LIVE",
   "overall_status_reason": "toutes les entr\u00e9es critiques sont dans leur cadence",
+  "patterns": [
+    {
+      "bars_span": 28,
+      "components": {
+        "bars_between": 28,
+        "difference_atr": 0.389,
+        "extreme_agreement": 61.1,
+        "pivot_quality": 100.0,
+        "reaction_atr": 5.094,
+        "reaction_depth": 100.0,
+        "time_separation": 46.7
+      },
+      "confirmation_time": "2026-09-05T04:00:00+00:00",
+      "detected_at": "2026-09-07T16:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "edge_note": "",
+      "edge_state": "NOT_YET_TESTED",
+      "geometry": {
+        "breakout_area": {
+          "end_time": "2026-09-07T16:00:00+00:00",
+          "high": 2546.66,
+          "low": 2381.88,
+          "role": "breakout",
+          "start_time": "2026-08-30T16:00:00+00:00"
+        },
+        "neckline": {
+          "end": {
+            "kind": "pivot",
+            "price": 2381.88,
+            "role": "neckline",
+            "time": "2026-09-07T16:00:00+00:00"
+          },
+          "extend": true,
+          "role": "neckline",
+          "start": {
+            "kind": "pivot",
+            "price": 2381.88,
+            "role": "neckline",
+            "time": "2026-08-30T16:00:00+00:00"
+          }
+        },
+        "points": [
+          {
+            "kind": "pivot",
+            "price": 2534.98,
+            "role": "first_top",
+            "time": "2026-08-30T16:00:00+00:00"
+          },
+          {
+            "kind": "pivot",
+            "price": 2546.66,
+            "role": "second_top",
+            "time": "2026-09-04T08:00:00+00:00"
+          }
+        ],
+        "trend_lines": [
+          {
+            "end": {
+              "kind": "pivot",
+              "price": 2381.88,
+              "role": "neckline",
+              "time": "2026-09-07T16:00:00+00:00"
+            },
+            "extend": true,
+            "role": "neckline",
+            "start": {
+              "kind": "pivot",
+              "price": 2381.88,
+              "role": "neckline",
+              "time": "2026-08-30T16:00:00+00:00"
+            }
+          }
+        ],
+        "zones": [
+          {
+            "end_time": "2026-09-07T16:00:00+00:00",
+            "high": 2546.66,
+            "low": 2381.88,
+            "role": "breakout",
+            "start_time": "2026-08-30T16:00:00+00:00"
+          }
+        ]
+      },
+      "invalidation_level": 2546.66,
+      "invalidation_rule": "a 4h close above 2546.66 would break both highs and invalidate the double top",
+      "key_levels": {
+        "first_extreme": 2534.98,
+        "neckline": 2381.88,
+        "second_extreme": 2546.66
+      },
+      "name": "double_top",
+      "notes": "two tops within 0.39 ATR of each other, separated by 28 bars, with a 5.09 ATR reaction between them",
+      "pattern_class": "DETERMINISTIC",
+      "recognition_confidence": 77.0,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "state": "CANDIDATE"
+    }
+  ],
   "uncertainty": {
     "asset": "ETH",
     "drivers": [
@@ -632,28 +1529,34 @@
   },
   "upcoming_macro": [
     {
-      "days_until": 2.8,
-      "hours_until": 67.0,
+      "days_until": 2.7,
+      "hours_until": 64.7,
       "importance": "CRITICAL",
       "kind": "CPI",
       "name": "US CPI (Aug)",
-      "scheduled_at": "2026-09-10 12:30:00+00:00"
+      "scheduled_at": "2026-09-10 12:30:00+00:00",
+      "source": "config/macro_calendar.yaml",
+      "source_url": null
     },
     {
-      "days_until": 9.0,
-      "hours_until": 216.5,
+      "days_until": 8.9,
+      "hours_until": 214.2,
       "importance": "CRITICAL",
       "kind": "FOMC",
       "name": "FOMC Rate Decision",
-      "scheduled_at": "2026-09-16 18:00:00+00:00"
+      "scheduled_at": "2026-09-16 18:00:00+00:00",
+      "source": "config/macro_calendar.yaml",
+      "source_url": null
     },
     {
-      "days_until": 9.0,
-      "hours_until": 217.0,
+      "days_until": 8.9,
+      "hours_until": 214.7,
       "importance": "IMPORTANT",
       "kind": "FOMC",
       "name": "FOMC Press Conference",
-      "scheduled_at": "2026-09-16 18:30:00+00:00"
+      "scheduled_at": "2026-09-16 18:30:00+00:00",
+      "source": "config/macro_calendar.yaml",
+      "source_url": null
     }
   ],
   "volatility": {

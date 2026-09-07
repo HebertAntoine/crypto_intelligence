@@ -59,6 +59,108 @@ Map<String, dynamic> _today(String asset, {bool withMarket = true}) => {
       'leverage_state': {'state': 'NEW_LONGS'},
       'funding': {'band': 'NEUTRAL', 'percentile': 25.4},
       'volatility': {'regime': 'LOW'},
+      'buy_opportunity': 'FAVORABLE',
+      'buy_opportunity_explanation': {
+        'state': 'FAVORABLE',
+        'headline': 'FAVORABLE',
+        'summary':
+            'La structure est favorable, mais aucun avantage statistique ne garantit la suite.',
+        'positives': [
+          {
+            'id': 'structure.multi_timeframe',
+            'category': 'STRUCTURE',
+            'title': 'Structure haussière',
+            'short_text': '1D et 4H haussiers; prix près du bas du range.',
+            'raw_value': {
+              'bullish': ['1d', '4h']
+            },
+            'normalized_value': 55,
+            'polarity': 'POSITIVE',
+            'importance': 84,
+            'confidence': .8,
+            'evidence_level': 'COMPUTATION',
+            'timeframe': '1D/4H',
+            'source': 'MarketStructureEngine',
+            'as_of': '2026-09-07T15:23:29.000Z',
+            'freshness': 'RECENT',
+            'available': true,
+          },
+        ],
+        'waits': [
+          {
+            'id': 'edge.none',
+            'category': 'MEASURED_EDGE',
+            'title': 'Aucun avantage statistique démontré',
+            'short_text': '0 validée, 3 rejetées.',
+            'raw_value': {'admitted': 0, 'rejected': 3},
+            'normalized_value': 0,
+            'polarity': 'WAIT',
+            'importance': 88,
+            'confidence': 1,
+            'evidence_level': 'COMPUTATION',
+            'timeframe': 'HISTORIQUE',
+            'source': 'EdgeEngine',
+            'as_of': '2026-09-07T15:23:29.000Z',
+            'freshness': 'RECENT',
+            'available': true,
+          },
+        ],
+        'negatives': [],
+        'missing': [
+          {
+            'id': 'pressure.baleines',
+            'category': 'WHALES',
+            'title': 'Baleines',
+            'short_text': 'Aucun fournisseur fiable configuré.',
+            'polarity': 'MISSING',
+            'importance': 35,
+            'confidence': 1,
+            'evidence_level': 'MISSING',
+            'timeframe': 'NOW',
+            'source': 'fournisseur on-chain',
+            'freshness': 'UNAVAILABLE',
+            'available': false,
+          },
+        ],
+        'improvement_conditions': ['un retest confirmé du support'],
+        'deterioration_conditions': ['une cassure baissière du support'],
+        'as_of': '2026-09-07T15:23:29.000Z',
+        'provenance': {'llm_used': false},
+      },
+      'market_pressure': {
+        'state': 'BALANCED',
+        'pressure_score': 6.5,
+        'balance': 53.25,
+        'label': 'ÉQUILIBRÉ',
+        'components_measured': 2,
+        'components_missing': ['Baleines'],
+        'contradictions': [
+          'Les ETF achètent tandis que le positionnement dérivé vend.',
+        ],
+        'summary': 'ÉQUILIBRÉ (+7/100), mesuré par 2 composantes sur 5.',
+        'as_of': '2026-09-07T15:23:29.000Z',
+        'components': [
+          {
+            'name': 'institutions',
+            'label': 'Institutions (ETF spot)',
+            'available': true,
+            'normalized_pressure': 45,
+            'weight': .35,
+            'confidence': .95,
+            'detail': '+450 M\$ sur 5 séances',
+            'source': 'Farside Investors',
+            'freshness': 'RECENT',
+          },
+          {
+            'name': 'baleines',
+            'label': 'Baleines',
+            'available': false,
+            'reason': 'Aucun fournisseur fiable configuré.',
+            'source': 'fournisseur on-chain',
+            'freshness': 'UNAVAILABLE',
+          },
+        ],
+      },
       'overall_status': withMarket ? 'LIVE' : 'UNAVAILABLE',
       'overall_status_reason': withMarket
           ? 'toutes les entrées critiques sont dans leur cadence'
@@ -192,110 +294,61 @@ void main() {
     });
   });
 
-  group('Une donnée périmée ne dit jamais OK', () {
-    testWidgets('le funding périmé est affiché comme tel, pas comme disponible',
+  group('Surface décisionnelle compacte', () {
+    testWidgets('la carte fermée ne montre que les réponses principales',
         (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('BTC').first);
-      await tester.pumpAndSettle();
+      await _pumpAt(
+          tester, const Size(430, 932), TodayScreen(client: _client()));
 
-      // Le funding du fixture est present et valide mais vieux de 24 h.
-      expect(find.textContaining('PÉRIMÉ'), findsWidgets);
-      expect(find.textContaining('non utilisable'), findsWidgets);
-    });
-
-    testWidgets('l’identifiant technique n’est jamais montré à l’utilisateur',
-        (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('BTC').first);
-      await tester.pumpAndSettle();
-
-      // Les enums restent anglais en interne; l'UI francaise les traduit.
-      expect(find.text('ohlcv_daily'), findsNothing);
-      expect(find.text('open_interest'), findsNothing);
+      expect(find.text('RÉGIME'), findsWidgets);
+      expect(find.text('FAVORABLE'), findsWidgets);
+      expect(find.text('QUI ACHÈTE, QUI VEND ?'), findsWidgets);
+      expect(find.text('Voir pourquoi'), findsWidgets);
+      expect(find.text('Voir les sources'), findsWidgets);
+      // Les détails de structure restent fermés au premier regard.
+      expect(find.textContaining('prix près du bas du range'), findsNothing);
       expect(find.text('STRONGLY_BULLISH'), findsNothing);
+      expect(find.text('ohlcv_daily'), findsNothing);
     });
-  });
 
-  group('Cohérence fraîcheur / analyse', () {
-    testWidgets('le funding périmé n’est pas présenté comme utilisable',
+    testWidgets('Voir pourquoi ouvre les groupes sourcés et les conditions',
         (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('BTC').first);
+      await _pumpAt(
+          tester, const Size(430, 932), TodayScreen(client: _client()));
+      await tester.tap(find.text('Voir pourquoi').first);
       await tester.pumpAndSettle();
 
-      // Le percentile historique reste affiché - il est valide - mais la
-      // ligne dit explicitement que l'entrée n'est pas utilisable.
-      expect(find.textContaining('Funding (contexte historique)'), findsOneWidget);
-      expect(find.textContaining('Entrée non utilisable'), findsWidgets);
-    });
-
-    testWidgets('volatilité réalisée et implicite ne sont pas confondues',
-        (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('BTC').first);
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Volatilité réalisée (ATR)'), findsOneWidget);
-    });
-
-    testWidgets('la direction annonce son mode simplifié', (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('BTC').first);
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('mode prix simplifié'), findsOneWidget);
-    });
-
-    testWidgets('aucune chaîne anglaise ne reste visible', (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('BTC').first);
-      await tester.pumpAndSettle();
-
-      for (final anglais in ['Drivers', 'Caveats', 'NEUTRAL', 'STRONGLY_BULLISH']) {
-        expect(find.text(anglais), findsNothing, reason: '$anglais visible');
-      }
-
-      // Les sections plus bas ne sont pas construites (ListView paresseux);
-      // leur libellé français est vérifié statiquement côté backend, par
-      // test_no_fake_frontend_market_data.py.
-    });
-  });
-
-  group('Diagnostic par crypto', () {
-    testWidgets('le panneau s’ouvre au clic sur la carte', (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-
-      await tester.tap(find.text('BTC').first);
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('DONNÉES REÇUES'), findsOneWidget);
-      expect(find.textContaining('contrôles passés'), findsOneWidget);
+      expect(find.text('POURQUOI FAVORABLE ?'), findsOneWidget);
+      expect(find.text('CE QUI AIDE'), findsOneWidget);
+      expect(find.text('CE QUI FAIT ATTENDRE'), findsOneWidget);
+      expect(find.textContaining('MarketStructureEngine'), findsOneWidget);
+      expect(find.textContaining('EdgeEngine'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('il montre la valeur brute reçue, pas une reformulation',
+    testWidgets('la pression détaille les sources et les absences',
         (tester) async {
-      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('BTC').first);
+      await _pumpAt(
+          tester, const Size(430, 932), TodayScreen(client: _client()));
+      final trigger = find.text('Voir les sources').first;
+      await tester.ensureVisible(trigger);
+      await tester.tap(trigger);
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('68033.92'), findsWidgets);
-      expect(find.textContaining('Coinbase direct EUR spot pair'), findsWidgets);
+      expect(find.text('Institutions (ETF spot)'), findsOneWidget);
+      expect(find.text('Baleines'), findsOneWidget);
+      expect(find.textContaining('Aucun fournisseur fiable'), findsOneWidget);
+      expect(find.text('CONTRADICTIONS'), findsOneWidget);
     });
 
-    testWidgets('un bloc de prix absent est signalé comme un échec',
+    testWidgets('un prix réellement absent reste explicitement indisponible',
         (tester) async {
       await _pumpAt(
         tester,
         const Size(430, 932),
         TodayScreen(client: _client(withMarket: false)),
       );
-      await tester.tap(find.text('BTC').first);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Bloc market_data'), findsOneWidget);
-      expect(find.textContaining('aucun bloc de prix'), findsOneWidget);
+      expect(find.text('INDISPONIBLE'), findsWidgets);
     });
   });
 }

@@ -144,7 +144,8 @@ def _institutional(asset: Asset) -> PressureComponent:
     }
     component.detail = (
         f"{latest:+,.0f} M$ dernière séance; {net_5:+,.0f} M$ sur 5 et "
-        f"{net_20:+,.0f} M$ sur 20; série {streak} séance(s)."
+        f"{net_20:+,.0f} M$ sur 20; série {streak} séance(s). "
+        "Flux observés; leur avantage causal n’est pas supposé."
     )
     if age > 7:
         component.reason = f"dernière publication il y a {age} jours, trop ancienne"
@@ -154,7 +155,7 @@ def _institutional(asset: Asset) -> PressureComponent:
     return component
 
 
-def _funding(percentile: float | None, usable: bool,
+def _funding(asset: Asset, percentile: float | None, usable: bool,
              family_states: dict[str, Any] | None) -> PressureComponent:
     as_of, freshness = _source_state(family_states, "funding")
     component = PressureComponent(
@@ -165,20 +166,33 @@ def _funding(percentile: float | None, usable: bool,
     if percentile is None:
         component.reason = "historique insuffisant pour calculer le percentile"
         return component
-    component.raw_value = {"percentile": percentile}
+    from ..history import store
+
+    series = store.load_derivatives(asset, "funding.rate")
+    current = float(series.iloc[-1]) if not series.empty else None
+    change_24h = (
+        float(current - series.iloc[-4])
+        if current is not None and len(series) >= 4 else None
+    )
+    component.raw_value = {
+        "value": current, "percentile": percentile,
+        "change_24h": change_24h,
+    }
     if not usable:
         component.reason = "dernière observation trop ancienne"
         return component
     component.available = True
     component.normalized_pressure = max(-100, min(100, (percentile - 50) * 2))
     component.detail = (
-        f"{percentile:.0f}e percentile. Le côté qui paie est mesuré; "
+        f"{percentile:.0f}e percentile"
+        + (f", variation 24 h {change_24h:+.6f}" if change_24h is not None else "")
+        + ". Le côté qui paie est mesuré; "
         "un extrême signale surtout un coût et un encombrement, pas la suite du prix."
     )
     return component
 
 
-def _positioning(state: str, usable: bool,
+def _positioning(asset: Asset, state: str, usable: bool,
                  family_states: dict[str, Any] | None) -> PressureComponent:
     as_of, freshness = _source_state(family_states, "open_interest")
     component = PressureComponent(
@@ -189,6 +203,26 @@ def _positioning(state: str, usable: bool,
     if not usable:
         component.reason = "open interest ou prix trop ancien"
         return component
+    from ..history import store
+
+    oi = store.load_derivatives(asset, "oi.contracts_bybit")
+    if oi.empty:
+        oi = store.load_derivatives(asset, "oi.value")
+    daily = oi.resample("1D").last().dropna() if not oi.empty else oi
+    latest_oi = float(daily.iloc[-1]) if not daily.empty else None
+    change_7d = (
+        float((daily.iloc[-1] / daily.iloc[-8] - 1) * 100)
+        if len(daily) >= 8 and daily.iloc[-8] else None
+    )
+    acceleration = None
+    if len(daily) >= 7:
+        recent_change = float(daily.iloc[-1] / daily.iloc[-4] - 1)
+        prior_change = float(daily.iloc[-4] / daily.iloc[-7] - 1)
+        acceleration = (recent_change - prior_change) * 100
+    component.raw_value = {
+        "state": state, "open_interest": latest_oi,
+        "change_7d_pct": change_7d, "acceleration_pct": acceleration,
+    }
     score, detail = {
         "NEW_LONGS": (70, "prix et OI montent: nouvelles positions dans la hausse"),
         "NEW_SHORTS": (-70, "prix baisse et OI monte: nouvelles positions vendeuses"),
@@ -203,7 +237,10 @@ def _positioning(state: str, usable: bool,
         return component
     component.available = True
     component.normalized_pressure = float(score)
-    component.detail = detail
+    component.detail = detail + (
+        f"; OI {change_7d:+.1f}% sur 7 j"
+        if change_7d is not None else ""
+    )
     return component
 
 
@@ -272,8 +309,8 @@ def assess_pressure(
 ) -> MarketPressureExplanation:
     components = [
         _institutional(asset),
-        _funding(funding_percentile, funding_usable, family_states),
-        _positioning(leverage_state, positioning_usable, family_states),
+        _funding(asset, funding_percentile, funding_usable, family_states),
+        _positioning(asset, leverage_state, positioning_usable, family_states),
         _whales(whale_analysis),
         _spot_flow(),
     ]

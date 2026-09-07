@@ -7,25 +7,29 @@ payload. It never calls an LLM and never invents a missing measurement.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any, Iterable
+from typing import Any, ClassVar
 
 from ..core.enums import Asset
 
 
 class BuyOpportunityState(StrEnum):
-    VERY_FAVORABLE = "VERY_FAVORABLE"
-    FAVORABLE = "FAVORABLE"
+    """Les six états, et rien d'autre.
+
+    Une version précédente gardait VERY_FAVORABLE / FAVORABLE avec des alias
+    pointant dessus. Les alias ne changent pas la valeur sérialisée: le payload
+    d'ETH sortait « FAVORABLE », un état que l'interface ne sait pas nommer.
+    """
+
+    STRONG_OPPORTUNITY = "STRONG_OPPORTUNITY"
+    OPPORTUNITY = "OPPORTUNITY"
     WATCH = "WATCH"
     WAIT = "WAIT"
     UNFAVORABLE = "UNFAVORABLE"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
-
-    # Python aliases for callers deployed before the v2 API vocabulary.
-    STRONG_OPPORTUNITY = "VERY_FAVORABLE"
-    OPPORTUNITY = "FAVORABLE"
 
 
 class Polarity(StrEnum):
@@ -111,9 +115,9 @@ Factor = DecisionFactor
 class DecisionFactorRanker:
     """Rank importance, abnormality, change, event proximity and evidence."""
 
-    evidence = {"FACT": 1.0, "COMPUTATION": .9, "INTERPRETATION": .65,
+    evidence: ClassVar[dict[str, float]] = {"FACT": 1.0, "COMPUTATION": .9, "INTERPRETATION": .65,
                 "HYPOTHESIS": .25, "MISSING": 0.0}
-    freshness = {"LIVE": 1.0, "RECENT": .9, "MIN_15": .9, "HOUR_1": .8,
+    freshness: ClassVar[dict[str, float]] = {"LIVE": 1.0, "RECENT": .9, "MIN_15": .9, "HOUR_1": .8,
                  "TODAY": .7, "DELAYED": .4, "STALE": .15,
                  "UNAVAILABLE": 0.0}
 
@@ -143,7 +147,18 @@ class DecisionFactorRanker:
     def rank(self, factors: Iterable[DecisionFactor], polarity: Polarity,
              limit: int = 5) -> list[DecisionFactor]:
         selected = [factor for factor in factors if factor.polarity is polarity]
-        return sorted(selected, key=lambda f: (-self.score(f), f.id))[:limit]
+        # Dédoublonner sur le texte affiché: deux moteurs peuvent signaler la
+        # même lacune, et la voir écrite deux fois de suite donne l'impression
+        # de deux problèmes distincts.
+        seen: set[tuple[str, str]] = set()
+        unique: list[DecisionFactor] = []
+        for factor in sorted(selected, key=lambda f: (-self.score(f), f.id)):
+            key = (factor.title, factor.short_text)
+            if key in seen:
+                continue
+            seen.add(key)
+            unique.append(factor)
+        return unique[:limit]
 
 
 @dataclass(slots=True)
@@ -203,22 +218,22 @@ class BuyOpportunityExplanation:
 
 
 HEADLINES = {
-    BuyOpportunityState.VERY_FAVORABLE: "TRÈS FAVORABLE",
-    BuyOpportunityState.FAVORABLE: "FAVORABLE",
+    BuyOpportunityState.STRONG_OPPORTUNITY: "OPPORTUNITÉ FORTE",
+    BuyOpportunityState.OPPORTUNITY: "OUI, CONTEXTE FAVORABLE",
     BuyOpportunityState.WATCH: "À SURVEILLER",
     BuyOpportunityState.WAIT: "ATTENDRE",
-    BuyOpportunityState.UNFAVORABLE: "DÉFAVORABLE",
+    BuyOpportunityState.UNFAVORABLE: "NON, CONTEXTE DÉFAVORABLE",
     BuyOpportunityState.INSUFFICIENT_DATA: "DONNÉES INSUFFISANTES",
 }
 BASE_MAPPING = {
-    "VERY_FAVORABLE": BuyOpportunityState.VERY_FAVORABLE,
-    "FAVORABLE": BuyOpportunityState.FAVORABLE,
+    "VERY_FAVORABLE": BuyOpportunityState.STRONG_OPPORTUNITY,
+    "FAVORABLE": BuyOpportunityState.OPPORTUNITY,
     "NEUTRAL": BuyOpportunityState.WAIT,
     "UNFAVORABLE": BuyOpportunityState.UNFAVORABLE,
     "VERY_UNFAVORABLE": BuyOpportunityState.UNFAVORABLE,
     "INSUFFICIENT_DATA": BuyOpportunityState.INSUFFICIENT_DATA,
 }
-SEVERITY = [BuyOpportunityState.VERY_FAVORABLE, BuyOpportunityState.FAVORABLE,
+SEVERITY = [BuyOpportunityState.STRONG_OPPORTUNITY, BuyOpportunityState.OPPORTUNITY,
             BuyOpportunityState.WATCH, BuyOpportunityState.WAIT,
             BuyOpportunityState.UNFAVORABLE]
 MACRO_RISK_HOURS = 24.0
@@ -279,12 +294,13 @@ def _pressure_factors(pressure: Any, as_of: str) -> list[DecisionFactor]:
         name = str(getattr(component, "name", "pressure"))
         available = bool(getattr(component, "available", False))
         score = getattr(component, "score", None)
-        common = dict(
-            id=f"pressure.{name}", category=categories.get(name, Category.POSITIONING),
-            title=str(getattr(component, "label", name)),
-            source=str(getattr(component, "source", "")),
-            as_of=getattr(component, "as_of", None) or as_of,
-        )
+        common = {
+            "id": f"pressure.{name}",
+            "category": categories.get(name, Category.POSITIONING),
+            "title": str(getattr(component, "label", name)),
+            "source": str(getattr(component, "source", "")),
+            "as_of": getattr(component, "as_of", None) or as_of,
+        }
         if not available or score is None:
             out.append(DecisionFactor(
                 **common, short_text=str(getattr(component, "reason", "donnée indisponible")),
@@ -367,7 +383,7 @@ def decide(
             confidence=1, timeframe="HISTORIQUE", source="EdgeEngine",
             as_of=now, freshness="RECENT",
         ))
-        if state is BuyOpportunityState.VERY_FAVORABLE:
+        if state is BuyOpportunityState.STRONG_OPPORTUNITY:
             state = BuyOpportunityState.WATCH
             guards.append("Aucun avantage statistique démontré: plafond « à surveiller ».")
 
@@ -451,11 +467,18 @@ def decide(
         direction = str(getattr(volatility, "direction", "STABLE"))
         percentile = getattr(volatility, "atr_percentile", None)
         risky = regime_label in ("HIGH", "VERY_HIGH") or direction == "EXPANDING"
+        state_label = (
+            "EXTREME" if regime_label == "VERY_HIGH" else
+            "EXPANSION" if direction == "EXPANDING" or regime_label == "HIGH" else
+            "COMPRESSION" if regime_label in ("LOW", "VERY_LOW") or
+            direction == "CONTRACTING" else "NORMAL"
+        )
         factors.append(DecisionFactor(
             id="volatility.realised", category=Category.VOLATILITY,
-            title=f"Volatilité {regime_label.lower()}",
-            short_text=f"Volatilité réalisée {direction.lower()}; amplitude, pas direction.",
-            raw_value={"regime": regime_label, "direction": direction,
+            title=f"Volatilité {state_label.lower()}",
+            short_text=(f"État normalisé {state_label}; volatilité réalisée "
+                        f"{direction.lower()}. Cela mesure l’amplitude, pas le sens."),
+            raw_value={"state": state_label, "regime": regime_label, "direction": direction,
                        "percentile": percentile},
             normalized_value=float(percentile or 0),
             polarity=Polarity.WAIT if risky else Polarity.NEUTRAL,
@@ -572,8 +595,8 @@ def _summary(state: BuyOpportunityState, positives: list[DecisionFactor],
              waits: list[DecisionFactor], negatives: list[DecisionFactor],
              missing: list[DecisionFactor]) -> str:
     base = {
-        BuyOpportunityState.VERY_FAVORABLE: "Les facteurs majeurs concordent dans un contexte nettement favorable.",
-        BuyOpportunityState.FAVORABLE: "La configuration est plus favorable que la normale, sans garantie de performance.",
+        BuyOpportunityState.STRONG_OPPORTUNITY: "Les facteurs majeurs concordent dans un contexte nettement favorable.",
+        BuyOpportunityState.OPPORTUNITY: "La configuration est plus favorable que la normale, sans garantie de performance.",
         BuyOpportunityState.WATCH: "La configuration mérite d’être suivie, mais ne justifie pas encore d’agir.",
         BuyOpportunityState.WAIT: "Un facteur de risque ou de timing majeur justifie d’attendre.",
         BuyOpportunityState.UNFAVORABLE: "La structure ou le risque rend l’entrée moins favorable que la normale.",
@@ -605,7 +628,7 @@ def _changes(entry: Any, edge_state: str, state: BuyOpportunityState,
     invalidation = str(getattr(entry, "invalidation", "") or "")
     if invalidation and "no validated range" not in invalidation:
         deteriorate.append(invalidation)
-    if state in (BuyOpportunityState.FAVORABLE, BuyOpportunityState.VERY_FAVORABLE):
+    if state in (BuyOpportunityState.OPPORTUNITY, BuyOpportunityState.STRONG_OPPORTUNITY):
         deteriorate.append("une expansion de volatilité avec rupture baissière")
     if not deteriorate:
         deteriorate.append("une rupture baissière confirmée de la structure actuelle")

@@ -1,6 +1,420 @@
 {
   "allows_action": true,
   "asset": "SOL",
+  "breakout": {
+    "asset": "SOL",
+    "bars_since_break": 25,
+    "close_beyond_atr": 1.285,
+    "components": {
+      "distance_beyond_level": 85.7,
+      "follow_through": 0.0,
+      "level_touches": 25.0,
+      "relative_volume": 100.0,
+      "retest": 85.0,
+      "volatility_expansion": 12.9
+    },
+    "direction": "UP",
+    "edge_note": "Quality measures how convincing the break is. It is NOT a probability that price continues, and carries no directional recommendation.",
+    "follow_through_pct": -1.56,
+    "higher_timeframe_aligned": true,
+    "interpretation": "BREAKOUT_RETEST to the up through 102.91, 25 bar(s) ago. Conviction 51/100 (closed 1.285 ATR beyond, volume 2.74x), aligned with the higher timeframe. A retest occurred. This scores how clean the break is, not what happens next.",
+    "level": 102.91,
+    "level_touches": 2,
+    "missing": [],
+    "quality_score": 51.4,
+    "relative_volume": 2.74,
+    "retest_occurred": true,
+    "state": "BREAKOUT_RETEST",
+    "timeframe": "4h"
+  },
+  "buy_opportunity": "WAIT",
+  "buy_opportunity_explanation": {
+    "as_of": "2026-09-07T19:45:33.860241+00:00",
+    "deterioration_conditions": [
+      "A 4h close above 107.86 would break the range top zone and invalidate the current range reading."
+    ],
+    "disclaimer": "\u00c9valuation d\u00e9terministe du contexte, pas une garantie de performance ni un conseil. L\u2019application ne passe aucun ordre.",
+    "guard_rails_applied": [],
+    "headline": "ATTENDRE",
+    "improvement_conditions": [
+      "un retour vers une zone structurelle basse valid\u00e9e",
+      "un avantage qui franchisse les baselines et contr\u00f4les de stabilit\u00e9"
+    ],
+    "measured_edge_state": "NO_MEASURABLE_EDGE",
+    "missing": [
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": false,
+        "category": "DATA_QUALITY",
+        "confidence": 1.0,
+        "evidence_level": "MISSING",
+        "explanation": "1d structure is RANGE_STRUCTURE",
+        "freshness": "UNAVAILABLE",
+        "id": "entry.missing.0",
+        "importance": 45,
+        "normalized_value": null,
+        "polarity": "MISSING",
+        "raw_value": null,
+        "short_text": "1d structure is RANGE_STRUCTURE",
+        "source": "EntryOpportunityEngine",
+        "timeframe": "4H/1D",
+        "title": "Lecture structurelle incompl\u00e8te"
+      },
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": false,
+        "category": "DATA_QUALITY",
+        "confidence": 1.0,
+        "evidence_level": "MISSING",
+        "explanation": "Famille exclue plut\u00f4t que remplac\u00e9e par une estimation.",
+        "freshness": "UNAVAILABLE",
+        "id": "data.missing.dvol",
+        "importance": 35,
+        "normalized_value": null,
+        "polarity": "MISSING",
+        "raw_value": null,
+        "short_text": "Famille exclue plut\u00f4t que remplac\u00e9e par une estimation.",
+        "source": "DataUsability",
+        "timeframe": "NOW",
+        "title": "Dvol indisponible ou p\u00e9rim\u00e9"
+      },
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": false,
+        "category": "WHALES",
+        "confidence": 1.0,
+        "evidence_level": "MISSING",
+        "explanation": "UNAVAILABLE - aucun fournisseur baleines fiable configur\u00e9",
+        "freshness": "UNAVAILABLE",
+        "id": "pressure.baleines",
+        "importance": 35,
+        "normalized_value": null,
+        "polarity": "MISSING",
+        "raw_value": null,
+        "short_text": "UNAVAILABLE - aucun fournisseur baleines fiable configur\u00e9",
+        "source": "fournisseur on-chain v\u00e9rifi\u00e9",
+        "timeframe": "NOW",
+        "title": "Baleines"
+      },
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": false,
+        "category": "LIQUIDITY",
+        "confidence": 1.0,
+        "evidence_level": "MISSING",
+        "explanation": "aucune s\u00e9rie fiable de flux net spot/exchange n\u2019est configur\u00e9e",
+        "freshness": "UNAVAILABLE",
+        "id": "pressure.flux_spot",
+        "importance": 35,
+        "normalized_value": null,
+        "polarity": "MISSING",
+        "raw_value": null,
+        "short_text": "aucune s\u00e9rie fiable de flux net spot/exchange n\u2019est configur\u00e9e",
+        "source": "connecteur de flux spot/exchange",
+        "timeframe": "NOW",
+        "title": "Flux spot / exchanges"
+      },
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": false,
+        "category": "ETF",
+        "confidence": 1.0,
+        "evidence_level": "MISSING",
+        "explanation": "aucun flux ETF spot SOL suivi par cette source",
+        "freshness": "UNAVAILABLE",
+        "id": "pressure.institutions",
+        "importance": 35,
+        "normalized_value": null,
+        "polarity": "MISSING",
+        "raw_value": null,
+        "short_text": "aucun flux ETF spot SOL suivi par cette source",
+        "source": "Farside Investors, flux par \u00e9metteur",
+        "timeframe": "NOW",
+        "title": "Institutions (ETF spot)"
+      }
+    ],
+    "negatives": [
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": true,
+        "category": "LOCATION",
+        "confidence": 0.72,
+        "evidence_level": "COMPUTATION",
+        "explanation": "4h price is near range top, zone quality 75/100",
+        "freshness": "RECENT",
+        "id": "entry.structural_location",
+        "importance": 50,
+        "normalized_value": -25.0,
+        "polarity": "NEGATIVE",
+        "raw_value": -25.0,
+        "short_text": "4h price is near range top, zone quality 75/100",
+        "source": "structure",
+        "timeframe": "4H/1D",
+        "title": "Structural location"
+      },
+      {
+        "as_of": "2026-09-07T16:00:00.003000+00:00",
+        "available": true,
+        "category": "FUNDING",
+        "confidence": 0.7,
+        "evidence_level": "FACT",
+        "explanation": "31e percentile, variation 24 h -0.000092. Le c\u00f4t\u00e9 qui paie est mesur\u00e9; un extr\u00eame signale surtout un co\u00fbt et un encombrement, pas la suite du prix.",
+        "freshness": "RECENT",
+        "id": "pressure.levier",
+        "importance": 37,
+        "normalized_value": -37.2,
+        "polarity": "NEGATIVE",
+        "raw_value": -37.2,
+        "short_text": "31e percentile, variation 24 h -0.000092. Le c\u00f4t\u00e9 qui paie est mesur\u00e9; un extr\u00eame signale surtout un co\u00fbt et un encombrement, pas la suite du prix.",
+        "source": "funding.rate, percentile trailing par actif",
+        "timeframe": "NOW/5D",
+        "title": "Funding perp\u00e9tuel"
+      }
+    ],
+    "positives": [
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": true,
+        "category": "REGIME",
+        "confidence": 0.9,
+        "evidence_level": "COMPUTATION",
+        "explanation": "Tendance, structure et momentum concordent \u00e0 90%.",
+        "freshness": "RECENT",
+        "id": "regime.market",
+        "importance": 78,
+        "normalized_value": 55,
+        "polarity": "POSITIVE",
+        "raw_value": {
+          "confidence": 90.0,
+          "regime": "STRONGLY_BULLISH"
+        },
+        "short_text": "Tendance, structure et momentum concordent \u00e0 90%.",
+        "source": "MarketRegimeEngine",
+        "timeframe": "1D",
+        "title": "R\u00e9gime strongly bullish"
+      }
+    ],
+    "provenance": {
+      "decision_engine": "BuyOpportunityDecisionEngine/v2",
+      "factor_ranker": "DecisionFactorRanker/v1",
+      "factors_considered": 24,
+      "llm_used": false,
+      "selected_factor_ids": [
+        "regime.market",
+        "structure.breakout",
+        "edge.none",
+        "structure.pattern",
+        "track.live",
+        "cross_asset.nasdaq",
+        "entry.structural_location",
+        "pressure.levier",
+        "entry.missing.0",
+        "data.missing.dvol",
+        "pressure.baleines",
+        "pressure.flux_spot",
+        "pressure.institutions"
+      ]
+    },
+    "score": -3.0,
+    "short_summary": "Un facteur de risque ou de timing majeur justifie d\u2019attendre. Facteur principal: Structural location.",
+    "state": "WAIT",
+    "summary": "Un facteur de risque ou de timing majeur justifie d\u2019attendre. Facteur principal: Structural location.",
+    "waits": [
+      {
+        "as_of": "2026-09-07T19:45:32.636915+00:00",
+        "available": true,
+        "category": "STRUCTURE",
+        "confidence": 0.72,
+        "evidence_level": "COMPUTATION",
+        "explanation": "BREAKOUT_RETEST to the up through 102.91, 25 bar(s) ago. Conviction 51/100 (closed 1.285 ATR beyond, volume 2.74x), aligned with the higher timeframe. A retest occurred. This scores how clean the break is, not what happens next. La qualit\u00e9 du break ne pr\u00e9dit pas sa suite.",
+        "freshness": "RECENT",
+        "id": "structure.breakout",
+        "importance": 76,
+        "normalized_value": 51.4,
+        "polarity": "WAIT",
+        "raw_value": {
+          "direction": "UP",
+          "quality": 51.4,
+          "recent_change": 0.3,
+          "state": "BREAKOUT_RETEST"
+        },
+        "short_text": "BREAKOUT_RETEST to the up through 102.91, 25 bar(s) ago. Conviction 51/100 (closed 1.285 ATR beyond, volume 2.74x), aligned with the higher timeframe. A retest occurred. This scores how clean the break is, not what happens next. La qualit\u00e9 du break ne pr\u00e9dit pas sa suite.",
+        "source": "BreakoutQualityEngine",
+        "timeframe": "4H",
+        "title": "Breakout retest"
+      },
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": true,
+        "category": "MEASURED_EDGE",
+        "confidence": 1.0,
+        "evidence_level": "COMPUTATION",
+        "explanation": "0 valid\u00e9e(s), 9 rejet\u00e9e(s). Cela ne dit pas que le prix va baisser; aucun avantage n\u2019a \u00e9t\u00e9 d\u00e9montr\u00e9.",
+        "freshness": "RECENT",
+        "id": "edge.none",
+        "importance": 88,
+        "normalized_value": 0,
+        "polarity": "WAIT",
+        "raw_value": {
+          "admitted": 0,
+          "rejected": 9
+        },
+        "short_text": "0 valid\u00e9e(s), 9 rejet\u00e9e(s). Cela ne dit pas que le prix va baisser; aucun avantage n\u2019a \u00e9t\u00e9 d\u00e9montr\u00e9.",
+        "source": "EdgeEngine",
+        "timeframe": "HISTORIQUE",
+        "title": "Aucun avantage statistique d\u00e9montr\u00e9"
+      },
+      {
+        "as_of": "2026-09-07T16:00:00+00:00",
+        "available": true,
+        "category": "STRUCTURE",
+        "confidence": 0.7,
+        "evidence_level": "COMPUTATION",
+        "explanation": "Reconnaissance 80/100, \u00e9tat candidate; edge s\u00e9par\u00e9: NOT_YET_TESTED. La reconnaissance n\u2019est pas une probabilit\u00e9.",
+        "freshness": "RECENT",
+        "id": "structure.pattern",
+        "importance": 48,
+        "normalized_value": 80.2,
+        "polarity": "WAIT",
+        "raw_value": {
+          "edge_state": "NOT_YET_TESTED",
+          "recognition_confidence": 80.2,
+          "state": "CANDIDATE"
+        },
+        "short_text": "Reconnaissance 80/100, \u00e9tat candidate; edge s\u00e9par\u00e9: NOT_YET_TESTED. La reconnaissance n\u2019est pas une probabilit\u00e9.",
+        "source": "StructuralPatternDetector",
+        "timeframe": "4H",
+        "title": "Figure reconnue: inverse_head_and_shoulders"
+      },
+      {
+        "as_of": "2026-09-07T19:45:33.860241+00:00",
+        "available": true,
+        "category": "LIVE_TRACK_RECORD",
+        "confidence": 1.0,
+        "evidence_level": "FACT",
+        "explanation": "0 pr\u00e9diction(s) arriv\u00e9e(s) \u00e0 maturit\u00e9.",
+        "freshness": "RECENT",
+        "id": "track.live",
+        "importance": 60,
+        "normalized_value": null,
+        "polarity": "WAIT",
+        "raw_value": {
+          "matured_predictions": 0,
+          "status": "TOO_EARLY"
+        },
+        "short_text": "0 pr\u00e9diction(s) arriv\u00e9e(s) \u00e0 maturit\u00e9.",
+        "source": "LiveTrackRecord",
+        "timeframe": "LIVE",
+        "title": "Suivi live encore trop jeune"
+      },
+      {
+        "as_of": "2026-09-07T19:45:32.636915+00:00",
+        "available": true,
+        "category": "CROSS_ASSET",
+        "confidence": 0.65,
+        "evidence_level": "COMPUTATION",
+        "explanation": "Over the last 90 days, SOL moves most closely with Gold (correlation +0.51, beta +1.04). Correlation with the Nasdaq is +0.40, so a move of this size is hard to separate from general risk appetite. Correlation is not causation and says nothing about direction.",
+        "freshness": "TODAY",
+        "id": "cross_asset.nasdaq",
+        "importance": 50,
+        "normalized_value": 40.400000000000006,
+        "polarity": "WAIT",
+        "raw_value": {
+          "nasdaq_correlation": 0.404
+        },
+        "short_text": "Over the last 90 days, SOL moves most closely with Gold (correlation +0.51, beta +1.04). Correlation with the Nasdaq is +0.40, so a move of this size is hard to separate from general risk appetite. Correlation is not causation and says nothing about direction.",
+        "source": "CrossAssetAnalyzer (OHLCV + indices)",
+        "timeframe": "90D",
+        "title": "D\u00e9pendance \u00e9lev\u00e9e aux actifs risqu\u00e9s"
+      }
+    ],
+    "what_would_deteriorate": [
+      "A 4h close above 107.86 would break the range top zone and invalidate the current range reading."
+    ],
+    "what_would_improve": [
+      "un retour vers une zone structurelle basse valid\u00e9e",
+      "un avantage qui franchisse les baselines et contr\u00f4les de stabilit\u00e9"
+    ]
+  },
+  "cross_asset": {
+    "asset": "SOL",
+    "correlations": [
+      {
+        "beta": 1.019,
+        "correlation": 0.404,
+        "label": "Nasdaq",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 55.4,
+        "series": "macro.nasdaq",
+        "window_days": 90
+      },
+      {
+        "beta": 1.581,
+        "correlation": 0.399,
+        "label": "S&P 500",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 57.7,
+        "series": "macro.sp500",
+        "window_days": 90
+      },
+      {
+        "beta": -4.856,
+        "correlation": -0.469,
+        "label": "US dollar index",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 0.0,
+        "series": "macro.dxy",
+        "window_days": 90
+      },
+      {
+        "beta": -0.155,
+        "correlation": -0.371,
+        "label": "VIX",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 31.7,
+        "series": "macro.vix",
+        "window_days": 90
+      },
+      {
+        "beta": 1.044,
+        "correlation": 0.509,
+        "label": "Gold",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 100.0,
+        "series": "macro.gold",
+        "window_days": 90
+      },
+      {
+        "beta": -0.107,
+        "correlation": -0.116,
+        "label": "WTI crude",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 6.7,
+        "series": "macro.oil_wti",
+        "window_days": 90
+      },
+      {
+        "beta": -0.767,
+        "correlation": -0.226,
+        "label": "US 10Y yield",
+        "note": "",
+        "observations": 90,
+        "percentile_vs_history": 2.2,
+        "series": "macro.us10y_yahoo",
+        "window_days": 90
+      }
+    ],
+    "dominant_relationship": "Gold",
+    "interpretation": "Over the last 90 days, SOL moves most closely with Gold (correlation +0.51, beta +1.04). Correlation with the Nasdaq is +0.40, so a move of this size is hard to separate from general risk appetite. Correlation is not causation and says nothing about direction.",
+    "missing": [],
+    "risk_proxy_correlation": 0.404
+  },
   "crowding": {
     "asset": "SOL",
     "components": {
@@ -28,7 +442,7 @@
     "direction_confidence": "90.0",
     "edge_state": "NO_MEASURABLE_EDGE",
     "entry_timing": "WAIT",
-    "generated_at": "2026-09-07T17:30:12.698222Z",
+    "generated_at": "2026-09-07T19:45:32.636879Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "SOL is strongly bullish, but we currently hold no robust directional edge.",
     "uncertainty": 43.0,
@@ -239,6 +653,48 @@
       "usable": true
     }
   },
+  "entry_opportunity": {
+    "asset": "SOL",
+    "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
+    "factors": [
+      {
+        "contribution": -25.0,
+        "detail": "4h price is near range top, zone quality 75/100",
+        "is_measured_edge": false,
+        "name": "structural location",
+        "source": "structure"
+      },
+      {
+        "contribution": 8.0,
+        "detail": "funding is mid-range at the 31th percentile",
+        "is_measured_edge": false,
+        "name": "funding normalised",
+        "source": "derivatives"
+      },
+      {
+        "contribution": 8.0,
+        "detail": "volatility VERY_LOW at the 6.3th percentile - moves are small, which cuts both ways",
+        "is_measured_edge": false,
+        "name": "volatility compressed",
+        "source": "volatility"
+      }
+    ],
+    "invalidation": "A 4h close above 107.86 would break the range top zone and invalidate the current range reading.",
+    "measured_edge_note": "9 candidate relationships were tested for SOL and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
+    "measured_edge_state": "NO_MEASURABLE_EDGE",
+    "missing": [
+      "1d structure is RANGE_STRUCTURE"
+    ],
+    "score": -3.0,
+    "state": "NEUTRAL",
+    "statement": "SOL 4h configuration is NEUTRAL (-3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: 1d structure is RANGE_STRUCTURE.",
+    "timeframe": "4h",
+    "why_now": [
+      "4h price is near range top, zone quality 75/100",
+      "funding is mid-range at the 31th percentile",
+      "volatility VERY_LOW at the 6.3th percentile - moves are small, which cuts both ways"
+    ]
+  },
   "entry_timing": {
     "asset": "SOL",
     "confidence": 62.0,
@@ -298,7 +754,7 @@
     "invalidation_level": 90.995,
     "invalidation_reason": "Daily close below the nearest support (2 touches from swing clustering) invalidates the constructive case",
     "missing": [
-      "volume confirmation (current daily bar only 73% elapsed)",
+      "volume confirmation (current daily bar only 82% elapsed)",
       "derivatives (funding / open interest)"
     ],
     "negatives": [
@@ -352,7 +808,7 @@
       "valid": false
     },
     "funding": {
-      "age_seconds": 5412.7,
+      "age_seconds": 13533.9,
       "available": true,
       "family": "funding",
       "freshness": "RECENT",
@@ -364,7 +820,7 @@
       "valid": true
     },
     "ohlcv_daily": {
-      "age_seconds": 63012.7,
+      "age_seconds": 71133.9,
       "available": true,
       "family": "ohlcv_daily",
       "freshness": "LIVE",
@@ -376,7 +832,7 @@
       "valid": true
     },
     "open_interest": {
-      "age_seconds": 63012.7,
+      "age_seconds": 71133.9,
       "available": true,
       "family": "open_interest",
       "freshness": "RECENT",
@@ -388,11 +844,11 @@
       "valid": true
     },
     "price": {
-      "age_seconds": 0.6,
+      "age_seconds": 1.8,
       "available": true,
       "family": "price",
       "freshness": "LIVE",
-      "observed_at": "2026-09-07T17:30:12.072256+00:00",
+      "observed_at": "2026-09-07T19:45:32.025475+00:00",
       "points": 3,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
       "source": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
@@ -410,6 +866,30 @@
     "sufficient_history": true,
     "value": -1.093e-05
   },
+  "historical_analogs": {
+    "effective_n": 8.0,
+    "hit_rate": 37.5,
+    "mae": -6.97,
+    "median_return": -3.97,
+    "mfe": -0.41,
+    "raw_n": 8
+  },
+  "implied_volatility": {
+    "asset": "SOL",
+    "available": false,
+    "compression": "UNKNOWN",
+    "dvol": null,
+    "dvol_change_30d": null,
+    "dvol_percentile": null,
+    "edge_note": "The variance premium is a description of how options are priced. Whether it precedes anything has not been established for this project and must not be assumed.",
+    "history_days": 0,
+    "interpretation": "",
+    "premium_percentile": null,
+    "pricing": "UNKNOWN",
+    "realised_vol_annualised": null,
+    "unavailable_reason": "no implied-volatility index stored for this asset. Deribit publishes one for BTC and ETH only; nothing is substituted for SOL.",
+    "variance_premium": null
+  },
   "leverage_state": {
     "asset": "SOL",
     "confidence": "MEDIUM",
@@ -425,130 +905,507 @@
     "price_change_pct": 0.46,
     "state": "DELEVERAGING"
   },
+  "liquidity": {
+    "available": false,
+    "by_chain": {},
+    "by_issuer": {},
+    "change_1d_pct": null,
+    "change_7d_pct": null,
+    "direction": "INCONCLUSIVE",
+    "evidence_ids": [],
+    "findings": [],
+    "freshness": "UNAVAILABLE",
+    "regime": "UNKNOWN",
+    "strength": 0.0,
+    "total_supply": null,
+    "unavailable_reason": "UNAVAILABLE - no stablecoin data"
+  },
+  "live_track_record": {
+    "matured_predictions": 0,
+    "status": "TOO_EARLY"
+  },
+  "macro_context": {
+    "available": false,
+    "changes": {},
+    "direction": "INCONCLUSIVE",
+    "dollar_trend": "UNKNOWN",
+    "evidence_ids": [],
+    "findings": [],
+    "freshness": "UNAVAILABLE",
+    "imminent_event": null,
+    "metrics": {},
+    "missing": [
+      "macro series (set FRED_API_KEY) and/or indices"
+    ],
+    "rates_trend": "UNKNOWN",
+    "risk_appetite": "UNKNOWN",
+    "strength": 0.0,
+    "unavailable_reason": "UNAVAILABLE - no macro data",
+    "upcoming_events": [
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 64.74093419027777,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "CPI",
+        "name": "US CPI (Aug)",
+        "scheduled_at": "2026-09-10T12:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 214.24093419027776,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "FOMC",
+        "name": "FOMC Rate Decision",
+        "scheduled_at": "2026-09-16T18:00:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 214.74093419027776,
+        "importance": "IMPORTANT",
+        "is_past": false,
+        "kind": "FOMC",
+        "name": "FOMC Press Conference",
+        "scheduled_at": "2026-09-16T18:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 448.7409341902778,
+        "importance": "IMPORTANT",
+        "is_past": false,
+        "kind": "PCE",
+        "name": "US PCE Price Index (Aug)",
+        "scheduled_at": "2026-09-26T12:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 736.7409341902777,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "CPI",
+        "name": "US CPI (Sep)",
+        "scheduled_at": "2026-10-08T12:30:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 1222.2409341902778,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "FOMC",
+        "name": "FOMC Rate Decision",
+        "scheduled_at": "2026-10-28T18:00:00Z"
+      },
+      {
+        "assets_impact": [
+          "BTC",
+          "ETH",
+          "SOL"
+        ],
+        "hours_until": 1433.7409341902778,
+        "importance": "CRITICAL",
+        "is_past": false,
+        "kind": "NFP",
+        "name": "US Nonfarm Payrolls (Oct)",
+        "scheduled_at": "2026-11-06T13:30:00Z"
+      }
+    ]
+  },
   "market_data": {
-    "age_seconds": 0.000434,
-    "as_of": "2026-09-07T17:30:12.072256Z",
+    "age_seconds": 0.000473,
+    "as_of": "2026-09-07T19:45:32.025475Z",
     "asset": "SOL",
-    "change_24h_pct": -1.745,
-    "dispersion_pct": 0.0336,
-    "fetched_at": "2026-09-07T17:30:12.072690Z",
+    "change_24h_pct": -1.034,
+    "dispersion_pct": 0.0096,
+    "fetched_at": "2026-09-07T19:45:32.025948Z",
     "freshness": "LIVE",
-    "fx_rate": 0.86028423,
+    "fx_rate": 0.86075707,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T17:30:12.072587Z",
+    "fx_timestamp": "2026-09-07T19:45:32.025835Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 89.59,
-    "price_usd": 104.14,
+    "price_eur": 89.82,
+    "price_usd": 104.35,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": -1.745,
-        "fetched_at": "2026-09-07T17:30:12.071334Z",
+        "change_24h_pct": -1.034,
+        "fetched_at": "2026-09-07T19:45:32.024563Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.14,
+        "price": 104.36,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T17:30:12.071310Z",
+        "timestamp": "2026-09-07T19:45:32.024540Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T17:30:12.071929Z",
+        "fetched_at": "2026-09-07T19:45:32.025147Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.155,
+        "price": 104.35,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T17:30:12.071918Z",
+        "timestamp": "2026-09-07T19:45:32.025135Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T17:30:12.072265Z",
+        "fetched_at": "2026-09-07T19:45:32.025483Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.12,
+        "price": 104.35,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T17:30:12.072256Z",
+        "timestamp": "2026-09-07T19:45:32.025475Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T17:30:12.072596Z",
+        "fetched_at": "2026-09-07T19:45:32.025845Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 89.59,
+        "price": 89.82,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T17:30:12.072587Z",
+        "timestamp": "2026-09-07T19:45:32.025835Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T17:30:12.072256Z"
+    "timestamp": "2026-09-07T19:45:32.025475Z"
   },
   "market_pressure": {
+    "as_of": "2026-09-07T19:45:33.592256+00:00",
     "asset": "SOL",
-    "balance": 40.7,
+    "balance": 42.9,
     "components": [
       {
+        "as_of": null,
         "available": false,
+        "confidence": 0.95,
         "detail": "",
+        "freshness": "UNAVAILABLE",
         "label": "Institutions (ETF spot)",
         "name": "institutions",
-        "reason": "aucun ETF spot SOL n'existe, donc aucun flux \u00e0 mesurer",
+        "normalized_pressure": null,
+        "raw_value": null,
+        "reason": "aucun flux ETF spot SOL suivi par cette source",
         "score": null,
-        "source": "farside, flux publi\u00e9s par \u00e9metteur"
+        "source": "Farside Investors, flux par \u00e9metteur",
+        "weight": 0.35
       },
       {
+        "as_of": "2026-09-07T16:00:00.003000+00:00",
         "available": true,
-        "detail": "31e percentile \u2014 aucun c\u00f4t\u00e9 ne paie franchement",
-        "label": "Levier (funding perp\u00e9tuel)",
+        "confidence": 0.7,
+        "detail": "31e percentile, variation 24 h -0.000092. Le c\u00f4t\u00e9 qui paie est mesur\u00e9; un extr\u00eame signale surtout un co\u00fbt et un encombrement, pas la suite du prix.",
+        "freshness": "RECENT",
+        "label": "Funding perp\u00e9tuel",
         "name": "levier",
+        "normalized_pressure": -37.2,
+        "raw_value": {
+          "change_24h": -9.177000000000001e-05,
+          "percentile": 31.4,
+          "value": -1.093e-05
+        },
         "reason": "",
         "score": -37.2,
-        "source": "funding.rate, percentile sur l'historique de l'actif"
+        "source": "funding.rate, percentile trailing par actif",
+        "weight": 0.2
       },
       {
+        "as_of": "2026-09-07T00:00:00+00:00",
         "available": true,
-        "detail": "r\u00e9duction du levier des deux c\u00f4t\u00e9s",
-        "label": "Positionnement (prix + open interest)",
+        "confidence": 0.75,
+        "detail": "r\u00e9duction du levier sans c\u00f4t\u00e9 dominant; OI -9.3% sur 7 j",
+        "freshness": "RECENT",
+        "label": "Prix + open interest",
         "name": "positionnement",
+        "normalized_pressure": 0.0,
+        "raw_value": {
+          "acceleration_pct": 4.444916379263786,
+          "change_7d_pct": -9.299457622064933,
+          "open_interest": 6221317.0,
+          "state": "DELEVERAGING"
+        },
         "reason": "",
         "score": 0.0,
-        "source": "bougies journali\u00e8res et open interest"
+        "source": "OHLCV et open interest multi-exchange",
+        "weight": 0.3
       },
       {
+        "as_of": null,
         "available": false,
+        "confidence": 0.5,
         "detail": "",
-        "label": "Baleines (gros portefeuilles)",
+        "freshness": "UNAVAILABLE",
+        "label": "Baleines",
         "name": "baleines",
-        "reason": "aucun fournisseur on-chain n'est configur\u00e9. Suivre les gros portefeuilles demande un service payant; rien n'est estim\u00e9 \u00e0 la place.",
+        "normalized_pressure": null,
+        "raw_value": null,
+        "reason": "UNAVAILABLE - aucun fournisseur baleines fiable configur\u00e9",
         "score": null,
-        "source": "fournisseur on-chain"
+        "source": "fournisseur on-chain v\u00e9rifi\u00e9",
+        "weight": 0.25
+      },
+      {
+        "as_of": null,
+        "available": false,
+        "confidence": 0.5,
+        "detail": "",
+        "freshness": "UNAVAILABLE",
+        "label": "Flux spot / exchanges",
+        "name": "flux_spot",
+        "normalized_pressure": null,
+        "raw_value": null,
+        "reason": "aucune s\u00e9rie fiable de flux net spot/exchange n\u2019est configur\u00e9e",
+        "score": null,
+        "source": "connecteur de flux spot/exchange",
+        "weight": 0.15
       }
     ],
     "components_measured": 2,
     "components_missing": [
       "Institutions (ETF spot)",
-      "Baleines (gros portefeuilles)"
+      "Baleines",
+      "Flux spot / exchanges"
     ],
-    "label": "VENTE L\u00c9G\u00c8RE",
-    "note": "2 composante(s) mesur\u00e9e(s) sur 4. Une composante absente est retir\u00e9e du calcul, jamais compt\u00e9e comme neutre: ignorer n'est pas \u00e9quilibrer."
+    "contradictions": [],
+    "label": "\u00c9QUILIBR\u00c9",
+    "missing": [
+      "Institutions (ETF spot)",
+      "Baleines",
+      "Flux spot / exchanges"
+    ],
+    "note": "\u00c9QUILIBR\u00c9 (-14/100), mesur\u00e9 par 2 composante(s) sur 5.",
+    "pressure_score": -14.3,
+    "state": "BALANCED",
+    "summary": "\u00c9QUILIBR\u00c9 (-14/100), mesur\u00e9 par 2 composante(s) sur 5."
+  },
+  "multi_timeframe_structure": {
+    "asset": "SOL",
+    "bearish_timeframes": [],
+    "bullish_timeframes": [],
+    "conflict": null,
+    "timeframes": {
+      "1d": {
+        "asset": "SOL",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-08-27T00:00:00+00:00",
+            "confirmation_time": "2026-09-01T00:00:00+00:00",
+            "direction": "bullish",
+            "kind": "BOS",
+            "level": 77.84,
+            "note": "a confirmed swing high exceeded the previous confirmed high"
+          }
+        ],
+        "interpretation": "RANGE_STRUCTURE from the confirmed swing sequence [LH HH HL HL] across 257 confirmed pivots. Structural events: BOS bullish.",
+        "labels": [
+          "LH",
+          "HH",
+          "HL",
+          "HL"
+        ],
+        "last_confirmed_hh": 110.6,
+        "last_confirmed_hl": 97.38,
+        "last_confirmed_lh": 77.84,
+        "last_confirmed_ll": null,
+        "state": "RANGE_STRUCTURE",
+        "swings_used": 257,
+        "timeframe": "1d"
+      },
+      "1h": {
+        "asset": "SOL",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-09-07T07:00:00+00:00",
+            "confirmation_time": "2026-09-07T12:00:00+00:00",
+            "direction": "bearish",
+            "kind": "BOS",
+            "level": 104.93,
+            "note": "a confirmed swing low broke below the previous confirmed low"
+          }
+        ],
+        "interpretation": "TRANSITION from the confirmed swing sequence [HH LH HL LL] across 1265 confirmed pivots. Structural events: BOS bearish.",
+        "labels": [
+          "HH",
+          "LH",
+          "HL",
+          "LL"
+        ],
+        "last_confirmed_hh": 107.36,
+        "last_confirmed_hl": 104.93,
+        "last_confirmed_lh": 107.06,
+        "last_confirmed_ll": 103.8,
+        "state": "TRANSITION",
+        "swings_used": 1265,
+        "timeframe": "1h"
+      },
+      "1w": {
+        "asset": "SOL",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-05-11T00:00:00+00:00",
+            "confirmation_time": "2026-06-15T00:00:00+00:00",
+            "direction": "bullish",
+            "kind": "BOS",
+            "level": 97.68,
+            "note": "a confirmed swing high exceeded the previous confirmed high"
+          },
+          {
+            "broken_at": "2026-06-01T00:00:00+00:00",
+            "confirmation_time": "2026-07-06T00:00:00+00:00",
+            "direction": "bearish",
+            "kind": "BOS",
+            "level": 67.5,
+            "note": "a confirmed swing low broke below the previous confirmed low"
+          }
+        ],
+        "interpretation": "TRANSITION from the confirmed swing sequence [LH HH LL LL] across 36 confirmed pivots. Structural events: BOS bullish, BOS bearish.",
+        "labels": [
+          "LH",
+          "HH",
+          "LL",
+          "LL"
+        ],
+        "last_confirmed_hh": 98.41,
+        "last_confirmed_hl": null,
+        "last_confirmed_lh": 97.68,
+        "last_confirmed_ll": 60.13,
+        "state": "TRANSITION",
+        "swings_used": 36,
+        "timeframe": "1w"
+      },
+      "4h": {
+        "asset": "SOL",
+        "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
+        "events": [
+          {
+            "broken_at": "2026-09-06T12:00:00+00:00",
+            "confirmation_time": "2026-09-07T08:00:00+00:00",
+            "direction": "bullish",
+            "kind": "BOS",
+            "level": 105.91,
+            "note": "a confirmed swing high exceeded the previous confirmed high"
+          },
+          {
+            "broken_at": "2026-09-04T12:00:00+00:00",
+            "confirmation_time": "2026-09-05T08:00:00+00:00",
+            "direction": "bullish",
+            "kind": "CHOCH",
+            "level": 100.21,
+            "note": "a higher low appeared after a sequence of lower lows"
+          }
+        ],
+        "interpretation": "RANGE_STRUCTURE from the confirmed swing sequence [LH HH LL HL] across 751 confirmed pivots. Structural events: BOS bullish, CHOCH bullish.",
+        "labels": [
+          "LH",
+          "HH",
+          "LL",
+          "HL"
+        ],
+        "last_confirmed_hh": 107.36,
+        "last_confirmed_hl": 100.21,
+        "last_confirmed_lh": 105.91,
+        "last_confirmed_ll": 97.38,
+        "state": "RANGE_STRUCTURE",
+        "swings_used": 751,
+        "timeframe": "4h"
+      }
+    }
+  },
+  "onchain": {
+    "asset": "SOL",
+    "available": false,
+    "chain_type": "",
+    "direction": "INCONCLUSIVE",
+    "evidence_ids": [],
+    "findings": [],
+    "freshness": "UNAVAILABLE",
+    "metrics": {},
+    "not_applicable": [],
+    "strength": 0.0,
+    "trends": {},
+    "unavailable_reason": "UNAVAILABLE - no on-chain data for SOL",
+    "units": {}
   },
   "overall_status": "DEGRADED",
   "overall_status_reason": "entr\u00e9es optionnelles manquantes sur: volatility",
+  "patterns": [
+    {
+      "bars_span": 0,
+      "components": {
+        "head_prominence": 64.3,
+        "prominence_atr": 1.609,
+        "shoulder_difference_atr": 0.057,
+        "shoulder_symmetry": 96.2
+      },
+      "confirmation_time": "2026-09-05T08:00:00+00:00",
+      "detected_at": "2026-09-07T16:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "edge_note": "",
+      "edge_state": "NOT_YET_TESTED",
+      "geometry": {
+        "breakout_area": null,
+        "neckline": null,
+        "points": [],
+        "trend_lines": [],
+        "zones": []
+      },
+      "invalidation_level": 97.38,
+      "invalidation_rule": "a 4h close beyond the head at 97.38 invalidates the pattern",
+      "key_levels": {
+        "head": 97.38,
+        "left_shoulder": 100.31,
+        "neckline": 105.28,
+        "right_shoulder": 100.21
+      },
+      "name": "inverse_head_and_shoulders",
+      "notes": "head stands 1.61 ATR beyond shoulders that agree within 0.06 ATR",
+      "pattern_class": "HEURISTIC",
+      "recognition_confidence": 80.2,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "state": "CANDIDATE"
+    }
+  ],
   "uncertainty": {
     "asset": "SOL",
     "drivers": [
@@ -569,28 +1426,34 @@
   },
   "upcoming_macro": [
     {
-      "days_until": 2.8,
-      "hours_until": 67.0,
+      "days_until": 2.7,
+      "hours_until": 64.7,
       "importance": "CRITICAL",
       "kind": "CPI",
       "name": "US CPI (Aug)",
-      "scheduled_at": "2026-09-10 12:30:00+00:00"
+      "scheduled_at": "2026-09-10 12:30:00+00:00",
+      "source": "config/macro_calendar.yaml",
+      "source_url": null
     },
     {
-      "days_until": 9.0,
-      "hours_until": 216.5,
+      "days_until": 8.9,
+      "hours_until": 214.2,
       "importance": "CRITICAL",
       "kind": "FOMC",
       "name": "FOMC Rate Decision",
-      "scheduled_at": "2026-09-16 18:00:00+00:00"
+      "scheduled_at": "2026-09-16 18:00:00+00:00",
+      "source": "config/macro_calendar.yaml",
+      "source_url": null
     },
     {
-      "days_until": 9.0,
-      "hours_until": 217.0,
+      "days_until": 8.9,
+      "hours_until": 214.7,
       "importance": "IMPORTANT",
       "kind": "FOMC",
       "name": "FOMC Press Conference",
-      "scheduled_at": "2026-09-16 18:30:00+00:00"
+      "scheduled_at": "2026-09-16 18:30:00+00:00",
+      "source": "config/macro_calendar.yaml",
+      "source_url": null
     }
   ],
   "volatility": {

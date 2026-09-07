@@ -246,10 +246,27 @@ def _upcoming_macro(asset: Asset, days: int = 14) -> list[dict[str, Any]]:
     publiées à l'avance, pas une estimation. Une échéance proche ne prédit
     rien, mais elle explique pourquoi attendre peut être raisonnable.
     """
-    from ..db import repo
+    from ..engines.macro import MacroAnalyzer
 
     out: list[dict[str, Any]] = []
-    for event in repo.upcoming_events(days=days):
+    # Read the maintained source of truth directly. The DB is only a pipeline
+    # mirror and may still contain a superseded release date after an official
+    # calendar revision.
+    events = [
+        {
+            "kind": event.kind,
+            "name": event.name,
+            "scheduled_at": event.scheduled_at,
+            "importance": event.importance,
+            "hours_until": event.hours_until,
+            "assets": [item.value for item in event.assets_impact],
+            "source_name": "config/macro_calendar.yaml (Fed/BLS/BEA)",
+            "source_url": None,
+        }
+        for event in MacroAnalyzer().load_calendar()
+        if not event.is_past and (event.hours_until or 0) <= days * 24
+    ]
+    for event in events:
         assets = event.get("assets") or []
         if isinstance(assets, str):
             assets = [a.strip(" '\"[]") for a in assets.split(",")]
@@ -278,6 +295,7 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
     """
     from datetime import UTC, datetime, timedelta
 
+    from ..core.enums import Timeframe
     from ..db import repo
     from ..engines.breakout import BreakoutQualityEngine
     from ..engines.buy_opportunity import Category, DecisionFactor, Polarity
@@ -291,11 +309,27 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
     from ..history import store
     from ..research.structural_shadow import live_track_record
     from ..structure.market_structure import MarketStructureEngine
-    from ..core.enums import Timeframe
+    from ..structure.patterns import build_context, detect_all
 
     now = datetime.now(UTC)
     since = now - timedelta(days=45)
     factors: list[DecisionFactor] = []
+
+    def is_synthetic(observations: list[Any]) -> bool:
+        """Une observation issue des fixtures ne doit jamais peser.
+
+        La base contient des observations enregistrées avec la source des
+        fixtures, ingérées à un moment où MOCK_MODE était actif. Elles se
+        présentent ensuite comme n'importe quelle autre mesure: sans ce
+        filtre, « Liquidité stablecoin: expansion » figurait parmi les
+        facteurs positifs d'une décision de production, sourcée
+        « MOCK FIXTURES (synthetic) ».
+        """
+        for observation in observations:
+            source = (getattr(observation.provenance, "source", "") or "").upper()
+            if "MOCK" in source or "SYNTHETIC" in source or "FIXTURE" in source:
+                return True
+        return False
 
     def latest_meta(observations: list[Any], fallback: str) -> tuple[str, str, str]:
         if not observations:
@@ -356,7 +390,32 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
             source="BreakoutQualityEngine", as_of=now.isoformat(), freshness="RECENT",
         ))
 
+    h4_candles = store.load_candles(asset, Timeframe.H4)
+    pattern_context = build_context(h4_candles, Timeframe.H4)
+    patterns = detect_all(pattern_context) if pattern_context is not None else []
+    if patterns:
+        pattern = patterns[0]
+        factors.append(DecisionFactor(
+            id="structure.pattern", category=Category.STRUCTURE,
+            title=f"Figure reconnue: {pattern.name}",
+            short_text=(
+                f"Reconnaissance {pattern.recognition_confidence:.0f}/100, "
+                f"état {pattern.state.value.lower()}; edge séparé: "
+                f"{pattern.edge_state.value}. La reconnaissance n’est pas une probabilité."
+            ),
+            raw_value={"recognition_confidence": pattern.recognition_confidence,
+                       "state": pattern.state.value,
+                       "edge_state": pattern.edge_state.value},
+            normalized_value=pattern.recognition_confidence,
+            polarity=Polarity.WAIT, importance=48, confidence=.7,
+            evidence_level="COMPUTATION", timeframe="4H",
+            source="StructuralPatternDetector", as_of=pattern.detected_at.isoformat(),
+            freshness="RECENT",
+        ))
+
     onchain_observations = repo.observations_since(asset, "onchain.", since)
+    if is_synthetic(onchain_observations):
+        onchain_observations = []
     onchain = OnChainAnalyzer().analyze(asset, onchain_observations)
     if onchain.available and abs(onchain.strength) > 12:
         source, observed_at, freshness = latest_meta(onchain_observations, "on-chain provider")
@@ -372,6 +431,8 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
         ))
 
     liquidity_observations = repo.observations_since(None, "stablecoin.", since)
+    if is_synthetic(liquidity_observations):
+        liquidity_observations = []
     liquidity = StablecoinLiquidityAnalyzer().analyze(liquidity_observations)
     if liquidity.available and abs(liquidity.strength) > 12:
         source, observed_at, freshness = latest_meta(
@@ -390,6 +451,8 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
         ))
 
     macro_observations = repo.observations_since(None, "macro.", since)
+    if is_synthetic(macro_observations):
+        macro_observations = []
     macro = MacroAnalyzer().analyze(macro_observations, now=now)
     if macro.available and abs(macro.strength) > 12:
         source, observed_at, freshness = latest_meta(macro_observations, "macro providers")
@@ -444,6 +507,8 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
         track_summary["status"] = "MATURE"
 
     whale_observations = repo.observations_since(asset, "whale.", since)
+    if is_synthetic(whale_observations):
+        whale_observations = []
     whales = WhaleAnalyzer().analyze(
         asset, whale_observations,
         unavailable_reason=None if whale_observations else
@@ -453,6 +518,7 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
     return {
         "factors": factors, "multi_timeframe": mtf,
         "breakout": breakout.model_dump(mode="json"),
+        "patterns": [pattern.to_dict() for pattern in patterns[:3]],
         "onchain": onchain.model_dump(mode="json"),
         "liquidity": liquidity.model_dump(mode="json"),
         "macro": macro.model_dump(mode="json"),
@@ -602,6 +668,7 @@ async def today(symbol: str) -> dict[str, Any]:
             "volatility": vol.model_dump(),
             "multi_timeframe_structure": context["multi_timeframe"],
             "breakout": context["breakout"],
+            "patterns": context["patterns"],
             "implied_volatility": context["implied_volatility"].model_dump(mode="json"),
             "historical_analogs": context["historical"],
             "live_track_record": context["live_track_record"],

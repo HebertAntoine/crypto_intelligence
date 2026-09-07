@@ -108,12 +108,21 @@ def _fetch_json(base_url: str, path: str, query: dict[str, str] | None) -> objec
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8100")
+    parser.add_argument(
+        "--only-today",
+        action="store_true",
+        help="Refresh only the three first-page payloads.",
+    )
     args = parser.parse_args()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     written: list[str] = []
 
-    for path, query in _endpoints():
+    endpoints = _endpoints()
+    if args.only_today:
+        endpoints = [item for item in endpoints if item[0].startswith("/today/")]
+
+    for path, query in endpoints:
         data = _fetch_json(args.base_url, path, query)
         target = OUT_DIR / _snapshot_name(path, query)
         target.write_text(

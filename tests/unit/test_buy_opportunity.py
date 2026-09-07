@@ -249,3 +249,180 @@ class TestExplanation:
             _factor("structural location", -25.0, "près du haut du range"),
         ]))
         assert result.what_would_improve
+
+
+class TestRequestedDecisionScenarios:
+    def test_bullish_near_range_bottom_normal_derivatives_is_an_opportunity(self):
+        result = _decide(
+            entry=_entry("FAVORABLE", factors=[
+                _factor("higher timeframe structure", 30, "structure haussière"),
+                _factor("structural location", 25, "près du bas du range"),
+                _factor("funding normalised", 8, "funding normal"),
+            ]),
+            crowding=_crowding("NORMAL"),
+            macro_events=[],
+        )
+        assert result.state is BuyOpportunityState.OPPORTUNITY
+
+    def test_range_top_fomc_in_8h_and_no_edge_is_wait(self):
+        result = _decide(
+            entry=_entry("FAVORABLE", factors=[
+                _factor("structural location", -35, "au sommet du range"),
+            ]),
+            macro_events=[{
+                "kind": "FOMC", "name": "Décision FOMC",
+                "importance": "CRITICAL", "hours_until": 8,
+                "scheduled_at": "2026-09-16T18:00:00+00:00",
+                "source": "Federal Reserve",
+            }],
+        )
+        assert result.state is BuyOpportunityState.WAIT
+
+    def test_bearish_breakdown_and_extreme_crowding_is_unfavorable(self):
+        result = _decide(
+            entry=_entry("VERY_UNFAVORABLE", factors=[
+                _factor("higher timeframe structure", -30, "cassure baissière"),
+            ]),
+            crowding=_crowding("EXTREME"),
+        )
+        assert result.state is BuyOpportunityState.UNFAVORABLE
+
+    def test_missing_major_inputs_is_insufficient_data(self):
+        result = _decide(
+            entry=_entry("FAVORABLE"),
+            critical_missing_families=["price", "ohlcv_daily"],
+            unusable_families=["price", "ohlcv_daily", "funding"],
+        )
+        assert result.state is BuyOpportunityState.INSUFFICIENT_DATA
+
+
+class TestDecisionFactorContract:
+    def test_every_selected_factor_has_the_complete_schema(self):
+        payload = _decide(entry=_entry("FAVORABLE", factors=[
+            _factor("structural location", 25, "près du bas du range"),
+        ])).to_dict()
+        required = {
+            "id", "category", "title", "short_text", "raw_value",
+            "normalized_value", "polarity", "importance", "confidence",
+            "evidence_level", "timeframe", "source", "as_of", "freshness",
+            "available",
+        }
+        selected = [
+            factor
+            for group in ("positives", "waits", "negatives", "missing")
+            for factor in payload[group]
+        ]
+        assert selected
+        assert all(required <= set(factor) for factor in selected)
+        assert all(len(payload[group]) <= 5 for group in (
+            "positives", "waits", "negatives", "missing"
+        ))
+        assert payload["provenance"]["llm_used"] is False
+
+    def test_exact_public_states_are_stable(self):
+        """Les six états de la spécification, sérialisés tels quels.
+
+        Des alias Python pointant sur d'autres valeurs laissaient sortir
+        « FAVORABLE » dans le payload d'ETH, un état que l'interface ne sait
+        pas nommer.
+        """
+        assert {state.value for state in BuyOpportunityState} == {
+            "STRONG_OPPORTUNITY", "OPPORTUNITY", "WATCH", "WAIT",
+            "UNFAVORABLE", "INSUFFICIENT_DATA",
+        }
+
+
+class TestNothingIsInvented:
+    """Aucune affirmation ne doit exister sans la donnée qui la porte.
+
+    Ce test vaut aussi pour un éventuel reformulateur: la sortie déterministe
+    est le seul contenu autorisé, et elle ne contient que ce qui a été mesuré.
+    """
+
+    def test_an_empty_context_produces_no_claim_about_anything(self):
+        result = _decide(
+            macro_events=[],
+            pressure=_pressure([
+                _component("baleines", available=False, score=None,
+                           label="Baleines (gros portefeuilles)"),
+                _component("institutions", available=False, score=None,
+                           label="Institutions (ETF spot)"),
+            ]),
+        )
+        payload = result.to_dict()
+        texte = " ".join(
+            f"{f['title']} {f['explanation']}"
+            for group in ("positives", "waits", "negatives", "missing")
+            for f in payload[group]
+        ) + payload["short_summary"] + payload["headline"]
+        lower = texte.lower()
+
+        # Aucune Fed, aucun flux, aucune direction de baleine.
+        for interdit in (
+            "fomc", "fed ", "cpi", "+610",
+            "baleines vendeuses", "baleines acheteuses",
+            "etf acheteurs", "etf vendeurs",
+        ):
+            assert interdit not in lower, f"{interdit!r} apparaît sans donnée"
+
+    def test_every_factor_declares_where_it_came_from(self):
+        result = _decide(pressure=_pressure([
+            _component("institutions", available=True, score=60.0, label="ETF"),
+        ]))
+        for factor in result.factors:
+            assert factor.source, f"{factor.id} ne déclare aucune source"
+
+    def test_a_factor_marked_unavailable_carries_no_direction(self):
+        result = _decide(pressure=_pressure([
+            _component("baleines", available=False, score=None, label="Baleines"),
+        ]))
+        for factor in result.factors:
+            if not factor.available:
+                assert factor.polarity is Polarity.MISSING
+
+    def test_the_summary_only_names_a_factor_that_exists(self):
+        """Le résumé cite un facteur décisif: ce facteur doit être réel."""
+        result = _decide()
+        marker = "Facteur principal: "
+        if marker not in result.short_summary:
+            return
+        nomme = result.short_summary.split(marker, 1)[1].rstrip(". ")
+        titres = {f.title for f in result.factors}
+        assert nomme in titres, f"{nomme!r} ne correspond à aucun facteur"
+
+
+class TestNoSyntheticDataReachesTheDecision:
+    """Une observation issue des fixtures ne doit jamais peser.
+
+    La base contient des observations enregistrées avec la source des fixtures,
+    ingérées quand MOCK_MODE était actif. Sans filtre elles se présentent comme
+    n'importe quelle mesure: « Liquidité stablecoin: expansion » figurait parmi
+    les facteurs positifs d'une décision de production, sourcée
+    « MOCK FIXTURES (synthetic) ».
+    """
+
+    def test_the_live_endpoint_carries_no_synthetic_source(self):
+        import asyncio
+
+        from crypto_intel.api.routes_lot4 import today
+
+        payload = asyncio.run(today("BTC"))
+        explanation = payload["buy_opportunity_explanation"]
+        for group in ("positives", "waits", "negatives", "missing"):
+            for factor in explanation[group]:
+                source = (factor.get("source") or "").upper()
+                for banned in ("MOCK", "SYNTHETIC", "FIXTURE"):
+                    assert banned not in source, (
+                        f"{factor['title']!r} pèse avec une source {banned}"
+                    )
+
+    def test_identical_factors_are_not_listed_twice(self):
+        import asyncio
+
+        from crypto_intel.api.routes_lot4 import today
+
+        payload = asyncio.run(today("BTC"))
+        explanation = payload["buy_opportunity_explanation"]
+        for group in ("positives", "waits", "negatives", "missing"):
+            seen = [(f["title"], f["short_text"]) for f in explanation[group]]
+            assert len(seen) == len(set(seen)), f"doublon dans {group}"
