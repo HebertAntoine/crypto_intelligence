@@ -223,12 +223,14 @@ DiagnosticSection _analysis(TodayRead read) {
   final checks = <DiagnosticCheck>[];
   final direction = read.summary.marketDirection.toUpperCase();
 
+  // L'enum reste anglais en interne; l'utilisateur ne doit jamais le voir.
   checks.add(direction.isEmpty || direction == 'UNDETERMINED'
-      ? _check('Direction', direction.isEmpty ? _absent : direction,
+      ? _check('Direction', direction.isEmpty ? _absent : 'indéterminée',
           CheckStatus.warning,
           'Aucune lecture directionnelle établie.')
-      : _check('Direction', direction, CheckStatus.ok,
-          'Reconstruite depuis la structure de prix, point-in-time.'));
+      : _check('Direction', directionLabel(direction), CheckStatus.ok,
+          'Régime de prix simplifié: tendance, position EMA, momentum, ADX. '
+          'Ce n’est pas le moteur de régime multi-domaines complet.'));
 
   final confidence = double.tryParse(read.summary.directionConfidence);
   checks.add(confidence == null
@@ -285,11 +287,15 @@ DiagnosticSection _analysis(TodayRead read) {
   return DiagnosticSection(title: 'Analyse', checks: checks);
 }
 
-DiagnosticSection _families(Map<String, String> declared) {
+/// Chaque famille, avec les quatre reponses separees.
+///
+/// Le point du LOT: ne plus dire « OK » d'une donnee presente mais perimee.
+/// Le libelle porte la fraicheur, et l'utilisabilite est dite explicitement.
+DiagnosticSection _families(Map<String, FamilyState> declared) {
   if (declared.isEmpty) {
     return const DiagnosticSection(title: 'Familles d’entrée', checks: [
       DiagnosticCheck(
-        name: 'input_freshness',
+        name: 'familles',
         received: 'absent',
         status: CheckStatus.warning,
         detail: 'Le backend ne déclare pas l’état de ses familles d’entrée. '
@@ -302,29 +308,83 @@ DiagnosticSection _families(Map<String, String> declared) {
     title: 'Familles d’entrée',
     checks: [
       for (final entry in declared.entries)
-        if (!entry.key.endsWith('_missing'))
-          _check(
-            entry.key,
-            entry.value,
-            switch (entry.value.toUpperCase()) {
-              'OK' => CheckStatus.ok,
-              'INSUFFICIENT_HISTORY' => CheckStatus.warning,
-              'STALE' => CheckStatus.warning,
-              'UNAVAILABLE' => CheckStatus.failed,
-              _ => CheckStatus.unknown,
-            },
-            switch (entry.value.toUpperCase()) {
-              'OK' => 'Donnée présente et suffisante.',
-              'INSUFFICIENT_HISTORY' =>
-                'Présente mais trop courte pour un percentile.',
-              'UNAVAILABLE' => 'Absente: rien ne peut en être dérivé.',
-              'STALE' => 'Trop ancienne pour la cadence de cette famille.',
-              _ => 'État non reconnu.',
-            },
-          ),
+        _check(
+          familyLabel(entry.key),
+          _familyReceived(entry.value),
+          _familyStatus(entry.value),
+          entry.value.reason,
+        ),
     ],
   );
 }
+
+String _familyReceived(FamilyState state) {
+  final parts = <String>[freshnessLabel(state.freshness)];
+  if (state.ageSeconds != null) parts.add(ageLabel(state.ageSeconds!));
+  parts.add(state.usable ? 'utilisable' : 'non utilisable');
+  if (state.points != null) parts.add('${state.points} obs.');
+  return parts.join(' · ');
+}
+
+CheckStatus _familyStatus(FamilyState state) {
+  if (!state.available) return CheckStatus.failed;
+  if (!state.valid) return CheckStatus.failed;
+  if (state.usable) return CheckStatus.ok;
+  // Presente et valide mais trop ancienne: ce n'est pas un echec de la
+  // donnee, c'est un refus de s'en servir maintenant.
+  return CheckStatus.warning;
+}
+
+/// Libelle francais d'un regime directionnel.
+String directionLabel(String raw) => switch (raw.toUpperCase()) {
+      'STRONGLY_BULLISH' => 'Fortement haussier',
+      'BULLISH' => 'Haussier',
+      'NEUTRAL' => 'Neutre',
+      'BEARISH' => 'Baissier',
+      'STRONGLY_BEARISH' => 'Fortement baissier',
+      'UNDETERMINED' => 'Indéterminé',
+      _ => raw.replaceAll('_', ' ').toLowerCase(),
+    };
+
+/// Libelle francais d'une famille. Les identifiants internes restent en
+/// anglais; l'utilisateur ne doit jamais les voir.
+String familyLabel(String key) => switch (key) {
+      'price' => 'Prix',
+      'ohlcv_daily' => 'Bougies journalières',
+      'funding' => 'Funding',
+      'open_interest' => 'Open interest',
+      'dvol' => 'Volatilité implicite (DVOL)',
+      _ => key.replaceAll('_', ' '),
+    };
+
+String freshnessLabel(String value) => switch (value.toUpperCase()) {
+      'LIVE' => 'À JOUR',
+      'RECENT' => 'RÉCENT',
+      'DELAYED' => 'DIFFÉRÉ',
+      'STALE' => 'PÉRIMÉ',
+      'UNAVAILABLE' => 'INDISPONIBLE',
+      _ => value,
+    };
+
+/// « il y a 3 min », « il y a 2 j ».
+String ageLabel(double seconds) {
+  final value = seconds.round();
+  if (value < 90) return 'il y a $value s';
+  if (value < 5400) return 'il y a ${(value / 60).round()} min';
+  if (value < 172800) return 'il y a ${(value / 3600).round()} h';
+  return 'il y a ${(value / 86400).round()} j';
+}
+
+/// Ce que la page a le droit d'affirmer, en francais.
+String pageStatusLabel(String value) => switch (value.toUpperCase()) {
+      'LIVE' => 'DONNÉES À JOUR',
+      'RECENT' => 'DONNÉES RÉCENTES',
+      'DEGRADED' => 'DONNÉES PARTIELLES',
+      'STALE' => 'DONNÉES PÉRIMÉES',
+      'SUSPENDED' => 'ANALYSE SUSPENDUE',
+      'UNAVAILABLE' => 'DONNÉES INDISPONIBLES',
+      _ => value,
+    };
 
 /// Construit le diagnostic complet pour un actif.
 TodayDiagnostics buildDiagnostics(
@@ -341,7 +401,7 @@ TodayDiagnostics buildDiagnostics(
       _transport(provenance, freshness),
       _market(read.marketData),
       _analysis(read),
-      _families(read.inputFreshness),
+      _families(read.families),
     ],
   );
 }

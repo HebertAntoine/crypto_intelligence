@@ -463,7 +463,7 @@ class _MarketCard extends StatelessWidget {
               value:
                   '${_uncertaintyLabel(read.uncertaintyLevel)} ${read.uncertaintyScore.toStringAsFixed(0)}/100',
             ),
-            if (read.inputFreshness.isNotEmpty) ...[
+            if (read.families.isNotEmpty) ...[
               const SizedBox(height: 14),
               const Text(
                 'État des familles',
@@ -475,12 +475,13 @@ class _MarketCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               // Chaque famille a sa propre cadence: un prix de 6 min est
-              // vieux, un flux ETF de 6 h est normal. Les états sont donc
-              // déclarés famille par famille, pas par un horodatage de page.
-              for (final entry in read.inputFreshness.entries)
+              // vieux, un flux ETF de 6 h est normal. Le libellé porte la
+              // fraîcheur et l'âge, jamais un « Disponible » qui masquerait
+              // une donnée présente mais trop ancienne pour servir.
+              for (final entry in read.families.entries)
                 _TodaySheetLine(
-                  label: _familyLabel(entry.key),
-                  value: _familyStateLabel(entry.value),
+                  label: familyLabel(entry.key),
+                  value: _familySummary(entry.value),
                 ),
             ],
             if (read.uncertaintyDrivers.isNotEmpty) ...[
@@ -1843,23 +1844,14 @@ String _numberFr(num value, {int digits = 2}) {
   return '${buffer.toString()},${parts.last}';
 }
 
-String _familyLabel(String key) => switch (key) {
-      'direction' => 'Direction',
-      'funding' => 'Funding',
-      'crowding' => 'Crowding',
-      'crowding_missing' => 'Crowding manquant',
-      'volatility' => 'Volatilité',
-      'positioning' => 'Positionnement',
-      _ => _sentenceCase(key.replaceAll('_', ' ')),
-    };
-
-String _familyStateLabel(String value) => switch (value.toUpperCase()) {
-      'OK' => 'Disponible',
-      'INSUFFICIENT_HISTORY' => 'Historique insuffisant',
-      'UNAVAILABLE' => 'Indisponible',
-      'STALE' => 'Périmé',
-      _ => value,
-    };
+/// Fraîcheur, âge et utilisabilité en une ligne.
+String _familySummary(FamilyState state) {
+  if (!state.available) return 'Indisponible';
+  if (!state.valid) return 'Données insuffisantes';
+  final age = state.ageSeconds == null ? '' : ' · ${ageLabel(state.ageSeconds!)}';
+  final usable = state.usable ? '' : ' · non utilisable';
+  return '${freshnessLabel(state.freshness)}$age$usable';
+}
 
 String _directionLabel(String raw) {
   final value = raw.toUpperCase();

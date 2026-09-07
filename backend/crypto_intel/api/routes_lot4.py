@@ -113,53 +113,89 @@ def _reconstructed_regime(asset: Asset) -> _ReconstructedRegime:
     return _ReconstructedRegime(label, round(agreement, 1))
 
 
-def _input_freshness(
-    *,
-    crowding: Any,
-    funding: Any,
-    volatility: Any,
-    leverage_state: Any,
-    regime: Any,
-) -> dict[str, str]:
-    """Per-family input state, in the vocabulary the uncertainty engine reads.
+def _family_states(asset: Asset, market: dict[str, Any] | None) -> dict[str, Any]:
+    """Every input family, answered four ways from its real last observation.
 
-    This is deliberately about *sufficiency*, not only about age. A funding
-    series that is current but only sixty days deep cannot support a
-    percentile, and for the purposes of trusting today's read that is the same
-    problem as data being stale: the number on screen is not backed by what it
-    appears to be backed by.
-
-    Families are named individually rather than rolled into one page-level
-    timestamp, because they genuinely do not share a cadence - price moves in
-    seconds, open interest in minutes, ETF flows once a session.
+    The timestamps come from the store rather than from the engines, because an
+    engine will happily compute on whatever it was given: the question here is
+    not what came out but how old what went in actually is.
     """
-    state: dict[str, str] = {}
+    from datetime import datetime
 
-    state["direction"] = (
-        "UNAVAILABLE" if getattr(regime, "regime", None) in (None, "UNDETERMINED")
-        else "OK"
+    from ..core.enums import Timeframe
+    from ..core.usability import FamilyState, Freshness, freshness_for
+    from ..history import store
+
+    states: dict[str, FamilyState] = {}
+
+    # Price: the only family whose timestamp arrives with the payload.
+    observed = None
+    if market:
+        raw = market.get("as_of") or market.get("timestamp")
+        if isinstance(raw, str):
+            try:
+                observed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                observed = None
+    price_value = (market or {}).get("price_usd")
+    states["price"] = FamilyState(
+        family="price",
+        available=price_value is not None,
+        valid=isinstance(price_value, int | float) and price_value > 0,
+        freshness=freshness_for("price", observed),
+        observed_at=observed,
+        source=(market or {}).get("method", "") or "market price engine",
+        points=(market or {}).get("provider_count"),
     )
 
-    state["funding"] = (
-        "OK" if getattr(funding, "sufficient_history", False)
-        else "UNAVAILABLE" if getattr(funding, "value", None) is None
-        else "INSUFFICIENT_HISTORY"
+    coverage = store.candle_coverage(asset, Timeframe.D1)
+    end = coverage.get("end")
+    states["ohlcv_daily"] = FamilyState(
+        family="ohlcv_daily",
+        available=coverage.get("rows", 0) > 0,
+        valid=coverage.get("rows", 0) >= 200,
+        freshness=freshness_for("ohlcv_daily", end),
+        observed_at=end,
+        source="candle store",
+        points=coverage.get("rows"),
+        reason=(
+            "" if coverage.get("rows", 0) >= 200
+            else f"{coverage.get('rows', 0)} bougies, moins que les 200 "
+                 "nécessaires à une reconstruction de régime"
+        ),
     )
 
-    missing = list(getattr(crowding, "missing", []) or [])
-    state["crowding"] = "UNAVAILABLE" if missing else "OK"
-    if missing:
-        state["crowding_missing"] = ", ".join(str(m) for m in missing)
+    derivatives = store.derivatives_coverage(asset)
+    for metric, family in (
+        ("funding.rate", "funding"),
+        ("oi.contracts_bybit", "open_interest"),
+        ("dvol.index", "dvol"),
+    ):
+        entry = derivatives.get(metric)
+        if entry is None and family == "open_interest":
+            entry = derivatives.get("oi.value")
+        if entry is None:
+            states[family] = FamilyState(
+                family=family, available=False, valid=False,
+                freshness=Freshness.UNAVAILABLE, source=metric,
+                reason=(
+                    "aucune série DVOL n'existe pour cet actif; la volatilité "
+                    "repose sur l'ATR réalisé"
+                    if family == "dvol" else "aucune observation stockée"
+                ),
+            )
+            continue
+        states[family] = FamilyState(
+            family=family,
+            available=entry["rows"] > 0,
+            valid=entry["rows"] >= 30,
+            freshness=freshness_for(family, entry["end"]),
+            observed_at=entry["end"],
+            source=metric,
+            points=entry["rows"],
+        )
 
-    state["volatility"] = (
-        "OK" if getattr(volatility, "atr_percentile", None) is not None
-        else "INSUFFICIENT_HISTORY"
-    )
-
-    absent = list(getattr(leverage_state, "inputs_missing", []) or [])
-    state["positioning"] = "UNAVAILABLE" if absent else "OK"
-
-    return state
+    return states
 
 
 @router.get("/today/{symbol}")
@@ -175,6 +211,12 @@ async def today(symbol: str) -> dict[str, Any]:
 
     asset = _parse_asset(symbol)
 
+    from ..core.usability import assess_engine, page_status
+    from ..engines.market_price import market_price_snapshot
+
+    market = (await market_price_snapshot(asset)).model_dump(mode="json")
+    families = _family_states(asset, market)
+
     def build() -> dict[str, Any]:
         leverage_engine = LeverageCrowdingEngine()
         crowding = leverage_engine.crowding(asset)
@@ -188,30 +230,48 @@ async def today(symbol: str) -> dict[str, Any]:
         # and momentum only - the domains present over the whole history.
         regime = _reconstructed_regime(asset)
 
-        # The regime and the input freshness are both computed here, so both
-        # are handed to the uncertainty engine. Omitting them - which this
-        # endpoint used to do - made the page contradict itself: it charged a
-        # 20-point "regime undetermined" penalty while displaying a direction
-        # it had just established at 80% persistence, and its "stale or
-        # missing data" driver could never fire at all.
-        freshness = _input_freshness(
-            crowding=crowding, funding=funding, volatility=vol,
-            leverage_state=leverage_state, regime=regime,
-        )
+        # Every engine is judged against the freshness of the inputs it
+        # actually requires. A result can be computed and still not describe
+        # the present: that is the distinction the page kept losing when it
+        # reported one word, "OK", for four different questions.
+        engines = {
+            name: assess_engine(
+                name, families,
+                mode="price_only_fallback" if name == "direction" else "full",
+            )
+            for name in (
+                "price", "direction", "persistence", "volatility", "funding",
+                "positioning", "crowding", "edge", "action",
+            )
+        }
+        status, status_reason = page_status(families, engines)
+
+        # The uncertainty engine reads the same family states, so a stale input
+        # widens uncertainty instead of passing unnoticed.
+        freshness_map = {
+            name: ("OK" if state.usable else state.freshness.value)
+            for name, state in families.items()
+        }
         uncertainty = UncertaintyEngine().assess(
-            asset, edge, regime=regime, crowding=crowding, freshness=freshness,
+            asset, edge, regime=regime, crowding=crowding, freshness=freshness_map,
         )
         summary = build_decision_summary(
             asset, edge, uncertainty, regime=regime, crowding=crowding, volatility=vol
         )
+
         return {
-            "input_freshness": freshness,
             "asset": asset.value,
+            "overall_status": status.value,
+            "overall_status_reason": status_reason,
+            "allows_action": status.allows_action,
+            "families": {name: state.to_dict() for name, state in families.items()},
+            "engines": {name: state.to_dict() for name, state in engines.items()},
             "decision_summary": summary.model_dump(mode="json"),
             "direction_source": (
                 "reconstructed from price structure (trend, EMA position, momentum, ADX); "
                 "not the full multi-domain regime engine, which needs a pipeline run"
             ),
+            "direction_mode": "PRICE_ONLY_FALLBACK",
             "edge": edge.model_dump(),
             "uncertainty": uncertainty.model_dump(),
             "crowding": crowding.model_dump(),
@@ -220,10 +280,17 @@ async def today(symbol: str) -> dict[str, Any]:
             "volatility": vol.model_dump(),
         }
 
-    from ..engines.market_price import market_price_snapshot
-
     payload = build()
-    payload["market_data"] = (await market_price_snapshot(asset)).model_dump(mode="json")
+    payload["market_data"] = market
+    log.info(
+        "today_assembled",
+        asset=asset.value,
+        overall_status=payload["overall_status"],
+        unusable=[n for n, e in payload["engines"].items() if not e["usable"]],
+        stale_families=[
+            n for n, f in payload["families"].items() if not f["usable"]
+        ],
+    )
     return payload
 
 

@@ -1,4 +1,5 @@
 {
+  "allows_action": false,
   "asset": "SOL",
   "crowding": {
     "asset": "SOL",
@@ -24,15 +25,16 @@
       "Market direction and measured edge are computed independently; a bullish regime is not evidence of predictive ability."
     ],
     "crowding": "LOW",
-    "direction_confidence": "75.0",
+    "direction_confidence": "90.0",
     "edge_state": "NO_MEASURABLE_EDGE",
     "entry_timing": "UNDETERMINED",
-    "generated_at": "2026-09-07T15:23:57.573215Z",
+    "generated_at": "2026-09-07T16:31:05.852721Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "SOL is strongly bullish, but we currently hold no robust directional edge.",
-    "uncertainty": 40.0,
+    "uncertainty": 46.0,
     "volatility_regime": "VERY_LOW"
   },
+  "direction_mode": "PRICE_ONLY_FALLBACK",
   "direction_source": "reconstructed from price structure (trend, EMA position, momentum, ADX); not the full multi-domain regime engine, which needs a pipeline run",
   "edge": {
     "admitted_count": 0,
@@ -161,6 +163,155 @@
     "state": "NO_MEASURABLE_EDGE",
     "statement": "9 candidate relationships were tested for SOL and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict forward returns. This says nothing about where the market is going - only that we cannot claim to know."
   },
+  "engines": {
+    "action": {
+      "blocking_inputs": [],
+      "degraded_by": [
+        "funding"
+      ],
+      "engine": "action",
+      "mode": "full",
+      "reason": "toutes les entr\u00e9es obligatoires sont utilisables; funding manquante(s) ou p\u00e9rim\u00e9e(s), ce qui \u00e9largit l'incertitude sans invalider le r\u00e9sultat",
+      "usable": true
+    },
+    "crowding": {
+      "blocking_inputs": [
+        "funding",
+        "open_interest"
+      ],
+      "degraded_by": [],
+      "engine": "crowding",
+      "mode": "full",
+      "reason": "entr\u00e9e obligatoire non utilisable: funding, open_interest. Le r\u00e9sultat a pu \u00eatre calcul\u00e9, mais il ne d\u00e9crit plus l'\u00e9tat actuel.",
+      "usable": false
+    },
+    "direction": {
+      "blocking_inputs": [],
+      "degraded_by": [],
+      "engine": "direction",
+      "mode": "price_only_fallback",
+      "reason": "toutes les entr\u00e9es obligatoires sont utilisables",
+      "usable": true
+    },
+    "edge": {
+      "blocking_inputs": [],
+      "degraded_by": [],
+      "engine": "edge",
+      "mode": "full",
+      "reason": "toutes les entr\u00e9es obligatoires sont utilisables",
+      "usable": true
+    },
+    "funding": {
+      "blocking_inputs": [
+        "funding"
+      ],
+      "degraded_by": [],
+      "engine": "funding",
+      "mode": "full",
+      "reason": "entr\u00e9e obligatoire non utilisable: funding. Le r\u00e9sultat a pu \u00eatre calcul\u00e9, mais il ne d\u00e9crit plus l'\u00e9tat actuel.",
+      "usable": false
+    },
+    "persistence": {
+      "blocking_inputs": [],
+      "degraded_by": [],
+      "engine": "persistence",
+      "mode": "full",
+      "reason": "toutes les entr\u00e9es obligatoires sont utilisables",
+      "usable": true
+    },
+    "positioning": {
+      "blocking_inputs": [
+        "open_interest"
+      ],
+      "degraded_by": [
+        "funding"
+      ],
+      "engine": "positioning",
+      "mode": "full",
+      "reason": "entr\u00e9e obligatoire non utilisable: open_interest. Le r\u00e9sultat a pu \u00eatre calcul\u00e9, mais il ne d\u00e9crit plus l'\u00e9tat actuel.",
+      "usable": false
+    },
+    "price": {
+      "blocking_inputs": [],
+      "degraded_by": [],
+      "engine": "price",
+      "mode": "full",
+      "reason": "toutes les entr\u00e9es obligatoires sont utilisables",
+      "usable": true
+    },
+    "volatility": {
+      "blocking_inputs": [],
+      "degraded_by": [
+        "dvol"
+      ],
+      "engine": "volatility",
+      "mode": "full",
+      "reason": "toutes les entr\u00e9es obligatoires sont utilisables; dvol manquante(s) ou p\u00e9rim\u00e9e(s), ce qui \u00e9largit l'incertitude sans invalider le r\u00e9sultat",
+      "usable": true
+    }
+  },
+  "families": {
+    "dvol": {
+      "age_seconds": null,
+      "available": false,
+      "family": "dvol",
+      "freshness": "UNAVAILABLE",
+      "observed_at": null,
+      "points": null,
+      "reason": "aucune s\u00e9rie DVOL n'existe pour cet actif; la volatilit\u00e9 repose sur l'ATR r\u00e9alis\u00e9",
+      "source": "dvol.index",
+      "usable": false,
+      "valid": false
+    },
+    "funding": {
+      "age_seconds": 88265.8,
+      "available": true,
+      "family": "funding",
+      "freshness": "STALE",
+      "observed_at": "2026-09-06T16:00:00.004000+00:00",
+      "points": 6628,
+      "reason": "trop ancienne pour d\u00e9crire l'\u00e9tat actuel",
+      "source": "funding.rate",
+      "usable": false,
+      "valid": true
+    },
+    "ohlcv_daily": {
+      "age_seconds": 59465.9,
+      "available": true,
+      "family": "ohlcv_daily",
+      "freshness": "LIVE",
+      "observed_at": "2026-09-07T00:00:00+00:00",
+      "points": 2219,
+      "reason": "pr\u00e9sente, valide et dans sa cadence",
+      "source": "candle store",
+      "usable": true,
+      "valid": true
+    },
+    "open_interest": {
+      "age_seconds": 232265.9,
+      "available": true,
+      "family": "open_interest",
+      "freshness": "DELAYED",
+      "observed_at": "2026-09-05T00:00:00+00:00",
+      "points": 1894,
+      "reason": "au-del\u00e0 de la cadence normale de cette source",
+      "source": "oi.contracts_bybit",
+      "usable": false,
+      "valid": true
+    },
+    "price": {
+      "age_seconds": 0.4,
+      "available": true,
+      "family": "price",
+      "freshness": "LIVE",
+      "observed_at": "2026-09-07T16:31:05.465125+00:00",
+      "points": 3,
+      "reason": "pr\u00e9sente, valide et dans sa cadence",
+      "source": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
+      "usable": true,
+      "valid": true
+    }
+  },
   "funding": {
     "annualised_pct": 8.85,
     "asset": "SOL",
@@ -170,13 +321,6 @@
     "percentile": 49.5,
     "sufficient_history": true,
     "value": 8.084e-05
-  },
-  "input_freshness": {
-    "crowding": "OK",
-    "direction": "OK",
-    "funding": "OK",
-    "positioning": "OK",
-    "volatility": "OK"
   },
   "leverage_state": {
     "asset": "SOL",
@@ -188,84 +332,86 @@
       "funding",
       "open_interest"
     ],
-    "interpretation": "price and open interest both fell: existing longs are being closed out",
+    "interpretation": "open interest falling without a decisive price move",
     "oi_change_pct": -17.7,
-    "price_change_pct": -2.36,
-    "state": "LONG_LIQUIDATION"
+    "price_change_pct": 0.46,
+    "state": "DELEVERAGING"
   },
   "market_data": {
-    "age_seconds": 9.6e-05,
-    "as_of": "2026-09-07T15:23:57.573615Z",
+    "age_seconds": 0.000506,
+    "as_of": "2026-09-07T16:31:05.465125Z",
     "asset": "SOL",
-    "change_24h_pct": -1.314,
-    "dispersion_pct": 0.0096,
-    "fetched_at": "2026-09-07T15:23:57.573711Z",
+    "change_24h_pct": -2.35,
+    "dispersion_pct": 0.0532,
+    "fetched_at": "2026-09-07T16:31:05.465631Z",
     "freshness": "LIVE",
-    "fx_rate": 0.86038712,
+    "fx_rate": 0.85994587,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T15:23:57.573691Z",
+    "fx_timestamp": "2026-09-07T16:31:05.465518Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 89.79,
-    "price_usd": 104.36,
+    "price_eur": 88.97,
+    "price_usd": 103.46,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": -1.314,
-        "fetched_at": "2026-09-07T15:23:57.573432Z",
+        "change_24h_pct": -2.35,
+        "fetched_at": "2026-09-07T16:31:05.464108Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.37,
+        "price": 103.48,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T15:23:57.573427Z",
+        "timestamp": "2026-09-07T16:31:05.464085Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T15:23:57.573555Z",
+        "fetched_at": "2026-09-07T16:31:05.464693Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.36,
+        "price": 103.425,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T15:23:57.573553Z",
+        "timestamp": "2026-09-07T16:31:05.464683Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T15:23:57.573616Z",
+        "fetched_at": "2026-09-07T16:31:05.465135Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.36,
+        "price": 103.46,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T15:23:57.573615Z",
+        "timestamp": "2026-09-07T16:31:05.465125Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T15:23:57.573693Z",
+        "fetched_at": "2026-09-07T16:31:05.465528Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 89.79,
+        "price": 88.97,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T15:23:57.573691Z",
+        "timestamp": "2026-09-07T16:31:05.465518Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T15:23:57.573615Z"
+    "timestamp": "2026-09-07T16:31:05.465125Z"
   },
+  "overall_status": "STALE",
+  "overall_status_reason": "3 moteur(s) sans entr\u00e9e utilisable: crowding, funding, positioning",
   "uncertainty": {
     "asset": "SOL",
     "drivers": [
@@ -273,23 +419,28 @@
         "contribution": 40,
         "detail": "no relationship survived the full filter chain",
         "driver": "no measured edge"
+      },
+      {
+        "contribution": 6,
+        "detail": "funding, dvol",
+        "driver": "stale or missing data"
       }
     ],
     "level": "MODERATE",
-    "score": 40.0,
-    "statement": "Uncertainty MODERATE (40/100), driven by: no measured edge."
+    "score": 46.0,
+    "statement": "Uncertainty MODERATE (46/100), driven by: no measured edge, stale or missing data."
   },
   "volatility": {
     "asset": "SOL",
-    "atr_percent": 5.062,
-    "atr_percentile": 10.0,
+    "atr_percent": 4.697,
+    "atr_percentile": 6.3,
     "direction": "STABLE",
-    "expansion_ratio": 1.051,
-    "history_days": 2216,
-    "interpretation": "ATR is 5.06% of price, the 10th percentile of 2203 days, so volatility is VERY_LOW and stable. Annualised realised volatility is 64%. This describes the size of moves, not their direction.",
+    "expansion_ratio": 1.092,
+    "history_days": 2219,
+    "interpretation": "ATR is 4.70% of price, the 6th percentile of 2206 days, so volatility is VERY_LOW and stable. Annualised realised volatility is 65%. This describes the size of moves, not their direction.",
     "note": "",
-    "realised_vol_30d": 3.35,
-    "realised_vol_annualised": 64.01,
+    "realised_vol_30d": 3.38,
+    "realised_vol_annualised": 64.58,
     "regime": "VERY_LOW"
   }
 }

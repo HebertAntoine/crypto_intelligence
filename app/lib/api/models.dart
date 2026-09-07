@@ -237,6 +237,51 @@ class MarketPriceRead {
   String get displayUnit => displaysEur ? 'EUR' : 'USD';
 }
 
+/// Une famille d'entrée, répondue quatre fois plutôt qu'une.
+///
+/// Le mot « OK » confondait quatre questions distinctes: la donnée existe-t-elle,
+/// est-elle valide, est-elle assez récente, et peut-elle alimenter le verdict
+/// affiché maintenant. Un instantané d'une heure répondait oui aux deux
+/// premières et non aux deux dernières, et s'affichait quand même « OK ».
+class FamilyState {
+  final String family;
+  final bool available;
+  final bool valid;
+  final String freshness;
+  final bool usable;
+  final String? observedAt;
+  final double? ageSeconds;
+  final String source;
+  final int? points;
+  final String reason;
+
+  const FamilyState({
+    required this.family,
+    required this.available,
+    required this.valid,
+    required this.freshness,
+    required this.usable,
+    required this.observedAt,
+    required this.ageSeconds,
+    required this.source,
+    required this.points,
+    required this.reason,
+  });
+
+  factory FamilyState.fromJson(Map<String, dynamic> json) => FamilyState(
+        family: json['family'] as String? ?? '',
+        available: json['available'] as bool? ?? false,
+        valid: json['valid'] as bool? ?? false,
+        freshness: json['freshness'] as String? ?? 'UNAVAILABLE',
+        usable: json['usable'] as bool? ?? false,
+        observedAt: json['observed_at'] as String?,
+        ageSeconds: (json['age_seconds'] as num?)?.toDouble(),
+        source: json['source'] as String? ?? '',
+        points: (json['points'] as num?)?.toInt(),
+        reason: json['reason'] as String? ?? '',
+      );
+}
+
 class TodayRead {
   final String asset;
   final MarketPriceRead? marketData;
@@ -257,9 +302,17 @@ class TodayRead {
   final double? fundingPercentile;
   final String volatilityRegime;
 
-  /// État de chaque famille d'entrée, tel que le backend le déclare.
+  /// État de chaque famille d'entrée: disponible, valide, fraîche, utilisable.
   /// Vide quand le backend est plus ancien que ce champ.
-  final Map<String, String> inputFreshness;
+  final Map<String, FamilyState> families;
+
+  /// Ce que la page dans son ensemble a le droit d'affirmer.
+  /// LIVE / RECENT / DEGRADED / STALE / SUSPENDED / UNAVAILABLE.
+  final String overallStatus;
+  final String overallStatusReason;
+
+  /// Faux dès qu'une entrée critique n'est plus utilisable.
+  final bool allowsAction;
 
   const TodayRead({
     required this.asset,
@@ -280,7 +333,10 @@ class TodayRead {
     required this.fundingBand,
     required this.fundingPercentile,
     required this.volatilityRegime,
-    this.inputFreshness = const {},
+    this.families = const {},
+    this.overallStatus = 'UNAVAILABLE',
+    this.overallStatusReason = '',
+    this.allowsAction = false,
   });
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
@@ -294,8 +350,15 @@ class TodayRead {
     final volatility = json['volatility'] as Map<String, dynamic>? ?? const {};
 
     return TodayRead(
-      inputFreshness: ((json['input_freshness'] as Map?) ?? const {})
-          .map((key, value) => MapEntry('$key', '$value')),
+      families: ((json['families'] as Map?) ?? const {}).map(
+        (key, value) => MapEntry(
+          '$key',
+          FamilyState.fromJson((value as Map).cast<String, dynamic>()),
+        ),
+      ),
+      overallStatus: json['overall_status'] as String? ?? 'UNAVAILABLE',
+      overallStatusReason: json['overall_status_reason'] as String? ?? '',
+      allowsAction: json['allows_action'] as bool? ?? false,
       asset: json['asset'] as String? ?? '',
       marketData: json['market_data'] == null
           ? null

@@ -3,6 +3,13 @@
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
+      "contribution": -20.0,
+      "detail": "1h price is below range, zone quality 58/100",
+      "is_measured_edge": false,
+      "name": "structural location",
+      "source": "structure"
+    },
+    {
       "contribution": 8.0,
       "detail": "funding is mid-range at the 25th percentile",
       "is_measured_edge": false,
@@ -11,32 +18,25 @@
     },
     {
       "contribution": 8.0,
-      "detail": "volatility LOW at the 20.9th percentile - moves are small, which cuts both ways",
+      "detail": "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
-    },
-    {
-      "contribution": 0.0,
-      "detail": "1h price is mid range, zone quality 76/100",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
     }
   ],
-  "invalidation": "A 1h close outside 76222.39-81570.56 would invalidate the current range reading.",
+  "invalidation": "A 1h close back above 79595.77 would mean the breakdown failed and price has reintegrated the range.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [
     "1d structure is RANGE_STRUCTURE"
   ],
-  "score": 5.3,
+  "score": -1.3,
   "state": "NEUTRAL",
-  "statement": "BTC 1h configuration is NEUTRAL (+5). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: 1d structure is RANGE_STRUCTURE.",
+  "statement": "BTC 1h configuration is NEUTRAL (-1). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: 1d structure is RANGE_STRUCTURE.",
   "timeframe": "1h",
   "why_now": [
+    "1h price is below range, zone quality 58/100",
     "funding is mid-range at the 25th percentile",
-    "volatility LOW at the 20.9th percentile - moves are small, which cuts both ways",
-    "1h price is mid range, zone quality 76/100"
+    "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways"
   ]
 }

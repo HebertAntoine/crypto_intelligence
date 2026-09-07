@@ -59,12 +59,36 @@ Map<String, dynamic> _today(String asset, {bool withMarket = true}) => {
       'leverage_state': {'state': 'NEW_LONGS'},
       'funding': {'band': 'NEUTRAL', 'percentile': 25.4},
       'volatility': {'regime': 'LOW'},
-      'input_freshness': {
-        'direction': 'OK',
-        'funding': 'OK',
-        'crowding': 'OK',
-        'volatility': 'OK',
-        'positioning': 'OK',
+      'overall_status': withMarket ? 'LIVE' : 'UNAVAILABLE',
+      'overall_status_reason': withMarket
+          ? 'toutes les entrées critiques sont dans leur cadence'
+          : 'donnée critique absente: price',
+      'allows_action': withMarket,
+      'families': {
+        'price': {
+          'family': 'price',
+          'available': withMarket,
+          'valid': withMarket,
+          'freshness': withMarket ? 'LIVE' : 'UNAVAILABLE',
+          'usable': withMarket,
+          'observed_at': '2026-09-07T15:23:29.000Z',
+          'age_seconds': 12.0,
+          'source': 'median of 3 providers',
+          'points': 3,
+          'reason': 'présente, valide et dans sa cadence',
+        },
+        'funding': {
+          'family': 'funding',
+          'available': true,
+          'valid': true,
+          'freshness': 'STALE',
+          'usable': false,
+          'observed_at': '2026-09-06T16:00:00.000Z',
+          'age_seconds': 87840.0,
+          'source': 'funding.rate',
+          'points': 7006,
+          'reason': 'trop ancienne pour décrire l’état actuel',
+        },
       },
       if (withMarket)
         'market_data': {
@@ -165,6 +189,31 @@ void main() {
       // La boîte externe occupe l'écran; l'enfant, lui, est mis en page à 450
       // puis réduit, ce qui est exactement ce qui agrandit le texte.
       expect(box.size.width, lessThanOrEqualTo(393));
+    });
+  });
+
+  group('Une donnée périmée ne dit jamais OK', () {
+    testWidgets('le funding périmé est affiché comme tel, pas comme disponible',
+        (tester) async {
+      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
+      await tester.tap(find.text('BTC').first);
+      await tester.pumpAndSettle();
+
+      // Le funding du fixture est present et valide mais vieux de 24 h.
+      expect(find.textContaining('PÉRIMÉ'), findsWidgets);
+      expect(find.textContaining('non utilisable'), findsWidgets);
+    });
+
+    testWidgets('l’identifiant technique n’est jamais montré à l’utilisateur',
+        (tester) async {
+      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
+      await tester.tap(find.text('BTC').first);
+      await tester.pumpAndSettle();
+
+      // Les enums restent anglais en interne; l'UI francaise les traduit.
+      expect(find.text('ohlcv_daily'), findsNothing);
+      expect(find.text('open_interest'), findsNothing);
+      expect(find.text('STRONGLY_BULLISH'), findsNothing);
     });
   });
 

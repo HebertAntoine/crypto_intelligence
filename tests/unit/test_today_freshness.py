@@ -16,20 +16,27 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import ClassVar
 
 import pytest
 
 from crypto_intel.api.routes_lot4 import (
-    _input_freshness,
     _reconstructed_regime,
     _ReconstructedRegime,
     today,
 )
 from crypto_intel.core.enums import Asset
+from crypto_intel.core.usability import (
+    FamilyState,
+    Freshness,
+    assess_engine,
+    freshness_for,
+    page_status,
+)
 from crypto_intel.engines.edge import EdgeEngine, UncertaintyEngine
 
 APP_LIB = Path(__file__).resolve().parents[2] / "app" / "lib"
+
+
 def _regime_label(regime: object) -> str | None:
     """The label carried by a reconstructed regime.
 
@@ -106,54 +113,130 @@ class TestUncertaintyReceivesWhatTheEndpointKnows:
         ), "stale inputs must appear as a named driver, not only in the score"
 
 
-class TestInputFreshness:
+class TestFamilyStates:
+    """Four questions per family, never collapsed into one word."""
+
     def test_every_family_is_named_individually(self, payload):
-        families = payload["input_freshness"]
-        for expected in ("direction", "funding", "crowding", "volatility", "positioning"):
+        families = payload["families"]
+        for expected in ("price", "ohlcv_daily", "funding", "open_interest"):
             assert expected in families, f"{expected} has no declared state"
 
-    def test_states_come_from_a_closed_vocabulary(self, payload):
-        allowed = {"OK", "STALE", "UNAVAILABLE", "INSUFFICIENT_HISTORY"}
-        for family, state in payload["input_freshness"].items():
-            if family.endswith("_missing"):
-                continue
-            assert state in allowed, f"{family} reports unknown state {state!r}"
+    def test_each_family_answers_all_four_questions(self, payload):
+        for name, state in payload["families"].items():
+            for key in ("available", "valid", "freshness", "usable"):
+                assert key in state, f"{name} does not answer {key}"
 
-    def test_insufficient_history_is_not_reported_as_unavailable(self):
-        """The two are different and the UI renders them differently."""
+    def test_usable_is_never_true_while_stale(self, payload):
+        for name, state in payload["families"].items():
+            if state["freshness"] in ("STALE", "DELAYED", "UNAVAILABLE"):
+                assert not state["usable"], (
+                    f"{name} is {state['freshness']} yet reported usable - this "
+                    "is the collapse that showed OK on hour-old data"
+                )
 
-        class _Funding:
-            sufficient_history = False
-            value = 0.0001
+    def test_a_present_valid_but_stale_family_is_not_usable(self):
+        """The exact case observed: present, valid, 54 minutes old."""
+        from datetime import UTC, datetime, timedelta
 
-        class _Empty:
-            missing: ClassVar[list] = []
-            inputs_missing: ClassVar[list] = []
-            atr_percentile = 1.0
-            regime = "BULLISH"
-
-        state = _input_freshness(
-            crowding=_Empty(), funding=_Funding(), volatility=_Empty(),
-            leverage_state=_Empty(), regime=_Empty(),
+        observed = datetime.now(UTC) - timedelta(minutes=54)
+        state = FamilyState(
+            family="price", available=True, valid=True,
+            freshness=freshness_for("price", observed), observed_at=observed,
         )
-        assert state["funding"] == "INSUFFICIENT_HISTORY"
+        assert state.available and state.valid
+        assert state.freshness is Freshness.DELAYED
+        assert not state.usable
 
-    def test_a_missing_value_is_unavailable_not_insufficient(self):
-        class _Funding:
-            sufficient_history = False
-            value = None
+    def test_every_family_declares_where_it_came_from(self, payload):
+        for name, state in payload["families"].items():
+            assert state.get("source"), f"{name} declares no source"
+            assert state.get("reason"), f"{name} gives no reason for its state"
 
-        class _Empty:
-            missing: ClassVar[list] = []
-            inputs_missing: ClassVar[list] = []
-            atr_percentile = 1.0
-            regime = "BULLISH"
 
-        state = _input_freshness(
-            crowding=_Empty(), funding=_Funding(), volatility=_Empty(),
-            leverage_state=_Empty(), regime=_Empty(),
+class TestEngineDependencies:
+    def test_a_stale_required_input_blocks_its_engine(self, payload):
+        families = payload["families"]
+        engines = payload["engines"]
+        for name, engine in engines.items():
+            for blocked in engine["blocking_inputs"]:
+                assert not families[blocked]["usable"], (
+                    f"{name} claims to be blocked by {blocked}, which is usable"
+                )
+            if engine["usable"]:
+                assert not engine["blocking_inputs"]
+
+    def test_an_optional_input_degrades_without_blocking(self):
+        fresh = FamilyState(
+            family="ohlcv_daily", available=True, valid=True,
+            freshness=Freshness.LIVE,
         )
-        assert state["funding"] == "UNAVAILABLE"
+        missing = FamilyState(family="dvol", available=False, valid=False)
+        state = assess_engine(
+            "volatility", {"ohlcv_daily": fresh, "dvol": missing}
+        )
+        assert state.usable, "a missing optional input must not block the engine"
+        assert "dvol" in state.degraded_by
+
+    def test_a_missing_required_input_blocks(self):
+        stale = FamilyState(
+            family="ohlcv_daily", available=True, valid=True,
+            freshness=Freshness.STALE,
+        )
+        state = assess_engine("direction", {"ohlcv_daily": stale})
+        assert not state.usable
+        assert state.blocking == ["ohlcv_daily"]
+
+
+class TestPageStatus:
+    def test_a_stale_critical_input_suspends_rather_than_degrades(self):
+        families = {
+            "price": FamilyState(
+                family="price", available=True, valid=True,
+                freshness=Freshness.STALE,
+            ),
+            "ohlcv_daily": FamilyState(
+                family="ohlcv_daily", available=True, valid=True,
+                freshness=Freshness.LIVE,
+            ),
+        }
+        status, reason = page_status(families, {})
+        assert status.value == "SUSPENDED"
+        assert not status.allows_action
+        assert "price" in reason
+
+    def test_an_absent_critical_input_is_unavailable_not_suspended(self):
+        families = {
+            "price": FamilyState(family="price"),
+            "ohlcv_daily": FamilyState(
+                family="ohlcv_daily", available=True, valid=True,
+                freshness=Freshness.LIVE,
+            ),
+        }
+        status, _ = page_status(families, {})
+        assert status.value == "UNAVAILABLE"
+
+    def test_all_fresh_allows_action(self):
+        families = {
+            name: FamilyState(
+                family=name, available=True, valid=True, freshness=Freshness.LIVE,
+            )
+            for name in ("price", "ohlcv_daily")
+        }
+        status, _ = page_status(families, {})
+        assert status.value == "LIVE"
+        assert status.allows_action
+
+    def test_the_payload_status_matches_its_families(self, payload):
+        status = payload["overall_status"]
+        unusable_critical = [
+            name for name in ("price", "ohlcv_daily")
+            if not payload["families"][name]["usable"]
+        ]
+        if unusable_critical:
+            assert status in ("SUSPENDED", "UNAVAILABLE"), (
+                f"critical input {unusable_critical} unusable but page says {status}"
+            )
+            assert payload["allows_action"] is False
 
 
 class TestPercentilesAreNotFabricated:
