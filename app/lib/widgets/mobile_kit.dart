@@ -32,11 +32,41 @@ class MobileGradientFrame extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: child,
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const designWidth = 900.0;
+            final width = constraints.maxWidth;
+            if (width >= 700) {
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: designWidth),
+                  child: child,
+                ),
+              );
+            }
+
+            final scale = width / designWidth;
+            final scaledHeight = constraints.maxHeight / scale;
+            return Align(
+              alignment: Alignment.topCenter,
+              child: Transform.scale(
+                scale: scale,
+                alignment: Alignment.topCenter,
+                child: OverflowBox(
+                  minWidth: designWidth,
+                  maxWidth: designWidth,
+                  minHeight: scaledHeight,
+                  maxHeight: scaledHeight,
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: designWidth,
+                    height: scaledHeight,
+                    child: child,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -77,7 +107,8 @@ class MobileHeader extends StatelessWidget {
                 const SizedBox(height: 7),
                 Text(
                   subtitle!,
-                  style: const TextStyle(color: mobileMuted, fontSize: 21, height: 1.18),
+                  style: const TextStyle(
+                      color: mobileMuted, fontSize: 21, height: 1.18),
                 ),
               ],
             ],
@@ -86,7 +117,8 @@ class MobileHeader extends StatelessWidget {
         const SizedBox(width: 14),
         IconButton(
           tooltip: 'Information',
-          icon: const Icon(Icons.info_outline_rounded, color: Color(0xFFC7D5F2), size: 36),
+          icon: const Icon(Icons.info_outline_rounded,
+              color: Color(0xFFC7D5F2), size: 36),
           onPressed: onInfo,
         ),
       ],
@@ -145,7 +177,8 @@ class IconTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF143966).withValues(alpha: 0.84),
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: mobileBlue.withValues(alpha: 0.66), width: 1.4),
+        border:
+            Border.all(color: mobileBlue.withValues(alpha: 0.66), width: 1.4),
       ),
       child: Icon(icon, color: const Color(0xFF7CB7FF), size: 38),
     );
@@ -170,11 +203,13 @@ class MobilePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 560),
-      padding: EdgeInsets.symmetric(horizontal: dense ? 12 : 16, vertical: dense ? 5 : 8),
+      padding: EdgeInsets.symmetric(
+          horizontal: dense ? 12 : 16, vertical: dense ? 5 : 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: filled ? 0.22 : 0.10),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: filled ? 0.95 : 0.78), width: 1.35),
+        border: Border.all(
+            color: color.withValues(alpha: filled ? 0.95 : 0.78), width: 1.35),
       ),
       child: Text(
         label,
@@ -211,36 +246,45 @@ class MobileBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF07111D),
-        border: const Border(top: BorderSide(color: Color(0xFF1A3149), width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.38),
-            blurRadius: 24,
-            offset: const Offset(0, -10),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 134,
-          child: Row(
-            children: [
-              for (var i = 0; i < destinations.length; i += 1)
-                Expanded(
-                  child: _MobileNavItem(
-                    destination: destinations[i],
-                    selected: i == selectedIndex,
-                    onTap: () => onSelected(i),
-                  ),
-                ),
+    Widget bar({bool compact = false}) => Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF07111D),
+            border: const Border(
+                top: BorderSide(color: Color(0xFF1A3149), width: 1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.38),
+                blurRadius: 24,
+                offset: const Offset(0, -10),
+              ),
             ],
           ),
-        ),
-      ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: compact ? 88 : 134,
+              child: Row(
+                children: [
+                  for (var i = 0; i < destinations.length; i += 1)
+                    Expanded(
+                      child: _MobileNavItem(
+                        destination: destinations[i],
+                        selected: i == selectedIndex,
+                        compact: compact,
+                        onTap: () => onSelected(i),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return bar(compact: width < 700);
+      },
     );
   }
 }
@@ -248,11 +292,13 @@ class MobileBottomNav extends StatelessWidget {
 class _MobileNavItem extends StatelessWidget {
   final MobileNavDestination destination;
   final bool selected;
+  final bool compact;
   final VoidCallback onTap;
 
   const _MobileNavItem({
     required this.destination,
     required this.selected,
+    required this.compact,
     required this.onTap,
   });
 
@@ -260,31 +306,35 @@ class _MobileNavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = selected ? mobileBlue : const Color(0xFFD3D9EF);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      padding: EdgeInsets.symmetric(
+          horizontal: compact ? 2 : 6, vertical: compact ? 8 : 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(compact ? 18 : 28),
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
               color: selected
                   ? const Color(0xFF123E71).withValues(alpha: 0.86)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(compact ? 18 : 28),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(destination.icon, color: color, size: selected ? 34 : 31),
-                const SizedBox(height: 8),
+                Icon(destination.icon,
+                    color: color,
+                    size:
+                        compact ? (selected ? 24 : 22) : (selected ? 34 : 31)),
+                SizedBox(height: compact ? 4 : 8),
                 Text(
                   destination.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: color,
-                    fontSize: selected ? 18 : 17,
+                    fontSize: compact ? 10 : (selected ? 18 : 17),
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   ),
                 ),
@@ -420,11 +470,20 @@ class SolMark extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _SolBar(width: width, colorA: const Color(0xFF35E8AA), colorB: const Color(0xFF8A6BFF)),
+        _SolBar(
+            width: width,
+            colorA: const Color(0xFF35E8AA),
+            colorB: const Color(0xFF8A6BFF)),
         const SizedBox(height: 5),
-        _SolBar(width: width, colorA: const Color(0xFF8A6BFF), colorB: const Color(0xFFE35EFF)),
+        _SolBar(
+            width: width,
+            colorA: const Color(0xFF8A6BFF),
+            colorB: const Color(0xFFE35EFF)),
         const SizedBox(height: 5),
-        _SolBar(width: width, colorA: const Color(0xFFE35EFF), colorB: const Color(0xFF35E8AA)),
+        _SolBar(
+            width: width,
+            colorA: const Color(0xFFE35EFF),
+            colorB: const Color(0xFF35E8AA)),
       ],
     );
   }
@@ -435,7 +494,8 @@ class _SolBar extends StatelessWidget {
   final Color colorA;
   final Color colorB;
 
-  const _SolBar({required this.width, required this.colorA, required this.colorB});
+  const _SolBar(
+      {required this.width, required this.colorA, required this.colorB});
 
   @override
   Widget build(BuildContext context) {

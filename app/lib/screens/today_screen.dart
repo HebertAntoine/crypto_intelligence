@@ -38,18 +38,7 @@ class _TodayScreenState extends State<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF07111D),
-            Color(0xFF0A1726),
-            Color(0xFF0E1116),
-          ],
-        ),
-      ),
+    return MobileGradientFrame(
       child: RefreshIndicator(
         onRefresh: () async => _reload(),
         child: FutureBuilder<List<TodayRead>>(
@@ -64,32 +53,25 @@ class _TodayScreenState extends State<TodayScreen> {
 
             final reads = snapshot.data ?? const [];
             if (reads.isEmpty) {
-              return ErrorView(error: 'Aucune analyse disponible.', onRetry: _reload);
+              return ErrorView(
+                  error: 'Aucune analyse disponible.', onRetry: _reload);
             }
 
-            return SafeArea(
-              bottom: false,
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 840),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(26, 26, 26, 24),
-                    children: [
-                      const _TodayHeader(),
-                      const SizedBox(height: 20),
-                      // The app bundles snapshots so it can render without a
-                      // backend. A snapshot is a photograph of a past moment;
-                      // showing it as "today" without saying so would be the
-                      // one thing this project exists not to do.
-                      _ProvenanceBanner(provenance: widget.client.lastProvenance),
-                      for (final read in reads) ...[
-                        _MarketCard(read: read),
-                        const SizedBox(height: 22),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(26, 26, 26, 178),
+              children: [
+                const _TodayHeader(),
+                const SizedBox(height: 20),
+                // The app bundles snapshots so it can render without a
+                // backend. A snapshot is a photograph of a past moment;
+                // showing it as "today" without saying so would be the
+                // one thing this project exists not to do.
+                _ProvenanceBanner(provenance: widget.client.lastProvenance),
+                for (final read in reads) ...[
+                  _MarketCard(read: read),
+                  const SizedBox(height: 22),
+                ],
+              ],
             );
           },
         ),
@@ -145,9 +127,9 @@ class _ProvenanceBanner extends StatelessWidget {
                   Text(
                     stale
                         ? "Ces chiffres ne décrivent pas le marché actuel. Aucun "
-                          "backend n'est joignable depuis cette page."
+                            "backend n'est joignable depuis cette page."
                         : "Aucun backend joignable: lecture issue de l'instantané "
-                          'intégré à la version publiée.',
+                            'intégré à la version publiée.',
                     style: const TextStyle(
                       fontSize: 12,
                       color: mobileMuted,
@@ -290,7 +272,8 @@ class _AssetHeader extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 meta.name,
-                style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 24, height: 1),
+                style: const TextStyle(
+                    color: Color(0xFFB6C1D2), fontSize: 24, height: 1),
               ),
             ],
           ),
@@ -311,7 +294,8 @@ class _AssetHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(width: 16),
-        const Icon(Icons.chevron_right_rounded, color: AppColors.text, size: 34),
+        const Icon(Icons.chevron_right_rounded,
+            color: AppColors.text, size: 34),
       ],
     );
   }
@@ -349,7 +333,8 @@ class _VerdictPanel extends StatelessWidget {
               shape: BoxShape.circle,
               color: AppColors.measured.withValues(alpha: 0.28),
             ),
-            child: const Icon(Icons.trending_up_rounded, color: Color(0xFF5CFF9F), size: 34),
+            child: const Icon(Icons.trending_up_rounded,
+                color: Color(0xFF5CFF9F), size: 34),
           ),
           const SizedBox(width: 22),
           Expanded(
@@ -368,7 +353,8 @@ class _VerdictPanel extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   _verdictBody(read),
-                  style: const TextStyle(color: AppColors.text, fontSize: 18, height: 1.36),
+                  style: const TextStyle(
+                      color: AppColors.text, fontSize: 18, height: 1.36),
                 ),
               ],
             ),
@@ -395,14 +381,16 @@ class _MetricGrid extends StatelessWidget {
             title: 'Direction du marché',
             pill: _directionLabel(read.summary.marketDirection),
             pillColor: _directionColor(read.summary.marketDirection),
-            caption: 'présente sur ${read.summary.directionConfidence} % des 20 derniers jours',
+            caption:
+                'présente sur ${read.summary.directionConfidence} % des 20 derniers jours',
           ),
           _MetricBox(
             icon: Icons.track_changes_rounded,
             title: 'Edge mesurable',
             pill: _edgeLabel(read.edgeState),
             pillColor: _edgeColor(read.edgeState),
-            caption: '${read.admittedCount} validé, ${read.rejectedCount} rejeté',
+            caption:
+                '${read.admittedCount} validé, ${read.rejectedCount} rejeté',
           ),
         ];
 
@@ -462,11 +450,15 @@ class _MetricBox extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(color: AppColors.text, fontSize: 18)),
+                Text(title,
+                    style:
+                        const TextStyle(color: AppColors.text, fontSize: 18)),
                 const SizedBox(height: 10),
                 _OutlinePill(label: pill, color: pillColor),
                 const SizedBox(height: 10),
-                Text(caption, style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 14)),
+                Text(caption,
+                    style: const TextStyle(
+                        color: Color(0xFFB6C1D2), fontSize: 14)),
               ],
             ),
           ),
@@ -512,7 +504,8 @@ class _DetailRows extends StatelessWidget {
         _InfoRow(
           icon: Icons.help_rounded,
           label: 'Incertitude',
-          value: '${_uncertaintyLabel(read.uncertaintyLevel)}  ${read.uncertaintyScore.toStringAsFixed(0)}/100',
+          value:
+              '${_uncertaintyLabel(read.uncertaintyLevel)}  ${read.uncertaintyScore.toStringAsFixed(0)}/100',
           valuePill: true,
           valueColor: _uncertaintyColor(read.uncertaintyLevel),
         ),
@@ -552,7 +545,8 @@ class _InfoRow extends StatelessWidget {
         final compact = constraints.maxWidth < 620;
         final leading = Row(
           children: [
-            SizedBox(width: 54, child: Icon(icon, color: AppColors.text, size: 30)),
+            SizedBox(
+                width: 54, child: Icon(icon, color: AppColors.text, size: 30)),
             Expanded(
               child: Text(
                 label,
@@ -562,7 +556,8 @@ class _InfoRow extends StatelessWidget {
             if (compact)
               IconButton(
                 tooltip: 'Détail',
-                icon: const Icon(Icons.info_outline_rounded, color: AppColors.text, size: 22),
+                icon: const Icon(Icons.info_outline_rounded,
+                    color: AppColors.text, size: 22),
                 onPressed: () => _showInfo(context),
               ),
           ],
@@ -611,22 +606,28 @@ class _InfoRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(width: 54, child: Icon(icon, color: AppColors.text, size: 30)),
+              SizedBox(
+                  width: 54,
+                  child: Icon(icon, color: AppColors.text, size: 30)),
               SizedBox(
                 width: 220,
                 child: Text(
                   label,
-                  style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 20),
+                  style:
+                      const TextStyle(color: Color(0xFFB6C1D2), fontSize: 20),
                 ),
               ),
               Expanded(child: valueWidget),
               if (sideTitle != null || sideBody != null) ...[
                 const SizedBox(width: 24),
-                SizedBox(width: 210, child: _SideNote(title: sideTitle, body: sideBody)),
+                SizedBox(
+                    width: 210,
+                    child: _SideNote(title: sideTitle, body: sideBody)),
               ],
               IconButton(
                 tooltip: 'Détail',
-                icon: const Icon(Icons.info_outline_rounded, color: AppColors.text, size: 22),
+                icon: const Icon(Icons.info_outline_rounded,
+                    color: AppColors.text, size: 22),
                 onPressed: () => _showInfo(context),
               ),
             ],
@@ -656,7 +657,9 @@ class _InfoRow extends StatelessWidget {
                 ),
               if (sideBody != null) ...[
                 const SizedBox(height: 4),
-                Text(sideBody!, style: const TextStyle(color: AppColors.textMuted, height: 1.35)),
+                Text(sideBody!,
+                    style: const TextStyle(
+                        color: AppColors.textMuted, height: 1.35)),
               ],
             ],
           ],
@@ -692,7 +695,8 @@ class _SideNote extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             body!,
-            style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 13, height: 1.2),
+            style: const TextStyle(
+                color: Color(0xFFB6C1D2), fontSize: 13, height: 1.2),
           ),
         ],
       ],
@@ -721,12 +725,17 @@ class _WhyPanel extends StatelessWidget {
           leading: Container(
             width: 52,
             height: 52,
-            decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF4B924)),
-            child: const Icon(Icons.lightbulb_outline_rounded, color: Colors.white, size: 30),
+            decoration: const BoxDecoration(
+                shape: BoxShape.circle, color: Color(0xFFF4B924)),
+            child: const Icon(Icons.lightbulb_outline_rounded,
+                color: Colors.white, size: 30),
           ),
           title: const Text(
             'Pourquoi cette analyse ?',
-            style: TextStyle(color: AppColors.text, fontSize: 20, fontWeight: FontWeight.w800),
+            style: TextStyle(
+                color: AppColors.text,
+                fontSize: 20,
+                fontWeight: FontWeight.w800),
           ),
           subtitle: const Text(
             'Voir le détail des indicateurs et sources',
@@ -739,7 +748,8 @@ class _WhyPanel extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 _edgeExplanation(read),
-                style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 14.5, height: 1.35),
+                style: const TextStyle(
+                    color: Color(0xFFB6C1D2), fontSize: 14.5, height: 1.35),
               ),
             ),
             const SizedBox(height: 12),
@@ -750,7 +760,8 @@ class _WhyPanel extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     '+${driver.contribution}  ${_sentenceCase(driver.driver.replaceAll('_', ' '))} - ${driver.detail}',
-                    style: const TextStyle(color: AppColors.text, fontSize: 13.5, height: 1.25),
+                    style: const TextStyle(
+                        color: AppColors.text, fontSize: 13.5, height: 1.25),
                   ),
                 ),
               ),
@@ -801,7 +812,8 @@ class _HeaderButton extends StatelessWidget {
         children: [
           Icon(icon, color: AppColors.text, size: 26),
           const SizedBox(width: 16),
-          Text(label, style: const TextStyle(color: AppColors.text, fontSize: 19)),
+          Text(label,
+              style: const TextStyle(color: AppColors.text, fontSize: 19)),
         ],
       ),
     );
@@ -868,7 +880,8 @@ class _OutlinePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 260),
-      padding: EdgeInsets.symmetric(horizontal: dense ? 13 : 15, vertical: dense ? 6 : 7),
+      padding: EdgeInsets.symmetric(
+          horizontal: dense ? 13 : 15, vertical: dense ? 6 : 7),
       decoration: BoxDecoration(
         color: color.withValues(alpha: dense ? 0.18 : 0.12),
         borderRadius: BorderRadius.circular(8),
@@ -1036,7 +1049,10 @@ class _AssetMeta {
             change: '+2,4 %',
             logo: Text(
               '₿',
-              style: TextStyle(color: Colors.white, fontSize: 50, fontWeight: FontWeight.w800),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 50,
+                  fontWeight: FontWeight.w800),
             ),
             logoGradient: [Color(0xFFFFA52C), Color(0xFFFF8B1F)],
           ),

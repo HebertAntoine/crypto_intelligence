@@ -137,17 +137,27 @@ class _MarketLine extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            read.summary.statement.isEmpty ? 'Aucune synthèse disponible.' : read.summary.statement,
-            style: const TextStyle(color: AppColors.text, fontSize: 19, height: 1.32),
+            _statement(read),
+            style: const TextStyle(
+                color: AppColors.text, fontSize: 19, height: 1.32),
           ),
           const SizedBox(height: 18),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
-              MobilePill(label: read.edgeState.label.toUpperCase(), color: AppColors.warn, dense: true),
-              MobilePill(label: readableLabel(read.crowdingLevel), color: mobileBlue, dense: true),
-              MobilePill(label: readableLabel(read.volatilityRegime), color: const Color(0xFFBFD0FF), dense: true),
+              MobilePill(
+                  label: _edgeLabel(read.edgeState),
+                  color: AppColors.warn,
+                  dense: true),
+              MobilePill(
+                  label: readableLabel(read.crowdingLevel),
+                  color: mobileBlue,
+                  dense: true),
+              MobilePill(
+                  label: _volatilityLabel(read.volatilityRegime),
+                  color: const Color(0xFFBFD0FF),
+                  dense: true),
             ],
           ),
         ],
@@ -170,4 +180,42 @@ String _directionLabel(String value) => switch (value.toUpperCase()) {
       'STRONGLY_BEARISH' => 'FORTEMENT BAISSIER',
       'RANGE' => 'RANGE',
       _ => readableLabel(value),
+    };
+
+String _statement(TodayRead read) {
+  if (read.summary.statement.isEmpty) return 'Aucune synthèse disponible.';
+  final direction = read.summary.marketDirection.toUpperCase();
+  if (read.summary.statement.contains('strongly bullish')) {
+    return '${read.asset} est fortement haussier, mais nous n’avons actuellement aucun edge directionnel robuste.';
+  }
+  if (read.summary.statement.contains('strongly bearish')) {
+    return '${read.asset} est fortement baissier, mais nous n’avons actuellement aucun edge directionnel robuste.';
+  }
+  if (direction.contains('BULLISH')) {
+    return '${read.asset} est haussier, mais nous n’avons actuellement aucun edge directionnel robuste.';
+  }
+  if (direction.contains('BEARISH')) {
+    return '${read.asset} est baissier, mais nous n’avons actuellement aucun edge directionnel robuste.';
+  }
+  return read.summary.statement;
+}
+
+String _edgeLabel(EdgeState state) => switch (state) {
+      EdgeState.positiveEdge => 'EDGE MESURABLE',
+      EdgeState.negativeEdge => 'EDGE DÉFAVORABLE',
+      EdgeState.noMeasurableEdge => 'AUCUN EDGE MESURABLE',
+      EdgeState.unstable => 'INSTABLE',
+      EdgeState.insufficientData => 'DONNÉES INSUFFISANTES',
+      EdgeState.notYetTested => 'PAS ENCORE TESTÉ',
+      EdgeState.unknown => 'INCONNU',
+    };
+
+String _volatilityLabel(String raw) => switch (raw.toUpperCase()) {
+      'LOW' => 'FAIBLE',
+      'VERY_LOW' => 'TRÈS FAIBLE',
+      'NORMAL' => 'NORMALE',
+      'MODERATE' => 'MODÉRÉE',
+      'HIGH' => 'ÉLEVÉE',
+      'EXTREME' => 'EXTRÊME',
+      _ => readableLabel(raw),
     };

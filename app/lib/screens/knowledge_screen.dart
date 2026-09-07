@@ -80,12 +80,14 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
                   )
                 else ...[
                   _HierarchyPanel(
-                    hierarchy: snapshot.data!['hierarchy'] as Map<String, dynamic>?,
+                    hierarchy:
+                        snapshot.data!['hierarchy'] as Map<String, dynamic>?,
                   ),
                   const SizedBox(height: 22),
                   _TheoryPanel(
                     claims: snapshot.data!['claims'] as Map<String, dynamic>?,
-                    validation: snapshot.data!['validation'] as Map<String, dynamic>?,
+                    validation:
+                        snapshot.data!['validation'] as Map<String, dynamic>?,
                   ),
                   const SizedBox(height: 90),
                   _HumanExamplesPanel(
@@ -130,7 +132,8 @@ class _HierarchyPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tiers = (hierarchy?['tiers'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final tiers =
+        (hierarchy?['tiers'] as Map?)?.cast<String, dynamic>() ?? const {};
     return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +161,8 @@ class _HierarchyPanel extends StatelessWidget {
                       'Une source ne peut invalider qu’une source d’un niveau strictement inférieur. '
                       'En cas de désaccord entre sources de même niveau, le conflit est signalé, jamais masqué. '
                       'Les sources pédagogiques et humaines ne peuvent jamais écraser des données mesurées.',
-                      style: TextStyle(color: mobileMuted, fontSize: 18, height: 1.28),
+                      style: TextStyle(
+                          color: mobileMuted, fontSize: 18, height: 1.28),
                     ),
                   ],
                 ),
@@ -227,7 +231,8 @@ class _TierRow extends StatelessWidget {
           Expanded(
             child: Text(
               _tierLabel(level, '${payload['label']}'),
-              style: const TextStyle(color: AppColors.text, fontSize: 18, height: 1.15),
+              style: const TextStyle(
+                  color: AppColors.text, fontSize: 18, height: 1.15),
             ),
           ),
           const SizedBox(width: 12),
@@ -279,7 +284,8 @@ class _TheoryPanel extends StatelessWidget {
                     Text(
                       'Ces éléments sont des hypothèses pédagogiques de lecture graphique. '
                       'Ils ne peuvent pas primer sur la valeur mesurée.',
-                      style: TextStyle(color: mobileMuted, fontSize: 18, height: 1.25),
+                      style: TextStyle(
+                          color: mobileMuted, fontSize: 18, height: 1.25),
                     ),
                   ],
                 ),
@@ -340,14 +346,16 @@ class _ClaimTile extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               row.statement,
-              style: const TextStyle(color: mobileMuted, fontSize: 16, height: 1.25),
+              style: const TextStyle(
+                  color: mobileMuted, fontSize: 16, height: 1.25),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,
               runSpacing: 8,
               children: [
-                for (final verdict in row.verdicts) _VerdictBadge(verdict: verdict),
+                for (final verdict in row.verdicts)
+                  _VerdictBadge(verdict: verdict),
               ],
             ),
           ],
@@ -357,7 +365,8 @@ class _ClaimTile extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               row.detail,
-              style: const TextStyle(color: mobileMuted, fontSize: 14.5, height: 1.35),
+              style: const TextStyle(
+                  color: mobileMuted, fontSize: 14.5, height: 1.35),
             ),
           ),
         ],
@@ -377,7 +386,8 @@ class _VerdictBadge extends StatelessWidget {
       label: '${verdict.asset} ${verdict.label}',
       color: verdict.color,
       dense: true,
-      filled: verdict.verdict == 'CONTRADICTED' || verdict.verdict == 'SUPPORTED',
+      filled:
+          verdict.verdict == 'CONTRADICTED' || verdict.verdict == 'SUPPORTED',
     );
   }
 }
@@ -407,18 +417,24 @@ class _HumanExamplesPanel extends StatelessWidget {
             const UnavailableText()
           else if (status == 'EMPTY')
             Text(
-              '${dataset!['note']}',
-              style: const TextStyle(color: mobileMuted, fontSize: 17, height: 1.32),
+              _datasetNote('${dataset!['note']}'),
+              style: const TextStyle(
+                  color: mobileMuted, fontSize: 17, height: 1.32),
             )
           else
             Wrap(
               spacing: 12,
               runSpacing: 10,
               children: [
-                _SmallMetric(label: 'Exemples', value: '${dataset!['number_examples']}'),
-                _SmallMetric(label: 'Épisodes', value: '${dataset!['market_episodes']}'),
-                _SmallMetric(label: 'Échantillon', value: '${dataset!['effective_sample_size']}'),
-                _SmallMetric(label: 'Vérifiés', value: '${dataset!['human_verified']}'),
+                _SmallMetric(
+                    label: 'Exemples', value: '${dataset!['number_examples']}'),
+                _SmallMetric(
+                    label: 'Épisodes', value: '${dataset!['market_episodes']}'),
+                _SmallMetric(
+                    label: 'Échantillon',
+                    value: '${dataset!['effective_sample_size']}'),
+                _SmallMetric(
+                    label: 'Vérifiés', value: '${dataset!['human_verified']}'),
               ],
             ),
         ],
@@ -534,13 +550,16 @@ List<_ClaimView> _claimRows(
   };
 
   final verdictByConceptAsset = <String, Map<String, String>>{};
-  final results = (validation?['results'] as Map?)?.cast<String, dynamic>() ?? const {};
+  final results =
+      (validation?['results'] as Map?)?.cast<String, dynamic>() ?? const {};
   for (final assetEntry in results.entries) {
     final asset = assetEntry.key;
-    for (final claim in ((assetEntry.value as Map)['claims'] as List? ?? const [])) {
+    for (final claim
+        in ((assetEntry.value as Map)['claims'] as List? ?? const [])) {
       final claimMap = (claim as Map).cast<String, dynamic>();
       final concept = '${claimMap['concept']}';
-      verdictByConceptAsset.putIfAbsent(concept, () => {})[asset] = '${claimMap['verdict']}';
+      verdictByConceptAsset.putIfAbsent(concept, () => {})[asset] =
+          '${claimMap['verdict']}';
     }
   }
 
@@ -557,13 +576,16 @@ List<_ClaimView> _claimRows(
     for (final concept in concepts)
       _ClaimView(
         title: _conceptTitle(concept),
-        statement: _claimStatement(concept, '${claimByConcept[concept]?['statement'] ?? ''}'),
-        detail: _claimDetail(concept, '${claimByConcept[concept]?['status_note'] ?? ''}'),
+        statement: _claimStatement(
+            concept, '${claimByConcept[concept]?['statement'] ?? ''}'),
+        detail: _claimDetail(
+            concept, '${claimByConcept[concept]?['status_note'] ?? ''}'),
         verdicts: [
           for (final asset in const ['BTC', 'ETH', 'SOL'])
             _AssetVerdict(
               asset: asset,
-              verdict: verdictByConceptAsset[concept]?[asset] ?? 'NOT_SUPPORTED',
+              verdict:
+                  verdictByConceptAsset[concept]?[asset] ?? 'NOT_SUPPORTED',
             ),
         ],
       ),
@@ -581,12 +603,15 @@ String _conceptTitle(String concept) => switch (concept) {
     };
 
 String _claimStatement(String concept, String fallback) => switch (concept) {
-      'double_top' => 'Se résout généralement à la baisse après cassure de la ligne de cou.',
-      'double_bottom' => 'Se résout généralement à la hausse après cassure de la ligne de cou.',
+      'double_top' =>
+        'Se résout généralement à la baisse après cassure de la ligne de cou.',
+      'double_bottom' =>
+        'Se résout généralement à la hausse après cassure de la ligne de cou.',
       'triple_top' => 'Se résout généralement à la baisse.',
       'triple_bottom' => 'Se résout généralement à la hausse.',
       'head_and_shoulders' => 'Précède souvent un retournement baissier.',
-      'inverse_head_and_shoulders' => 'Précède souvent un retournement haussier.',
+      'inverse_head_and_shoulders' =>
+        'Précède souvent un retournement haussier.',
       _ => fallback,
     };
 
@@ -606,3 +631,10 @@ String _tierLabel(String level, String fallback) => switch (level) {
       '6' => 'média généraliste ou commentaire',
       _ => fallback,
     };
+
+String _datasetNote(String raw) {
+  if (raw.contains('No human examples stored yet')) {
+    return 'Aucun exemple humain n’est encore enregistré. Toute étude fondée sur des exemples humains restera marquée DONNÉES_INSUFFISANTES tant qu’un jeu de données robuste n’aura pas été constitué.';
+  }
+  return raw;
+}
