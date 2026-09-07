@@ -297,3 +297,30 @@ def test_family_freshness_is_recomputed_never_read_from_the_payload():
         assert "freshnessLabel(state.freshness)" not in text, (
             f"{name} affiche la fraîcheur figée du payload"
         )
+
+
+def test_the_official_logos_are_bundled_and_declared():
+    """Les trois PNG doivent exister et être déclarés, sinon le tracé reprend.
+
+    `CryptoLogo` retombe silencieusement sur son tracé vectoriel quand un
+    fichier manque: rien ne casse, et personne ne remarque que le logo
+    officiel n'est pas affiché.
+    """
+    root = Path(__file__).resolve().parents[2]
+    logos = root / "app" / "assets" / "logos"
+
+    for name in ("btc", "eth", "sol"):
+        path = logos / f"{name}.png"
+        assert path.exists(), f"{name}.png absent"
+        header = path.read_bytes()[:8]
+        assert header == b"\x89PNG\r\n\x1a\n", f"{name}.png n'est pas un PNG"
+
+    pubspec = (root / "app" / "pubspec.yaml").read_text(encoding="utf-8")
+    assert "- assets/logos/" in pubspec, "le dossier n'est pas embarqué"
+
+    widget = (
+        root / "app" / "lib" / "widgets" / "mobile_kit.dart"
+    ).read_text(encoding="utf-8")
+    assert "assets/logos/${asset.toLowerCase()}.png" in widget
+    # Le repli doit rester: un fichier retiré ne doit jamais laisser un vide.
+    assert "errorBuilder:" in widget

@@ -15,7 +15,6 @@ from typing import Any, ClassVar
 
 from ..core.enums import Asset
 
-
 # Le régime en français. L'enum reste la vérité interne; il ne doit pas
 # traverser jusqu'à l'écran, où « Régime strongly bullish » était lisible.
 _REGIME_FR = {

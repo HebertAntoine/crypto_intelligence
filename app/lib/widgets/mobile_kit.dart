@@ -488,13 +488,20 @@ class CryptoLogo extends StatelessWidget {
       // Le logo officiel s'il est fourni, le tracé vectoriel sinon. Un
       // fichier manquant ne doit jamais laisser un rond vide: `errorBuilder`
       // ramène au dessin plutôt que d'afficher une icône cassée.
-      child: Center(
+      //
+      // L'image remplit le disque et y est découpée. Bitcoin et Solana sont
+      // déjà des pastilles rondes: à 62 % elles flottaient dans un anneau de
+      // dégradé qui n'a plus lieu d'être. Ethereum est une marque sur fond
+      // transparent, et laisse le disque apparaître derrière elle.
+      child: ClipOval(
         child: Image.asset(
           'assets/logos/${asset.toLowerCase()}.png',
-          width: size * 0.62,
-          height: size * 0.62,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stack) => meta.logoBuilder(size),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+          errorBuilder: (context, error, stack) =>
+              Center(child: meta.logoBuilder(size)),
         ),
       ),
     );
