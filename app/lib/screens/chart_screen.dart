@@ -97,7 +97,6 @@ class _ChartScreenState extends State<ChartScreen> {
                 else ...[
                   _OpportunityPanel(
                     opportunity: snapshot.data!.$2,
-                    asset: _asset,
                     timeframe: _timeframe,
                   ),
                   const SizedBox(height: 24),
@@ -188,7 +187,7 @@ class _AssetChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: width.clamp(142, 215),
+      width: width.clamp(142.0, 215.0).toDouble(),
       height: 88,
       child: Material(
         color: Colors.transparent,
@@ -286,12 +285,10 @@ class _TimeframeSelector extends StatelessWidget {
 
 class _OpportunityPanel extends StatelessWidget {
   final EntryOpportunity? opportunity;
-  final String asset;
   final String timeframe;
 
   const _OpportunityPanel({
     required this.opportunity,
-    required this.asset,
     required this.timeframe,
   });
 
