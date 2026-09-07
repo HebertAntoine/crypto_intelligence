@@ -115,6 +115,17 @@ class EntryOpportunityEngine:
                 contribution=-30.0,
                 detail=f"{higher.value} structure is bearish ({' '.join(structure.labels)})",
             ))
+        elif structure.state.value == "RANGE_STRUCTURE":
+            # Un range est un état structurel mesuré, pas une donnée absente.
+            # Le classer en `missing` faisait apparaître « Lecture structurelle
+            # incomplète » alors que la structure était parfaitement lue: elle
+            # ne penchait simplement d'aucun côté.
+            factors.append(OpportunityFactor(
+                name="higher timeframe structure",
+                contribution=0.0,
+                detail=f"{higher.value} structure is a range "
+                       f"({' '.join(structure.labels)})",
+            ))
         else:
             out.missing.append(f"{higher.value} structure is {structure.state.value}")
 
@@ -171,6 +182,21 @@ class EntryOpportunityEngine:
                 name="funding normalised",
                 contribution=8.0, source="derivatives",
                 detail=f"funding is mid-range at the {funding.percentile:.0f}th percentile",
+            ))
+        elif funding.percentile is not None:
+            # NEGATIVE et POSITIVE sont des lectures mesurées. Les faire tomber
+            # dans le cas « indisponible » produisait la contradiction visible
+            # à l'écran: le funding affichait p24 pendant que l'explication
+            # disait « funding percentile unavailable ».
+            leaning = (
+                "below" if funding.band is FundingBand.NEGATIVE else "above"
+            )
+            factors.append(OpportunityFactor(
+                name="funding leaning",
+                contribution=4.0 if funding.band is FundingBand.NEGATIVE else -4.0,
+                source="derivatives",
+                detail=f"funding sits {leaning} its median, at the "
+                       f"{funding.percentile:.0f}th percentile",
             ))
         else:
             out.missing.append("funding percentile unavailable")

@@ -10,6 +10,20 @@
       "source": "volatility"
     },
     {
+      "contribution": 4.0,
+      "detail": "funding sits below its median, at the 24th percentile",
+      "is_measured_edge": false,
+      "name": "funding leaning",
+      "source": "derivatives"
+    },
+    {
+      "contribution": 0.0,
+      "detail": "1d structure is a range (LH HH HL HL)",
+      "is_measured_edge": false,
+      "name": "higher timeframe structure",
+      "source": "structure"
+    },
+    {
       "contribution": 0.0,
       "detail": "1w price is mid range, zone quality 62/100",
       "is_measured_edge": false,
@@ -20,16 +34,15 @@
   "invalidation": "A 1w close outside 23237.04-126950.27 would invalidate the current range reading.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
-  "missing": [
-    "1d structure is RANGE_STRUCTURE",
-    "funding percentile unavailable"
-  ],
-  "score": 4.0,
+  "missing": [],
+  "score": 3.0,
   "state": "NEUTRAL",
-  "statement": "BTC 1w configuration is NEUTRAL (+4). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: 1d structure is RANGE_STRUCTURE; funding percentile unavailable.",
+  "statement": "BTC 1w configuration is NEUTRAL (+3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "1w",
   "why_now": [
     "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways",
+    "funding sits below its median, at the 24th percentile",
+    "1d structure is a range (LH HH HL HL)",
     "1w price is mid range, zone quality 62/100"
   ]
 }

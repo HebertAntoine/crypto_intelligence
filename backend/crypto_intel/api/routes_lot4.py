@@ -537,9 +537,12 @@ async def today(symbol: str) -> dict[str, Any]:
     Assembled without running the LLM analysts, so it stays cheap enough to
     poll and returns the same separation of concerns the reports use.
     """
+    from datetime import UTC, datetime
+
     from ..engines.edge import EdgeEngine, UncertaintyEngine, build_decision_summary
     from ..engines.leverage import LeverageCrowdingEngine
     from ..engines.volatility import VolatilityRegimeEngine
+    from ..history import store
 
     asset = _parse_asset(symbol)
 
@@ -641,8 +644,34 @@ async def today(symbol: str) -> dict[str, Any]:
             extra_factors=context["factors"],
         )
 
+        # Le prix bouge à la seconde, l'analyse est recalculée bien plus
+        # rarement. Les présenter sous un seul horodatage laissait l'écran
+        # afficher « analyse hors ligne » au-dessus d'un prix « LIVE », ce qui
+        # est vrai des deux côtés et incompréhensible ensemble.
+        analysis_price = None
+        candles = store.load_candles(asset, Timeframe.H4)
+        if not candles.empty:
+            analysis_price = float(candles["close"].iloc[-1])
+        live_price = market.get("price_usd")
+        drift_pct = None
+        if analysis_price and live_price:
+            drift_pct = round((live_price / analysis_price - 1) * 100, 3)
+
+        analysis_block = {
+            "computed_at": datetime.now(UTC).isoformat(),
+            "price_at_analysis": analysis_price,
+            "live_price": live_price,
+            "price_drift_pct": drift_pct,
+            # Au-delà, la lecture décrit un prix que le marché a quitté.
+            "drift_threshold_pct": 1.5,
+            "stale_for_current_price": bool(
+                drift_pct is not None and abs(drift_pct) >= 1.5
+            ),
+        }
+
         return {
             "asset": asset.value,
+            "analysis": analysis_block,
             "buy_opportunity": opportunity.state.value,
             "buy_opportunity_explanation": opportunity.to_dict(),
             "entry_opportunity": entry.to_dict(),

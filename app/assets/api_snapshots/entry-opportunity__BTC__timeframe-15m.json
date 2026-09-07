@@ -15,21 +15,34 @@
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
+    },
+    {
+      "contribution": 4.0,
+      "detail": "funding sits below its median, at the 24th percentile",
+      "is_measured_edge": false,
+      "name": "funding leaning",
+      "source": "derivatives"
+    },
+    {
+      "contribution": 0.0,
+      "detail": "4h structure is a range (LH HH LL HL)",
+      "is_measured_edge": false,
+      "name": "higher timeframe structure",
+      "source": "structure"
     }
   ],
   "invalidation": "A 15m close above 80036.74 would break the range top zone and invalidate the current range reading.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
-  "missing": [
-    "4h structure is RANGE_STRUCTURE",
-    "funding percentile unavailable"
-  ],
-  "score": -2.0,
+  "missing": [],
+  "score": 0.0,
   "state": "NEUTRAL",
-  "statement": "BTC 15m configuration is NEUTRAL (-2). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: 4h structure is RANGE_STRUCTURE; funding percentile unavailable.",
+  "statement": "BTC 15m configuration is NEUTRAL (+0). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "15m",
   "why_now": [
     "15m price is upper third, zone quality 73/100",
-    "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways"
+    "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways",
+    "funding sits below its median, at the 24th percentile",
+    "4h structure is a range (LH HH LL HL)"
   ]
 }

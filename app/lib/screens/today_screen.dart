@@ -117,7 +117,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
             return MobileScrollView(
               padding: const EdgeInsets.fromLTRB(10, 26, 10, 260),
               children: [
-                _TodayHeader(provenance: provenance),
+                _TodayHeader(provenance: provenance, reads: reads),
                 const SizedBox(height: 20),
                 // Le bandeau d'instantané a été retiré: la provenance et
                 // l'âge sont déjà portés par le sous-titre de l'en-tête et
@@ -146,7 +146,10 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 class _TodayHeader extends StatelessWidget {
   final DataProvenance provenance;
 
-  const _TodayHeader({required this.provenance});
+  /// Nécessaire pour distinguer prix en direct et analyse enregistrée.
+  final List<TodayRead> reads;
+
+  const _TodayHeader({required this.provenance, required this.reads});
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +178,7 @@ class _TodayHeader extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                _subtitleForProvenance(provenance),
+                _subtitleForLayers(provenance, reads),
                 style: const TextStyle(
                   color: Color(0xFFB6C1D2),
                   fontSize: 20,
@@ -259,7 +262,9 @@ class _MarketCard extends StatelessWidget {
                 meta: meta,
                 livePrices: livePrices,
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+              _AnalysisStampLine(read: read),
+              const SizedBox(height: 14),
               _CompactRegimeRow(read: read),
               const SizedBox(height: 12),
               _EntryAnswerPanel(read: read),
@@ -799,6 +804,60 @@ class _CompactRegimeRow extends StatelessWidget {
 /// reponse habituelle - non - se lisait auparavant comme un « indetermine »
 /// qui n'engageait a rien. Un non teste est une information; un haussement
 /// d'epaules n'en est pas une.
+/// « Analyse calculée à 21:46 », et l'avertissement quand le prix a bougé.
+///
+/// Sans cette ligne, une décision présentée au présent semble recalculée à
+/// chaque tick du prix, ce qu'elle n'est pas.
+class _AnalysisStampLine extends StatelessWidget {
+  final TodayRead read;
+
+  const _AnalysisStampLine({required this.read});
+
+  @override
+  Widget build(BuildContext context) {
+    final stamp = read.analysis;
+    final moment = stamp.computedAtUtc?.toLocal();
+    final drifted = stamp.staleForCurrentPrice;
+    if (moment == null && !drifted) return const SizedBox.shrink();
+
+    final texte = drifted
+        ? 'Analyse calculée à ${_clockLabel(moment ?? DateTime.now())} sur un '
+            'prix de ${_analysisPriceLabel(stamp.priceAtAnalysis)}. Le prix a '
+            'bougé de ${_driftLabel(stamp.driftPct)} depuis : actualisation '
+            'recommandée.'
+        : 'Analyse calculée à ${_clockLabel(moment!)}';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          drifted ? Icons.update_rounded : Icons.schedule_rounded,
+          size: 17,
+          color: drifted ? AppColors.warn : mobileMuted,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            texte,
+            style: TextStyle(
+              color: drifted ? AppColors.warn : mobileMuted,
+              fontSize: 14.5,
+              height: 1.3,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+String _analysisPriceLabel(double? value) =>
+    value == null ? '—' : _numberFr(value, digits: 0);
+
+String _driftLabel(double? value) => value == null
+    ? '—'
+    : '${value >= 0 ? '+' : ''}${value.toStringAsFixed(2)} %';
+
 class _EntryAnswerPanel extends StatelessWidget {
   final TodayRead read;
 
@@ -2563,6 +2622,47 @@ DataProvenance _provenanceForReads(
 
   return DataProvenance(DataOrigin.snapshot, generatedAt: generatedAt);
 }
+
+/// Le sous-titre décrit les deux couches séparément.
+///
+/// « Analyse hors ligne » n'a de sens que si rien n'est joignable. Quand le
+/// prix arrive en direct et que seule l'analyse vient d'un instantané, le dire
+/// ainsi est faux et déroutant.
+String _subtitleForLayers(DataProvenance provenance, List<TodayRead> reads) {
+  final priceFresh = reads.any(
+    (read) => read.marketData?.derived().isTrustworthy ?? false,
+  );
+  final analysisAt = reads
+      .map((read) => read.analysis.computedAtUtc)
+      .whereType<DateTime>()
+      .fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
+
+  final quand = analysisAt == null
+      ? null
+      : _clockLabel(analysisAt.toLocal());
+
+  if (priceFresh && provenance.isSnapshot) {
+    return quand == null
+        ? 'Prix en direct · analyse enregistrée'
+        : 'Prix en direct · analyse calculée à $quand';
+  }
+  if (priceFresh) {
+    return quand == null
+        ? 'Données actualisées'
+        : 'Données actualisées · analyse de $quand';
+  }
+  if (provenance.isSnapshot) {
+    return provenance.generatedAt == null
+        ? 'Mode hors ligne · instantané sans date'
+        : 'Mode hors ligne · instantané du '
+            '${_formatFrenchDate(provenance.generatedAt!.toLocal())}';
+  }
+  return _subtitleForProvenance(provenance);
+}
+
+String _clockLabel(DateTime moment) =>
+    '${moment.hour.toString().padLeft(2, '0')}:'
+    '${moment.minute.toString().padLeft(2, '0')}';
 
 String _subtitleForProvenance(DataProvenance provenance) {
   if (provenance.origin == DataOrigin.live) {

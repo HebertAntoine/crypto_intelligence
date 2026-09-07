@@ -591,6 +591,42 @@ class BuyOpportunity {
       );
 }
 
+/// Le prix bouge à la seconde, l'analyse est recalculée bien plus rarement.
+/// Les confondre faisait afficher « analyse hors ligne » au-dessus d'un prix
+/// « en direct »: deux affirmations vraies, incompréhensibles ensemble.
+class AnalysisStamp {
+  final String? computedAt;
+  final double? priceAtAnalysis;
+  final double? livePrice;
+  final double? driftPct;
+  final double driftThresholdPct;
+  final bool staleForCurrentPrice;
+
+  const AnalysisStamp({
+    this.computedAt,
+    this.priceAtAnalysis,
+    this.livePrice,
+    this.driftPct,
+    this.driftThresholdPct = 1.5,
+    this.staleForCurrentPrice = false,
+  });
+
+  static const unknown = AnalysisStamp();
+
+  DateTime? get computedAtUtc =>
+      computedAt == null ? null : DateTime.tryParse(computedAt!)?.toUtc();
+
+  factory AnalysisStamp.fromJson(Map<String, dynamic> json) => AnalysisStamp(
+        computedAt: json['computed_at'] as String?,
+        priceAtAnalysis: (json['price_at_analysis'] as num?)?.toDouble(),
+        livePrice: (json['live_price'] as num?)?.toDouble(),
+        driftPct: (json['price_drift_pct'] as num?)?.toDouble(),
+        driftThresholdPct:
+            (json['drift_threshold_pct'] as num?)?.toDouble() ?? 1.5,
+        staleForCurrentPrice: json['stale_for_current_price'] as bool? ?? false,
+      );
+}
+
 class TodayRead {
   final String asset;
   final MarketPriceRead? marketData;
@@ -637,6 +673,9 @@ class TodayRead {
   /// La décision d'opportunité, calculée par le backend.
   final BuyOpportunity opportunity;
 
+  /// Quand l'analyse a été calculée, et sur quel prix.
+  final AnalysisStamp analysis;
+
   const TodayRead({
     required this.asset,
     required this.marketData,
@@ -665,6 +704,7 @@ class TodayRead {
     this.timingSummary = '',
     this.upcomingMacro = const [],
     this.opportunity = BuyOpportunity.unavailable,
+    this.analysis = AnalysisStamp.unknown,
   });
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
@@ -694,6 +734,9 @@ class TodayRead {
           ((json['entry_timing'] as Map?)?['timing_score'] as num?)?.toDouble(),
       timingSummary:
           (json['entry_timing'] as Map?)?['summary'] as String? ?? '',
+      analysis: AnalysisStamp.fromJson(
+        ((json['analysis'] as Map?) ?? const {}).cast<String, dynamic>(),
+      ),
       opportunity: BuyOpportunity.fromJson(
         ((json['buy_opportunity_explanation'] as Map?) ?? const {})
             .cast<String, dynamic>(),
