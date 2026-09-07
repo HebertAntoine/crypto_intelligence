@@ -39,10 +39,12 @@ class _ChartScreenState extends State<ChartScreen> {
   }
 
   Future<(StructureRead, EntryOpportunity?)> _load() async {
-    final structure = await widget.client.structure(_asset, timeframe: _timeframe);
+    final structure =
+        await widget.client.structure(_asset, timeframe: _timeframe);
     EntryOpportunity? opportunity;
     try {
-      opportunity = await widget.client.entryOpportunity(_asset, timeframe: _timeframe);
+      opportunity =
+          await widget.client.entryOpportunity(_asset, timeframe: _timeframe);
     } catch (_) {
       opportunity = null;
     }
@@ -73,8 +75,8 @@ class _ChartScreenState extends State<ChartScreen> {
         child: FutureBuilder<(StructureRead, EntryOpportunity?)>(
           future: _future,
           builder: (context, snapshot) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(30, 30, 30, 178),
+            return MobileScrollView(
+              padding: const EdgeInsets.fromLTRB(30, 30, 30, 260),
               children: [
                 MobileHeader(
                   title: 'Intelligence graphique',
@@ -95,7 +97,9 @@ class _ChartScreenState extends State<ChartScreen> {
                 ),
                 const SizedBox(height: 22),
                 if (snapshot.connectionState == ConnectionState.waiting)
-                  const SizedBox(height: 560, child: LoadingView(what: 'lecture graphique'))
+                  const SizedBox(
+                      height: 560,
+                      child: LoadingView(what: 'lecture graphique'))
                 else if (snapshot.hasError)
                   SizedBox(
                     height: 560,
@@ -210,7 +214,9 @@ class _AssetChoice extends StatelessWidget {
                   : mobilePanel.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: selected ? const Color(0xFF208DFF) : const Color(0xFF334B66),
+                color: selected
+                    ? const Color(0xFF208DFF)
+                    : const Color(0xFF334B66),
                 width: selected ? 1.6 : 1.25,
               ),
             ),
@@ -286,7 +292,9 @@ class _TimeframeSelector extends StatelessWidget {
                                 ? const Color(0xFF9FCFFF)
                                 : const Color(0xFFD3D9EF),
                             fontSize: 24,
-                            fontWeight: selected == timeframe ? FontWeight.w800 : FontWeight.w500,
+                            fontWeight: selected == timeframe
+                                ? FontWeight.w800
+                                : FontWeight.w500,
                           ),
                         ),
                       ),
@@ -443,7 +451,8 @@ class _SignalChip extends StatelessWidget {
                   style: const TextStyle(color: AppColors.text, fontSize: 17),
                 ),
                 const SizedBox(height: 5),
-                MobilePill(label: state, color: color, dense: true, filled: filled),
+                MobilePill(
+                    label: state, color: color, dense: true, filled: filled),
               ],
             ),
           ),
@@ -510,16 +519,19 @@ class _PatternDetectedPanel extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E8E5A).withValues(alpha: 0.32),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: const Color(0xFF22C878), width: 1.4),
+                  border:
+                      Border.all(color: const Color(0xFF22C878), width: 1.4),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.trending_up_rounded, color: Color(0xFF54F2A1), size: 23),
+                    Icon(Icons.trending_up_rounded,
+                        color: Color(0xFF54F2A1), size: 23),
                     SizedBox(width: 8),
                     Text(
                       'Haussier',
@@ -543,7 +555,8 @@ class _PatternDetectedPanel extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             _patternNarrative(timeframe, opportunity),
-            style: const TextStyle(color: AppColors.text, fontSize: 20, height: 1.32),
+            style: const TextStyle(
+                color: AppColors.text, fontSize: 20, height: 1.32),
           ),
         ],
       ),
@@ -574,7 +587,9 @@ class _PatternMetricGrid extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 720;
-          final width = compact ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 36) / 4;
+          final width = compact
+              ? (constraints.maxWidth - 12) / 2
+              : (constraints.maxWidth - 36) / 4;
           return Wrap(
             spacing: 12,
             runSpacing: 14,
@@ -635,7 +650,8 @@ class _PatternMetric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w800),
+            style: TextStyle(
+                color: color, fontSize: 22, fontWeight: FontWeight.w800),
           ),
         ],
       ),
@@ -674,13 +690,17 @@ class _ConfluencePanel extends StatelessWidget {
                   children: [
                     const Text(
                       'Confluences',
-                      style: TextStyle(color: AppColors.text, fontSize: 26, fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                          color: AppColors.text,
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 12),
                     for (final item in values)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 9),
-                        child: _ConfluenceRow(label: item.$1, value: item.$2, color: item.$3),
+                        child: _ConfluenceRow(
+                            label: item.$1, value: item.$2, color: item.$3),
                       ),
                   ],
                 ),
@@ -698,11 +718,13 @@ class _ConfluencePanel extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF093322).withValues(alpha: 0.86),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF22C878), width: 1.35),
+                    border:
+                        Border.all(color: const Color(0xFF22C878), width: 1.35),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -760,7 +782,8 @@ class _ConfluenceRow extends StatelessWidget {
       children: [
         SizedBox(
           width: 118,
-          child: Text(label, style: const TextStyle(color: AppColors.text, fontSize: 20)),
+          child: Text(label,
+              style: const TextStyle(color: AppColors.text, fontSize: 20)),
         ),
         Expanded(
           child: ClipRRect(
@@ -818,7 +841,8 @@ class _HistoryPanel extends StatelessWidget {
               shape: BoxShape.circle,
               color: const Color(0xFF123E71).withValues(alpha: 0.92),
             ),
-            child: const Icon(Icons.history_rounded, color: Color(0xFF69B3FF), size: 37),
+            child: const Icon(Icons.history_rounded,
+                color: Color(0xFF69B3FF), size: 37),
           ),
           const SizedBox(width: 22),
           const Expanded(
@@ -827,7 +851,10 @@ class _HistoryPanel extends StatelessWidget {
               children: [
                 Text(
                   'Voir les occurrences historiques',
-                  style: TextStyle(color: AppColors.text, fontSize: 22, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                      color: AppColors.text,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800),
                 ),
                 SizedBox(height: 6),
                 Text(
@@ -837,7 +864,8 @@ class _HistoryPanel extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.text, size: 42),
+          const Icon(Icons.chevron_right_rounded,
+              color: AppColors.text, size: 42),
         ],
       ),
     );
@@ -861,7 +889,8 @@ class _CandleChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final chart = Rect.fromLTWH(4, 26, size.width - 94, size.height - 64);
     final volumeTop = chart.bottom - 36;
-    final priceRect = Rect.fromLTRB(chart.left, chart.top, chart.right, volumeTop);
+    final priceRect =
+        Rect.fromLTRB(chart.left, chart.top, chart.right, volumeTop);
     final gridPaint = Paint()
       ..color = const Color(0xFF20364F).withValues(alpha: 0.78)
       ..strokeWidth = 1;
@@ -889,15 +918,20 @@ class _CandleChartPainter extends CustomPainter {
       return priceRect.bottom - priceRect.height * ratio;
     }
 
-    final series = _chartValues(asset).map((v) => min + (max - min) * v).toList();
+    final series =
+        _chartValues(asset).map((v) => min + (max - min) * v).toList();
     final candleWidth = math.max(5.0, chart.width / series.length * 0.54);
     final xStep = chart.width / series.length;
     for (var i = 0; i < series.length; i += 1) {
       final close = series[i];
       final previous = i == 0 ? series[i] * 1.006 : series[i - 1];
-      final open = (previous + math.sin(i * 1.4) * (max - min) * 0.022).clamp(min, max).toDouble();
-      final high = math.min(max.toDouble(), math.max(open, close) + (max - min) * (0.035 + (i % 3) * 0.006));
-      final low = math.max(min.toDouble(), math.min(open, close) - (max - min) * (0.030 + (i % 4) * 0.005));
+      final open = (previous + math.sin(i * 1.4) * (max - min) * 0.022)
+          .clamp(min, max)
+          .toDouble();
+      final high = math.min(max.toDouble(),
+          math.max(open, close) + (max - min) * (0.035 + (i % 3) * 0.006));
+      final low = math.max(min.toDouble(),
+          math.min(open, close) - (max - min) * (0.030 + (i % 4) * 0.005));
       final x = chart.left + xStep * i + xStep / 2;
       final bullish = close >= open;
       final color = bullish ? const Color(0xFF20D184) : const Color(0xFFFF5361);
@@ -924,7 +958,8 @@ class _CandleChartPainter extends CustomPainter {
         candleWidth,
         volumeHeight,
       );
-      canvas.drawRect(volumeRect, Paint()..color = color.withValues(alpha: 0.45));
+      canvas.drawRect(
+          volumeRect, Paint()..color = color.withValues(alpha: 0.45));
     }
 
     final resistanceY = yFor(max - (max - min) * 0.24);
@@ -961,20 +996,23 @@ class _CandleChartPainter extends CustomPainter {
       canvas,
       _priceFr(price, digits: 0),
       Offset(chart.right + 15, priceY - 11),
-      const TextStyle(color: Color(0xFF021B14), fontSize: 15, fontWeight: FontWeight.w900),
+      const TextStyle(
+          color: Color(0xFF021B14), fontSize: 15, fontWeight: FontWeight.w900),
     );
 
     _drawText(
       canvas,
       '$asset · ${_timeframeLabel(timeframe)}',
       Offset(chart.left + 5, chart.top + 6),
-      const TextStyle(color: Color(0xFFC5D4EC), fontSize: 18, fontWeight: FontWeight.w500),
+      const TextStyle(
+          color: Color(0xFFC5D4EC), fontSize: 18, fontWeight: FontWeight.w500),
     );
     _drawText(
       canvas,
       '$change (24 h)',
       Offset(chart.left + 5, chart.top + 34),
-      const TextStyle(color: Color(0xFF54F2A1), fontSize: 18, fontWeight: FontWeight.w700),
+      const TextStyle(
+          color: Color(0xFF54F2A1), fontSize: 18, fontWeight: FontWeight.w700),
     );
 
     final labels = _axisLabels(asset);
@@ -1109,10 +1147,14 @@ List<double> _chartValues(String asset) {
     0.76,
   ];
   if (asset == 'ETH') {
-    return base.map((v) => (v * 0.86 + 0.07).clamp(0.0, 1.0).toDouble()).toList();
+    return base
+        .map((v) => (v * 0.86 + 0.07).clamp(0.0, 1.0).toDouble())
+        .toList();
   }
   if (asset == 'SOL') {
-    return base.map((v) => (v * 0.76 + 0.14).clamp(0.0, 1.0).toDouble()).toList();
+    return base
+        .map((v) => (v * 0.76 + 0.14).clamp(0.0, 1.0).toDouble())
+        .toList();
   }
   return base;
 }

@@ -57,8 +57,8 @@ class _TodayScreenState extends State<TodayScreen> {
                   error: 'Aucune analyse disponible.', onRetry: _reload);
             }
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(26, 26, 26, 178),
+            return MobileScrollView(
+              padding: const EdgeInsets.fromLTRB(26, 26, 26, 260),
               children: [
                 const _TodayHeader(),
                 const SizedBox(height: 20),

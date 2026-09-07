@@ -59,8 +59,8 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
         child: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snapshot) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(28, 28, 28, 28),
+            return MobileScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 28, 28, 260),
               children: [
                 MobileHeader(
                   title: 'Connaissances trader',

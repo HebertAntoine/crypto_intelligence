@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../theme/app_theme.dart';
 
@@ -32,44 +33,137 @@ class MobileGradientFrame extends StatelessWidget {
       ),
       child: SafeArea(
         bottom: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            const designWidth = 900.0;
-            final width = constraints.maxWidth;
-            if (width >= 700) {
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: designWidth),
-                  child: child,
-                ),
-              );
-            }
-
-            final scale = width / designWidth;
-            final scaledHeight = constraints.maxHeight / scale;
-            return Align(
-              alignment: Alignment.topCenter,
-              child: Transform.scale(
-                scale: scale,
-                alignment: Alignment.topCenter,
-                child: OverflowBox(
-                  minWidth: designWidth,
-                  maxWidth: designWidth,
-                  minHeight: scaledHeight,
-                  maxHeight: scaledHeight,
-                  alignment: Alignment.topCenter,
-                  child: SizedBox(
-                    width: designWidth,
-                    height: scaledHeight,
-                    child: child,
-                  ),
-                ),
-              ),
-            );
-          },
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: child,
+          ),
         ),
       ),
     );
+  }
+}
+
+class MobileScrollView extends StatelessWidget {
+  final EdgeInsetsGeometry padding;
+  final List<Widget> children;
+
+  const MobileScrollView({
+    super.key,
+    required this.padding,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: _ScaleDownToWidth(
+          designWidth: 900,
+          child: SizedBox(
+            width: 900,
+            child: Padding(
+              padding: padding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: children,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScaleDownToWidth extends SingleChildRenderObjectWidget {
+  final double designWidth;
+
+  const _ScaleDownToWidth({
+    required this.designWidth,
+    required super.child,
+  });
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderScaleDownToWidth(designWidth: designWidth);
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderScaleDownToWidth renderObject,
+  ) {
+    renderObject.designWidth = designWidth;
+  }
+}
+
+class _RenderScaleDownToWidth extends RenderProxyBox {
+  double _designWidth;
+  double _scale = 1;
+
+  _RenderScaleDownToWidth({required double designWidth})
+      : _designWidth = designWidth;
+
+  double get designWidth => _designWidth;
+
+  set designWidth(double value) {
+    if (_designWidth == value) return;
+    _designWidth = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void performLayout() {
+    if (child == null) {
+      size = constraints.smallest;
+      return;
+    }
+
+    final availableWidth =
+        constraints.maxWidth.isFinite ? constraints.maxWidth : _designWidth;
+    _scale = availableWidth < _designWidth ? availableWidth / _designWidth : 1;
+
+    child!.layout(
+      BoxConstraints(
+        minWidth: _designWidth,
+        maxWidth: _designWidth,
+        minHeight: 0,
+        maxHeight: double.infinity,
+      ),
+      parentUsesSize: true,
+    );
+
+    size = constraints.constrain(
+      Size(child!.size.width * _scale, child!.size.height * _scale),
+    );
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    if (child == null) return;
+    context.pushTransform(
+      needsCompositing,
+      offset,
+      Matrix4.diagonal3Values(_scale, _scale, 1),
+      super.paint,
+    );
+  }
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) {
+    if (child == null) return false;
+    return child!.hitTest(
+      result,
+      position: Offset(position.dx / _scale, position.dy / _scale),
+    );
+  }
+
+  @override
+  void applyPaintTransform(RenderBox child, Matrix4 transform) {
+    transform.scale(_scale, _scale);
   }
 }
 

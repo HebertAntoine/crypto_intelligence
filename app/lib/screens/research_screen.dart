@@ -57,8 +57,8 @@ class _ResearchScreenState extends State<ResearchScreen> {
         child: FutureBuilder<Map<String, dynamic>>(
           future: _future,
           builder: (context, snapshot) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(28, 28, 28, 24),
+            return MobileScrollView(
+              padding: const EdgeInsets.fromLTRB(28, 28, 28, 260),
               children: [
                 MobileHeader(
                   title: 'Recherche',
@@ -67,18 +67,24 @@ class _ResearchScreenState extends State<ResearchScreen> {
                 ),
                 const SizedBox(height: 22),
                 if (snapshot.connectionState == ConnectionState.waiting)
-                  const SizedBox(height: 440, child: LoadingView(what: 'resultats de recherche'))
+                  const SizedBox(
+                      height: 440,
+                      child: LoadingView(what: 'resultats de recherche'))
                 else if (snapshot.hasError)
                   SizedBox(
                     height: 440,
                     child: ErrorView(error: snapshot.error!, onRetry: _reload),
                   )
                 else ...[
-                  _MarginalPanel(data: snapshot.data!['marginal'] as Map<String, dynamic>?),
+                  _MarginalPanel(
+                      data:
+                          snapshot.data!['marginal'] as Map<String, dynamic>?),
                   const SizedBox(height: 22),
                   _SecondaryStudies(
-                    structural: snapshot.data!['structural'] as Map<String, dynamic>?,
-                    replication: snapshot.data!['replication'] as Map<String, dynamic>?,
+                    structural:
+                        snapshot.data!['structural'] as Map<String, dynamic>?,
+                    replication:
+                        snapshot.data!['replication'] as Map<String, dynamic>?,
                   ),
                 ],
               ],
@@ -119,7 +125,8 @@ class _MarginalPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final assets = (data?['assets'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final assets =
+        (data?['assets'] as Map?)?.cast<String, dynamic>() ?? const {};
     return GlassPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +153,8 @@ class _MarginalPanel extends StatelessWidget {
                     Text(
                       'Comparaison hors échantillon entre variables numériques, '
                       'position dans le range et figures chartistes.',
-                      style: TextStyle(color: mobileMuted, fontSize: 21, height: 1.24),
+                      style: TextStyle(
+                          color: mobileMuted, fontSize: 21, height: 1.24),
                     ),
                   ],
                 ),
@@ -183,10 +191,13 @@ class _MarginalAssetCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final visuals = AssetVisuals.forAsset(asset);
     final layersPayload = (payload['layers'] as Map?)?.cast<String, dynamic>();
-    final layers = (layersPayload?['layers'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final verdict = (layersPayload?['verdict'] as Map?)?.cast<String, dynamic>();
-    final answer = ((payload['location_marginal_value'] as Map?)?['answer'] as Map?)
-        ?.cast<String, dynamic>();
+    final layers =
+        (layersPayload?['layers'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final verdict =
+        (layersPayload?['verdict'] as Map?)?.cast<String, dynamic>();
+    final answer =
+        ((payload['location_marginal_value'] as Map?)?['answer'] as Map?)
+            ?.cast<String, dynamic>();
 
     return Container(
       padding: const EdgeInsets.all(22),
@@ -218,25 +229,30 @@ class _MarginalAssetCard extends StatelessWidget {
                     const SizedBox(height: 7),
                     Text(
                       visuals.name,
-                      style: const TextStyle(color: mobileMuted, fontSize: 21, height: 1),
+                      style: const TextStyle(
+                          color: mobileMuted, fontSize: 21, height: 1),
                     ),
                   ],
                 ),
               ),
-              MobilePill(label: 'Analyse hors échantillon', color: const Color(0xFF7DB7FF)),
+              MobilePill(
+                  label: 'Analyse hors échantillon',
+                  color: const Color(0xFF7DB7FF)),
             ],
           ),
           const SizedBox(height: 16),
           _LayerTable(layers: layers),
           const SizedBox(height: 10),
           MobilePill(
-            label: _verdictLabel('${verdict?['answer'] ?? answer?['verdict'] ?? ''}'),
+            label: _verdictLabel(
+                '${verdict?['answer'] ?? answer?['verdict'] ?? ''}'),
             color: AppColors.warn,
           ),
           const SizedBox(height: 14),
           Text(
             _verdictSummary('${verdict?['summary'] ?? ''}'),
-            style: const TextStyle(color: AppColors.text, fontSize: 20, height: 1.31),
+            style: const TextStyle(
+                color: AppColors.text, fontSize: 20, height: 1.31),
           ),
           if (answer?['statement'] != null) ...[
             const SizedBox(height: 16),
@@ -257,8 +273,10 @@ class _LayerTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final rows = [
       _LayerRowData('A.  Variables numériques', layers['A_numeric'] as Map?),
-      _LayerRowData('B.  + Position dans le range', layers['B_plus_location'] as Map?),
-      _LayerRowData('C.  + Figures chartistes', layers['C_plus_patterns'] as Map?),
+      _LayerRowData(
+          'B.  + Position dans le range', layers['B_plus_location'] as Map?),
+      _LayerRowData(
+          'C.  + Figures chartistes', layers['C_plus_patterns'] as Map?),
     ];
 
     return Container(
@@ -294,12 +312,14 @@ class _LayerScoreRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(row.label, style: const TextStyle(color: mobileMuted, fontSize: 20)),
+            child: Text(row.label,
+                style: const TextStyle(color: mobileMuted, fontSize: 20)),
           ),
           Text(
             'OOS R² ${signedFr(value, digits: 4)}',
             style: TextStyle(
-              color: positive ? const Color(0xFF56E68B) : const Color(0xFFFF5D55),
+              color:
+                  positive ? const Color(0xFF56E68B) : const Color(0xFFFF5D55),
               fontSize: 20,
               fontWeight: FontWeight.w800,
             ),
@@ -334,10 +354,13 @@ class _InfoCallout extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, color: Color(0xFFBFD2F2), size: 32),
+          const Icon(Icons.info_outline_rounded,
+              color: Color(0xFFBFD2F2), size: 32),
           const SizedBox(width: 16),
           Expanded(
-            child: Text(text, style: const TextStyle(color: mobileMuted, fontSize: 18, height: 1.32)),
+            child: Text(text,
+                style: const TextStyle(
+                    color: mobileMuted, fontSize: 18, height: 1.32)),
           ),
         ],
       ),
@@ -349,12 +372,15 @@ class _SecondaryStudies extends StatelessWidget {
   final Map<String, dynamic>? structural;
   final Map<String, dynamic>? replication;
 
-  const _SecondaryStudies({required this.structural, required this.replication});
+  const _SecondaryStudies(
+      {required this.structural, required this.replication});
 
   @override
   Widget build(BuildContext context) {
-    final structuralResults = (structural?['results'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final findings = (replication?['findings'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final structuralResults =
+        (structural?['results'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final findings =
+        (replication?['findings'] as Map?)?.cast<String, dynamic>() ?? const {};
 
     return GlassPanel(
       child: Column(
@@ -362,13 +388,17 @@ class _SecondaryStudies extends StatelessWidget {
         children: [
           const Text(
             'Études complémentaires',
-            style: TextStyle(color: AppColors.text, fontSize: 24, fontWeight: FontWeight.w800),
+            style: TextStyle(
+                color: AppColors.text,
+                fontSize: 24,
+                fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 10),
           Text(
             '${structuralResults.length} familles structurelles suivies · '
             '${findings.length} tests de réplication disponibles',
-            style: const TextStyle(color: mobileMuted, fontSize: 18, height: 1.3),
+            style:
+                const TextStyle(color: mobileMuted, fontSize: 18, height: 1.3),
           ),
         ],
       ),
@@ -378,7 +408,8 @@ class _SecondaryStudies extends StatelessWidget {
 
 String _verdictLabel(String value) => switch (value) {
       'NO_LAYER_ADDS_VALUE' => 'AUCUNE COUCHE N’APPORTE DE VALEUR',
-      'NEITHER_ADDS_VALUE' => 'NI LA POSITION NI LES FIGURES N’AJOUTENT DE VALEUR',
+      'NEITHER_ADDS_VALUE' =>
+        'NI LA POSITION NI LES FIGURES N’AJOUTENT DE VALEUR',
       'LOCATION_ADDS_VALUE' => 'LA POSITION AJOUTE DE LA VALEUR',
       'PATTERNS_ADD_VALUE' => 'LES FIGURES AJOUTENT DE LA VALEUR',
       'NO_MARGINAL_INFORMATION' => 'AUCUNE INFORMATION MARGINALE',
@@ -401,7 +432,8 @@ String _marginalStatement(String value) {
   final pMatch = RegExp(r'p=([0-9.]+)').firstMatch(value);
   final n = nMatch?.group(1) ?? '—';
   final p = pMatch?.group(1)?.replaceAll('.', ',') ?? '—';
-  final bottom = RegExp(r'Being near a range bottom preceded returns ([^%]+)% relative to the unconditional average, and ([^%]+)% relative to a REGIME-MATCHED baseline')
+  final bottom = RegExp(
+          r'Being near a range bottom preceded returns ([^%]+)% relative to the unconditional average, and ([^%]+)% relative to a REGIME-MATCHED baseline')
       .firstMatch(value);
   if (bottom != null) {
     return 'Être proche d’un plus bas de range précédait des rendements '
