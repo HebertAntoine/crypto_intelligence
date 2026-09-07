@@ -131,7 +131,7 @@ class TestBranchesDirectly:
             "une bande mesurée hors extrêmes retombe dans « indisponible »"
         )
         branch_at = source.index("elif funding.percentile is not None:")
-        unavailable_at = source.index('"funding percentile unavailable"')
+        unavailable_at = source.index("historique de funding insuffisant")
         assert branch_at < unavailable_at
 
 

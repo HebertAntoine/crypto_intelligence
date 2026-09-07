@@ -523,3 +523,38 @@ def purge_old_observations(days: int = 400) -> int:
     with session_scope() as s:
         res = s.execute(delete(ObservationRow).where(ObservationRow.timestamp < cutoff))
         return res.rowcount or 0
+
+
+def observation_fingerprint(
+    asset: Asset, prefixes: tuple[str, ...] = ("onchain.", "stablecoin.", "macro.", "whale.")
+) -> dict[str, list[Any]]:
+    """Row count and last timestamp per observation family, plus ETF flows.
+
+    Same purpose as `store.series_fingerprint`: name the inputs an analysis
+    was built from, cheaply enough to check on every request.
+    """
+    from sqlalchemy import func, or_
+
+    out: dict[str, list[Any]] = {}
+    with session_scope() as s:
+        for prefix in prefixes:
+            # Asset-scoped families are stored against the asset; market-wide
+            # ones (stablecoins, macro) carry no asset at all.
+            rows, last = s.execute(
+                select(func.count(ObservationRow.id), func.max(ObservationRow.timestamp))
+                .where(
+                    ObservationRow.metric.like(f"{prefix}%"),
+                    or_(ObservationRow.asset == asset.value, ObservationRow.asset.is_(None)),
+                )
+            ).one()
+            observed = _as_utc(last)
+            out[f"observations:{prefix}"] = [
+                int(rows or 0), observed.isoformat() if observed else None
+            ]
+        rows, last = s.execute(
+            select(func.count(ETFFlowRow.id), func.max(ETFFlowRow.date))
+            .where(ETFFlowRow.asset == asset.value)
+        ).one()
+        observed = _as_utc(last)
+        out["etf_flows"] = [int(rows or 0), observed.isoformat() if observed else None]
+    return out

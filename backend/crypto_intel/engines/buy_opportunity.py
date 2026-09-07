@@ -13,18 +13,13 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, ClassVar
 
+from ..core import labels_fr
 from ..core.enums import Asset
 
 # Le régime en français. L'enum reste la vérité interne; il ne doit pas
 # traverser jusqu'à l'écran, où « Régime strongly bullish » était lisible.
-_REGIME_FR = {
-    "STRONGLY_BULLISH": "fortement haussier",
-    "BULLISH": "haussier",
-    "NEUTRAL": "neutre",
-    "BEARISH": "baissier",
-    "STRONGLY_BEARISH": "fortement baissier",
-    "UNDETERMINED": "indéterminé",
-}
+# La table est partagée: cf. `core/labels_fr.py`.
+_REGIME_FR = labels_fr.REGIME_FR
 
 
 class BuyOpportunityState(StrEnum):
@@ -349,6 +344,7 @@ def decide(
     live_track_record: dict[str, Any] | None = None,
     extra_factors: list[DecisionFactor] | None = None,
     critical_missing_families: list[str] | None = None,
+    location: Any = None,
 ) -> BuyOpportunityExplanation:
     """Assemble the state and explanation exclusively from structured inputs."""
     now = datetime.now(UTC).isoformat()
@@ -604,7 +600,10 @@ def decide(
     missing = ranker.rank(factors, Polarity.MISSING)
     improve, deteriorate, structure_change = _changes(
         entry, edge_state, state, macro_events, crowding_level,
-        location=getattr(entry, "location", None) or _location_for(entry),
+        # The caller usually already holds the structural reading the entry
+        # was assessed against; recomputing it would risk answering about a
+        # different bar than the one this decision was built on.
+        location=location or getattr(entry, "location", None) or _location_for(entry),
     )
     selected = [f.id for group in (positives, waits, negatives, missing)
                 for f in group]

@@ -163,3 +163,47 @@ def realistic_etf_flows(realistic_history) -> pd.Series:
     noise = rng.normal(0, 90, len(closes))
     flows = pd.Series(reactive.to_numpy() + noise, index=closes.index, name="etf_net_flow")
     return flows.iloc[-700:]
+
+
+@pytest.fixture(scope="session")
+def seeded_market_history():
+    """Enough real-shaped history for every engine to produce an answer.
+
+    Guards that read a real payload are only guards when there is something in
+    it. Without this, `/today` returned INSUFFICIENT_DATA and a test asserting
+    "no raw enum reaches the user" passed by having almost no text to check —
+    it only started failing when an unrelated module happened to run first and
+    leave rows behind.
+    """
+    from crypto_intel.core.enums import Asset, Timeframe
+    from crypto_intel.core.models import Candle
+    from crypto_intel.engines import analysis_context
+    from crypto_intel.history import store
+
+    end = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+
+    def candles(n: int, base: float, step_hours: int) -> list[Candle]:
+        out = []
+        for i in range(n):
+            price = base * (1 + 0.001 * i) + (i % 11) * base * 0.002
+            out.append(Candle(
+                timestamp=end - timedelta(hours=step_hours * (n - 1 - i)),
+                open=price * 0.998, high=price * 1.01, low=price * 0.99,
+                close=price, volume=1000 + i,
+            ))
+        return out
+
+    for asset, base in ((Asset.BTC, 60000.0), (Asset.ETH, 3000.0), (Asset.SOL, 120.0)):
+        store.save_candles(asset, Timeframe.D1, candles(400, base, 24), "test")
+        store.save_candles(asset, Timeframe.H4, candles(400, base, 4), "test")
+        store.save_candles(asset, Timeframe.H1, candles(400, base, 1), "test")
+        store.save_candles(asset, Timeframe.W1, candles(120, base, 168), "test")
+        store.save_derivatives(asset, "funding.rate", [
+            (end - timedelta(hours=8 * i), 0.0001 * (1 + (i % 5))) for i in range(300)
+        ], "test")
+        store.save_derivatives(asset, "oi.contracts_bybit", [
+            (end - timedelta(hours=i), 1_000_000 + i * 100) for i in range(300)
+        ], "test")
+    analysis_context.reset_cache()
+    yield
+    analysis_context.reset_cache()

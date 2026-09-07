@@ -95,9 +95,9 @@ class DailyReportEngine:
     def _regime(self, asset: Asset, sections: list[Section]) -> Any:
         section = Section("MARKET REGIME")
         try:
-            from ..api.routes_lot4 import _reconstructed_regime
+            from .analysis_context import reconstructed_regime
 
-            regime = _reconstructed_regime(asset)
+            regime = reconstructed_regime(asset)
             label = regime.regime.value
             section.lines = [
                 f"{label.replace('_', ' ')}",

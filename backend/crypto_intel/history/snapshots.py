@@ -35,6 +35,7 @@ CADENCES: dict[str, int] = {
     "macro": 720,
     "news": 60,
     "analysis": 60,      # scores, conviction, regime, timing, contradictions
+    "decision": 30,      # the buy-opportunity verdict, for "last change"
 }
 
 

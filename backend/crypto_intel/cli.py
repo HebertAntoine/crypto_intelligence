@@ -470,7 +470,7 @@ def cmd_init_db(args) -> int:
 
 def cmd_today(args) -> int:
     """The one-paragraph answer: direction, edge, crowding, uncertainty."""
-    from .api.routes_lot4 import _reconstructed_regime
+    from .engines.analysis_context import reconstructed_regime
     from .engines.edge import EdgeEngine, UncertaintyEngine, build_decision_summary
     from .engines.leverage import LeverageCrowdingEngine
     from .engines.volatility import VolatilityRegimeEngine
@@ -487,7 +487,7 @@ def cmd_today(args) -> int:
         vol = vol_engine.assess(asset)
         uncertainty = uncertainty_engine.assess(asset, edge, crowding=crowding)
         summary = build_decision_summary(
-            asset, edge, uncertainty, regime=_reconstructed_regime(asset),
+            asset, edge, uncertainty, regime=reconstructed_regime(asset),
             crowding=crowding, volatility=vol,
         )
         state = leverage_engine.leverage_state(asset)

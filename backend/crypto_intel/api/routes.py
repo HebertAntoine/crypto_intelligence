@@ -229,6 +229,40 @@ async def why(evidence_id: str) -> dict[str, Any]:
     raise HTTPException(404, f"No evidence found with id '{evidence_id}'")
 
 
+@router.get("/why/decision/{symbol}")
+async def why_decision(symbol: str) -> dict[str, Any]:
+    """The reasoning behind the current verdict, under its own analysis id.
+
+    Serves exactly the decision `/today` shows, from the same snapshot. The
+    "voir pourquoi" screen therefore cannot explain a verdict the front page
+    is no longer displaying.
+    """
+    from ..engines.analysis_context import context_for
+    from ..engines.today_view import (
+        change_conditions,
+        coverage_block,
+        decision_block,
+        direction_timing_edge,
+        pressure_breakdown,
+    )
+    from .routes_lot4 import _parse_asset
+
+    asset = _parse_asset(symbol)
+    snapshot = context_for(asset)
+    return {
+        "kind": "DECISION",
+        **snapshot.identity(),
+        "asset": asset.value,
+        "direction_timing_edge": direction_timing_edge(snapshot),
+        "decision": decision_block(snapshot),
+        "pressure": pressure_breakdown(snapshot),
+        "change_conditions": change_conditions(snapshot),
+        "coverage": coverage_block(snapshot),
+        "all_factors": [factor.to_dict() for factor in snapshot.opportunity.factors],
+        "provenance": snapshot.provenance,
+    }
+
+
 @router.post("/why/batch")
 async def why_batch(evidence_ids: list[str]) -> list[dict[str, Any]]:
     """Evidence behind a whole conclusion, in one call."""

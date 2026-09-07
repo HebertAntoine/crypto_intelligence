@@ -283,3 +283,55 @@ def backfill_report() -> list[dict[str, Any]]:
             }
             for r in rows
         ]
+
+
+# --- input identity -------------------------------------------------------
+
+def series_fingerprint(asset: Asset) -> dict[str, list[Any]]:
+    """Cheap identity of every stored series that feeds an analysis.
+
+    Aggregates only. An analysis has to be recomputed when a series gains rows
+    or advances its last timestamp, so ``count`` and ``max(timestamp)`` say
+    everything the caller needs; loading the rows to find that out would cost
+    more than the analysis the check protects.
+    """
+    from sqlalchemy import func
+
+    out: dict[str, list[Any]] = {}
+    with session_scope() as s:
+        for timeframe, rows, last in s.execute(
+            select(
+                OHLCVRow.timeframe, func.count(OHLCVRow.id), func.max(OHLCVRow.timestamp)
+            )
+            .where(OHLCVRow.asset == asset.value)
+            .group_by(OHLCVRow.timeframe)
+        ).all():
+            observed = _as_utc(last)
+            out[f"ohlcv:{timeframe}"] = [
+                int(rows), observed.isoformat() if observed else None
+            ]
+        for metric, rows, last in s.execute(
+            select(
+                DerivativesHistoryRow.metric,
+                func.count(DerivativesHistoryRow.id),
+                func.max(DerivativesHistoryRow.timestamp),
+            )
+            .where(DerivativesHistoryRow.asset == asset.value)
+            .group_by(DerivativesHistoryRow.metric)
+        ).all():
+            observed = _as_utc(last)
+            out[f"derivatives:{metric}"] = [
+                int(rows), observed.isoformat() if observed else None
+            ]
+        for metric, rows, last in s.execute(
+            select(
+                MacroSeriesRow.metric,
+                func.count(MacroSeriesRow.id),
+                func.max(MacroSeriesRow.timestamp),
+            ).group_by(MacroSeriesRow.metric)
+        ).all():
+            observed = _as_utc(last)
+            out[f"macro:{metric}"] = [
+                int(rows), observed.isoformat() if observed else None
+            ]
+    return out

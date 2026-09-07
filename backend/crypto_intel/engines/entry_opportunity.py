@@ -25,6 +25,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ..core import labels_fr
 from ..core.enums import Asset, Timeframe
 from ..logging_setup import get_logger
 
@@ -33,24 +34,13 @@ log = get_logger("engines.entry_opportunity")
 MAX_FACTORS = 5
 
 
-# Position du prix dans sa structure, en français. Les enums restent la
-# vérité interne; seule leur restitution est traduite.
-_STRUCTURE_FR = {
-    "BULLISH_STRUCTURE": "haussière",
-    "BEARISH_STRUCTURE": "baissière",
-    "RANGE_STRUCTURE": "en range",
-    "UNCLEAR": "pas encore lisible",
-    "UNDETERMINED": "indéterminée",
-}
-
-_LOCATION_FR = {
-    "NEAR_RANGE_TOP": "proche du haut de son range",
-    "NEAR_RANGE_BOTTOM": "proche du bas de son range",
-    "MID_RANGE": "au milieu de son range",
-    "ABOVE_RANGE": "au-dessus de son range",
-    "BELOW_RANGE": "sous son range",
-    "NO_RANGE": "sans range validé",
-}
+# The enums stay the internal truth; only their rendering is translated, and
+# the tables live in one place so a state cannot be translated in one producer
+# and leak raw from another. This file used to carry its own six-entry
+# location table against a nine-state enum, and `AT_RANGE_TOP` reached a user.
+_LOCATION_FR = labels_fr.LOCATION_FR
+_STRUCTURE_FR = labels_fr.STRUCTURE_SENTENCE_FR
+_VOLATILITY_FR = labels_fr.VOLATILITY_SENTENCE_FR
 
 
 class EntryOpportunityState(StrEnum):
@@ -127,13 +117,19 @@ class EntryOpportunityEngine:
             factors.append(OpportunityFactor(
                 name="higher timeframe structure",
                 contribution=30.0,
-                detail=f"{higher.value} structure is bullish ({' '.join(structure.labels)})",
+                detail=(
+                    f"Structure {higher.value} haussière "
+                    f"({' '.join(structure.labels)})"
+                ),
             ))
         elif structure.state.value == "BEARISH_STRUCTURE":
             factors.append(OpportunityFactor(
                 name="higher timeframe structure",
                 contribution=-30.0,
-                detail=f"{higher.value} structure is bearish ({' '.join(structure.labels)})",
+                detail=(
+                    f"Structure {higher.value} baissière "
+                    f"({' '.join(structure.labels)})"
+                ),
             ))
         elif structure.state.value == "RANGE_STRUCTURE":
             # Un range est un état structurel mesuré, pas une donnée absente.
@@ -143,8 +139,10 @@ class EntryOpportunityEngine:
             factors.append(OpportunityFactor(
                 name="higher timeframe structure",
                 contribution=0.0,
-                detail=f"{higher.value} structure is a range "
-                       f"({' '.join(structure.labels)})",
+                detail=(
+                    f"Structure {higher.value} en range "
+                    f"({' '.join(structure.labels)})"
+                ),
             ))
         else:
             out.missing.append(
@@ -188,7 +186,9 @@ class EntryOpportunityEngine:
                 ),
             ))
         else:
-            out.missing.append("no validated range on this timeframe")
+            out.missing.append(
+                f"aucun range validé sur l'unité {timeframe.value}"
+            )
 
         # 3. Funding: an extreme reading is a stretched condition, not a signal.
         leverage = LeverageCrowdingEngine()
@@ -197,19 +197,28 @@ class EntryOpportunityEngine:
             factors.append(OpportunityFactor(
                 name="funding stretched",
                 contribution=-18.0, source="derivatives",
-                detail=f"funding at the {funding.percentile:.0f}th percentile of its history",
+                detail=(
+                    f"Funding au {funding.percentile:.0f}e centile de son "
+                    "historique : coût de portage tendu"
+                ),
             ))
         elif funding.band is FundingBand.EXTREME_NEGATIVE:
             factors.append(OpportunityFactor(
                 name="funding depressed",
                 contribution=12.0, source="derivatives",
-                detail=f"funding at the {funding.percentile:.0f}th percentile",
+                detail=(
+                    f"Funding au {funding.percentile:.0f}e centile de son "
+                    "historique : coût de portage inhabituellement bas"
+                ),
             ))
         elif funding.band is FundingBand.NEUTRAL and funding.percentile is not None:
             factors.append(OpportunityFactor(
                 name="funding normalised",
                 contribution=8.0, source="derivatives",
-                detail=f"funding is mid-range at the {funding.percentile:.0f}th percentile",
+                detail=(
+                    f"Funding dans sa normale, au {funding.percentile:.0f}e "
+                    "centile de son historique"
+                ),
             ))
         elif funding.percentile is not None:
             # NEGATIVE et POSITIVE sont des lectures mesurées. Les faire tomber
@@ -217,17 +226,21 @@ class EntryOpportunityEngine:
             # à l'écran: le funding affichait p24 pendant que l'explication
             # disait « funding percentile unavailable ».
             leaning = (
-                "below" if funding.band is FundingBand.NEGATIVE else "above"
+                "sous" if funding.band is FundingBand.NEGATIVE else "au-dessus de"
             )
             factors.append(OpportunityFactor(
                 name="funding leaning",
                 contribution=4.0 if funding.band is FundingBand.NEGATIVE else -4.0,
                 source="derivatives",
-                detail=f"funding sits {leaning} its median, at the "
-                       f"{funding.percentile:.0f}th percentile",
+                detail=(
+                    f"Funding {leaning} sa médiane, au "
+                    f"{funding.percentile:.0f}e centile"
+                ),
             ))
         else:
-            out.missing.append("funding percentile unavailable")
+            out.missing.append(
+                "historique de funding insuffisant pour situer le niveau actuel"
+            )
 
         # 4. Crowding raises the cost of being wrong, whatever the direction.
         crowding = leverage.crowding(asset, as_of)
@@ -235,13 +248,16 @@ class EntryOpportunityEngine:
             factors.append(OpportunityFactor(
                 name="crowding extreme",
                 contribution=-25.0, source="derivatives",
-                detail=f"crowding {crowding.score}/100, direction UNKNOWN",
+                detail=(
+                    f"Encombrement dérivé {crowding.score}/100. L'open interest "
+                    "a deux côtés : aucune direction n'en est déduite."
+                ),
             ))
         elif crowding.level is CrowdingLevel.LOW:
             factors.append(OpportunityFactor(
                 name="crowding low",
                 contribution=12.0, source="derivatives",
-                detail=f"crowding {crowding.score}/100",
+                detail=f"Encombrement dérivé faible, {crowding.score}/100",
             ))
 
         # 5. Volatility compression: a description of conditions, not direction.
@@ -251,16 +267,21 @@ class EntryOpportunityEngine:
                 name="volatility compressed",
                 contribution=8.0, source="volatility",
                 detail=(
-                    f"volatility {volatility.regime} at the "
-                    f"{volatility.atr_percentile}th percentile - moves are small, which "
-                    "cuts both ways"
+                    f"Volatilité réalisée "
+                    f"{_VOLATILITY_FR.get(volatility.regime, 'inconnue')}, au "
+                    f"{volatility.atr_percentile}e centile : les mouvements sont "
+                    "petits, dans les deux sens"
                 ),
             ))
         elif volatility.regime == "VERY_HIGH":
             factors.append(OpportunityFactor(
                 name="volatility elevated",
                 contribution=-10.0, source="volatility",
-                detail=f"volatility {volatility.regime}, larger moves in both directions",
+                detail=(
+                    f"Volatilité réalisée "
+                    f"{_VOLATILITY_FR.get(volatility.regime, 'inconnue')} : "
+                    "mouvements plus amples, dans les deux sens"
+                ),
             ))
 
         if not factors:

@@ -26,9 +26,12 @@ ASSETS = ["BTC", "ETH", "SOL"]
 RAW_ENUM = re.compile(r"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b")
 
 # Valeurs d'enum susceptibles d'apparaître seules, sans underscore.
+# « FAVORABLE » n'y figure pas: c'est aussi un mot français, et le signaler
+# transformait « POUR DEVENIR PLUS FAVORABLE » — du français correct — en
+# fuite d'identifiant. « UNFAVORABLE » et « NEUTRAL », eux, sont anglais.
 LONE_ENUMS = {
     "UNCLEAR", "UNAVAILABLE", "UNDETERMINED", "REINTEGRATION", "BREAKOUT",
-    "FAVORABLE", "UNFAVORABLE", "NEUTRAL", "BULLISH", "BEARISH", "EXTREME",
+    "UNFAVORABLE", "NEUTRAL", "BULLISH", "BEARISH", "EXTREME",
     "ELEVATED", "STALE", "DELAYED", "FAKEOUT", "RETEST",
 }
 
@@ -71,11 +74,43 @@ def _user_facing(payload: dict) -> list[tuple[str, str]]:
         out.append(("pressure.component", component["label"]))
         out.append(("pressure.detail", component.get("detail") or ""))
         out.append(("pressure.reason", component.get("reason") or ""))
+
+    # The compact page is the surface a person actually reads first, so it is
+    # held to the same rule as the explanation underneath it.
+    out.extend(_page_strings(payload.get("page") or {}))
     return [(where, text) for where, text in out if text]
 
 
+# Keys whose values are identifiers by design: the client switches on them and
+# never prints them. Everything else in the page is read by a person.
+_MACHINE_KEYS = frozenset({
+    "state", "analysis_id", "asset", "key", "family", "kind", "coverage",
+    "availability", "direction", "alignment", "importance", "freshness",
+    "timeframe", "source", "id", "category", "polarity", "evidence_level",
+    "reading_order", "raw_input", "raw_value", "type", "asset_scope",
+    "edge_state", "from_state", "to_state", "guard_rails", "method",
+    "formula", "drift_severity", "price_source", "schema_version", "inputs",
+})
+
+
+def _page_strings(node, path: str = "page") -> list[tuple[str, str]]:
+    """Every human-readable string in the rendered page, with its path."""
+    out: list[tuple[str, str]] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in _MACHINE_KEYS:
+                continue
+            out.extend(_page_strings(value, f"{path}.{key}"))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            out.extend(_page_strings(value, f"{path}[{index}]"))
+    elif isinstance(node, str):
+        out.append((path, node))
+    return out
+
+
 @pytest.fixture(scope="module", params=ASSETS)
-def payload(request):
+def payload(request, seeded_market_history):
     return asyncio.run(today(request.param))
 
 

@@ -115,6 +115,30 @@ async def job_analysis() -> None:
         _record("analysis", not errors, "; ".join(errors) or f"{created_total} new snapshots")
 
 
+async def job_decision_track() -> None:
+    """Record what the decision engine concludes, so "last change" is a fact.
+
+    The page can only say "timing moved from watch to wait at 21:00" if the
+    earlier verdict was written down while it was current. Re-deriving it later
+    from today's candles would answer a different question, so the reading is
+    recorded on a cadence instead.
+    """
+    from .core.enums import Asset as _Asset
+    from .engines.analysis_context import context_for
+    from .history.decisions import record_decision
+
+    recorded = 0
+    errors: list[str] = []
+    for asset in _Asset.tradables():
+        try:
+            record_decision(context_for(asset))
+            recorded += 1
+        except Exception as exc:
+            log.warning("decision_track_failed", asset=asset.value, error=str(exc))
+            errors.append(f"{asset.value}: {exc}")
+    _record("decision_track", not errors, "; ".join(errors) or f"{recorded} readings")
+
+
 async def job_market_only() -> None:
     """Fast price-only refresh between full analyses.
 
@@ -285,6 +309,7 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
     jobs = [
         ("market", job_market_only, 5),
         ("analysis", job_analysis, 30),
+        ("decision_track", job_decision_track, 30),
         ("ohlcv_sync", job_ohlcv_sync, 60),
         ("derivatives_sync", job_derivatives_sync, 60),
         ("etf_sync", job_etf_sync, 240),
@@ -295,9 +320,9 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
     now = datetime.now(UTC)
     for job_id, func, minutes in jobs:
         # Stagger first runs so startup does not fire every job at once.
-        offset = {"market": 1, "analysis": 2, "ohlcv_sync": 5,
-                  "derivatives_sync": 6, "etf_sync": 8, "evaluate": 11,
-                  "purge": 20}[job_id]
+        offset = {"market": 1, "analysis": 2, "decision_track": 3,
+                  "ohlcv_sync": 5, "derivatives_sync": 6, "etf_sync": 8,
+                  "evaluate": 11, "purge": 20}[job_id]
         scheduler.add_job(
             func,
             IntervalTrigger(minutes=minutes),

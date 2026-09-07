@@ -75,6 +75,19 @@ CADENCE: dict[str, dict[str, int]] = {
     "open_interest": {"live": 3600, "recent": 93600, "delayed": 259200},
     # Implied volatility index, published continuously but consumed daily.
     "dvol": {"live": 3600, "recent": 93600, "delayed": 259200},
+    # Four-hour candles close six times a day.
+    "ohlcv_4h": {"live": 18000, "recent": 43200, "delayed": 172800},
+    # Structure and realised volatility are read off those candles, so they
+    # cannot be fresher than the bars they are computed from.
+    "structure": {"live": 18000, "recent": 43200, "delayed": 172800},
+    "volatility": {"live": 93600, "recent": 172800, "delayed": 345600},
+    # ETF flows are published once per trading session, and not at weekends.
+    "etf": {"live": 93600, "recent": 345600, "delayed": 604800},
+    # Macro series are released on a calendar, monthly for most of them.
+    "macro": {"live": 93600, "recent": 345600, "delayed": 1209600},
+    "cross_asset": {"live": 93600, "recent": 345600, "delayed": 1209600},
+    # On-chain aggregates are polled hourly and meaningful daily.
+    "onchain": {"live": 7200, "recent": 93600, "delayed": 259200},
     "default": {"live": 300, "recent": 3600, "delayed": 86400},
 }
 
@@ -296,3 +309,230 @@ def page_status(
     if worst is Freshness.LIVE:
         return PageStatus.LIVE, "toutes les entrées critiques sont dans leur cadence"
     return PageStatus.RECENT, "entrées critiques récentes mais pas instantanées"
+
+
+# --- coverage -------------------------------------------------------------
+#
+# Coverage answers a different question from uncertainty, and the two were
+# being read as one. Uncertainty describes how sure the *conclusion* is;
+# coverage describes how much of the intended evidence we could actually look
+# at. A confident reading on half the families and a hesitant reading on all
+# of them are different situations, and only coverage separates them.
+
+
+class CoverageClass(StrEnum):
+    """Why a family is or is not contributing to this analysis."""
+
+    EXPECTED_AND_AVAILABLE = "EXPECTED_AND_AVAILABLE"
+    EXPECTED_BUT_MISSING = "EXPECTED_BUT_MISSING"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    UNAVAILABLE_BY_DESIGN = "UNAVAILABLE_BY_DESIGN"
+
+
+COVERAGE_LABELS_FR: dict[str, str] = {
+    "price": "Prix",
+    "ohlcv_daily": "Bougies journalières",
+    "ohlcv_4h": "Bougies 4 heures",
+    "structure": "Structure de marché",
+    "funding": "Funding perpétuel",
+    "open_interest": "Open interest",
+    "dvol": "Volatilité implicite (DVOL)",
+    "volatility": "Volatilité réalisée",
+    "etf": "Flux ETF spot",
+    "macro": "Macro",
+    "onchain": "On-chain",
+    "cross_asset": "Actifs corrélés",
+    "whales": "Baleines",
+    "exchange_flows": "Flux spot / exchanges",
+}
+
+# Why a family is absent, when its absence is structural rather than a gap.
+# Written out because "missing" and "we never had this" mean different things
+# to someone reading a coverage figure.
+_BY_DESIGN_REASONS: dict[str, str] = {
+    "whales": (
+        "suivre les gros portefeuilles demande un service on-chain payant; "
+        "aucune direction n'est estimée à la place"
+    ),
+    "exchange_flows": (
+        "aucune série fiable de flux net spot/exchange n'est configurée"
+    ),
+}
+
+
+def expected_families(asset: str) -> dict[str, tuple[CoverageClass, str]]:
+    """Which families this asset should have, and why not when it should not.
+
+    Per asset, because the sources differ. Deribit publishes a DVOL index for
+    BTC and ETH and none for SOL, and no spot ETF tracks SOL. Counting either
+    against SOL would report a data gap where there is a market fact.
+    """
+    symbol = asset.upper()
+    out: dict[str, tuple[CoverageClass, str]] = {}
+    for family in COVERAGE_LABELS_FR:
+        if family in _BY_DESIGN_REASONS:
+            out[family] = (CoverageClass.UNAVAILABLE_BY_DESIGN, _BY_DESIGN_REASONS[family])
+        else:
+            out[family] = (CoverageClass.EXPECTED_AND_AVAILABLE, "")
+    if symbol == "SOL":
+        out["dvol"] = (
+            CoverageClass.NOT_APPLICABLE,
+            "Deribit ne publie pas d'indice DVOL pour SOL; aucun proxy n'est fabriqué",
+        )
+        out["etf"] = (
+            CoverageClass.NOT_APPLICABLE,
+            "aucun ETF spot SOL n'est suivi par la source de flux utilisée",
+        )
+    return out
+
+
+@dataclass(slots=True)
+class FamilyCoverage:
+    family: str
+    label: str
+    coverage: CoverageClass
+    available: bool = False
+    fresh: bool = False
+    stale: bool = False
+    freshness: Freshness = Freshness.UNAVAILABLE
+    observed_at: datetime | None = None
+    source: str = ""
+    reason: str = ""
+
+    @property
+    def counts_towards_coverage(self) -> bool:
+        return self.coverage in (
+            CoverageClass.EXPECTED_AND_AVAILABLE, CoverageClass.EXPECTED_BUT_MISSING
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "family": self.family, "label": self.label,
+            "coverage": self.coverage.value,
+            "available": self.available, "fresh": self.fresh, "stale": self.stale,
+            "freshness": self.freshness.value,
+            "observed_at": self.observed_at.isoformat() if self.observed_at else None,
+            "source": self.source, "reason": self.reason,
+            "counts_towards_coverage": self.counts_towards_coverage,
+        }
+
+
+@dataclass(slots=True)
+class DataCoverage:
+    """How much of the intended evidence this analysis could actually read."""
+
+    asset: str
+    families: list[FamilyCoverage] = field(default_factory=list)
+
+    @property
+    def expected(self) -> int:
+        return sum(item.counts_towards_coverage for item in self.families)
+
+    @property
+    def available(self) -> int:
+        return sum(
+            item.counts_towards_coverage and item.available for item in self.families
+        )
+
+    @property
+    def fresh(self) -> int:
+        return sum(
+            item.counts_towards_coverage and item.fresh for item in self.families
+        )
+
+    @property
+    def stale(self) -> int:
+        return sum(
+            item.counts_towards_coverage and item.stale for item in self.families
+        )
+
+    @property
+    def missing(self) -> int:
+        return self.expected - self.available
+
+    @property
+    def ratio(self) -> float | None:
+        return None if not self.expected else self.available / self.expected
+
+    @property
+    def level(self) -> str:
+        ratio = self.ratio
+        if ratio is None:
+            return "UNKNOWN"
+        if ratio >= 0.85:
+            return "GOOD"
+        if ratio >= 0.6:
+            return "PARTIAL"
+        return "LOW"
+
+    @property
+    def label_fr(self) -> str:
+        return {
+            "GOOD": "Bonne couverture", "PARTIAL": "Couverture partielle",
+            "LOW": "Couverture faible", "UNKNOWN": "Couverture inconnue",
+        }[self.level]
+
+    @property
+    def summary_line(self) -> str:
+        return (
+            f"{self.available}/{self.expected} familles disponibles, "
+            f"{self.fresh} récentes"
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "asset": self.asset,
+            "expected": self.expected,
+            "available": self.available,
+            "fresh": self.fresh,
+            "stale": self.stale,
+            "missing": self.missing,
+            "ratio": None if self.ratio is None else round(self.ratio, 3),
+            "percent": None if self.ratio is None else round(self.ratio * 100),
+            "level": self.level,
+            "label": self.label_fr,
+            "summary": self.summary_line,
+            "families": [item.to_dict() for item in self.families],
+            "note": (
+                "La couverture décrit ce que nous avons pu observer. Elle ne dit "
+                "rien de la certitude de la conclusion, qui est mesurée séparément "
+                "par l'incertitude."
+            ),
+        }
+
+
+def assess_coverage(asset: str, families: dict[str, FamilyState]) -> DataCoverage:
+    """Classify every intended family against what the store actually holds."""
+    out = DataCoverage(asset=asset.upper())
+    for family, (expectation, reason) in expected_families(asset).items():
+        state = families.get(family)
+        label = COVERAGE_LABELS_FR.get(family, family)
+        if expectation is not CoverageClass.EXPECTED_AND_AVAILABLE:
+            out.families.append(FamilyCoverage(
+                family=family, label=label, coverage=expectation, reason=reason,
+                freshness=(state.freshness if state else Freshness.UNAVAILABLE),
+                available=bool(state and state.available),
+                observed_at=state.observed_at if state else None,
+                source=state.source if state else "",
+            ))
+            continue
+        if state is None or not state.available:
+            out.families.append(FamilyCoverage(
+                family=family, label=label,
+                coverage=CoverageClass.EXPECTED_BUT_MISSING,
+                reason=(state.reason if state else "aucune observation stockée"),
+                source=state.source if state else "",
+            ))
+            continue
+        out.families.append(FamilyCoverage(
+            family=family, label=label,
+            coverage=CoverageClass.EXPECTED_AND_AVAILABLE,
+            available=True,
+            fresh=state.usable,
+            # Available but past its cadence: present in the count of what we
+            # have, absent from the count of what describes now.
+            stale=state.available and not state.usable,
+            freshness=state.freshness, observed_at=state.observed_at,
+            source=state.source, reason=state.reason,
+        ))
+    return out

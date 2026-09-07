@@ -19,11 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from crypto_intel.api.routes_lot4 import (
-    _reconstructed_regime,
-    _ReconstructedRegime,
-    today,
-)
+from crypto_intel.api.routes_lot4 import today
 from crypto_intel.core.enums import Asset
 from crypto_intel.core.usability import (
     FamilyState,
@@ -31,6 +27,12 @@ from crypto_intel.core.usability import (
     assess_engine,
     freshness_for,
     page_status,
+)
+from crypto_intel.engines.analysis_context import (
+    _ReconstructedRegime,
+)
+from crypto_intel.engines.analysis_context import (
+    reconstructed_regime as _reconstructed_regime,
 )
 from crypto_intel.engines.edge import EdgeEngine, UncertaintyEngine
 
@@ -86,13 +88,17 @@ class TestUncertaintyReceivesWhatTheEndpointKnows:
             driver["driver"] for driver in with_regime.drivers
         }
 
-    def test_the_endpoint_passes_the_regime_it_computed(self):
-        """Guards the wiring, not the engine: the two must not drift apart."""
+    def test_the_analysis_passes_the_regime_it_computed(self):
+        """Guards the wiring, not the engine: the two must not drift apart.
+
+        The wiring now lives in the snapshot builder rather than in the route,
+        because every endpoint of one analysis reads the same snapshot.
+        """
         import inspect
 
-        from crypto_intel.api import routes_lot4
+        from crypto_intel.engines import analysis_context
 
-        source = inspect.getsource(routes_lot4.today)
+        source = inspect.getsource(analysis_context.build_context)
         assert "UncertaintyEngine().assess(" in source
         call = source.split("UncertaintyEngine().assess(", 1)[1].split(")", 1)[0]
         assert "regime=" in call, "the computed regime is not handed to the engine"

@@ -46,7 +46,16 @@ def _stored(name: str) -> dict[str, Any] | None:
 
 @router.get("/structure/{symbol}")
 async def structure(symbol: str, timeframe: str = "4h") -> dict[str, Any]:
-    """Range, location, market structure and patterns for one timeframe."""
+    """Range, location, market structure and patterns for one timeframe.
+
+    Serves the current analysis rather than a fresh computation whenever the
+    requested timeframe is one the analysis already covers, so this endpoint
+    and `/today` cannot disagree about where price sits. A timeframe outside
+    the analysis is computed on demand and says so by returning no
+    `analysis_id`: it belongs to no analysis, and pretending otherwise would
+    let the screen combine it with blocks that do.
+    """
+    from ..engines.analysis_context import context_for
     from ..history import store
     from ..structure.location import StructuralLocationEngine
     from ..structure.market_structure import MarketStructureEngine
@@ -54,52 +63,72 @@ async def structure(symbol: str, timeframe: str = "4h") -> dict[str, Any]:
 
     asset = _parse_asset(symbol)
     tf = _parse_timeframe(timeframe)
+    snapshot = context_for(asset)
 
-    def build() -> dict[str, Any]:
-        location = StructuralLocationEngine().assess(asset, tf)
-        structure_reading = MarketStructureEngine().assess(asset, tf)
-        df = store.load_candles(asset, tf)
-        ctx = build_context(df, tf)
-        patterns = [p.to_dict() for p in detect_all(ctx)] if ctx is not None else []
-        return {
-            "asset": asset.value, "timeframe": tf.value,
-            "location": location.to_dict(),
-            "market_structure": structure_reading.to_dict(),
-            "patterns": patterns,
-            "separation_note": (
-                "recognition_confidence measures shape match only. Read edge_state "
-                "for whether the pattern predicts anything."
-            ),
-        }
+    df = store.load_candles(asset, tf)
+    ctx = build_context(df, tf)
+    patterns = [p.to_dict() for p in detect_all(ctx)] if ctx is not None else []
 
-    return build()
+    covered = (
+        (snapshot.location_by_timeframe.get("timeframes") or {}).get(tf.value) is not None
+        and (snapshot.structure.get("timeframes") or {}).get(tf.value) is not None
+    )
+    if covered:
+        location = snapshot.location_by_timeframe["timeframes"][tf.value]
+        structure_reading = snapshot.structure["timeframes"][tf.value]
+    else:
+        location = StructuralLocationEngine().assess(asset, tf).to_dict()
+        structure_reading = MarketStructureEngine().assess(asset, tf).to_dict()
+
+    return {
+        "asset": asset.value, "timeframe": tf.value,
+        "analysis_id": snapshot.analysis_id if covered else None,
+        "analysis_time": snapshot.analysis_time.isoformat() if covered else None,
+        "price_at_analysis": snapshot.price_at_analysis if covered else None,
+        "from_analysis": covered,
+        "location": location,
+        "market_structure": structure_reading,
+        "patterns": patterns,
+        "separation_note": (
+            "recognition_confidence measures shape match only. Read edge_state "
+            "for whether the pattern predicts anything."
+        ),
+    }
 
 
 @router.get("/structure/{symbol}/multi-timeframe")
 async def multi_timeframe(symbol: str) -> dict[str, Any]:
     """Structure across timeframes, with conflicts stated explicitly."""
-    from ..structure.location import StructuralLocationEngine
-    from ..structure.market_structure import MarketStructureEngine
 
     asset = _parse_asset(symbol)
 
-    def build() -> dict[str, Any]:
-        return {
-            "location": StructuralLocationEngine().multi_timeframe(asset),
-            "market_structure": MarketStructureEngine().multi_timeframe(asset),
-        }
+    from ..engines.analysis_context import context_for
 
-    return build()
+    snapshot = context_for(asset)
+    return {
+        **snapshot.identity(),
+        "location": snapshot.location_by_timeframe,
+        "market_structure": snapshot.structure,
+    }
 
 
 @router.get("/entry-opportunity/{symbol}")
 async def entry_opportunity(symbol: str, timeframe: str = "4h") -> dict[str, Any]:
     """How favourable the configuration looks, with the edge shown separately."""
+    from ..engines.analysis_context import context_for
     from ..engines.entry_opportunity import EntryOpportunityEngine
 
     asset = _parse_asset(symbol)
     tf = _parse_timeframe(timeframe)
-    return EntryOpportunityEngine().assess(asset, tf).to_dict()
+    snapshot = context_for(asset)
+    if tf is Timeframe.H4:
+        # The analysis is assessed on 4H; returning it verbatim keeps this
+        # endpoint and the decision it feeds from drifting apart.
+        return {**snapshot.entry.to_dict(), **snapshot.identity(), "from_analysis": True}
+    return {
+        **EntryOpportunityEngine().assess(asset, tf).to_dict(),
+        "analysis_id": None, "from_analysis": False,
+    }
 
 
 @router.get("/knowledge/educational-claims")

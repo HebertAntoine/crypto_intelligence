@@ -137,7 +137,10 @@ class StructuralLocationEngine:
         """What would objectively break this reading.
 
         Deliberately phrased as a structural event, never as a stop-loss: the
-        system does not know the reader's position or risk tolerance.
+        system does not know the reader's position or risk tolerance. In
+        French, because this sentence is displayed as written — it used to
+        reach the page as "A 4h close above 84508.99 would break the range top
+        zone".
         """
         label = timeframe.value
         if state in (
@@ -145,30 +148,31 @@ class StructuralLocationEngine:
             LocationState.LOWER_THIRD,
         ):
             return (
-                f"A {label} close below {bottom.low:.2f} would break the range bottom "
-                "zone and invalidate the current range reading."
+                f"Une clôture {label} sous {bottom.low:.2f} casserait la zone basse "
+                "du range et invaliderait cette lecture."
             )
         if state in (
             LocationState.AT_RANGE_TOP, LocationState.NEAR_RANGE_TOP,
             LocationState.UPPER_THIRD,
         ):
             return (
-                f"A {label} close above {top.high:.2f} would break the range top zone "
-                "and invalidate the current range reading."
+                f"Une clôture {label} au-dessus de {top.high:.2f} casserait la zone "
+                "haute du range et invaliderait cette lecture."
             )
         if state is LocationState.ABOVE_RANGE:
             return (
-                f"A {label} close back below {top.low:.2f} would mean the breakout "
-                "failed and price has reintegrated the range."
+                f"Une clôture {label} de retour sous {top.low:.2f} signifierait que "
+                "la cassure a échoué et que le prix a réintégré le range."
             )
         if state is LocationState.BELOW_RANGE:
             return (
-                f"A {label} close back above {bottom.high:.2f} would mean the breakdown "
-                "failed and price has reintegrated the range."
+                f"Une clôture {label} de retour au-dessus de {bottom.high:.2f} "
+                "signifierait que la cassure par le bas a échoué et que le prix a "
+                "réintégré le range."
             )
         return (
-            f"A {label} close outside {bottom.low:.2f}-{top.high:.2f} would invalidate "
-            "the current range reading."
+            f"Une clôture {label} hors de {bottom.low:.2f}-{top.high:.2f} "
+            "invaliderait cette lecture du range."
         )
 
     def _explain(self, out: StructuralLocation, detected: DetectedRange) -> list[str]:
@@ -182,23 +186,28 @@ class StructuralLocationEngine:
         ) else top
 
         quality = relevant.quality
-        lines.append(f"{relevant.kind} zone tested {quality.touches} times")
+        side = "haute" if relevant.kind == "resistance" else "basse"
+        lines.append(f"Zone {side} testée {quality.touches} fois")
         if quality.dispersion_atr is not None:
-            lines.append(f"touches agree within {quality.dispersion_atr:.2f} ATR")
+            lines.append(
+                f"Les touches se regroupent à {quality.dispersion_atr:.2f} ATR près"
+            )
         if quality.median_reaction_atr is not None:
-            lines.append(f"median reaction from the zone {quality.median_reaction_atr:.2f} ATR")
+            lines.append(
+                f"Réaction médiane depuis la zone : {quality.median_reaction_atr:.2f} ATR"
+            )
         lines.append(
-            f"{quality.close_penetrations} close(s) through the zone"
-            if quality.close_penetrations else "never closed through the zone"
+            f"{quality.close_penetrations} clôture(s) au travers de la zone"
+            if quality.close_penetrations else "Jamais clôturé au travers de la zone"
         )
         if quality.recency_bars is not None:
-            lines.append(f"last tested {quality.recency_bars} bars ago")
-        lines.append(f"range active for {detected.duration_bars} bars")
+            lines.append(f"Dernier test il y a {quality.recency_bars} bougies")
+        lines.append(f"Range actif depuis {detected.duration_bars} bougies")
         if detected.deviations:
             lines.append(
-                f"{len(detected.deviations)} deviation(s) recorded, "
-                f"{sum(1 for d in detected.deviations if d.followed_through)} of which "
-                "reversed back through the range"
+                f"{len(detected.deviations)} déviation(s) enregistrée(s), dont "
+                f"{sum(1 for d in detected.deviations if d.followed_through)} "
+                "revenue(s) dans le range"
             )
         return lines
 
