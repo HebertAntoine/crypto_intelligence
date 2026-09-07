@@ -16,6 +16,18 @@ from typing import Any, ClassVar
 from ..core.enums import Asset
 
 
+# Le régime en français. L'enum reste la vérité interne; il ne doit pas
+# traverser jusqu'à l'écran, où « Régime strongly bullish » était lisible.
+_REGIME_FR = {
+    "STRONGLY_BULLISH": "fortement haussier",
+    "BULLISH": "haussier",
+    "NEUTRAL": "neutre",
+    "BEARISH": "baissier",
+    "STRONGLY_BEARISH": "fortement baissier",
+    "UNDETERMINED": "indéterminé",
+}
+
+
 class BuyOpportunityState(StrEnum):
     """Les six états, et rien d'autre.
 
@@ -171,6 +183,11 @@ class BuyOpportunityExplanation:
     missing: list[DecisionFactor] = field(default_factory=list)
     improvement_conditions: list[str] = field(default_factory=list)
     deterioration_conditions: list[str] = field(default_factory=list)
+
+    # Troisième catégorie, distincte des deux autres: un changement de
+    # structure n'a pas de signe. Une cassure du haut de range invalide le
+    # range sans dégrader le marché.
+    structure_change_conditions: list[str] = field(default_factory=list)
     as_of: str = ""
     provenance: dict[str, Any] = field(default_factory=dict)
     score: float | None = None
@@ -206,6 +223,7 @@ class BuyOpportunityExplanation:
             "deterioration_conditions": self.deterioration_conditions,
             "what_would_improve": self.improvement_conditions,
             "what_would_deteriorate": self.deterioration_conditions,
+            "what_would_change_structure": self.structure_change_conditions,
             "guard_rails_applied": self.guard_rails_applied,
             "measured_edge_state": self.measured_edge_state,
             "score": self.score, "as_of": self.as_of,
@@ -348,7 +366,7 @@ def decide(
                      -55 if "BEAR" in label or "DOWN" in label else 0)
         factors.append(DecisionFactor(
             id="regime.market", category=Category.REGIME,
-            title=f"Régime {label.replace('_', ' ').lower()}",
+            title=f"Régime {_REGIME_FR.get(label, label.replace('_', ' ').lower())}",
             short_text=f"Tendance, structure et momentum concordent à {confidence:.0f}%.",
             raw_value={"regime": label, "confidence": confidence},
             normalized_value=direction,
@@ -508,9 +526,22 @@ def decide(
         effective_n = float(historical_analogs.get("effective_n", 0) or 0)
         factors.append(DecisionFactor(
             id="history.analogs", category=Category.HISTORICAL_ANALOGS,
-            title=f"Analogues: n effectif {effective_n:.1f}",
-            short_text=(f"n brut {raw_n}; médiane {historical_analogs.get('median_return', 'n/d')}, "
-                        f"MFE {historical_analogs.get('mfe', 'n/d')}, MAE {historical_analogs.get('mae', 'n/d')}."),
+            # MFE, MAE et n effectif restent dans raw_value, donc dans les
+            # preuves. En première lecture ils ne disent rien à personne.
+            title=(
+                "Historique comparable trop limité" if effective_n < 20
+                else "Situations comparables disponibles"
+            ),
+            short_text=(
+                f"Seulement {raw_n} situation{'s' if raw_n > 1 else ''} "
+                f"suffisamment indépendante{'s' if raw_n > 1 else ''} ont été "
+                "trouvées. L'échantillon est trop faible pour en tirer une "
+                "conclusion solide."
+                if effective_n < 20 else
+                f"{raw_n} situations comparables trouvées, dont "
+                f"{effective_n:.0f} réellement indépendantes. La preuve reste "
+                "modérée et ne garantit rien."
+            ),
             raw_value={**historical_analogs,
                        "historical_evidence": min(1, effective_n / 30)},
             polarity=Polarity.WAIT if effective_n < 20 else Polarity.NEUTRAL,
@@ -572,8 +603,10 @@ def decide(
     waits = ranker.rank(factors, Polarity.WAIT)
     negatives = ranker.rank(factors, Polarity.NEGATIVE)
     missing = ranker.rank(factors, Polarity.MISSING)
-    improve, deteriorate = _changes(entry, edge_state, state, macro_events,
-                                    crowding_level)
+    improve, deteriorate, structure_change = _changes(
+        entry, edge_state, state, macro_events, crowding_level,
+        location=getattr(entry, "location", None) or _location_for(entry),
+    )
     selected = [f.id for group in (positives, waits, negatives, missing)
                 for f in group]
     return BuyOpportunityExplanation(
@@ -581,7 +614,8 @@ def decide(
         summary=_summary(state, positives, waits, negatives, missing),
         positives=positives, waits=waits, negatives=negatives, missing=missing,
         improvement_conditions=improve,
-        deterioration_conditions=deteriorate, as_of=now,
+        deterioration_conditions=deteriorate,
+        structure_change_conditions=structure_change, as_of=now,
         provenance={"decision_engine": "BuyOpportunityDecisionEngine/v2",
                     "factor_ranker": "DecisionFactorRanker/v1",
                     "llm_used": False, "factors_considered": len(factors),
@@ -606,30 +640,106 @@ def _summary(state: BuyOpportunityState, positives: list[DecisionFactor],
     return base + (f" Facteur principal: {decisive[0].title}." if decisive else "")
 
 
-def _changes(entry: Any, edge_state: str, state: BuyOpportunityState,
-             macro_events: list[dict[str, Any]], crowding_level: str,
-             ) -> tuple[list[str], list[str]]:
+def _location_for(entry: Any) -> Any:
+    """La lecture structurelle qui a servi à l'évaluation.
+
+    `EntryOpportunityAssessment` ne conserve pas l'objet de localisation, mais
+    la direction de l'invalidation en dépend. On la relit sur le même actif et
+    le même timeframe plutôt que d'analyser la phrase anglaise du moteur.
+    """
+    from ..core.enums import Asset, Timeframe
+    from ..structure.location import StructuralLocationEngine
+
+    try:
+        asset = Asset(str(getattr(entry, "asset", "")))
+        timeframe = Timeframe(str(getattr(entry, "timeframe", "4h")))
+    except ValueError:
+        return None
+    try:
+        return StructuralLocationEngine().assess(asset, timeframe)
+    except (ValueError, KeyError):
+        return None
+
+
+def _changes(
+    entry: Any,
+    edge_state: str,
+    state: BuyOpportunityState,
+    macro_events: list[dict[str, Any]],
+    crowding_level: str,
+    location: Any = None,
+) -> tuple[list[str], list[str], list[str]]:
+    """Trois catégories, pas deux.
+
+    « La structure actuelle n'est plus valide » n'est pas « la situation
+    devient mauvaise ». L'invalidation du range était versée telle quelle dans
+    « ce qui dégraderait », si bien qu'une clôture 4H *au-dessus* du haut de
+    range - une cassure haussière - s'affichait comme une dégradation. Une
+    cassure change la structure; elle peut l'améliorer après confirmation.
+    """
     improve: list[str] = []
-    deteriorate: list[str] = []
+    degrade: list[str] = []
+    change: list[str] = []
+
     for raw in getattr(entry, "factors", []) or []:
         contribution = float(getattr(raw, "contribution", 0) or 0)
         name = str(getattr(raw, "name", "")).lower()
         if contribution < 0 and "location" in name:
-            improve.append("un retour vers une zone structurelle basse validée")
+            improve.append(
+                "un retour du prix vers le bas du range, avec maintien du support"
+            )
         if contribution > 0 and "structure" in name:
-            deteriorate.append("la rupture de la structure haussière validée")
+            degrade.append("la perte de la structure haussière actuelle")
+
     if edge_state != "POSITIVE_EDGE":
-        improve.append("un avantage qui franchisse les baselines et contrôles de stabilité")
+        improve.append(
+            "une relation qui franchisse enfin l'ensemble des filtres statistiques"
+        )
     if crowding_level in ("ELEVATED", "EXTREME"):
-        improve.append("un encombrement dérivé qui revienne vers NORMAL")
-    if any(0 < float(e.get("hours_until") or 0) <= MACRO_RISK_HOURS
-           for e in macro_events):
-        improve.append("le passage de l’échéance macro sans rupture structurelle")
-    invalidation = str(getattr(entry, "invalidation", "") or "")
-    if invalidation and "no validated range" not in invalidation:
-        deteriorate.append(invalidation)
-    if state in (BuyOpportunityState.OPPORTUNITY, BuyOpportunityState.STRONG_OPPORTUNITY):
-        deteriorate.append("une expansion de volatilité avec rupture baissière")
-    if not deteriorate:
-        deteriorate.append("une rupture baissière confirmée de la structure actuelle")
-    return list(dict.fromkeys(improve))[:4], list(dict.fromkeys(deteriorate))[:4]
+        improve.append("un encombrement dérivé qui redescende vers la normale")
+    else:
+        degrade.append("une montée franche de l'encombrement dérivé")
+
+    if any(
+        0 < float(event.get("hours_until") or 0) <= MACRO_RISK_HOURS
+        for event in macro_events
+    ):
+        improve.append("le passage de l'échéance macro sans rupture de structure")
+
+    # L'invalidation du range est un changement de structure, et sa direction
+    # décide de ce qu'elle vaut. Elle est lue depuis l'état structurel, jamais
+    # depuis le texte anglais du moteur.
+    location_state = str(getattr(getattr(location, "state", None), "value",
+                                 getattr(location, "state", "")) or "")
+    if location_state:
+        if "TOP" in location_state:
+            change.append(
+                "une clôture 4H au-dessus du haut de range : le range serait "
+                "invalidé, ce qui n'est pas une dégradation — c'est une "
+                "cassure haussière, à confirmer par un retest"
+            )
+            change.append(
+                "un retour vers le bas du range, qui rendrait la structure "
+                "actuelle plus lisible"
+            )
+        elif "BOTTOM" in location_state:
+            change.append(
+                "une clôture 4H sous le bas de range : le range serait invalidé "
+                "par le bas, ce qui dégraderait la lecture"
+            )
+            degrade.append("la perte confirmée du bas de range")
+        else:
+            change.append(
+                "une sortie confirmée du range, dans un sens ou dans l'autre"
+            )
+
+    if state in (BuyOpportunityState.OPPORTUNITY,
+                 BuyOpportunityState.STRONG_OPPORTUNITY):
+        degrade.append("une expansion de la volatilité à la baisse")
+    if not degrade:
+        degrade.append("un retournement du régime journalier")
+
+    def unique(items: list[str], limit: int = 4) -> list[str]:
+        return list(dict.fromkeys(items))[:limit]
+
+    return unique(improve), unique(degrade), unique(change)

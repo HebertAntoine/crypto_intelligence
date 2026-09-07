@@ -33,6 +33,26 @@ log = get_logger("engines.entry_opportunity")
 MAX_FACTORS = 5
 
 
+# Position du prix dans sa structure, en français. Les enums restent la
+# vérité interne; seule leur restitution est traduite.
+_STRUCTURE_FR = {
+    "BULLISH_STRUCTURE": "haussière",
+    "BEARISH_STRUCTURE": "baissière",
+    "RANGE_STRUCTURE": "en range",
+    "UNCLEAR": "pas encore lisible",
+    "UNDETERMINED": "indéterminée",
+}
+
+_LOCATION_FR = {
+    "NEAR_RANGE_TOP": "proche du haut de son range",
+    "NEAR_RANGE_BOTTOM": "proche du bas de son range",
+    "MID_RANGE": "au milieu de son range",
+    "ABOVE_RANGE": "au-dessus de son range",
+    "BELOW_RANGE": "sous son range",
+    "NO_RANGE": "sans range validé",
+}
+
+
 class EntryOpportunityState(StrEnum):
     VERY_UNFAVORABLE = "VERY_UNFAVORABLE"
     UNFAVORABLE = "UNFAVORABLE"
@@ -127,7 +147,10 @@ class EntryOpportunityEngine:
                        f"({' '.join(structure.labels)})",
             ))
         else:
-            out.missing.append(f"{higher.value} structure is {structure.state.value}")
+            out.missing.append(
+                f"structure {higher.value} indéterminée "
+                f"({_STRUCTURE_FR.get(structure.state.value, 'état inconnu')})"
+            )
 
         # 2. Structural location. Descriptive: near a bottom is a cheaper place
         # within the range, which says nothing about whether the range holds.
@@ -150,12 +173,17 @@ class EntryOpportunityEngine:
                     LocationState.LOWER_THIRD,
                 ) else location.detected_range.top_zone
             ) if location.detected_range else None
-            quality = f", zone quality {zone.quality.score:.0f}/100" if zone else ""
+            quality = (
+                f" (qualité de zone {zone.quality.score:.0f}/100)" if zone else ""
+            )
             factors.append(OpportunityFactor(
                 name="structural location",
                 contribution=location_contributions[location.state],
+                # En français: cette phrase arrive telle quelle à l'écran, et
+                # « 4h price is near range top » y était lisible.
                 detail=(
-                    f"{timeframe.value} price is {location.state.value.replace('_', ' ').lower()}"
+                    f"En {timeframe.value}, le prix est "
+                    f"{_LOCATION_FR.get(location.state.value, location.state.value)}"
                     f"{quality}"
                 ),
             ))

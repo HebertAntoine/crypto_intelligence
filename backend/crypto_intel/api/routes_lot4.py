@@ -286,6 +286,46 @@ def _upcoming_macro(asset: Asset, days: int = 14) -> list[dict[str, Any]]:
     return out[:5]
 
 
+def _breakout_title(state: str, direction: str | None) -> str:
+    """Le nom français d'une cassure ou d'une réintégration."""
+    sens = {"up": "par le haut", "down": "par le bas"}.get(
+        (direction or "").lower(), ""
+    )
+    base = {
+        "BREAKOUT": "Cassure",
+        "FAILED_BREAKOUT": "Cassure échouée",
+        "FAKEOUT": "Fausse cassure",
+        "REINTEGRATION": "Réintégration du range",
+        "RETEST": "Retest de la zone cassée",
+    }.get(state, state.replace("_", " ").capitalize())
+    return f"{base} {sens}".strip()
+
+
+def _breakout_sentence(breakout: Any) -> str:
+    """Une phrase lisible, construite depuis les mesures et non traduite.
+
+    La qualité est dite pour ce qu'elle est: une description du mouvement,
+    pas une prédiction de sa suite.
+    """
+    quality = getattr(breakout, "quality_score", None)
+    bars = getattr(breakout, "bars_since_break", None)
+    quand = (
+        f"il y a {bars} bougie{'s' if bars and bars > 1 else ''} en 4H"
+        if bars is not None else "récemment"
+    )
+    if quality is None:
+        return f"Mouvement détecté {quand}. Sa qualité ne prédit pas sa suite."
+    jugement = (
+        "de bonne facture" if quality >= 60
+        else "de qualité moyenne" if quality >= 40
+        else "de qualité limitée"
+    )
+    return (
+        f"Mouvement {jugement} ({quality:.0f}/100), {quand}. La qualité décrit "
+        "le mouvement passé; elle ne prédit pas sa suite."
+    )
+
+
 def _structured_decision_context(asset: Asset) -> dict[str, Any]:
     """Run the existing deterministic engines needed by the first page.
 
@@ -375,8 +415,11 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
         failed = breakout_state in ("FAILED_BREAKOUT", "FAKEOUT", "REINTEGRATION")
         factors.append(DecisionFactor(
             id="structure.breakout", category=Category.STRUCTURE,
-            title=breakout_state.replace("_", " ").capitalize(),
-            short_text=breakout.interpretation + " La qualité du break ne prédit pas sa suite.",
+            # `interpretation` est la phrase anglaise du moteur: « REINTEGRATION
+            # to the up through 81375.745, 24 bar(s) ago ». Elle reste dans
+            # raw_value pour les preuves; l'écran reçoit du français.
+            title=_breakout_title(breakout_state, breakout.direction),
+            short_text=_breakout_sentence(breakout),
             raw_value={"state": breakout_state, "direction": breakout.direction,
                        "quality": breakout.quality_score,
                        "recent_change": 1.0 if breakout.bars_since_break is not None
@@ -512,7 +555,9 @@ def _structured_decision_context(asset: Asset) -> dict[str, Any]:
     whales = WhaleAnalyzer().analyze(
         asset, whale_observations,
         unavailable_reason=None if whale_observations else
-        "UNAVAILABLE - aucun fournisseur baleines fiable configuré",
+        "Aucun fournisseur baleines fiable n'est configuré : suivre les gros "
+        "portefeuilles demande un service on-chain payant, et rien n'est estimé "
+        "à la place.",
     )
     implied = ImpliedVolatilityEngine().assess(asset)
     return {

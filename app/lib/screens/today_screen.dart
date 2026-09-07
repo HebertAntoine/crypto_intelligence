@@ -1085,6 +1085,31 @@ class _EntryAnswerPanel extends StatelessWidget {
                   icon: Icons.trending_down_rounded,
                 ),
             ],
+            if (read.opportunity.whatWouldChangeStructure.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              const Text(
+                'CE QUI CHANGERAIT LA STRUCTURE',
+                style: TextStyle(
+                  color: Color(0xFFB6C1D2),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Sans signe : une cassure peut invalider la structure sans '
+                'dégrader le marché.',
+                style: TextStyle(color: mobileMuted, fontSize: 13.5),
+              ),
+              const SizedBox(height: 8),
+              for (final condition in read.opportunity.whatWouldChangeStructure)
+                _ChangeLine(
+                  text: condition,
+                  colour: AppColors.accent,
+                  icon: Icons.swap_horiz_rounded,
+                ),
+            ],
             if (read.opportunity.guardRails.isNotEmpty) ...[
               const SizedBox(height: 18),
               const Text(

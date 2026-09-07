@@ -183,11 +183,23 @@ def _funding(asset: Asset, percentile: float | None, usable: bool,
         return component
     component.available = True
     component.normalized_pressure = max(-100, min(100, (percentile - 50) * 2))
+    # Le percentile et la variation brute restent dans raw_value, donc dans
+    # les preuves. « variation 24 h -0.000006 » ne dit rien en première lecture.
+    niveau = (
+        "nettement au-dessus de sa normale" if percentile >= 75
+        else "au-dessus de sa normale" if percentile >= 60
+        else "nettement en dessous de sa normale" if percentile <= 25
+        else "en dessous de sa normale" if percentile <= 40
+        else "dans sa normale"
+    )
+    qui = (
+        "les positions longues paient les shorts" if percentile >= 60
+        else "les positions courtes paient les longs" if percentile <= 40
+        else "aucun côté ne paie franchement"
+    )
     component.detail = (
-        f"{percentile:.0f}e percentile"
-        + (f", variation 24 h {change_24h:+.6f}" if change_24h is not None else "")
-        + ". Le côté qui paie est mesuré; "
-        "un extrême signale surtout un coût et un encombrement, pas la suite du prix."
+        f"Coût de portage {niveau} : {qui}. Un extrême signale surtout un coût "
+        "et un encombrement, pas la suite du prix."
     )
     return component
 

@@ -120,8 +120,10 @@ class TestBranchesDirectly:
         )
         # La branche du range doit précéder le `else` qui remplit `missing`.
         range_at = source.index('RANGE_STRUCTURE')
-        missing_at = source.index('structure is {structure.state.value}')
-        assert range_at < missing_at
+        missing_at = source.index('out.missing.append(')
+        assert range_at < missing_at, (
+            "le range est traité après la branche d'absence: il y retombe"
+        )
 
     def test_a_measured_percentile_has_its_own_branch(self):
         source = self._source()

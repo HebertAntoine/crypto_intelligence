@@ -516,6 +516,10 @@ class BuyOpportunity {
   final List<OpportunityFactor> missing;
   final List<String> whatWouldImprove;
   final List<String> whatWouldDeteriorate;
+
+  /// Sans signe: une cassure du haut de range invalide la structure sans
+  /// dégrader le marché. Confondre les deux était une erreur de sens.
+  final List<String> whatWouldChangeStructure;
   final List<String> guardRails;
   final String measuredEdgeState;
   final String disclaimer;
@@ -532,6 +536,7 @@ class BuyOpportunity {
     required this.missing,
     required this.whatWouldImprove,
     required this.whatWouldDeteriorate,
+    required this.whatWouldChangeStructure,
     required this.guardRails,
     required this.measuredEdgeState,
     required this.disclaimer,
@@ -549,6 +554,7 @@ class BuyOpportunity {
     missing: [],
     whatWouldImprove: [],
     whatWouldDeteriorate: [],
+    whatWouldChangeStructure: [],
     guardRails: [],
     measuredEdgeState: 'NO_MEASURABLE_EDGE',
     disclaimer: '',
@@ -581,6 +587,9 @@ class BuyOpportunity {
             json['improvement_conditions'] ?? json['what_would_improve']),
         whatWouldDeteriorate: _strings(
             json['deterioration_conditions'] ?? json['what_would_deteriorate']),
+        whatWouldChangeStructure: _strings(
+            json['structure_change_conditions'] ??
+                json['what_would_change_structure']),
         guardRails: _strings(json['guard_rails_applied']),
         measuredEdgeState:
             json['measured_edge_state'] as String? ?? 'NO_MEASURABLE_EDGE',

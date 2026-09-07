@@ -77,6 +77,63 @@ d'un champ manquant. Après correction des deux bugs ci-dessus :
 La différence est structurelle et mesurée : ETH a une structure daily haussière
 là où BTC et SOL sont en range près du haut. Ce n'était pas un mapping.
 
+## Couche de présentation
+
+Les moteurs raisonnent en anglais : leurs enums sont des identifiants, pas du
+texte. Le défaut était qu'ils traversaient l'app jusqu'à l'écran.
+
+Corrigés à la source, en français : « Régime strongly bullish » →
+« Régime fortement haussier » · « REINTEGRATION to the up through 81375.745,
+24 bar(s) ago » → « Réintégration du range par le haut — mouvement de qualité
+limitée (28/100), il y a 24 bougies en 4H » · « 4h price is near range top,
+zone quality 62/100 » → « En 4h, le prix est proche du haut de son range
+(qualité de zone 62/100) » · « 1d structure is UNCLEAR » →
+« structure 1d indéterminée » · « UNAVAILABLE - aucun fournisseur… » →
+phrase complète sans identifiant.
+
+`app/lib/presentation/domain_labels.dart` rassemble les tables pour régime,
+structure, localisation, cassure, funding, encombrement, volatilité, avantage,
+configuration d'entrée, fraîcheur et niveau de preuve. Un état inconnu devient
+lisible plutôt que brut — c'est un filet, pas une traduction.
+
+`tests/unit/test_no_raw_enum_reaches_ui.py` interroge l'endpoint réel pour les
+trois actifs et échoue sur tout SCREAMING_SNAKE_CASE ou phrase anglaise de
+domaine. Il a trouvé deux fuites que j'avais manquées.
+
+## Améliorer, dégrader, changer la structure
+
+Trois catégories, plus deux. « La structure actuelle n'est plus valide » n'est
+pas « la situation devient mauvaise ».
+
+L'invalidation du range était versée telle quelle dans « ce qui dégraderait ».
+Pour BTC, cela affichait « une clôture 4H au-dessus de 81 541,64 invaliderait
+le range » comme une dégradation — alors que c'est une cassure haussière.
+
+La direction est lue depuis l'état structurel (`NEAR_RANGE_TOP`), jamais depuis
+la phrase du moteur. Une cassure par le haut va dans « changerait la
+structure », avec la mention qu'elle est à confirmer par un retest ; une
+cassure par le bas y va aussi et alimente en plus « dégraderait ».
+
+## Analogues, funding, cassure : en première lecture
+
+`Analogues: n effectif 8.0, médiane 2.88, MFE 3.68, MAE -1.33` devient
+« Historique comparable trop limité — seulement 8 situations suffisamment
+indépendantes ont été trouvées ». `24e percentile, variation 24 h -0.000006`
+devient « Coût de portage nettement en dessous de sa normale : les positions
+courtes paient les longs ». Les valeurs brutes restent dans `raw_value`, donc
+dans les preuves.
+
+## Tableau de cohérence
+
+| Actif | Décision | Régime | Localisation | Funding | Dérive |
+| --- | --- | --- | --- | --- | --- |
+| BTC | ATTENDRE | Fortement haussier | proche du haut de range | NEGATIVE p24 | +0,50 % |
+| ETH | OPPORTUNITÉ | Fortement haussier | neutre | NEUTRAL | +0,76 % |
+| SOL | ATTENDRE | Fortement haussier | proche du haut de range | NEUTRAL | +0,52 % |
+
+Les trois partagent le régime ; ce qui les sépare est la localisation
+structurelle. Aucune valeur ne diffère entre les blocs d'un même instantané.
+
 ## Ce qui reste ouvert
 
 - **Le backend n'est pas déployé.** L'app lit les instantanés embarqués et ne
