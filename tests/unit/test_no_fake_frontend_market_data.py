@@ -243,3 +243,48 @@ def test_vercel_config_matches_the_schema_it_declares():
         for rewrite in config.get("rewrites", []):
             extra = set(rewrite) - allowed_rewrite
             assert not extra, f"{name}: rewrite carries {extra}"
+
+
+def test_french_ui_shows_no_english_labels():
+    """Les enums restent anglais en interne; l'écran ne doit pas les montrer.
+
+    Ce garde-fou est statique parce que les sections concernées vivent dans un
+    ListView paresseux: un test widget ne les construit pas, et passerait donc
+    sans rien vérifier.
+    """
+    today_screen = (APP_LIB / "screens" / "today_screen.dart").read_text(
+        encoding="utf-8"
+    )
+    for english in ("'Drivers'", "'Caveats'"):
+        assert english not in today_screen, (
+            f"{english} est affiché tel quel dans l'UI française"
+        )
+    for french in ("Facteurs principaux", "Points de vigilance"):
+        assert french in today_screen, f"{french} manque"
+
+    diagnostics = (APP_LIB / "diagnostics" / "today_diagnostics.dart").read_text(
+        encoding="utf-8"
+    )
+    # Le panneau affichait STRONGLY_BULLISH brut avant d'être traduit.
+    assert "directionLabel(direction)" in diagnostics
+
+
+def test_family_freshness_is_recomputed_never_read_from_the_payload():
+    """Le champ `freshness` d'une famille est figé à l'export du snapshot.
+
+    Le défaut observé: « instantané embarqué, backend injoignable » affiché
+    au-dessus de « Prix : À JOUR · il y a 1 s ». Les deux venaient du même
+    payload, dont le bloc families portait age_seconds=0.5 gelé à la capture.
+    """
+    models = (APP_LIB / "api" / "models.dart").read_text(encoding="utf-8")
+    assert "DerivedFreshness derived({DateTime? now})" in models
+    assert "bool usableNow({DateTime? now})" in models
+
+    for name in ("screens/today_screen.dart", "diagnostics/today_diagnostics.dart"):
+        text = (APP_LIB / name).read_text(encoding="utf-8")
+        assert "state.ageSeconds!" not in text, (
+            f"{name} affiche l'âge exporté au lieu de le recalculer"
+        )
+        assert "freshnessLabel(state.freshness)" not in text, (
+            f"{name} affiche la fraîcheur figée du payload"
+        )

@@ -217,6 +217,51 @@ void main() {
     });
   });
 
+  group('Cohérence fraîcheur / analyse', () {
+    testWidgets('le funding périmé n’est pas présenté comme utilisable',
+        (tester) async {
+      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
+      await tester.tap(find.text('BTC').first);
+      await tester.pumpAndSettle();
+
+      // Le percentile historique reste affiché - il est valide - mais la
+      // ligne dit explicitement que l'entrée n'est pas utilisable.
+      expect(find.textContaining('Funding (contexte historique)'), findsOneWidget);
+      expect(find.textContaining('Entrée non utilisable'), findsWidgets);
+    });
+
+    testWidgets('volatilité réalisée et implicite ne sont pas confondues',
+        (tester) async {
+      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
+      await tester.tap(find.text('BTC').first);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Volatilité réalisée (ATR)'), findsOneWidget);
+    });
+
+    testWidgets('la direction annonce son mode simplifié', (tester) async {
+      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
+      await tester.tap(find.text('BTC').first);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('mode prix simplifié'), findsOneWidget);
+    });
+
+    testWidgets('aucune chaîne anglaise ne reste visible', (tester) async {
+      await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));
+      await tester.tap(find.text('BTC').first);
+      await tester.pumpAndSettle();
+
+      for (final anglais in ['Drivers', 'Caveats', 'NEUTRAL', 'STRONGLY_BULLISH']) {
+        expect(find.text(anglais), findsNothing, reason: '$anglais visible');
+      }
+
+      // Les sections plus bas ne sont pas construites (ListView paresseux);
+      // leur libellé français est vérifié statiquement côté backend, par
+      // test_no_fake_frontend_market_data.py.
+    });
+  });
+
   group('Diagnostic par crypto', () {
     testWidgets('le panneau s’ouvre au clic sur la carte', (tester) async {
       await _pumpAt(tester, const Size(430, 932), TodayScreen(client: _client()));

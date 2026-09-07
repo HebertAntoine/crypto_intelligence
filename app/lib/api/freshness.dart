@@ -17,38 +17,51 @@ library;
 /// Les seuils reflètent la cadence réelle de chaque famille, comme côté
 /// backend (`core/freshness.py`). Un prix de six minutes est vieux ; un flux
 /// ETF de six heures est normal, car il n'est publié qu'une fois par séance.
+/// Les seuils reflètent `core/usability.py` côté backend. Ils sont dupliqués
+/// ici parce que le client doit pouvoir recalculer sans faire confiance aux
+/// champs du payload: dans un instantané embarqué, la fraîcheur et l'âge ont
+/// été figés à l'instant de l'export.
 enum DataFamily {
-  price(liveSeconds: 120, delayedSeconds: 900, staleSeconds: 86400),
-  derivatives(liveSeconds: 300, delayedSeconds: 3600, staleSeconds: 86400),
-  onchain(liveSeconds: 900, delayedSeconds: 14400, staleSeconds: 172800),
-  etf(liveSeconds: 3600, delayedSeconds: 86400, staleSeconds: 259200),
-  macro(liveSeconds: 3600, delayedSeconds: 86400, staleSeconds: 604800),
-  analysis(liveSeconds: 900, delayedSeconds: 21600, staleSeconds: 86400);
+  price(live: 120, recent: 900, delayed: 3600),
+  ohlcvDaily(live: 93600, recent: 172800, delayed: 345600),
+  funding(live: 3600, recent: 32400, delayed: 86400),
+  openInterest(live: 3600, recent: 93600, delayed: 259200),
+  dvol(live: 3600, recent: 93600, delayed: 259200),
+  derivatives(live: 300, recent: 3600, delayed: 86400),
+  onchain(live: 900, recent: 14400, delayed: 172800),
+  etf(live: 3600, recent: 86400, delayed: 259200),
+  macro(live: 3600, recent: 86400, delayed: 604800),
+  analysis(live: 900, recent: 21600, delayed: 86400);
 
-  final int liveSeconds;
-  final int delayedSeconds;
-  final int staleSeconds;
+  final int live;
+  final int recent;
+  final int delayed;
 
   const DataFamily({
-    required this.liveSeconds,
-    required this.delayedSeconds,
-    required this.staleSeconds,
+    required this.live,
+    required this.recent,
+    required this.delayed,
   });
 }
 
 enum FreshnessState {
   live,
+  recent,
   delayed,
   stale,
   expired,
   unavailable;
 
   /// Au-delà de `stale`, aucune analyse ne doit être présentée comme actuelle.
+  /// Au-delà de « différé », aucune analyse ne doit être présentée comme
+  /// actuelle: la donnée décrit un moment passé.
   bool get blocksAnalysis =>
-      this == FreshnessState.expired || this == FreshnessState.unavailable;
+      this == FreshnessState.stale ||
+      this == FreshnessState.expired ||
+      this == FreshnessState.unavailable;
 
   bool get isTrustworthy =>
-      this == FreshnessState.live || this == FreshnessState.delayed;
+      this == FreshnessState.live || this == FreshnessState.recent;
 }
 
 /// Fraîcheur dérivée d'un horodatage d'observation, plus l'âge qui la justifie.
@@ -69,7 +82,8 @@ class DerivedFreshness {
   bool get blocksAnalysis => state.blocksAnalysis;
 
   String get label => switch (state) {
-        FreshnessState.live => 'TEMPS RÉEL',
+        FreshnessState.live => 'À JOUR',
+        FreshnessState.recent => 'RÉCENT',
         FreshnessState.delayed => 'DIFFÉRÉ',
         FreshnessState.stale => 'PÉRIMÉ',
         FreshnessState.expired => 'PÉRIMÉ',
@@ -91,6 +105,16 @@ class DerivedFreshness {
     return suffix == null ? label : '$label · $suffix';
   }
 }
+
+/// La famille correspondant à une clé du payload backend.
+DataFamily familyFor(String key) => switch (key) {
+      'price' => DataFamily.price,
+      'ohlcv_daily' => DataFamily.ohlcvDaily,
+      'funding' => DataFamily.funding,
+      'open_interest' => DataFamily.openInterest,
+      'dvol' => DataFamily.dvol,
+      _ => DataFamily.derivatives,
+    };
 
 /// Recalcule la fraîcheur à partir de l'horodatage d'observation.
 ///
@@ -122,10 +146,10 @@ DerivedFreshness deriveFreshness(
 
   final seconds = age.isNegative ? 0 : age.inSeconds;
   final state = switch (seconds) {
-    _ when seconds <= family.liveSeconds => FreshnessState.live,
-    _ when seconds <= family.delayedSeconds => FreshnessState.delayed,
-    _ when seconds <= family.staleSeconds => FreshnessState.stale,
-    _ => FreshnessState.expired,
+    _ when seconds <= family.live => FreshnessState.live,
+    _ when seconds <= family.recent => FreshnessState.recent,
+    _ when seconds <= family.delayed => FreshnessState.delayed,
+    _ => FreshnessState.stale,
   };
 
   return DerivedFreshness(

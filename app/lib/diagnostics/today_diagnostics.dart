@@ -142,6 +142,8 @@ DiagnosticSection _transport(
   checks.add(switch (freshness.state) {
     FreshnessState.live => _check('Fraîcheur', freshness.description,
         CheckStatus.ok, 'Dans la cadence attendue pour un prix.'),
+    FreshnessState.recent => _check('Fraîcheur', freshness.description,
+        CheckStatus.ok, 'Récent: exploitable, sans être instantané.'),
     FreshnessState.delayed => _check('Fraîcheur', freshness.description,
         CheckStatus.warning, 'Utilisable, mais ce n’est plus du temps réel.'),
     FreshnessState.stale => _check('Fraîcheur', freshness.description,
@@ -219,18 +221,46 @@ DiagnosticSection _market(MarketPriceRead? market) {
   return DiagnosticSection(title: 'Marché', checks: checks);
 }
 
-DiagnosticSection _analysis(TodayRead read) {
+/// Un resultat analytique porte deux choses distinctes: ce qu'il vaut
+/// historiquement, et s'il decrit encore le present.
+///
+/// Le percentile de funding calcule sur 7006 observations reste parfaitement
+/// valide; l'observation d'aujourd'hui, vieille de 25 h, ne l'est pas. Afficher
+/// « OK » melangeait les deux et laissait croire que le funding actuel etait
+/// exploitable.
+DiagnosticSection _analysis(
+  TodayRead read,
+  Map<String, FamilyState> families, {
+  DateTime? now,
+}) {
+  bool usable(String family) =>
+      families[family]?.usableNow(now: now) ?? false;
+
+  String staleNote(List<String> deps) {
+    final broken = deps.where((d) => !usable(d)).map(familyLabel).toList();
+    return broken.isEmpty
+        ? ''
+        : ' Entrée${broken.length > 1 ? 's' : ''} non utilisable'
+            '${broken.length > 1 ? 's' : ''}: ${broken.join(', ')}.';
+  }
+
+  CheckStatus gated(List<String> deps, CheckStatus ifFresh) =>
+      deps.every(usable) ? ifFresh : CheckStatus.warning;
+
   final checks = <DiagnosticCheck>[];
   final direction = read.summary.marketDirection.toUpperCase();
 
-  // L'enum reste anglais en interne; l'utilisateur ne doit jamais le voir.
   checks.add(direction.isEmpty || direction == 'UNDETERMINED'
       ? _check('Direction', direction.isEmpty ? _absent : 'indéterminée',
-          CheckStatus.warning,
-          'Aucune lecture directionnelle établie.')
-      : _check('Direction', directionLabel(direction), CheckStatus.ok,
+          CheckStatus.warning, 'Aucune lecture directionnelle établie.')
+      : _check(
+          'Direction (mode prix simplifié)',
+          directionLabel(direction),
+          gated(['ohlcv_daily'], CheckStatus.ok),
           'Régime de prix simplifié: tendance, position EMA, momentum, ADX. '
-          'Ce n’est pas le moteur de régime multi-domaines complet.'));
+          'Ce n’est pas le moteur de régime multi-domaines complet.'
+          '${staleNote(['ohlcv_daily'])}',
+        ));
 
   final confidence = double.tryParse(read.summary.directionConfidence);
   checks.add(confidence == null
@@ -240,29 +270,66 @@ DiagnosticSection _analysis(TodayRead read) {
           ? _check('Persistance 20 j', '$confidence %', CheckStatus.failed,
               'Hors de l’intervalle 0-100: le calcul est faux.')
           : _check('Persistance 20 j', '${confidence.toStringAsFixed(1)} %',
-              CheckStatus.ok,
-              'Part des 20 dernières clôtures portant le même régime.'));
+              gated(['ohlcv_daily'], CheckStatus.ok),
+              'Part des 20 dernières clôtures portant le même régime.'
+              '${staleNote(['ohlcv_daily'])}'));
 
   final tested = read.admittedCount + read.rejectedCount;
   checks.add(tested == 0
-      ? _check('Edge', 'aucun candidat testé', CheckStatus.warning,
+      ? _check('Avantage statistique', 'aucun candidat testé',
+          CheckStatus.warning,
           'Aucune recherche n’a encore tourné pour cet actif.')
-      : _check('Edge',
+      : _check(
+          'Avantage statistique',
           '${read.admittedCount} validé, ${read.rejectedCount} rejeté',
           CheckStatus.ok,
-          '$tested relations testées; les compteurs sont cohérents.'));
+          '$tested relations testées. Une relation validée reste une '
+          'propriété historique: elle ne dit pas qu’un setup est actif '
+          'aujourd’hui.'));
 
+  // Funding: le contexte historique et l'observation actuelle sont separes.
   final percentile = read.fundingPercentile;
   checks.add(percentile == null
       ? _check('Funding', read.fundingBand, CheckStatus.warning,
           'Bande sans percentile: historique insuffisant, ou funding absent.')
-      : (percentile < 0 || percentile > 100)
-          ? _check('Funding', 'p$percentile', CheckStatus.failed,
-              'Percentile hors 0-100.')
-          : _check('Funding',
-              '${read.fundingBand} · p${percentile.toStringAsFixed(0)}',
-              CheckStatus.ok,
-              'Percentile réel, calculé sur l’historique propre de l’actif.'));
+      : _check(
+          'Funding (contexte historique)',
+          '${_bandLabel(read.fundingBand)} · '
+              '${percentile.toStringAsFixed(0)}e percentile',
+          gated(['funding'], CheckStatus.ok),
+          'La dernière valeur connue se situe au '
+          '${percentile.toStringAsFixed(0)}e percentile de l’historique de cet '
+          'actif. Ce classement reste valide.${staleNote(['funding'])}'));
+
+  // Volatilite: realisee (ATR sur OHLCV) et implicite (DVOL) ne sont pas la
+  // meme mesure et ne partagent pas leur fraicheur.
+  checks.add(_check(
+    'Volatilité réalisée (ATR)',
+    _volatilityLabelFr(read.volatilityRegime),
+    gated(['ohlcv_daily'], CheckStatus.ok),
+    'Calculée sur les bougies journalières, pas sur la volatilité implicite.'
+    '${staleNote(['ohlcv_daily'])}',
+  ));
+
+  final dvolState = families['dvol'];
+  if (dvolState != null) {
+    checks.add(_check(
+      'Volatilité implicite (DVOL)',
+      dvolState.available
+          ? (dvolState.usableNow(now: now) ? 'utilisable' : 'non utilisable')
+          : 'absente',
+      dvolState.available
+          ? (dvolState.usableNow(now: now)
+              ? CheckStatus.ok
+              : CheckStatus.warning)
+          : CheckStatus.unknown,
+      dvolState.available
+          ? 'Mesure distincte de l’ATR. Elle ne contribue pas au régime de '
+              'volatilité affiché.'
+          : 'Aucune série DVOL pour cet actif; seule la volatilité réalisée '
+              'est disponible.',
+    ));
+  }
 
   final score = read.uncertaintyScore;
   checks.add((score < 0 || score > 100)
@@ -271,27 +338,60 @@ DiagnosticSection _analysis(TodayRead read) {
       : read.uncertaintyDrivers.isEmpty
           ? _check('Incertitude', '${score.toStringAsFixed(0)}/100',
               CheckStatus.warning,
-              'Score sans driver: impossible de savoir d’où il vient.')
+              'Score sans facteur: impossible de savoir d’où il vient.')
           : _check('Incertitude', '${score.toStringAsFixed(0)}/100',
               CheckStatus.ok,
-              '${read.uncertaintyDrivers.length} driver(s) nommé(s) '
+              '${read.uncertaintyDrivers.length} facteur(s) nommé(s) '
               'expliquent le score.'));
 
+  // Crowding consomme funding et open interest: les deux doivent etre frais.
   checks.add(read.crowdingScore == null
-      ? _check('Crowding', read.crowdingLevel, CheckStatus.warning,
-          'Niveau sans score chiffré.')
-      : _check('Crowding',
-          '${read.crowdingLevel} · ${_num(read.crowdingScore, digits: 0)}/100',
-          CheckStatus.ok, 'Score composite disponible.'));
+      ? _check('Crowding', _crowdingLabelFr(read.crowdingLevel),
+          CheckStatus.warning, 'Niveau sans score chiffré.')
+      : _check(
+          'Crowding',
+          '${_crowdingLabelFr(read.crowdingLevel)} · '
+              '${read.crowdingScore!.toStringAsFixed(0)}/100',
+          gated(['funding', 'open_interest'], CheckStatus.ok),
+          'Composé de l’étirement du funding, du percentile et de la vitesse '
+          'de l’open interest.${staleNote(['funding', 'open_interest'])}'));
 
   return DiagnosticSection(title: 'Analyse', checks: checks);
 }
+
+String _bandLabel(String raw) => switch (raw.toUpperCase()) {
+      'VERY_NEGATIVE' => 'Très négatif',
+      'NEGATIVE' => 'Négatif',
+      'NEUTRAL' => 'Neutre',
+      'POSITIVE' => 'Positif',
+      'VERY_POSITIVE' => 'Très positif',
+      _ => raw.replaceAll('_', ' ').toLowerCase(),
+    };
+
+String _volatilityLabelFr(String raw) => switch (raw.toUpperCase()) {
+      'LOW' => 'Faible',
+      'NORMAL' => 'Normale',
+      'HIGH' => 'Élevée',
+      'EXTREME' => 'Extrême',
+      _ => raw.replaceAll('_', ' ').toLowerCase(),
+    };
+
+String _crowdingLabelFr(String raw) => switch (raw.toUpperCase()) {
+      'LOW' => 'Faible',
+      'NORMAL' => 'Normal',
+      'HIGH' => 'Élevé',
+      'EXTREME' => 'Extrême',
+      _ => raw.replaceAll('_', ' ').toLowerCase(),
+    };
 
 /// Chaque famille, avec les quatre reponses separees.
 ///
 /// Le point du LOT: ne plus dire « OK » d'une donnee presente mais perimee.
 /// Le libelle porte la fraicheur, et l'utilisabilite est dite explicitement.
-DiagnosticSection _families(Map<String, FamilyState> declared) {
+DiagnosticSection _families(
+  Map<String, FamilyState> declared, {
+  DateTime? now,
+}) {
   if (declared.isEmpty) {
     return const DiagnosticSection(title: 'Familles d’entrée', checks: [
       DiagnosticCheck(
@@ -310,29 +410,40 @@ DiagnosticSection _families(Map<String, FamilyState> declared) {
       for (final entry in declared.entries)
         _check(
           familyLabel(entry.key),
-          _familyReceived(entry.value),
-          _familyStatus(entry.value),
-          entry.value.reason,
+          _familyReceived(entry.value, now: now),
+          _familyStatus(entry.value, now: now),
+          _familyReason(entry.value, now: now),
         ),
     ],
   );
 }
 
-String _familyReceived(FamilyState state) {
-  final parts = <String>[freshnessLabel(state.freshness)];
-  if (state.ageSeconds != null) parts.add(ageLabel(state.ageSeconds!));
-  parts.add(state.usable ? 'utilisable' : 'non utilisable');
+String _familyReceived(FamilyState state, {DateTime? now}) {
+  // Recalcule: l'age et la fraicheur du payload sont figes a l'export.
+  final derived = state.derived(now: now);
+  final parts = <String>[derived.label];
+  final age = derived.ageLabel;
+  if (age != null) parts.add(age);
+  parts.add(state.usableNow(now: now) ? 'utilisable' : 'non utilisable');
   if (state.points != null) parts.add('${state.points} obs.');
   return parts.join(' · ');
 }
 
-CheckStatus _familyStatus(FamilyState state) {
+CheckStatus _familyStatus(FamilyState state, {DateTime? now}) {
   if (!state.available) return CheckStatus.failed;
   if (!state.valid) return CheckStatus.failed;
-  if (state.usable) return CheckStatus.ok;
+  if (state.usableNow(now: now)) return CheckStatus.ok;
   // Presente et valide mais trop ancienne: ce n'est pas un echec de la
   // donnee, c'est un refus de s'en servir maintenant.
   return CheckStatus.warning;
+}
+
+String _familyReason(FamilyState state, {DateTime? now}) {
+  if (!state.available) return 'aucune observation disponible';
+  if (!state.valid) return 'les valeurs reçues ne sont pas exploitables';
+  if (state.usableNow(now: now)) return 'présente, valide et dans sa cadence';
+  final age = state.derived(now: now).ageLabel ?? 'à une date inconnue';
+  return 'dernière observation $age: trop ancienne pour l’analyse actuelle';
 }
 
 /// Libelle francais d'un regime directionnel.
@@ -393,6 +504,7 @@ TodayDiagnostics buildDiagnostics(
   DateTime? now,
 }) {
   final freshness = read.marketData?.derived(now: now) ?? DerivedFreshness.unknown;
+  final reference = now;
   return TodayDiagnostics(
     asset: read.asset,
     origin: provenance.origin,
@@ -400,8 +512,8 @@ TodayDiagnostics buildDiagnostics(
     sections: [
       _transport(provenance, freshness),
       _market(read.marketData),
-      _analysis(read),
-      _families(read.families),
+      _analysis(read, read.families, now: reference),
+      _families(read.families, now: reference),
     ],
   );
 }

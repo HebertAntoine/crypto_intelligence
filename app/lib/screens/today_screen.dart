@@ -487,7 +487,7 @@ class _MarketCard extends StatelessWidget {
             if (read.uncertaintyDrivers.isNotEmpty) ...[
               const SizedBox(height: 14),
               const Text(
-                'Drivers',
+                'Facteurs principaux',
                 style: TextStyle(
                   color: AppColors.text,
                   fontSize: 18,
@@ -497,7 +497,7 @@ class _MarketCard extends StatelessWidget {
               const SizedBox(height: 8),
               for (final driver in read.uncertaintyDrivers)
                 Text(
-                  '• ${_sentenceCase(driver.driver.replaceAll('_', ' '))}: ${driver.detail}',
+                  '• ${_driverFr(driver.driver)}: ${_driverDetailFr(driver.detail)}',
                   style: const TextStyle(
                     color: mobileMuted,
                     fontSize: 15,
@@ -508,7 +508,7 @@ class _MarketCard extends StatelessWidget {
             if (read.summary.caveats.isNotEmpty) ...[
               const SizedBox(height: 14),
               const Text(
-                'Caveats',
+                'Points de vigilance',
                 style: TextStyle(
                   color: AppColors.text,
                   fontSize: 18,
@@ -518,7 +518,7 @@ class _MarketCard extends StatelessWidget {
               const SizedBox(height: 8),
               for (final caveat in read.summary.caveats)
                 Text(
-                  '• $caveat',
+                  '• ${_caveatFr(caveat)}',
                   style: const TextStyle(
                     color: mobileMuted,
                     fontSize: 15,
@@ -1848,9 +1848,60 @@ String _numberFr(num value, {int digits = 2}) {
 String _familySummary(FamilyState state) {
   if (!state.available) return 'Indisponible';
   if (!state.valid) return 'Données insuffisantes';
-  final age = state.ageSeconds == null ? '' : ' · ${ageLabel(state.ageSeconds!)}';
-  final usable = state.usable ? '' : ' · non utilisable';
-  return '${freshnessLabel(state.freshness)}$age$usable';
+  // Recalculé: les champs de fraîcheur du payload sont figés à l'export et
+  // rajeuniraient indéfiniment un instantané embarqué.
+  final derived = state.derived();
+  final age = derived.ageLabel == null ? '' : ' · ${derived.ageLabel}';
+  final usable = state.usableNow() ? '' : ' · non utilisable';
+  return '${derived.label}$age$usable';
+}
+
+/// Les enums et messages du backend restent anglais; l'UI francaise ne doit
+/// jamais les laisser passer tels quels.
+String _driverFr(String raw) => switch (raw.toLowerCase()) {
+      'no measured edge' => 'Aucun avantage statistique mesurable',
+      'edge untested' => 'Avantage non testé',
+      'edge measured but modest' => 'Avantage mesuré mais modeste',
+      'regime undetermined' => 'Régime indéterminé',
+      'neutral regime' => 'Régime neutre',
+      'unresolved contradictions' => 'Contradictions non résolues',
+      'stale or missing data' => 'Données périmées ou manquantes',
+      'crowded positioning' => 'Positionnement encombré',
+      _ => _sentenceCase(raw.replaceAll('_', ' ')),
+    };
+
+String _driverDetailFr(String raw) {
+  const map = {
+    'no relationship survived the full filter chain':
+        'aucune relation n’a franchi l’ensemble des filtres',
+    'research output unavailable, so nothing has been verified':
+        'aucun résultat de recherche disponible, donc rien n’est vérifié',
+    'directional read is not established':
+        'la lecture directionnelle n’est pas établie',
+    'no clear directional bias': 'aucun biais directionnel net',
+  };
+  final hit = map[raw.toLowerCase()];
+  if (hit != null) return hit;
+  // « stale or missing data » liste ses familles: on traduit les noms.
+  return raw
+      .replaceAll('price', 'prix')
+      .replaceAll('ohlcv_daily', 'bougies journalières')
+      .replaceAll('open_interest', 'open interest')
+      .replaceAll('dvol', 'volatilité implicite');
+}
+
+String _caveatFr(String raw) {
+  if (raw.startsWith('Not actionable')) {
+    return 'Aucune action: aucun avantage mesuré ne franchit la barre des '
+        'preuves, donc toute position reposerait sur le récit et non sur une '
+        'relation testée.';
+  }
+  if (raw.startsWith('Market direction and measured edge')) {
+    return 'La direction du marché et l’avantage mesuré sont calculés '
+        'séparément: un régime haussier n’est pas une preuve de capacité '
+        'prédictive.';
+  }
+  return raw;
 }
 
 String _directionLabel(String raw) {

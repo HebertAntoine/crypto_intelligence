@@ -247,7 +247,11 @@ class FamilyState {
   final String family;
   final bool available;
   final bool valid;
+  /// Tel que reçu: figé à l'instant du calcul backend. Ne pas afficher.
+  /// Utiliser `derived()` et `usableNow()`.
   final String freshness;
+
+  /// Tel que reçu, également figé. Voir `usableNow()`.
   final bool usable;
   final String? observedAt;
   final double? ageSeconds;
@@ -267,6 +271,23 @@ class FamilyState {
     required this.points,
     required this.reason,
   });
+
+  /// Fraîcheur recalculée contre l'horloge courante.
+  ///
+  /// Les champs `freshness`, `age_seconds` et `usable` du payload sont figés
+  /// à l'instant où le backend les a calculés. Dans un instantané embarqué ils
+  /// affirment « À JOUR · il y a 1 s » indéfiniment, ce qui est exactement
+  /// l'affirmation que cette page existe pour ne pas faire. Seul `observed_at`
+  /// est digne de confiance, et tout se redérive de lui.
+  DerivedFreshness derived({DateTime? now}) =>
+      deriveFreshness(observedAt, family: familyFor(family), now: now);
+
+  /// Utilisable maintenant, et non « utilisable au moment de l'export ».
+  bool usableNow({DateTime? now}) =>
+      available && valid && derived(now: now).isTrustworthy;
+
+  /// L'âge réel, pas celui qu'un instantané transporte depuis sa capture.
+  Duration? ageNow({DateTime? now}) => derived(now: now).age;
 
   factory FamilyState.fromJson(Map<String, dynamic> json) => FamilyState(
         family: json['family'] as String? ?? '',
