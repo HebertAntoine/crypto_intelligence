@@ -112,7 +112,7 @@ class _TodayScreenState extends State<TodayScreen>
                 _provenanceForReads(widget.client.lastProvenance, reads);
 
             return MobileScrollView(
-              padding: const EdgeInsets.fromLTRB(26, 26, 26, 260),
+              padding: const EdgeInsets.fromLTRB(10, 26, 10, 260),
               children: [
                 _TodayHeader(
                   provenance: provenance,
@@ -126,7 +126,9 @@ class _TodayScreenState extends State<TodayScreen>
                 _ProvenanceBanner(provenance: provenance),
                 for (final read in reads) ...[
                   _MarketCard(read: read, provenance: provenance),
-                  const SizedBox(height: 22),
+                  // Sans encadrement, c'est l'espace qui separe les trois
+                  // actifs: il doit etre plus franc qu'avec une bordure.
+                  const SizedBox(height: 40),
                 ],
               ],
             );
@@ -361,25 +363,11 @@ class _MarketCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(17),
         onTap: () => _showDetails(context, read, meta, provenance),
+        // Sans encadrement: la bordure, le fond et les ombres prenaient de la
+        // largeur pour separer trois cartes que l'espacement vertical separe
+        // deja. Le contenu occupe maintenant toute la largeur disponible.
         child: Ink(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFF101927).withValues(alpha: 0.86),
-            borderRadius: BorderRadius.circular(17),
-            border: Border.all(color: const Color(0xFF1F4A7E), width: 1.4),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.34),
-                blurRadius: 24,
-                offset: const Offset(0, 15),
-              ),
-              BoxShadow(
-                color: const Color(0xFF1A67B3).withValues(alpha: 0.12),
-                blurRadius: 28,
-                spreadRadius: -8,
-              ),
-            ],
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1084,7 +1072,7 @@ class _MetricGrid extends StatelessWidget {
           ),
           _MetricBox(
             icon: Icons.track_changes_rounded,
-            title: 'Edge mesurable',
+            title: 'Avantage statistique',
             pill: _edgeLabel(read.edgeState),
             pillColor: _edgeColor(read.edgeState),
             caption:
@@ -1177,7 +1165,7 @@ class _DetailRows extends StatelessWidget {
       children: [
         _InfoRow(
           icon: Icons.groups_rounded,
-          label: 'Crowding',
+          label: 'Encombrement du marché',
           value: _crowdingLabel(read.crowdingLevel),
           valuePill: true,
           valueColor: AppColors.accent,
