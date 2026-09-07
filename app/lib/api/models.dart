@@ -403,6 +403,110 @@ class MacroEvent {
       );
 }
 
+/// Un élément qui pèse dans la décision, avec sa provenance.
+class OpportunityFactor {
+  final String id;
+  final String category;
+  final String title;
+  final String explanation;
+  final String polarity;
+  final int importance;
+  final String source;
+  final bool available;
+
+  const OpportunityFactor({
+    required this.id,
+    required this.category,
+    required this.title,
+    required this.explanation,
+    required this.polarity,
+    required this.importance,
+    required this.source,
+    required this.available,
+  });
+
+  factory OpportunityFactor.fromJson(Map<String, dynamic> json) =>
+      OpportunityFactor(
+        id: json['id'] as String? ?? '',
+        category: json['category'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        explanation: json['explanation'] as String? ?? '',
+        polarity: json['polarity'] as String? ?? 'NEUTRAL',
+        importance: (json['importance'] as num?)?.toInt() ?? 0,
+        source: json['source'] as String? ?? '',
+        available: json['available'] as bool? ?? true,
+      );
+}
+
+/// La décision et tout ce qui la justifie. Calculée côté backend: le
+/// frontend ne recalcule jamais l'état, il l'affiche.
+class BuyOpportunity {
+  final String state;
+  final String headline;
+  final String summary;
+  final List<OpportunityFactor> positives;
+  final List<OpportunityFactor> waits;
+  final List<OpportunityFactor> negatives;
+  final List<OpportunityFactor> missing;
+  final List<String> whatWouldImprove;
+  final List<String> whatWouldDeteriorate;
+  final List<String> guardRails;
+  final String measuredEdgeState;
+  final String disclaimer;
+
+  const BuyOpportunity({
+    required this.state,
+    required this.headline,
+    required this.summary,
+    required this.positives,
+    required this.waits,
+    required this.negatives,
+    required this.missing,
+    required this.whatWouldImprove,
+    required this.whatWouldDeteriorate,
+    required this.guardRails,
+    required this.measuredEdgeState,
+    required this.disclaimer,
+  });
+
+  static const unavailable = BuyOpportunity(
+    state: 'INSUFFICIENT_DATA',
+    headline: 'DONNÉES INSUFFISANTES',
+    summary: '',
+    positives: [], waits: [], negatives: [], missing: [],
+    whatWouldImprove: [], whatWouldDeteriorate: [], guardRails: [],
+    measuredEdgeState: 'NO_MEASURABLE_EDGE',
+    disclaimer: '',
+  );
+
+  bool get isEmpty => summary.isEmpty && positives.isEmpty && waits.isEmpty;
+
+  static List<OpportunityFactor> _list(dynamic raw) =>
+      ((raw as List?) ?? const [])
+          .map((item) =>
+              OpportunityFactor.fromJson((item as Map).cast<String, dynamic>()))
+          .toList();
+
+  static List<String> _strings(dynamic raw) =>
+      ((raw as List?) ?? const []).map((item) => '$item').toList();
+
+  factory BuyOpportunity.fromJson(Map<String, dynamic> json) => BuyOpportunity(
+        state: json['state'] as String? ?? 'INSUFFICIENT_DATA',
+        headline: json['headline'] as String? ?? '',
+        summary: json['short_summary'] as String? ?? '',
+        positives: _list(json['positives']),
+        waits: _list(json['waits']),
+        negatives: _list(json['negatives']),
+        missing: _list(json['missing']),
+        whatWouldImprove: _strings(json['what_would_improve']),
+        whatWouldDeteriorate: _strings(json['what_would_deteriorate']),
+        guardRails: _strings(json['guard_rails_applied']),
+        measuredEdgeState:
+            json['measured_edge_state'] as String? ?? 'NO_MEASURABLE_EDGE',
+        disclaimer: json['disclaimer'] as String? ?? '',
+      );
+}
+
 class TodayRead {
   final String asset;
   final MarketPriceRead? marketData;
@@ -446,6 +550,9 @@ class TodayRead {
   /// Échéances macro programmées, du calendrier maintenu côté backend.
   final List<MacroEvent> upcomingMacro;
 
+  /// La décision d'opportunité, calculée par le backend.
+  final BuyOpportunity opportunity;
+
   const TodayRead({
     required this.asset,
     required this.marketData,
@@ -473,6 +580,7 @@ class TodayRead {
     this.timingScore,
     this.timingSummary = '',
     this.upcomingMacro = const [],
+    this.opportunity = BuyOpportunity.unavailable,
   });
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
@@ -502,6 +610,10 @@ class TodayRead {
           ?.toDouble(),
       timingSummary:
           (json['entry_timing'] as Map?)?['summary'] as String? ?? '',
+      opportunity: BuyOpportunity.fromJson(
+        ((json['buy_opportunity_explanation'] as Map?) ?? const {})
+            .cast<String, dynamic>(),
+      ),
       upcomingMacro: ((json['upcoming_macro'] as List?) ?? const [])
           .map((item) => MacroEvent.fromJson((item as Map).cast<String, dynamic>()))
           .toList(),

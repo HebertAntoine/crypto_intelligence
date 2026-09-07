@@ -280,6 +280,7 @@ async def today(symbol: str) -> dict[str, Any]:
 
     asset = _parse_asset(symbol)
 
+    from ..core.enums import Timeframe
     from ..core.usability import assess_engine, page_status
     from ..engines.market_price import market_price_snapshot
 
@@ -348,10 +349,29 @@ async def today(symbol: str) -> dict[str, Any]:
             ),
         )
 
+        # La décision est une couche de traduction au-dessus des moteurs
+        # existants: elle n'en recalcule aucun.
+        from ..engines.buy_opportunity import decide
+        from ..engines.entry_opportunity import EntryOpportunityEngine
+
+        entry = EntryOpportunityEngine().assess(asset, Timeframe.H4)
+        macro = _upcoming_macro(asset)
+        opportunity = decide(
+            asset,
+            entry=entry, edge=edge, uncertainty=uncertainty,
+            macro_events=macro, crowding=crowding, pressure=pressure,
+            unusable_families=[
+                name for name, state in families.items() if not state.usable
+            ],
+        )
+
         return {
             "asset": asset.value,
+            "buy_opportunity": opportunity.state.value,
+            "buy_opportunity_explanation": opportunity.to_dict(),
+            "entry_opportunity": entry.to_dict(),
             "entry_timing": timing.model_dump(mode="json"),
-            "upcoming_macro": _upcoming_macro(asset),
+            "upcoming_macro": macro,
             "market_pressure": pressure.to_dict(),
             "overall_status": status.value,
             "overall_status_reason": status_reason,

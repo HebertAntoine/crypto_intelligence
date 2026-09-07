@@ -78,6 +78,24 @@ EntryVerdict entryVerdict(TodayRead read) {
   final tested = read.admittedCount + read.rejectedCount;
   final side = _sideFor(read);
 
+  // Le backend décide. Le frontend n'a le droit de trancher que si le backend
+  // n'a rien renvoyé - une version antérieure, par exemple. Recalculer ici en
+  // parallèle créerait deux vérités qui finiraient par diverger.
+  final decision = read.opportunity;
+  if (!decision.isEmpty) {
+    return EntryVerdict(
+      answer: switch (decision.state) {
+        'STRONG_OPPORTUNITY' || 'OPPORTUNITY' => EntryAnswer.active,
+        'WATCH' || 'WAIT' => EntryAnswer.watch,
+        'UNFAVORABLE' => EntryAnswer.no,
+        _ => EntryAnswer.impossible,
+      },
+      side: side,
+      headline: decision.headline,
+      reason: decision.summary,
+    );
+  }
+
   // 1. Rien ne peut être conclu si les données ne portent plus le présent.
   if (!read.allowsAction) {
     return EntryVerdict(
@@ -199,6 +217,26 @@ class VerdictPoint {
 /// comme manquant plutôt que passé sous silence: ne pas savoir est aussi une
 /// raison de ne pas agir.
 List<VerdictPoint> verdictPoints(TodayRead read) {
+  final decision = read.opportunity;
+  if (!decision.isEmpty) {
+    // Les facteurs viennent du backend, déjà classés par polarité et triés
+    // par importance. On les rend tels quels.
+    return [
+      for (final f in decision.positives)
+        VerdictPoint(
+            sign: PointSign.favourable, title: f.title, detail: f.explanation),
+      for (final f in decision.waits)
+        VerdictPoint(
+            sign: PointSign.neutral, title: f.title, detail: f.explanation),
+      for (final f in decision.negatives)
+        VerdictPoint(
+            sign: PointSign.against, title: f.title, detail: f.explanation),
+      for (final f in decision.missing)
+        VerdictPoint(
+            sign: PointSign.missing, title: f.title, detail: f.explanation),
+    ];
+  }
+
   final points = <VerdictPoint>[];
   final teste = read.admittedCount + read.rejectedCount;
 
