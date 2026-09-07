@@ -115,10 +115,7 @@ class _TodayScreenState extends State<TodayScreen>
             return MobileScrollView(
               padding: const EdgeInsets.fromLTRB(10, 26, 10, 260),
               children: [
-                _TodayHeader(
-                  provenance: provenance,
-                  onRefresh: _reload,
-                ),
+                _TodayHeader(provenance: provenance),
                 const SizedBox(height: 20),
                 // Le bandeau d'instantané a été retiré: la provenance et
                 // l'âge sont déjà portés par le sous-titre de l'en-tête et
@@ -142,12 +139,8 @@ class _TodayScreenState extends State<TodayScreen>
 
 class _TodayHeader extends StatelessWidget {
   final DataProvenance provenance;
-  final VoidCallback onRefresh;
 
-  const _TodayHeader({
-    required this.provenance,
-    required this.onRefresh,
-  });
+  const _TodayHeader({required this.provenance});
 
   @override
   Widget build(BuildContext context) {
@@ -187,27 +180,18 @@ class _TodayHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        // Flexible: un Wrap prend sa largeur naturelle et ne descend jamais
-        // sous celle de son plus grand enfant, donc il poussait le titre hors
-        // de l'ecran au lieu de se replier.
+        // Un seul bouton, donc plus de Wrap: à deux, le second passait à la
+        // ligne faute de place et laissait un carré isolé sous la date. Le
+        // rafraîchissement reste accessible par le tirage vers le bas, à
+        // l'ouverture et au retour au premier plan.
         Flexible(
-          child: Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.end,
-            children: [
-              _HeaderButton(
-                icon: Icons.calendar_today_rounded,
-                label: _formatFrenchDate(DateTime.now()),
-                onTap: () => _showDateInfo(context, provenance),
-              ),
-              // Recharger plutôt que réglages: la question posée devant cet
-              // écran est « est-ce à jour », pas « quels réglages ».
-              _SquareHeaderButton(
-                icon: Icons.refresh_rounded,
-                onTap: onRefresh,
-              ),
-            ],
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: _HeaderButton(
+              icon: Icons.calendar_today_rounded,
+              label: _formatFrenchDate(DateTime.now()),
+              onTap: () => _showDateInfo(context, provenance),
+            ),
           ),
         ),
       ],
@@ -1681,34 +1665,6 @@ class _HeaderButton extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SquareHeaderButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SquareHeaderButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Ink(
-          width: 66,
-          height: 66,
-          decoration: BoxDecoration(
-            color: const Color(0xFF121D2B).withValues(alpha: 0.82),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF34506F), width: 1.4),
-          ),
-          child: Icon(icon, color: AppColors.text, size: 30),
         ),
       ),
     );
