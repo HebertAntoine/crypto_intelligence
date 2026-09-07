@@ -30,7 +30,7 @@ class _ChartScreenState extends State<ChartScreen> {
 
   String _asset = 'BTC';
   String _timeframe = '4h';
-  late Future<(StructureRead, EntryOpportunity?)> _future;
+  late Future<_ChartData> _future;
 
   @override
   void initState() {
@@ -38,17 +38,31 @@ class _ChartScreenState extends State<ChartScreen> {
     _future = _load();
   }
 
-  Future<(StructureRead, EntryOpportunity?)> _load() async {
+  Future<_ChartData> _load() async {
+    Future<T?> safe<T>(Future<T> request) async {
+      try {
+        return await request;
+      } catch (_) {
+        return null;
+      }
+    }
+
     final structure =
         await widget.client.structure(_asset, timeframe: _timeframe);
-    EntryOpportunity? opportunity;
-    try {
-      opportunity =
-          await widget.client.entryOpportunity(_asset, timeframe: _timeframe);
-    } catch (_) {
-      opportunity = null;
-    }
-    return (structure, opportunity);
+    final opportunity = await safe(
+        widget.client.entryOpportunity(_asset, timeframe: _timeframe));
+    final chart = await safe(widget.client.chart(
+      _asset,
+      timeframe: _timeframe,
+      period: _periodForTimeframe(_timeframe),
+    ));
+    final today = await safe(widget.client.today(_asset));
+    return _ChartData(
+      structure: structure,
+      opportunity: opportunity,
+      chart: chart,
+      today: today,
+    );
   }
 
   void _reload() => setState(() => _future = _load());
@@ -72,7 +86,7 @@ class _ChartScreenState extends State<ChartScreen> {
     return MobileGradientFrame(
       child: RefreshIndicator(
         onRefresh: () async => _reload(),
-        child: FutureBuilder<(StructureRead, EntryOpportunity?)>(
+        child: FutureBuilder<_ChartData>(
           future: _future,
           builder: (context, snapshot) {
             return MobileScrollView(
@@ -106,18 +120,24 @@ class _ChartScreenState extends State<ChartScreen> {
                     child: ErrorView(error: snapshot.error!, onRetry: _reload),
                   )
                 else ...[
-                  _VisualChartPanel(asset: _asset, timeframe: _timeframe),
+                  _VisualChartPanel(
+                    asset: _asset,
+                    timeframe: _timeframe,
+                    data: snapshot.data!,
+                  ),
                   const SizedBox(height: 16),
                   _PatternDetectedPanel(
                     asset: _asset,
                     timeframe: _timeframe,
-                    structure: snapshot.data!.$1,
-                    opportunity: snapshot.data!.$2,
+                    data: snapshot.data!,
                   ),
                   const SizedBox(height: 16),
-                  _ConfluencePanel(structure: snapshot.data!.$1),
+                  _ConfluencePanel(data: snapshot.data!),
                   const SizedBox(height: 16),
-                  _HistoryPanel(asset: _asset),
+                  _HistoryPanel(
+                    asset: _asset,
+                    data: snapshot.data!,
+                  ),
                 ],
               ],
             );
@@ -148,6 +168,27 @@ class _ChartScreenState extends State<ChartScreen> {
       ),
     );
   }
+}
+
+class _ChartData {
+  final StructureRead structure;
+  final EntryOpportunity? opportunity;
+  final ChartRead? chart;
+  final TodayRead? today;
+
+  const _ChartData({
+    required this.structure,
+    required this.opportunity,
+    required this.chart,
+    required this.today,
+  });
+
+  double? get price => chart?.lastPrice ?? structure.location.price;
+
+  double? get changePct => chart?.changePct;
+
+  DetectedPattern? get primaryPattern =>
+      structure.patterns.isEmpty ? null : structure.patterns.first;
 }
 
 class _AssetSelector extends StatelessWidget {
@@ -312,8 +353,13 @@ class _TimeframeSelector extends StatelessWidget {
 class _VisualChartPanel extends StatelessWidget {
   final String asset;
   final String timeframe;
+  final _ChartData data;
 
-  const _VisualChartPanel({required this.asset, required this.timeframe});
+  const _VisualChartPanel({
+    required this.asset,
+    required this.timeframe,
+    required this.data,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -327,14 +373,13 @@ class _VisualChartPanel extends StatelessWidget {
               painter: _CandleChartPainter(
                 asset: asset,
                 timeframe: timeframe,
-                price: _displayPrice(asset),
-                change: _displayChange(asset),
+                data: data,
               ),
               child: const SizedBox.expand(),
             ),
           ),
           const SizedBox(height: 11),
-          const _IndicatorStrip(),
+          _IndicatorStrip(data: data),
         ],
       ),
     );
@@ -342,10 +387,13 @@ class _VisualChartPanel extends StatelessWidget {
 }
 
 class _IndicatorStrip extends StatelessWidget {
-  const _IndicatorStrip();
+  final _ChartData data;
+
+  const _IndicatorStrip({required this.data});
 
   @override
   Widget build(BuildContext context) {
+    final signals = _indicatorSignals(data);
     return Container(
       height: 82,
       decoration: BoxDecoration(
@@ -353,45 +401,20 @@ class _IndicatorStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF294969), width: 1.25),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Expanded(
-            child: _SignalChip(
-              icon: Icons.trending_up_rounded,
-              label: 'Pattern',
-              state: 'HAUSSIER',
-              color: Color(0xFF39E889),
-              filled: true,
+          for (var i = 0; i < signals.length; i += 1) ...[
+            Expanded(
+              child: _SignalChip(
+                icon: signals[i].icon,
+                label: signals[i].label,
+                state: signals[i].state,
+                color: signals[i].color,
+                filled: signals[i].filled,
+              ),
             ),
-          ),
-          _VerticalDivider(),
-          Expanded(
-            child: _SignalChip(
-              icon: Icons.show_chart_rounded,
-              label: 'RSI',
-              state: 'NEUTRE',
-              color: Color(0xFFB9C5DD),
-            ),
-          ),
-          _VerticalDivider(),
-          Expanded(
-            child: _SignalChip(
-              icon: Icons.bar_chart_rounded,
-              label: 'Volume',
-              state: 'HAUSSIER',
-              color: Color(0xFF39E889),
-              filled: true,
-            ),
-          ),
-          _VerticalDivider(),
-          Expanded(
-            child: _SignalChip(
-              icon: Icons.monetization_on_rounded,
-              label: 'Funding',
-              state: 'NEUTRE',
-              color: Color(0xFFB9C5DD),
-            ),
-          ),
+            if (i != signals.length - 1) const _VerticalDivider(),
+          ],
         ],
       ),
     );
@@ -465,21 +488,33 @@ class _SignalChip extends StatelessWidget {
 class _PatternDetectedPanel extends StatelessWidget {
   final String asset;
   final String timeframe;
-  final StructureRead structure;
-  final EntryOpportunity? opportunity;
+  final _ChartData data;
 
   const _PatternDetectedPanel({
     required this.asset,
     required this.timeframe,
-    required this.structure,
-    required this.opportunity,
+    required this.data,
   });
 
   @override
   Widget build(BuildContext context) {
-    final invalidation = _invalidationPrice(asset, structure.location.range);
-    final objective = _objectivePrice(asset, invalidation);
-    const confidence = 81;
+    final structure = data.structure;
+    final opportunity = data.opportunity;
+    final pattern = data.primaryPattern;
+    final title = pattern == null ? 'Structure détectée' : 'Pattern détecté';
+    final name = pattern == null
+        ? _structureName(structure)
+        : _patternName(pattern.name);
+    final direction = _patternDirection(pattern, structure, opportunity);
+    final directionColor = _directionTone(direction);
+    final confidence = _recognitionScore(pattern, structure);
+    final invalidation = _extractPrice(opportunity?.invalidation) ??
+        _extractPrice(pattern?.invalidationRule) ??
+        _levelValue(pattern?.keyLevels, const ['invalidation', 'neckline']) ??
+        _rangeInvalidation(structure.location);
+    final objective =
+        _levelValue(pattern?.keyLevels, const ['objective', 'target']);
+    final breakout = _breakoutLabel(pattern, opportunity);
 
     return GlassPanel(
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
@@ -495,8 +530,8 @@ class _PatternDetectedPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Pattern détecté',
+                    Text(
+                      title,
                       style: TextStyle(
                         color: AppColors.text,
                         fontSize: 26,
@@ -506,7 +541,7 @@ class _PatternDetectedPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 7),
                     Text(
-                      'Triangle ascendant',
+                      name,
                       style: const TextStyle(
                         color: AppColors.text,
                         fontSize: 25,
@@ -522,21 +557,20 @@ class _PatternDetectedPanel extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E8E5A).withValues(alpha: 0.32),
+                  color: directionColor.withValues(alpha: 0.22),
                   borderRadius: BorderRadius.circular(30),
-                  border:
-                      Border.all(color: const Color(0xFF22C878), width: 1.4),
+                  border: Border.all(color: directionColor, width: 1.4),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.trending_up_rounded,
-                        color: Color(0xFF54F2A1), size: 23),
-                    SizedBox(width: 8),
+                    Icon(_directionIcon(direction),
+                        color: directionColor, size: 23),
+                    const SizedBox(width: 8),
                     Text(
-                      'Haussier',
+                      _directionShortLabel(direction),
                       style: TextStyle(
-                        color: Color(0xFF69F5AC),
+                        color: directionColor,
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
                       ),
@@ -549,12 +583,13 @@ class _PatternDetectedPanel extends StatelessWidget {
           const SizedBox(height: 18),
           _PatternMetricGrid(
             confidence: confidence,
+            breakout: breakout,
             invalidation: invalidation,
             objective: objective,
           ),
           const SizedBox(height: 16),
           Text(
-            _patternNarrative(timeframe, opportunity),
+            _patternNarrative(timeframe, structure, pattern, opportunity),
             style: const TextStyle(
                 color: AppColors.text, fontSize: 20, height: 1.32),
           ),
@@ -566,11 +601,13 @@ class _PatternDetectedPanel extends StatelessWidget {
 
 class _PatternMetricGrid extends StatelessWidget {
   final int confidence;
-  final num invalidation;
-  final num objective;
+  final String breakout;
+  final num? invalidation;
+  final num? objective;
 
   const _PatternMetricGrid({
     required this.confidence,
+    required this.breakout,
     required this.invalidation,
     required this.objective,
   });
@@ -603,18 +640,18 @@ class _PatternMetricGrid extends StatelessWidget {
               _PatternMetric(
                 width: width,
                 label: 'Breakout :',
-                value: 'en attente',
+                value: breakout,
                 color: const Color(0xFFFFD447),
               ),
               _PatternMetric(
                 width: width,
                 label: 'Invalidation :',
-                value: '${_priceFr(invalidation)} €',
+                value: _priceOrUnavailable(invalidation),
               ),
               _PatternMetric(
                 width: width,
                 label: 'Objectif :',
-                value: '${_priceFr(objective, digits: 0)} €',
+                value: _priceOrUnavailable(objective, digits: 0),
               ),
             ],
           );
@@ -660,19 +697,18 @@ class _PatternMetric extends StatelessWidget {
 }
 
 class _ConfluencePanel extends StatelessWidget {
-  final StructureRead structure;
+  final _ChartData data;
 
-  const _ConfluencePanel({required this.structure});
+  const _ConfluencePanel({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    final values = [
-      ('Pattern', 82, const Color(0xFF42E892)),
-      ('Momentum', 74, const Color(0xFF8BCDFF)),
-      ('Dérivés', 61, const Color(0xFFFFD84F)),
-      ('Macro', 55, const Color(0xFFBFD0FF)),
-    ];
-    const score = 74;
+    final values = _confluenceItems(data);
+    final score = values.isEmpty
+        ? 0
+        : (values.map((item) => item.value).reduce((a, b) => a + b) /
+                values.length)
+            .round();
 
     return GlassPanel(
       padding: const EdgeInsets.fromLTRB(22, 20, 22, 16),
@@ -696,12 +732,20 @@ class _ConfluencePanel extends StatelessWidget {
                           fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 12),
-                    for (final item in values)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 9),
-                        child: _ConfluenceRow(
-                            label: item.$1, value: item.$2, color: item.$3),
-                      ),
+                    if (values.isEmpty)
+                      const Text(
+                        'Aucune famille de données exploitable pour cette combinaison.',
+                        style: TextStyle(color: mobileMuted, fontSize: 17),
+                      )
+                    else
+                      for (final item in values)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 9),
+                          child: _ConfluenceRow(
+                              label: item.label,
+                              value: item.value,
+                              color: item.color),
+                        ),
                   ],
                 ),
               ),
@@ -751,10 +795,10 @@ class _ConfluencePanel extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                const Text(
-                  'Données disponibles : 4 familles sur 6',
+                Text(
+                  'Données disponibles : ${values.length} familles sur 5',
                   textAlign: TextAlign.right,
-                  style: TextStyle(color: mobileMuted, fontSize: 17),
+                  style: const TextStyle(color: mobileMuted, fontSize: 17),
                 ),
               ],
             ),
@@ -825,64 +869,237 @@ class _ConfluenceRow extends StatelessWidget {
 
 class _HistoryPanel extends StatelessWidget {
   final String asset;
+  final _ChartData data;
 
-  const _HistoryPanel({required this.asset});
+  const _HistoryPanel({required this.asset, required this.data});
 
   @override
   Widget build(BuildContext context) {
-    return GlassPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF123E71).withValues(alpha: 0.92),
-            ),
-            child: const Icon(Icons.history_rounded,
-                color: Color(0xFF69B3FF), size: 37),
-          ),
-          const SizedBox(width: 22),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Voir les occurrences historiques',
-                  style: TextStyle(
-                      color: AppColors.text,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800),
+    final count = _historyCount(data);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(17),
+        onTap: () => _showHistorySheet(context, asset, data),
+        child: GlassPanel(
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+          child: Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF123E71).withValues(alpha: 0.92),
                 ),
-                SizedBox(height: 6),
-                Text(
-                  'Analyse des 287 configurations similaires',
-                  style: TextStyle(color: mobileMuted, fontSize: 18),
+                child: const Icon(Icons.history_rounded,
+                    color: Color(0xFF69B3FF), size: 37),
+              ),
+              const SizedBox(width: 22),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Voir les occurrences historiques',
+                      style: TextStyle(
+                          color: AppColors.text,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Analyse de $count éléments similaires disponibles',
+                      style: const TextStyle(color: mobileMuted, fontSize: 18),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded,
+                  color: AppColors.text, size: 42),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHistorySheet(
+    BuildContext context,
+    String asset,
+    _ChartData data,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: mobilePanel,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.72,
+        minChildSize: 0.36,
+        maxChildSize: 0.92,
+        builder: (context, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 32),
+          children: [
+            Row(
+              children: [
+                CryptoLogo(asset: asset, size: 52),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    '$asset · historique',
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ],
             ),
+            const SizedBox(height: 18),
+            _SheetLine(
+              label: 'Bougies',
+              value: data.chart?.available == true
+                  ? '${data.chart!.bars} barres ${data.chart!.timeframe}'
+                  : 'chart non disponible, lecture structurelle affichée',
+            ),
+            _SheetLine(
+              label: 'Structure',
+              value: _structureName(data.structure),
+            ),
+            _SheetLine(
+              label: 'Confiance',
+              value:
+                  '${_recognitionScore(data.primaryPattern, data.structure)} / 100',
+            ),
+            if (data.structure.location.explanation.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Text(
+                'Éléments de lecture',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final line in data.structure.location.explanation.take(8))
+                Text(
+                  '• ${_translateSentence(line)}',
+                  style: const TextStyle(
+                    color: mobileMuted,
+                    fontSize: 15,
+                    height: 1.35,
+                  ),
+                ),
+            ],
+            if (data.structure.marketStructure.events.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'Évènements détectés',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final event in data.structure.marketStructure.events.take(8))
+                Text(
+                  '${event.kind} ${_directionShortLabel(event.direction)} · '
+                  '${_priceFr(event.level, digits: 0)}',
+                  style: const TextStyle(
+                    color: mobileMuted,
+                    fontSize: 15,
+                    height: 1.35,
+                  ),
+                ),
+            ],
+            const SizedBox(height: 18),
+            if (data.opportunity?.measuredEdge != null)
+              MobilePill(
+                label: _edgeLabel(data.opportunity!.measuredEdge),
+                color: _edgeTone(data.opportunity!.measuredEdge),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SheetLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _SheetLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 118,
+            child: Text(
+              label,
+              style: const TextStyle(color: mobileMuted, fontSize: 15),
+            ),
           ),
-          const Icon(Icons.chevron_right_rounded,
-              color: AppColors.text, size: 42),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.text,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
+class _ConfluenceItem {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _ConfluenceItem(this.label, this.value, this.color);
+}
+
+class _IndicatorState {
+  final IconData icon;
+  final String label;
+  final String state;
+  final Color color;
+  final bool filled;
+
+  const _IndicatorState({
+    required this.icon,
+    required this.label,
+    required this.state,
+    required this.color,
+    this.filled = false,
+  });
+}
+
 class _CandleChartPainter extends CustomPainter {
   final String asset;
   final String timeframe;
-  final num price;
-  final String change;
+  final _ChartData data;
 
   _CandleChartPainter({
     required this.asset,
     required this.timeframe,
-    required this.price,
-    required this.change,
+    required this.data,
   });
 
   @override
@@ -910,37 +1127,50 @@ class _CandleChartPainter extends CustomPainter {
     }
     canvas.drawRect(chart, borderPaint);
 
-    final range = _priceRange(asset);
-    final min = range.$1;
-    final max = range.$2;
+    final candles = _drawableCandles(data);
+    if (candles.isEmpty) {
+      _drawCenteredText(
+        canvas,
+        'Bougies OHLCV indisponibles\n${data.chart?.reason ?? 'Aucune série réelle disponible pour cette vue.'}',
+        chart.center,
+        const TextStyle(
+          color: Color(0xFFB5C2DC),
+          fontSize: 17,
+          height: 1.35,
+          fontWeight: FontWeight.w600,
+        ),
+        maxWidth: chart.width * 0.78,
+      );
+      return;
+    }
+    final rawLow = candles.map((candle) => candle.low).reduce(math.min);
+    final rawHigh = candles.map((candle) => candle.high).reduce(math.max);
+    final padding = math.max((rawHigh - rawLow) * 0.08, rawHigh * 0.002);
+    final min = rawLow - padding;
+    final max = rawHigh + padding;
     double yFor(num value) {
       final ratio = ((value - min) / (max - min)).clamp(0.0, 1.0);
       return priceRect.bottom - priceRect.height * ratio;
     }
 
-    final series =
-        _chartValues(asset).map((v) => min + (max - min) * v).toList();
-    final candleWidth = math.max(5.0, chart.width / series.length * 0.54);
-    final xStep = chart.width / series.length;
-    for (var i = 0; i < series.length; i += 1) {
-      final close = series[i];
-      final previous = i == 0 ? series[i] * 1.006 : series[i - 1];
-      final open = (previous + math.sin(i * 1.4) * (max - min) * 0.022)
-          .clamp(min, max)
-          .toDouble();
-      final high = math.min(max.toDouble(),
-          math.max(open, close) + (max - min) * (0.035 + (i % 3) * 0.006));
-      final low = math.max(min.toDouble(),
-          math.min(open, close) - (max - min) * (0.030 + (i % 4) * 0.005));
+    final maxVolume = candles.map((candle) => candle.volume).reduce(math.max);
+    final candleWidth = math.max(5.0, chart.width / candles.length * 0.54);
+    final xStep = chart.width / candles.length;
+    for (var i = 0; i < candles.length; i += 1) {
+      final candle = candles[i];
       final x = chart.left + xStep * i + xStep / 2;
-      final bullish = close >= open;
+      final bullish = candle.close >= candle.open;
       final color = bullish ? const Color(0xFF20D184) : const Color(0xFFFF5361);
       final paint = Paint()..color = color;
 
       paint.strokeWidth = 1.5;
-      canvas.drawLine(Offset(x, yFor(high)), Offset(x, yFor(low)), paint);
-      final bodyTop = math.min(yFor(open), yFor(close));
-      final bodyBottom = math.max(yFor(open), yFor(close));
+      canvas.drawLine(
+        Offset(x, yFor(candle.high)),
+        Offset(x, yFor(candle.low)),
+        paint,
+      );
+      final bodyTop = math.min(yFor(candle.open), yFor(candle.close));
+      final bodyBottom = math.max(yFor(candle.open), yFor(candle.close));
       final body = RRect.fromRectAndRadius(
         Rect.fromCenter(
           center: Offset(x, (bodyTop + bodyBottom) / 2),
@@ -951,7 +1181,8 @@ class _CandleChartPainter extends CustomPainter {
       );
       canvas.drawRRect(body, paint);
 
-      final volumeHeight = 10 + (math.sin(i * 0.9).abs() * 26) + (i % 5) * 2;
+      final volumeRatio = maxVolume <= 0 ? 0.35 : candle.volume / maxVolume;
+      final volumeHeight = 8 + volumeRatio.clamp(0.05, 1.0) * 34;
       final volumeRect = Rect.fromLTWH(
         x - candleWidth / 2,
         chart.bottom - volumeHeight,
@@ -962,22 +1193,43 @@ class _CandleChartPainter extends CustomPainter {
           volumeRect, Paint()..color = color.withValues(alpha: 0.45));
     }
 
-    final resistanceY = yFor(max - (max - min) * 0.24);
     final linePaint = Paint()
       ..color = const Color(0xFF79BDFF)
       ..strokeWidth = 2.6
       ..style = PaintingStyle.stroke;
-    canvas.drawLine(
-      Offset(chart.left + chart.width * 0.28, resistanceY),
-      Offset(chart.right - chart.width * 0.13, resistanceY),
-      linePaint,
-    );
-    canvas.drawLine(
-      Offset(chart.left + chart.width * 0.33, yFor(min + (max - min) * 0.18)),
-      Offset(chart.right - chart.width * 0.12, yFor(min + (max - min) * 0.62)),
-      linePaint,
-    );
+    for (final zone in [
+      data.structure.location.range?.topZone,
+      data.structure.location.range?.bottomZone,
+    ]) {
+      if (zone == null) continue;
+      final yLow = yFor(zone.low);
+      final yHigh = yFor(zone.high);
+      canvas.drawRect(
+        Rect.fromLTRB(chart.left, yHigh, chart.right, yLow),
+        Paint()
+          ..color = (zone.kind == 'support'
+                  ? const Color(0xFF3BE28B)
+                  : const Color(0xFF79BDFF))
+              .withValues(alpha: 0.10),
+      );
+      canvas.drawLine(
+        Offset(chart.left + chart.width * 0.24, (yLow + yHigh) / 2),
+        Offset(chart.right - chart.width * 0.10, (yLow + yHigh) / 2),
+        linePaint,
+      );
+    }
 
+    if (candles.length > 12) {
+      final first = candles[(candles.length * 0.35).floor()];
+      final last = candles.last;
+      canvas.drawLine(
+        Offset(chart.left + chart.width * 0.34, yFor(first.low)),
+        Offset(chart.right - chart.width * 0.12, yFor(last.close)),
+        linePaint,
+      );
+    }
+
+    final price = data.price ?? candles.last.close;
     final priceY = yFor(price);
     _drawDottedLine(
       canvas,
@@ -994,7 +1246,7 @@ class _CandleChartPainter extends CustomPainter {
     canvas.drawRRect(pricePill, Paint()..color = const Color(0xFF49E99B));
     _drawText(
       canvas,
-      _priceFr(price, digits: 0),
+      _priceFr(price, digits: price >= 1000 ? 0 : 2),
       Offset(chart.right + 15, priceY - 11),
       const TextStyle(
           color: Color(0xFF021B14), fontSize: 15, fontWeight: FontWeight.w900),
@@ -1009,13 +1261,13 @@ class _CandleChartPainter extends CustomPainter {
     );
     _drawText(
       canvas,
-      '$change (24 h)',
+      '${signedFr(data.changePct, digits: 1, suffix: ' %')} (${data.chart?.period ?? 'structure'})',
       Offset(chart.left + 5, chart.top + 34),
       const TextStyle(
           color: Color(0xFF54F2A1), fontSize: 18, fontWeight: FontWeight.w700),
     );
 
-    final labels = _axisLabels(asset);
+    final labels = _axisLabels(min, max, price >= 1000 ? 0 : 2);
     for (var i = 0; i < labels.length; i += 1) {
       final y = priceRect.top + i * priceRect.height / (labels.length - 1);
       _drawText(
@@ -1026,7 +1278,7 @@ class _CandleChartPainter extends CustomPainter {
       );
     }
 
-    final dates = const ['2 sept.', '3 sept.', '4 sept.', '5 sept.', '6 sept.'];
+    final dates = _dateLabels(candles, timeframe);
     for (var i = 0; i < dates.length; i += 1) {
       final x = chart.left + chart.width * (i + 0.8) / (dates.length + 0.8);
       _drawText(
@@ -1042,8 +1294,7 @@ class _CandleChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _CandleChartPainter oldDelegate) =>
       oldDelegate.asset != asset ||
       oldDelegate.timeframe != timeframe ||
-      oldDelegate.price != price ||
-      oldDelegate.change != change;
+      oldDelegate.data != data;
 }
 
 void _drawText(Canvas canvas, String text, Offset offset, TextStyle style) {
@@ -1052,6 +1303,26 @@ void _drawText(Canvas canvas, String text, Offset offset, TextStyle style) {
     textDirection: TextDirection.ltr,
   )..layout();
   painter.paint(canvas, offset);
+}
+
+void _drawCenteredText(
+  Canvas canvas,
+  String text,
+  Offset center,
+  TextStyle style, {
+  required double maxWidth,
+}) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textAlign: TextAlign.center,
+    textDirection: TextDirection.ltr,
+    maxLines: 4,
+    ellipsis: '...',
+  )..layout(maxWidth: maxWidth);
+  painter.paint(
+    canvas,
+    Offset(center.dx - painter.width / 2, center.dy - painter.height / 2),
+  );
 }
 
 void _drawDottedLine(Canvas canvas, Offset start, Offset end, Paint paint) {
@@ -1077,107 +1348,470 @@ String _timeframeLabel(String value) => switch (value) {
       _ => value,
     };
 
-num _displayPrice(String asset) => switch (asset) {
-      'ETH' => 2210,
-      'SOL' => 184,
-      _ => 82840,
+String _periodForTimeframe(String value) => switch (value) {
+      '1d' => '3m',
+      '1w' => '1y',
+      _ => '7d',
     };
 
-String _displayChange(String asset) => switch (asset) {
-      'ETH' => '+1,8 %',
-      'SOL' => '+3,1 %',
-      _ => '+2,4 %',
-    };
+class _DrawableCandle {
+  final DateTime? time;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final double volume;
 
-(num, num) _priceRange(String asset) => switch (asset) {
-      'ETH' => (2070, 2260),
-      'SOL' => (174, 196),
-      _ => (79000, 84000),
-    };
+  const _DrawableCandle({
+    required this.time,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
+}
 
-List<String> _axisLabels(String asset) => switch (asset) {
-      'ETH' => ['2 260', '2 220', '2 180', '2 140', '2 100'],
-      'SOL' => ['196', '190', '184', '178', '172'],
-      _ => ['84 000', '83 000', '82 000', '81 000', '80 000'],
-    };
+List<_DrawableCandle> _drawableCandles(_ChartData data) {
+  final chartCandles = data.chart?.candles ?? const <CandlePoint>[];
+  if (data.chart?.available == true && chartCandles.isNotEmpty) {
+    final step = math.max(1, (chartCandles.length / 56).ceil());
+    return [
+      for (var i = 0; i < chartCandles.length; i += step)
+        _DrawableCandle(
+          time: chartCandles[i].time,
+          open: chartCandles[i].open,
+          high: chartCandles[i].high,
+          low: chartCandles[i].low,
+          close: chartCandles[i].close,
+          volume: chartCandles[i].volume,
+        ),
+    ];
+  }
+  return const [];
+}
 
-List<double> _chartValues(String asset) {
-  final base = [
-    0.34,
-    0.30,
-    0.31,
-    0.27,
-    0.23,
-    0.28,
-    0.22,
-    0.33,
-    0.40,
-    0.54,
-    0.49,
-    0.36,
-    0.33,
-    0.30,
-    0.34,
-    0.61,
-    0.68,
-    0.58,
-    0.55,
-    0.40,
-    0.37,
-    0.49,
-    0.46,
-    0.53,
-    0.51,
-    0.58,
-    0.56,
-    0.61,
-    0.58,
-    0.62,
-    0.57,
-    0.59,
-    0.64,
-    0.61,
-    0.66,
-    0.63,
-    0.68,
-    0.70,
-    0.72,
-    0.70,
-    0.74,
-    0.76,
+List<String> _axisLabels(num min, num max, int digits) => [
+      for (var i = 0; i < 5; i += 1)
+        _priceFr(max - (max - min) * i / 4, digits: digits),
+    ];
+
+List<String> _dateLabels(List<_DrawableCandle> candles, String timeframe) {
+  final dated = candles.where((candle) => candle.time != null).toList();
+  if (dated.length < 5) {
+    return switch (timeframe) {
+      '15m' || '1h' || '4h' => const [
+          'début',
+          'milieu',
+          'maintenant',
+        ],
+      '1d' => const ['M-3', 'M-2', 'M-1', 'auj.'],
+      _ => const ['début', 'milieu', 'auj.'],
+    };
+  }
+
+  final indexes = [
+    0,
+    (dated.length * 0.25).floor(),
+    (dated.length * 0.50).floor(),
+    (dated.length * 0.75).floor(),
+    dated.length - 1,
   ];
-  if (asset == 'ETH') {
-    return base
-        .map((v) => (v * 0.86 + 0.07).clamp(0.0, 1.0).toDouble())
-        .toList();
-  }
-  if (asset == 'SOL') {
-    return base
-        .map((v) => (v * 0.76 + 0.14).clamp(0.0, 1.0).toDouble())
-        .toList();
-  }
-  return base;
+  return [
+    for (final index in indexes) _shortDate(dated[index].time!),
+  ];
 }
 
-num _invalidationPrice(String asset, DetectedRange? range) {
-  final high = range?.topZone?.high;
-  if (high != null && high > 0) return high;
-  return switch (asset) {
-    'ETH' => 2186.40,
-    'SOL' => 181.70,
-    _ => 81634.80,
-  };
+String _shortDate(DateTime date) {
+  const months = [
+    'janv.',
+    'févr.',
+    'mars',
+    'avr.',
+    'mai',
+    'juin',
+    'juil.',
+    'août',
+    'sept.',
+    'oct.',
+    'nov.',
+    'déc.',
+  ];
+  return '${date.day} ${months[date.month - 1]}';
 }
 
-num _objectivePrice(String asset, num invalidation) => switch (asset) {
-      'ETH' => 2260,
-      'SOL' => 192,
-      _ => math.max(84200, invalidation + 2565).round(),
+List<_IndicatorState> _indicatorSignals(_ChartData data) {
+  final pattern = data.primaryPattern;
+  final patternDirection =
+      _patternDirection(pattern, data.structure, data.opportunity);
+  final rsi = _lastNumeric(data.chart?.panels['rsi']);
+  final volumeState = _volumeState(data.chart?.candles);
+  return [
+    _IndicatorState(
+      icon: Icons.trending_up_rounded,
+      label: pattern == null ? 'Structure' : 'Pattern',
+      state: _directionShortLabel(patternDirection).toUpperCase(),
+      color: _directionTone(patternDirection),
+      filled: _directionTone(patternDirection) == AppColors.measured,
+    ),
+    _IndicatorState(
+      icon: Icons.show_chart_rounded,
+      label: 'RSI',
+      state: _rsiLabel(rsi),
+      color: _rsiColor(rsi),
+    ),
+    _IndicatorState(
+      icon: Icons.bar_chart_rounded,
+      label: 'Volume',
+      state: volumeState.$1,
+      color: volumeState.$2,
+      filled: volumeState.$2 == AppColors.measured,
+    ),
+    _IndicatorState(
+      icon: Icons.monetization_on_rounded,
+      label: 'Funding',
+      state: _fundingLabel(data.today?.fundingBand),
+      color: const Color(0xFFB9C5DD),
+    ),
+  ];
+}
+
+List<_ConfluenceItem> _confluenceItems(_ChartData data) {
+  final items = <_ConfluenceItem>[];
+  items.add(_ConfluenceItem(
+    data.primaryPattern == null ? 'Structure' : 'Pattern',
+    _recognitionScore(data.primaryPattern, data.structure),
+    const Color(0xFF42E892),
+  ));
+
+  final directionConfidence =
+      double.tryParse(data.today?.summary.directionConfidence ?? '');
+  if (directionConfidence != null) {
+    items.add(_ConfluenceItem(
+      'Direction',
+      directionConfidence.clamp(0, 100).round(),
+      const Color(0xFF8BCDFF),
+    ));
+  }
+
+  if (data.opportunity?.score != null) {
+    final score = (50 + data.opportunity!.score!).clamp(0, 100).round();
+    items.add(_ConfluenceItem(
+      'Entrée',
+      score,
+      data.opportunity!.score! >= 0 ? AppColors.measured : AppColors.warn,
+    ));
+  }
+
+  if (data.today != null) {
+    items.add(_ConfluenceItem(
+      'Dérivés',
+      _derivativesScore(data.today!),
+      const Color(0xFFFFD84F),
+    ));
+    items.add(_ConfluenceItem(
+      'Volatilité',
+      _volatilityScore(data.today!.volatilityRegime),
+      const Color(0xFFBFD0FF),
+    ));
+  }
+  return items;
+}
+
+String _structureName(StructureRead structure) {
+  final range = structure.location.range;
+  if (range != null && range.valid) {
+    return switch (range.rangeType) {
+      'BROAD_RANGE' => 'Range large',
+      'TIGHT_RANGE' => 'Range serré',
+      _ => readableLabel(range.rangeType).toLowerCase(),
+    };
+  }
+  return _locationLabel(structure.location.state);
+}
+
+String _patternName(String name) => switch (name) {
+      'double_top' => 'Double sommet',
+      'double_bottom' => 'Double creux',
+      'triple_top' => 'Triple sommet',
+      'triple_bottom' => 'Triple creux',
+      'head_and_shoulders' => 'Tête et épaules',
+      'inverse_head_and_shoulders' => 'Tête et épaules inversée',
+      'ascending_triangle' => 'Triangle ascendant',
+      'descending_triangle' => 'Triangle descendant',
+      _ => readableLabel(name),
     };
 
-String _patternNarrative(String timeframe, EntryOpportunity? opportunity) {
-  return 'La structure reste propre en ${_timeframeLabel(timeframe)}. Le prix comprime sous la résistance '
-      'et le momentum s’améliore, mais la cassure n’est pas encore confirmée.';
+String _locationLabel(String value) => switch (value) {
+      'NEAR_RANGE_TOP' => 'Proche du haut du range',
+      'NEAR_RANGE_BOTTOM' => 'Proche du bas du range',
+      'MID_RANGE' => 'Milieu du range',
+      'ABOVE_RANGE' => 'Au-dessus du range',
+      'BELOW_RANGE' => 'Sous le range',
+      'NO_VALID_RANGE' => 'Aucun range valide',
+      _ => readableLabel(value).toLowerCase(),
+    };
+
+String _patternDirection(
+  DetectedPattern? pattern,
+  StructureRead structure,
+  EntryOpportunity? opportunity,
+) {
+  if (pattern != null && pattern.directionIfTextbook.isNotEmpty) {
+    return pattern.directionIfTextbook;
+  }
+  final state = opportunity?.state.toUpperCase() ?? '';
+  if (state.contains('LONG') || state.contains('BULL')) return 'BULLISH';
+  if (state.contains('SHORT') || state.contains('BEAR')) return 'BEARISH';
+  final location = structure.location.state;
+  if (location == 'NEAR_RANGE_TOP') return 'NEUTRAL';
+  if (location == 'NEAR_RANGE_BOTTOM') return 'NEUTRAL';
+  return structure.marketStructure.state;
+}
+
+Color _directionTone(String value) {
+  final upper = value.toUpperCase();
+  if (upper.contains('BULL') || upper.contains('UP')) return AppColors.measured;
+  if (upper.contains('BEAR') || upper.contains('DOWN')) return AppColors.bad;
+  return mobileBlue;
+}
+
+IconData _directionIcon(String value) {
+  final upper = value.toUpperCase();
+  if (upper.contains('BEAR') || upper.contains('DOWN')) {
+    return Icons.trending_down_rounded;
+  }
+  if (upper.contains('BULL') || upper.contains('UP')) {
+    return Icons.trending_up_rounded;
+  }
+  return Icons.horizontal_rule_rounded;
+}
+
+String _directionShortLabel(String value) {
+  final upper = value.toUpperCase();
+  if (upper.contains('STRONGLY_BULLISH')) return 'Fort haussier';
+  if (upper.contains('BULL') || upper.contains('UP')) return 'Haussier';
+  if (upper.contains('STRONGLY_BEARISH')) return 'Fort baissier';
+  if (upper.contains('BEAR') || upper.contains('DOWN')) return 'Baissier';
+  if (upper.contains('TRANSITION')) return 'Transition';
+  if (upper.contains('RANGE')) return 'Range';
+  return 'Neutre';
+}
+
+int _recognitionScore(DetectedPattern? pattern, StructureRead structure) {
+  final raw = pattern?.recognitionConfidence ??
+      structure.location.range?.confidence ??
+      structure.location.range?.topZone?.quality.score ??
+      0;
+  final score = raw <= 1 ? raw * 100 : raw;
+  return score.clamp(0, 100).round();
+}
+
+String _breakoutLabel(DetectedPattern? pattern, EntryOpportunity? opportunity) {
+  final state = (pattern?.state ?? opportunity?.state ?? '').toUpperCase();
+  if (state.contains('CONFIRM')) return 'confirmé';
+  if (state.contains('INVALID')) return 'invalidé';
+  if (state.contains('NEUTRAL')) return 'neutre';
+  if (state.contains('PENDING')) return 'en attente';
+  return 'en attente';
+}
+
+double? _extractPrice(String? value) {
+  if (value == null) return null;
+  final compact = value.replaceAll(RegExp(r'(?<=\d)\s+(?=\d)'), '');
+  final candidates = RegExp(r'([0-9]+(?:[.,][0-9]+)?)')
+      .allMatches(compact)
+      .map((match) => double.tryParse(match.group(1)!.replaceAll(',', '.')))
+      .whereType<double>()
+      .where((number) => number > 10)
+      .toList();
+  if (candidates.isEmpty) return null;
+  candidates.sort();
+  return candidates.last;
+}
+
+double? _levelValue(Map<String, double>? levels, List<String> keys) {
+  if (levels == null) return null;
+  for (final key in keys) {
+    final exact = levels[key];
+    if (exact != null && exact > 0) return exact;
+    for (final entry in levels.entries) {
+      if (entry.key.toLowerCase().contains(key) && entry.value > 0) {
+        return entry.value;
+      }
+    }
+  }
+  return null;
+}
+
+double? _rangeInvalidation(StructuralLocation location) {
+  final range = location.range;
+  if (range == null || !range.valid) return null;
+  if (location.state == 'NEAR_RANGE_BOTTOM' ||
+      location.state == 'BELOW_RANGE') {
+    return range.bottomZone?.low;
+  }
+  return range.topZone?.high;
+}
+
+String _priceOrUnavailable(num? value, {int digits = 2}) {
+  if (value == null || value.isNaN) return 'INDISPONIBLE';
+  return '${_priceFr(value, digits: digits)} USD';
+}
+
+String _patternNarrative(
+  String timeframe,
+  StructureRead structure,
+  DetectedPattern? pattern,
+  EntryOpportunity? opportunity,
+) {
+  if (opportunity?.statement.isNotEmpty == true) {
+    return _translateOpportunityStatement(opportunity!.statement);
+  }
+  if (pattern?.notes.isNotEmpty == true) {
+    return _translateSentence(pattern!.notes);
+  }
+  final location = _locationLabel(structure.location.state).toLowerCase();
+  return 'La lecture en ${_timeframeLabel(timeframe)} signale $location. '
+      'Cette configuration décrit le contexte visuel, mais elle reste séparée '
+      'du verdict d’edge mesurable.';
+}
+
+double? _lastNumeric(List<double?>? values) {
+  if (values == null) return null;
+  for (var i = values.length - 1; i >= 0; i -= 1) {
+    final value = values[i];
+    if (value != null && !value.isNaN) return value;
+  }
+  return null;
+}
+
+String _rsiLabel(double? value) {
+  if (value == null) return 'N/A';
+  if (value >= 70) return 'ÉLEVÉ';
+  if (value <= 30) return 'FAIBLE';
+  return 'NEUTRE';
+}
+
+Color _rsiColor(double? value) {
+  if (value == null) return const Color(0xFF8EA2BE);
+  if (value >= 70 || value <= 30) return AppColors.warn;
+  return const Color(0xFFB9C5DD);
+}
+
+(String, Color) _volumeState(List<CandlePoint>? candles) {
+  if (candles == null || candles.length < 6) {
+    return ('N/A', const Color(0xFF8EA2BE));
+  }
+  final tail =
+      candles.length > 24 ? candles.sublist(candles.length - 24) : candles;
+  final average =
+      tail.map((candle) => candle.volume).reduce((a, b) => a + b) / tail.length;
+  final current = tail.last.volume;
+  if (average <= 0) return ('N/A', const Color(0xFF8EA2BE));
+  if (current >= average * 1.18) return ('HAUSSIER', AppColors.measured);
+  if (current <= average * 0.72) return ('FAIBLE', AppColors.warn);
+  return ('NORMAL', const Color(0xFFB9C5DD));
+}
+
+String _fundingLabel(String? raw) => switch ((raw ?? '').toUpperCase()) {
+      'NEUTRAL' => 'NEUTRE',
+      'LOW' => 'FAIBLE',
+      'HIGH' => 'ÉLEVÉ',
+      'NEGATIVE' => 'NÉGATIF',
+      'POSITIVE' => 'POSITIF',
+      '' => 'N/A',
+      _ => readableLabel(raw!),
+    };
+
+int _derivativesScore(TodayRead read) {
+  final funding = read.fundingPercentile;
+  final crowding = read.crowdingScore;
+  final fundingScore =
+      funding == null ? 50 : (100 - (funding - 50).abs() * 2).clamp(0, 100);
+  final crowdingScore = crowding?.clamp(0, 100) ?? 50;
+  return ((fundingScore + crowdingScore) / 2).round();
+}
+
+int _volatilityScore(String regime) => switch (regime.toUpperCase()) {
+      'VERY_LOW' => 54,
+      'LOW' => 68,
+      'NORMAL' => 62,
+      'MODERATE' => 50,
+      'HIGH' => 38,
+      'EXTREME' => 24,
+      _ => 45,
+    };
+
+String _edgeLabel(EdgeState state) => switch (state) {
+      EdgeState.positiveEdge => 'EDGE MESURABLE',
+      EdgeState.negativeEdge => 'EDGE DÉFAVORABLE',
+      EdgeState.noMeasurableEdge => 'AUCUN EDGE MESURABLE',
+      EdgeState.unstable => 'INSTABLE',
+      EdgeState.insufficientData => 'DONNÉES INSUFFISANTES',
+      EdgeState.notYetTested => 'PAS ENCORE TESTÉ',
+      EdgeState.unknown => 'INCONNU',
+    };
+
+Color _edgeTone(EdgeState state) => switch (state) {
+      EdgeState.positiveEdge => AppColors.measured,
+      EdgeState.negativeEdge => AppColors.bad,
+      EdgeState.noMeasurableEdge || EdgeState.unstable => AppColors.warn,
+      _ => mobileMuted,
+    };
+
+int _historyCount(_ChartData data) {
+  final events = data.structure.marketStructure.events.length;
+  final candles = data.chart?.bars ?? 0;
+  final explanations = data.structure.location.explanation.length;
+  return math.max(events + explanations, candles);
+}
+
+String _translateOpportunityStatement(String value) {
+  final state =
+      RegExp(r'configuration is ([A-Z_]+) \(([-0-9.]+)\)').firstMatch(value);
+  final edge = RegExp(r'Measured edge: ([A-Z_]+)').firstMatch(value);
+  if (state != null) {
+    return 'La configuration est ${_entryStateLabel(state.group(1)!)} '
+        '(${state.group(2)}). Edge mesuré : '
+        '${_edgeLabel(EdgeState.parse(edge?.group(1)))}. '
+        'La lecture décrit le contexte, pas une recommandation d’agir.';
+  }
+  return _translateSentence(value);
+}
+
+String _entryStateLabel(String value) => switch (value.toUpperCase()) {
+      'LONG_OPPORTUNITY' => 'opportunité long',
+      'SHORT_OPPORTUNITY' => 'opportunité short',
+      'NEUTRAL' => 'neutre',
+      'WAIT' => 'attente',
+      'INSUFFICIENT_DATA' => 'insuffisante',
+      _ => readableLabel(value).toLowerCase(),
+    };
+
+String _translateSentence(String value) {
+  return value
+      .replaceAll('resistance zone tested', 'zone de résistance testée')
+      .replaceAll('support zone tested', 'zone de support testée')
+      .replaceAll('touches agree within', 'touches regroupés dans')
+      .replaceAll(
+          'median reaction from the zone', 'réaction médiane depuis la zone')
+      .replaceAll('close(s) through the zone', 'clôture(s) à travers la zone')
+      .replaceAll('last tested', 'dernier test il y a')
+      .replaceAll('range active for', 'range actif depuis')
+      .replaceAll('deviation(s) recorded', 'déviation(s) enregistrée(s)')
+      .replaceAll('of which reversed back through the range',
+          'réintégrée(s) dans le range')
+      .replaceAll('bars ago', 'barres')
+      .replaceAll('bars', 'barres')
+      .replaceAll(
+          'price is near range top', 'le prix est proche du haut du range')
+      .replaceAll(
+          'price is near range bottom', 'le prix est proche du bas du range')
+      .replaceAll('funding is mid-range', 'le funding est dans sa zone médiane')
+      .replaceAll('volatility LOW', 'la volatilité est faible')
+      .replaceAll('moves are small', 'les mouvements sont limités')
+      .replaceAll('which cuts both ways', 'dans les deux sens');
 }
 
 String _priceFr(num? value, {int digits = 2}) {

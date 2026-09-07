@@ -1,0 +1,294 @@
+{
+  "ablation": {
+    "ablations": {
+      "derivatives": {
+        "carries_unique_information": false,
+        "features": [
+          "funding_rate",
+          "funding_percentile",
+          "oi_change_7",
+          "oi_change_30"
+        ],
+        "informative_alone": false,
+        "loss_from_removal": -0.0211,
+        "r2_family_alone": -0.08089,
+        "r2_without_family": -0.35518,
+        "status_alone": "OK"
+      },
+      "implied_volatility": {
+        "carries_unique_information": false,
+        "features": [
+          "dvol",
+          "dvol_percentile",
+          "dvol_change_30",
+          "variance_premium",
+          "variance_premium_percentile"
+        ],
+        "informative_alone": false,
+        "loss_from_removal": -0.12325,
+        "r2_family_alone": -0.283,
+        "r2_without_family": -0.25303,
+        "status_alone": "OK"
+      },
+      "price": {
+        "carries_unique_information": false,
+        "features": [
+          "return_1",
+          "return_5",
+          "return_20",
+          "return_60",
+          "dist_ema200_pct"
+        ],
+        "informative_alone": false,
+        "loss_from_removal": -0.01831,
+        "r2_family_alone": -0.0084,
+        "r2_without_family": -0.35797,
+        "status_alone": "OK"
+      },
+      "trend": {
+        "carries_unique_information": false,
+        "features": [
+          "adx_14"
+        ],
+        "informative_alone": true,
+        "loss_from_removal": -0.03173,
+        "r2_family_alone": 0.01186,
+        "r2_without_family": -0.34455,
+        "status_alone": "OK"
+      },
+      "volatility": {
+        "carries_unique_information": false,
+        "features": [
+          "realised_vol_20",
+          "realised_vol_60"
+        ],
+        "informative_alone": false,
+        "loss_from_removal": -0.01211,
+        "r2_family_alone": -0.04498,
+        "r2_without_family": -0.36417,
+        "status_alone": "OK"
+      }
+    },
+    "coverage": {
+      "dropped": {},
+      "kept": [
+        "dvol",
+        "dvol_change_30",
+        "realised_vol",
+        "variance_premium",
+        "dvol_percentile",
+        "variance_premium_percentile",
+        "close",
+        "return_1",
+        "return_5",
+        "return_20",
+        "return_60",
+        "realised_vol_20",
+        "realised_vol_60",
+        "dist_ema200_pct",
+        "adx_14",
+        "regime",
+        "dvol_change_30_percentile",
+        "funding_rate",
+        "funding_percentile",
+        "oi_change_7",
+        "oi_change_30"
+      ],
+      "minimum_coverage": 0.6,
+      "note": "0 column(s) below 60% coverage were removed before analysis: none.",
+      "rows_after_dropna": 1811
+    },
+    "families_present": [
+      "derivatives",
+      "implied_volatility",
+      "price",
+      "trend",
+      "volatility"
+    ],
+    "full_model": {
+      "folds": 4,
+      "n_features": 17,
+      "per_fold": [
+        -0.63954,
+        0.01983,
+        -0.44353,
+        -0.44188
+      ],
+      "r2": -0.37628,
+      "rows": 1781,
+      "status": "OK"
+    },
+    "horizon_days": 30,
+    "note": "The full model's out-of-sample R2 is -0.37628. It does not beat predicting the training mean, so no family can be credited with contributing to a model that predicts nothing. Ablation losses below are differences between two failing models and must not be read as evidence for any family.",
+    "ranking": [
+      {
+        "alone": -0.04498,
+        "family": "volatility",
+        "loss": -0.01211
+      },
+      {
+        "alone": -0.0084,
+        "family": "price",
+        "loss": -0.01831
+      },
+      {
+        "alone": -0.08089,
+        "family": "derivatives",
+        "loss": -0.0211
+      },
+      {
+        "alone": 0.01186,
+        "family": "trend",
+        "loss": -0.03173
+      },
+      {
+        "alone": -0.283,
+        "family": "implied_volatility",
+        "loss": -0.12325
+      }
+    ],
+    "verdict": "NO_PREDICTABILITY"
+  },
+  "generated_at": "2026-09-07T10:43:13.403735+00:00",
+  "redundancy": {
+    "asset": "BTC",
+    "clusters": {
+      "cluster_1": [
+        "return_1"
+      ],
+      "cluster_10": [
+        "oi_change_30"
+      ],
+      "cluster_11": [
+        "dvol"
+      ],
+      "cluster_12": [
+        "realised_vol_60"
+      ],
+      "cluster_13": [
+        "realised_vol_20"
+      ],
+      "cluster_14": [
+        "dvol_percentile"
+      ],
+      "cluster_15": [
+        "dvol_change_30",
+        "dvol_change_30_percentile"
+      ],
+      "cluster_16": [
+        "adx_14"
+      ],
+      "cluster_2": [
+        "return_5"
+      ],
+      "cluster_3": [
+        "funding_rate"
+      ],
+      "cluster_4": [
+        "funding_percentile"
+      ],
+      "cluster_5": [
+        "return_60"
+      ],
+      "cluster_6": [
+        "dist_ema200_pct"
+      ],
+      "cluster_7": [
+        "return_20"
+      ],
+      "cluster_8": [
+        "variance_premium",
+        "variance_premium_percentile"
+      ],
+      "cluster_9": [
+        "oi_change_7"
+      ]
+    },
+    "coverage": {
+      "dropped": {},
+      "kept": [
+        "dvol",
+        "dvol_change_30",
+        "variance_premium",
+        "dvol_percentile",
+        "variance_premium_percentile",
+        "return_1",
+        "return_5",
+        "return_20",
+        "return_60",
+        "realised_vol_20",
+        "realised_vol_60",
+        "dist_ema200_pct",
+        "adx_14",
+        "dvol_change_30_percentile",
+        "funding_rate",
+        "funding_percentile",
+        "oi_change_7",
+        "oi_change_30"
+      ],
+      "minimum_coverage": 0.6,
+      "note": "0 column(s) below 60% coverage were removed before analysis: none.",
+      "rows_after_dropna": 1811
+    },
+    "effective_features": 16,
+    "highest_correlations": {
+      "dvol_change_30~dvol_change_30_percentile": 0.935,
+      "dvol_change_30~dvol_percentile": 0.552,
+      "dvol_percentile~dvol_change_30_percentile": 0.482,
+      "dvol_percentile~realised_vol_20": 0.591,
+      "dvol~dvol_percentile": 0.644,
+      "dvol~realised_vol_20": 0.728,
+      "dvol~realised_vol_60": 0.796,
+      "funding_rate~funding_percentile": 0.707,
+      "realised_vol_20~realised_vol_60": 0.7,
+      "return_20~dist_ema200_pct": 0.541,
+      "return_20~return_60": 0.575,
+      "return_5~return_20": 0.508,
+      "return_60~dist_ema200_pct": 0.774,
+      "return_60~funding_percentile": 0.52,
+      "variance_premium~variance_premium_percentile": 0.935
+    },
+    "n_features": 18,
+    "note": "18 features collapse to 16 correlation clusters. 3 are at least 90% reconstructible from the others: dvol, variance_premium, variance_premium_percentile. Testing one representative per cluster rather than every feature is what keeps the multiple-testing burden honest.",
+    "reduction_pct": 11.1,
+    "redundancy_r2": {
+      "adx_14": 0.3651,
+      "dist_ema200_pct": 0.7413,
+      "dvol": 0.9202,
+      "dvol_change_30": 0.8978,
+      "dvol_change_30_percentile": 0.8827,
+      "dvol_percentile": 0.6642,
+      "funding_percentile": 0.631,
+      "funding_rate": 0.6543,
+      "oi_change_30": 0.4623,
+      "oi_change_7": 0.2154,
+      "realised_vol_20": 0.8319,
+      "realised_vol_60": 0.8586,
+      "return_1": 0.2311,
+      "return_20": 0.5159,
+      "return_5": 0.4128,
+      "return_60": 0.7034,
+      "variance_premium": 0.9315,
+      "variance_premium_percentile": 0.9176
+    },
+    "representatives": {
+      "cluster_1": "return_1",
+      "cluster_10": "oi_change_30",
+      "cluster_11": "dvol",
+      "cluster_12": "realised_vol_60",
+      "cluster_13": "realised_vol_20",
+      "cluster_14": "dvol_percentile",
+      "cluster_15": "dvol_change_30",
+      "cluster_16": "adx_14",
+      "cluster_2": "return_5",
+      "cluster_3": "funding_rate",
+      "cluster_4": "funding_percentile",
+      "cluster_5": "return_60",
+      "cluster_6": "dist_ema200_pct",
+      "cluster_7": "return_20",
+      "cluster_8": "variance_premium",
+      "cluster_9": "oi_change_7"
+    },
+    "status": "OK"
+  }
+}

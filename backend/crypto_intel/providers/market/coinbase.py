@@ -34,7 +34,12 @@ class CoinbaseSpotProvider(BaseProvider):
         if request.capability != "market.ticker" or request.asset is None:
             return FetchResult.failure(FetchStatus.DISABLED, self.name)
 
-        pair = asset_meta(request.asset.value)["coinbase_pair"]
+        quote = str(request.params.get("quote", "USD")).upper()
+        pair = (
+            asset_meta(request.asset.value)["coinbase_pair"]
+            if quote == "USD"
+            else f"{request.asset.value}-{quote}"
+        )
         url = f"{self.base_url}/v2/prices/{pair}/spot"
         res = await get_http().get_json(
             url, provider=self.name, cache_ttl=60, rate_limit_per_min=self.rate
@@ -53,7 +58,7 @@ class CoinbaseSpotProvider(BaseProvider):
                     asset=request.asset,
                     metric="price.last",
                     value=price,
-                    unit="USD",
+                    unit=quote,
                     timestamp=now,
                     provenance=self.provenance(url),
                     freshness=compute_freshness(now, "price"),

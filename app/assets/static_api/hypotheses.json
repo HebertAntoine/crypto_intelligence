@@ -1,0 +1,464 @@
+{
+  "hypotheses": [
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "01dc5ca3e782c1f8",
+      "expected_sign": 0,
+      "family": "implied_volatility_pooled",
+      "feature": "dvol_percentile",
+      "horizon_days": 14,
+      "id": "dvol_pooled__dvol_compressed__h14",
+      "key": "dvol_pooled__dvol_compressed__h14@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385490+00:00",
+      "result": {
+        "effective_n": 92.0,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "low",
+      "statement": "H4 compressed implied volatility precedes larger moves, estimated jointly on BTC and ETH at a 14-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "abs_forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965532+00:00",
+      "threshold": 15.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "b199ee87792ac89c",
+      "expected_sign": 0,
+      "family": "implied_volatility_pooled",
+      "feature": "dvol_percentile",
+      "horizon_days": 30,
+      "id": "dvol_pooled__dvol_compressed__h30",
+      "key": "dvol_pooled__dvol_compressed__h30@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385497+00:00",
+      "result": {
+        "effective_n": 48.8,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "effect runs against the pre-registered direction",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "low",
+      "statement": "H4 compressed implied volatility precedes larger moves, estimated jointly on BTC and ETH at a 30-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "abs_forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965541+00:00",
+      "threshold": 15.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "feeb94ad1c373c5d",
+      "expected_sign": 0,
+      "family": "implied_volatility_pooled",
+      "feature": "dvol_percentile",
+      "horizon_days": 7,
+      "id": "dvol_pooled__dvol_compressed__h7",
+      "key": "dvol_pooled__dvol_compressed__h7@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385484+00:00",
+      "result": {
+        "effective_n": 170.2,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "effect runs against the pre-registered direction",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "low",
+      "statement": "H4 compressed implied volatility precedes larger moves, estimated jointly on BTC and ETH at a 7-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "abs_forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965523+00:00",
+      "threshold": 15.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "94775889f2ba7d00",
+      "expected_sign": -1,
+      "family": "implied_volatility_pooled",
+      "feature": "dvol_change_30",
+      "horizon_days": 14,
+      "id": "dvol_pooled__dvol_spike__h14",
+      "key": "dvol_pooled__dvol_spike__h14@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385471+00:00",
+      "result": {
+        "effective_n": 40.0,
+        "pooling_verdict": "METHOD_DEPENDENT",
+        "reasons": [
+          "pooling verdict is METHOD_DEPENDENT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "effect runs against the pre-registered direction",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "high",
+      "statement": "H3 implied volatility rising sharply precedes lower returns, estimated jointly on BTC and ETH at a 14-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965506+00:00",
+      "threshold": 85.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "ec907aa162ba58e9",
+      "expected_sign": -1,
+      "family": "implied_volatility_pooled",
+      "feature": "dvol_change_30",
+      "horizon_days": 30,
+      "id": "dvol_pooled__dvol_spike__h30",
+      "key": "dvol_pooled__dvol_spike__h30@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385477+00:00",
+      "result": {
+        "effective_n": 24.0,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "high",
+      "statement": "H3 implied volatility rising sharply precedes lower returns, estimated jointly on BTC and ETH at a 30-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965515+00:00",
+      "threshold": 85.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "2afdd5a717fe222c",
+      "expected_sign": -1,
+      "family": "implied_volatility_pooled",
+      "feature": "dvol_change_30",
+      "horizon_days": 7,
+      "id": "dvol_pooled__dvol_spike__h7",
+      "key": "dvol_pooled__dvol_spike__h7@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385463+00:00",
+      "result": {
+        "effective_n": 64.4,
+        "pooling_verdict": "METHOD_DEPENDENT",
+        "reasons": [
+          "pooling verdict is METHOD_DEPENDENT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "effect runs against the pre-registered direction",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "high",
+      "statement": "H3 implied volatility rising sharply precedes lower returns, estimated jointly on BTC and ETH at a 7-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965498+00:00",
+      "threshold": 85.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "be6b42bc1a1f42e4",
+      "expected_sign": 1,
+      "family": "implied_volatility_pooled",
+      "feature": "variance_premium_percentile",
+      "horizon_days": 14,
+      "id": "dvol_pooled__premium_cheap__h14",
+      "key": "dvol_pooled__premium_cheap__h14@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385446+00:00",
+      "result": {
+        "effective_n": 57.2,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "low",
+      "statement": "H2 options cheap precedes higher returns, estimated jointly on BTC and ETH at a 14-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965479+00:00",
+      "threshold": 15.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "16820f9ed559161b",
+      "expected_sign": 1,
+      "family": "implied_volatility_pooled",
+      "feature": "variance_premium_percentile",
+      "horizon_days": 30,
+      "id": "dvol_pooled__premium_cheap__h30",
+      "key": "dvol_pooled__premium_cheap__h30@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385454+00:00",
+      "result": {
+        "effective_n": 28.6,
+        "pooling_verdict": "METHOD_DEPENDENT",
+        "reasons": [
+          "pooling verdict is METHOD_DEPENDENT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "low",
+      "statement": "H2 options cheap precedes higher returns, estimated jointly on BTC and ETH at a 30-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965489+00:00",
+      "threshold": 15.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "e1212399408e972d",
+      "expected_sign": 1,
+      "family": "implied_volatility_pooled",
+      "feature": "variance_premium_percentile",
+      "horizon_days": 7,
+      "id": "dvol_pooled__premium_cheap__h7",
+      "key": "dvol_pooled__premium_cheap__h7@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385436+00:00",
+      "result": {
+        "effective_n": 93.5,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "does not survive residualisation against price and volatility controls",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "low",
+      "statement": "H2 options cheap precedes higher returns, estimated jointly on BTC and ETH at a 7-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965470+00:00",
+      "threshold": 15.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "900824d3213370d1",
+      "expected_sign": -1,
+      "family": "implied_volatility_pooled",
+      "feature": "variance_premium_percentile",
+      "horizon_days": 14,
+      "id": "dvol_pooled__premium_expensive__h14",
+      "key": "dvol_pooled__premium_expensive__h14@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385412+00:00",
+      "result": {
+        "effective_n": 26.4,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "high",
+      "statement": "H1 options expensive precedes lower returns, estimated jointly on BTC and ETH at a 14-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965447+00:00",
+      "threshold": 85.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "85f2ef34c02d71be",
+      "expected_sign": -1,
+      "family": "implied_volatility_pooled",
+      "feature": "variance_premium_percentile",
+      "horizon_days": 30,
+      "id": "dvol_pooled__premium_expensive__h30",
+      "key": "dvol_pooled__premium_expensive__h30@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385426+00:00",
+      "result": {
+        "effective_n": 19.8,
+        "pooling_verdict": "METHOD_DEPENDENT",
+        "reasons": [
+          "pooling verdict is METHOD_DEPENDENT",
+          "does not survive FDR correction across the pooled family",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "high",
+      "statement": "H1 options expensive precedes lower returns, estimated jointly on BTC and ETH at a 30-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965459+00:00",
+      "threshold": 85.0,
+      "version": 1
+    },
+    {
+      "asset": "BTC+ETH",
+      "definition_hash": "9e9ed63ec20b7feb",
+      "expected_sign": -1,
+      "family": "implied_volatility_pooled",
+      "feature": "variance_premium_percentile",
+      "horizon_days": 7,
+      "id": "dvol_pooled__premium_expensive__h7",
+      "key": "dvol_pooled__premium_expensive__h7@v1",
+      "notes": "Pre-registered before the pooled estimation ran. The single-asset versions are separate hypotheses and are counted separately.",
+      "preregistered_at": "2026-09-07T10:24:09.385386+00:00",
+      "result": {
+        "effective_n": 38.5,
+        "pooling_verdict": "NO_POOLED_EFFECT",
+        "reasons": [
+          "pooling verdict is NO_POOLED_EFFECT",
+          "does not survive FDR correction across the pooled family",
+          "effect runs against the pre-registered direction",
+          "underpowered: the sample cannot detect a meaningful effect"
+        ],
+        "verdict": "INSUFFICIENT_DATA"
+      },
+      "rule": "high",
+      "statement": "H1 options expensive precedes lower returns, estimated jointly on BTC and ETH at a 7-day horizon",
+      "status": "INSUFFICIENT_DATA",
+      "superseded_by": null,
+      "supersedes": null,
+      "tags": [
+        "lot6b",
+        "pooled",
+        "preregistered"
+      ],
+      "target": "forward_return_pct",
+      "tested_at": "2026-09-07T10:43:03.965424+00:00",
+      "threshold": 85.0,
+      "version": 1
+    }
+  ],
+  "summary": {
+    "active_hypotheses": 12,
+    "by_family": {
+      "implied_volatility_pooled": 12
+    },
+    "by_status": {
+      "INSUFFICIENT_DATA": 12
+    },
+    "note": "tested_ever counts every version that was run, including superseded ones. It is the correct denominator for multiple testing: trying a second threshold costs a second test.",
+    "registry_version": "lot6b.1",
+    "superseded_chains": [],
+    "tested_ever": 12,
+    "total_declarations": 12
+  }
+}

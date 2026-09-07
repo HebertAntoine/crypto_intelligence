@@ -65,7 +65,7 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
               return const LoadingView(what: 'les preuves');
             }
             if (snapshot.hasError) {
-              return ErrorView(message: '${snapshot.error}', onRetry: _reload);
+              return ErrorView(error: snapshot.error!, onRetry: _reload);
             }
             final data = snapshot.data ?? const {};
             final evidence = data['evidence'] as Map<String, dynamic>?;
@@ -73,7 +73,7 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
             final pooling = data['pooling'] as Map<String, dynamic>?;
 
             return MobileScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 120),
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 260),
               children: [
                 const MobileHeader(
                   title: 'Preuves',
@@ -91,7 +91,8 @@ class _EvidenceScreenState extends State<EvidenceScreen> {
                 else ...[
                   _VerdictCard(evidence: evidence),
                   const SizedBox(height: 12),
-                  _FunnelCard(funnel: evidence['funnel'] as Map<String, dynamic>?),
+                  _FunnelCard(
+                      funnel: evidence['funnel'] as Map<String, dynamic>?),
                   const SizedBox(height: 12),
                   _ShortlistCard(
                     shortlist: evidence['shortlist'] as Map<String, dynamic>?,
@@ -134,7 +135,8 @@ class _VerdictCard extends StatelessWidget {
     final verdict = '${evidence['verdict'] ?? 'INCONNU'}';
     final highest = (evidence['highest_level_reached'] as num?)?.toInt() ?? 0;
     final actionable = (evidence['n_actionable'] as num?)?.toInt() ?? 0;
-    final byLevel = (evidence['by_level'] as Map?)?.cast<String, dynamic>() ?? {};
+    final byLevel =
+        (evidence['by_level'] as Map?)?.cast<String, dynamic>() ?? {};
 
     return SectionCard(
       title: 'VERDICT DU LOT',
@@ -160,7 +162,8 @@ class _VerdictCard extends StatelessWidget {
             value: Text(
               '$actionable',
               style: TextStyle(
-                color: actionable > 0 ? AppColors.measured : AppColors.textMuted,
+                color:
+                    actionable > 0 ? AppColors.measured : AppColors.textMuted,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -239,7 +242,8 @@ class _FunnelCard extends StatelessWidget {
                           : 0,
                       minHeight: 5,
                       backgroundColor: AppColors.surfaceAlt,
-                      valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+                      valueColor:
+                          const AlwaysStoppedAnimation(AppColors.accent),
                     ),
                   ),
                 ],

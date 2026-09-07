@@ -88,12 +88,23 @@ async def get_analysis(asset: Asset, refresh: bool = False) -> AssetAnalysis:
 @router.get("/health")
 async def health() -> dict[str, Any]:
     s = get_settings()
+    provider_statuses = await get_registry().statuses()
     return {
         "status": "ok",
         "version": "0.1.0",
         "mock_mode": s.mock_mode,
         "llm": llm_status(),
         "time": datetime.now(UTC).isoformat(),
+        "providers": [
+            {
+                "provider": status.name,
+                "status": "OK" if status.available else "UNAVAILABLE",
+                "configured": status.configured,
+                "requires_key": status.requires_key,
+                "reason": status.reason,
+            }
+            for status in provider_statuses
+        ],
     }
 
 

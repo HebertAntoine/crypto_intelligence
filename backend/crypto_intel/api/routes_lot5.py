@@ -7,7 +7,6 @@ that says whether it predicts anything.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import pathlib
 from typing import Any
@@ -73,7 +72,7 @@ async def structure(symbol: str, timeframe: str = "4h") -> dict[str, Any]:
             ),
         }
 
-    return await asyncio.to_thread(build)
+    return build()
 
 
 @router.get("/structure/{symbol}/multi-timeframe")
@@ -90,7 +89,7 @@ async def multi_timeframe(symbol: str) -> dict[str, Any]:
             "market_structure": MarketStructureEngine().multi_timeframe(asset),
         }
 
-    return await asyncio.to_thread(build)
+    return build()
 
 
 @router.get("/entry-opportunity/{symbol}")
@@ -100,9 +99,7 @@ async def entry_opportunity(symbol: str, timeframe: str = "4h") -> dict[str, Any
 
     asset = _parse_asset(symbol)
     tf = _parse_timeframe(timeframe)
-    return (
-        await asyncio.to_thread(EntryOpportunityEngine().assess, asset, tf)
-    ).to_dict()
+    return EntryOpportunityEngine().assess(asset, tf).to_dict()
 
 
 @router.get("/knowledge/educational-claims")
@@ -110,7 +107,7 @@ async def educational_claims() -> dict[str, Any]:
     """Testable claims drawn from educational material."""
     from ..trader_knowledge.educational import GOODCRYPTO, load_claims
 
-    claims = await asyncio.to_thread(load_claims)
+    claims = load_claims()
     return {
         "sources": [GOODCRYPTO],
         "claims": claims,
@@ -126,7 +123,7 @@ async def educational_claims() -> dict[str, Any]:
 async def dataset_quality() -> dict[str, Any]:
     from ..trader_knowledge.dataset import dataset_quality as quality
 
-    return await asyncio.to_thread(quality)
+    return quality()
 
 
 @router.get("/knowledge/annotation-queue")
@@ -134,14 +131,14 @@ async def annotation_queue(limit: int = Query(20, ge=1, le=100)) -> dict[str, An
     """Cases where the detector is genuinely uncertain."""
     from ..trader_knowledge.dataset import active_learning_queue
 
-    return await asyncio.to_thread(active_learning_queue, limit)
+    return active_learning_queue(limit)
 
 
 @router.get("/knowledge/examples")
 async def examples() -> dict[str, Any]:
     from ..trader_knowledge.dataset import load_examples
 
-    stored = await asyncio.to_thread(load_examples)
+    stored = load_examples()
     return {
         "examples": [e.model_dump(mode="json") for e in stored],
         "count": len(stored),
@@ -152,7 +149,7 @@ async def examples() -> dict[str, Any]:
 async def human_vs_algorithm() -> dict[str, Any]:
     from ..trader_knowledge.dataset import human_vs_algorithm as compare
 
-    return await asyncio.to_thread(compare)
+    return compare()
 
 
 @router.get("/research/structural")
@@ -164,7 +161,7 @@ async def research_structural(recompute: bool = False) -> dict[str, Any]:
             return {**stored, "source": "stored"}
     from ..research.structural_research import run_all
 
-    return await asyncio.to_thread(run_all)
+    return run_all()
 
 
 @router.get("/research/marginal-value")
@@ -176,7 +173,7 @@ async def research_marginal_value(recompute: bool = False) -> dict[str, Any]:
             return {**stored, "source": "stored"}
     from ..research.marginal_value import run_all
 
-    return await asyncio.to_thread(run_all)
+    return run_all()
 
 
 @router.get("/research/replication")
@@ -188,7 +185,7 @@ async def research_replication(recompute: bool = False) -> dict[str, Any]:
             return {**stored, "source": "stored"}
     from ..research.replication import run_all
 
-    return await asyncio.to_thread(run_all)
+    return run_all()
 
 
 @router.get("/research/claim-validation")
@@ -200,14 +197,14 @@ async def research_claim_validation(recompute: bool = False) -> dict[str, Any]:
             return {**stored, "source": "stored"}
     from ..research.claim_validation import run_all
 
-    return await asyncio.to_thread(run_all)
+    return run_all()
 
 
 @router.get("/structure/cache/status")
 async def cache_status() -> dict[str, Any]:
     from ..structure.cache import cache_status as status
 
-    return await asyncio.to_thread(status)
+    return status()
 
 
 @router.get("/sources/hierarchy")
@@ -241,7 +238,7 @@ async def multi_timeframe_reading(symbol: str) -> dict[str, Any]:
     from ..engines.multi_timeframe import MultiTimeframeEngine
 
     asset = _parse_asset(symbol)
-    return (await asyncio.to_thread(MultiTimeframeEngine().assess, asset)).to_dict()
+    return MultiTimeframeEngine().assess(asset).to_dict()
 
 
 @router.get("/daily-report-v2")
@@ -250,7 +247,7 @@ async def daily_report_v2(asset: str | None = None) -> dict[str, Any]:
     from ..engines.daily_report import build_all
 
     assets = [_parse_asset(asset)] if asset else None
-    return await asyncio.to_thread(build_all, assets)
+    return build_all(assets)
 
 
 @router.get("/research/revalidation")
@@ -262,7 +259,7 @@ async def research_revalidation(recompute: bool = False) -> dict[str, Any]:
             return {**stored, "source": "stored"}
     from ..research.revalidation import run_all
 
-    return await asyncio.to_thread(run_all)
+    return run_all()
 
 
 @router.get("/volatility/implied/{symbol}")
@@ -275,9 +272,7 @@ async def implied_volatility(symbol: str) -> dict[str, Any]:
     from ..engines.implied_volatility import ImpliedVolatilityEngine
 
     asset = _parse_asset(symbol)
-    return (
-        await asyncio.to_thread(ImpliedVolatilityEngine().assess, asset)
-    ).to_dict()
+    return ImpliedVolatilityEngine().assess(asset).to_dict()
 
 
 @router.get("/research/dvol")
@@ -289,4 +284,4 @@ async def research_dvol(recompute: bool = False) -> dict[str, Any]:
             return {**stored, "source": "stored"}
     from ..research.dvol_study import run_all
 
-    return await asyncio.to_thread(run_all)
+    return run_all()

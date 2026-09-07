@@ -14,11 +14,18 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = PROJECT_ROOT / "app" / "assets" / "static_api"
 ASSETS = ("BTC", "ETH", "SOL")
 TIMEFRAMES = ("15m", "1h", "4h", "1d", "1w")
+
+
+def _chart_period(timeframe: str) -> str:
+    if timeframe == "1d":
+        return "3m"
+    if timeframe == "1w":
+        return "1y"
+    return "7d"
 
 
 def _snapshot_name(path: str, query: dict[str, str] | None = None) -> str:
@@ -43,11 +50,26 @@ def _endpoints() -> list[tuple[str, dict[str, str] | None]]:
         # LOT 6A: the studies the app now renders.
         ("/research/revalidation", None),
         ("/research/dvol", None),
+        # LOT 6B. The evidence and power endpoints must be in the static
+        # bundle: without them the deployed app renders a verdict with no
+        # funnel and no detection floor, which is the one presentation of a
+        # negative result that misleads.
+        ("/evidence", None),
+        ("/evidence/ladder", None),
+        ("/power", None),
+        ("/pooling", None),
+        ("/hypotheses", None),
+        ("/live-experiments", None),
+        ("/redundancy", None),
         ("/market/ratios", None),
         ("/market/breadth", None),
         ("/market/liquidity", None),
+        ("/evidence", None),
+        ("/power", None),
+        ("/pooling", None),
     ]
     for asset in ASSETS:
+        endpoints.append((f"/market/price/{asset}", None))
         endpoints.append((f"/today/{asset}", None))
         endpoints.append((f"/derivatives/aggregate/{asset}", None))
         endpoints.append((f"/cross-asset/{asset}", None))
@@ -61,6 +83,10 @@ def _endpoints() -> list[tuple[str, dict[str, str] | None]]:
             query = {"timeframe": timeframe}
             endpoints.append((f"/structure/{asset}", query))
             endpoints.append((f"/entry-opportunity/{asset}", query))
+            endpoints.append((
+                f"/chart/{asset}",
+                {"period": _chart_period(timeframe), "timeframe": timeframe},
+            ))
     return endpoints
 
 

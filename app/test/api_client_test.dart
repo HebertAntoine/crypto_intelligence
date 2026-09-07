@@ -66,14 +66,69 @@ void main() {
       expect(seen.path, '/api/structure/BTC');
       expect(seen.queryParameters['timeframe'], '1d');
     });
+
+    test('chart requests carry period and timeframe', () async {
+      late Uri seen;
+      final client = ApiClient(
+        baseUrl: 'https://api.example.com',
+        client: StubClient((request) async {
+          seen = request.url;
+          return http.Response('''
+{
+  "asset": "BTC",
+  "timeframe": "4h",
+  "period": "7d",
+  "available": true,
+  "candles": [],
+  "summary": {"available": true}
+}
+''', 200);
+        }),
+      );
+      await client.chart('BTC', timeframe: '4h', period: '7d');
+      expect(seen.path, '/api/chart/BTC');
+      expect(seen.queryParameters['timeframe'], '4h');
+      expect(seen.queryParameters['period'], '7d');
+    });
+
+    test('market price endpoint is typed', () async {
+      late Uri seen;
+      final client = ApiClient(
+        baseUrl: 'https://api.example.com',
+        client: StubClient((request) async {
+          seen = request.url;
+          return http.Response('''
+{
+  "asset": "BTC",
+  "status": "LIVE",
+  "price_usd": 100000,
+  "price_eur": 92000,
+  "change_24h_pct": 1.5,
+  "timestamp": "2026-09-07T08:00:00Z",
+  "as_of": "2026-09-07T08:00:00Z",
+  "fetched_at": "2026-09-07T08:00:02Z",
+  "providers": [],
+  "provider_count": 2,
+  "quality": "HIGH",
+  "freshness": "LIVE"
+}
+''', 200);
+        }),
+      );
+      final price = await client.marketPrice('BTC');
+      expect(seen.path, '/api/market/price/BTC');
+      expect(price.available, isTrue);
+      expect(price.displayUnit, 'EUR');
+      expect(price.displayPrice, 92000);
+    });
   });
 
   group('Error handling', () {
     test('a backend error message is surfaced, not swallowed', () async {
       final client = ApiClient(
         baseUrl: 'https://api.example.com',
-        client: StubClient((_) async =>
-            http.Response('{"detail":"Unknown asset DOGE"}', 404)),
+        client: StubClient(
+            (_) async => http.Response('{"detail":"Unknown asset DOGE"}', 404)),
       );
       expect(
         () => client.today('DOGE'),
@@ -122,10 +177,12 @@ void main() {
       expect(requestCount, 0);
     });
 
-    test('configured API HTML can still fall back to a bundled snapshot', () async {
+    test('configured API HTML can still fall back to a bundled snapshot',
+        () async {
       final client = ApiClient(
         baseUrl: 'https://wrong.example.com',
-        client: StubClient((_) async => http.Response('<html>app shell</html>', 200)),
+        client: StubClient(
+            (_) async => http.Response('<html>app shell</html>', 200)),
         loadAsset: (path) async {
           expect(path, 'assets/static_api/health.json');
           return '{"status":"ok","source":"static"}';
@@ -147,6 +204,31 @@ void main() {
         client: StubClient((_) async => http.Response('''
 {
   "asset": "BTC",
+  "market_data": {
+    "asset": "BTC",
+    "status": "LIVE",
+    "price_usd": 100000,
+    "price_eur": 92000,
+    "change_24h_pct": 1.5,
+    "timestamp": "2026-09-07T08:00:00Z",
+    "as_of": "2026-09-07T08:00:00Z",
+    "fetched_at": "2026-09-07T08:00:02Z",
+    "providers": [
+      {
+        "provider": "binance_spot",
+        "source": "Binance",
+        "status": "OK",
+        "unit": "USD",
+        "price": 100000,
+        "change_24h_pct": 1.5,
+        "freshness": "LIVE",
+        "quality": "MEASURED"
+      }
+    ],
+    "provider_count": 1,
+    "quality": "SINGLE_PROVIDER",
+    "freshness": "LIVE"
+  },
   "decision_summary": {
     "asset": "BTC",
     "market_direction": "STRONGLY_BULLISH",
@@ -170,6 +252,43 @@ void main() {
       expect(read.edgeState.isMeasured, isFalse);
       expect(read.rejectedCount, 3);
       expect(read.crowdingDirection, 'UNKNOWN');
+      expect(read.marketData?.displayPrice, 92000);
+      expect(read.marketData?.change24hPct, 1.5);
+    });
+
+    test('a chart payload maps candles and indicator series', () async {
+      final client = ApiClient(
+        baseUrl: 'https://api.example.com',
+        client: StubClient((_) async => http.Response('''
+{
+  "asset": "BTC",
+  "timeframe": "4h",
+  "period": "7d",
+  "available": true,
+  "candles": [
+    {
+      "time": "2026-09-07T08:00:00Z",
+      "open": 100,
+      "high": 110,
+      "low": 98,
+      "close": 108,
+      "volume": 42
+    }
+  ],
+  "overlays": {"ema20": [null, 104.5]},
+  "panels": {"rsi": [55.1]},
+  "summary": {"last_price": 108, "change_pct": 8, "bars": 1}
+}
+''', 200)),
+      );
+      final read = await client.chart('BTC');
+      expect(read.available, isTrue);
+      expect(read.candles.single.close, 108);
+      expect(read.overlays['ema20']!.last, 104.5);
+      expect(read.panels['rsi']!.single, 55.1);
+      expect(read.lastPrice, 108);
+      expect(read.changePct, 8);
+      expect(read.bars, 1);
     });
   });
 }
@@ -192,7 +311,8 @@ void _provenanceTests() {
       final client = ApiClient(
         baseUrl: 'https://api.example.com',
         client: StubClient((_) async => throw Exception('offline')),
-        loadAsset: (_) async => '{"generated_at":"${generated.toIso8601String()}"}',
+        loadAsset: (_) async =>
+            '{"generated_at":"${generated.toIso8601String()}"}',
       );
       await client.health();
       expect(client.lastProvenance.isSnapshot, isTrue);
@@ -211,8 +331,8 @@ void _provenanceTests() {
     test('an undated snapshot is never treated as fresh', () {
       const undated = DataProvenance(DataOrigin.snapshot);
       // Unknown age must not read as "just now".
-      expect(undated.isStale, isFalse);
-      expect(undated.describe(), contains('date inconnue'));
+      expect(undated.isStale, isTrue);
+      expect(undated.describe(), contains('âge inconnu'));
       expect(undated.age, isNull);
     });
 
@@ -224,7 +344,8 @@ void _provenanceTests() {
             '{"decision_summary":{"generated_at":"2026-09-06T20:01:00Z"}}',
       );
       await client.today('BTC');
-      expect(client.lastProvenance.generatedAt, DateTime.utc(2026, 9, 6, 20, 1));
+      expect(
+          client.lastProvenance.generatedAt, DateTime.utc(2026, 9, 6, 20, 1));
     });
   });
 }

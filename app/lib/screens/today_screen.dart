@@ -4,6 +4,8 @@
 /// donnees dans une interface mobile proche de la maquette fournie.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
@@ -23,24 +25,47 @@ class TodayScreen extends StatefulWidget {
 
 class _TodayScreenState extends State<TodayScreen> {
   late Future<List<TodayRead>> _future;
+  Timer? _refreshTimer;
 
   static const _assets = ['BTC', 'ETH', 'SOL'];
 
   @override
   void initState() {
     super.initState();
-    _future = widget.client.todayAll(_assets);
+    _future = _load();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (mounted) _reload();
+    });
   }
 
+  Future<List<TodayRead>> _load() => widget.client.todayAll(_assets);
+
   void _reload() {
-    setState(() => _future = widget.client.todayAll(_assets));
+    setState(() => _future = _load());
+  }
+
+  Future<void> _refresh() async {
+    final future = _load();
+    setState(() => _future = future);
+    try {
+      await future;
+    } catch (_) {
+      // FutureBuilder renders the error state; RefreshIndicator only needs
+      // the gesture to complete.
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return MobileGradientFrame(
       child: RefreshIndicator(
-        onRefresh: () async => _reload(),
+        onRefresh: _refresh,
         child: FutureBuilder<List<TodayRead>>(
           future: _future,
           builder: (context, snapshot) {
@@ -56,17 +81,22 @@ class _TodayScreenState extends State<TodayScreen> {
               return ErrorView(
                   error: 'Aucune analyse disponible.', onRetry: _reload);
             }
+            final provenance =
+                _provenanceForReads(widget.client.lastProvenance, reads);
 
             return MobileScrollView(
               padding: const EdgeInsets.fromLTRB(26, 26, 26, 260),
               children: [
-                const _TodayHeader(),
+                _TodayHeader(
+                  provenance: provenance,
+                  onRefresh: _reload,
+                ),
                 const SizedBox(height: 20),
                 // The app bundles snapshots so it can render without a
                 // backend. A snapshot is a photograph of a past moment;
                 // showing it as "today" without saying so would be the
                 // one thing this project exists not to do.
-                _ProvenanceBanner(provenance: widget.client.lastProvenance),
+                _ProvenanceBanner(provenance: provenance),
                 for (final read in reads) ...[
                   _MarketCard(read: read),
                   const SizedBox(height: 22),
@@ -147,18 +177,24 @@ class _ProvenanceBanner extends StatelessWidget {
 }
 
 class _TodayHeader extends StatelessWidget {
-  const _TodayHeader();
+  final DataProvenance provenance;
+  final VoidCallback onRefresh;
+
+  const _TodayHeader({
+    required this.provenance,
+    required this.onRefresh,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Aujourd’hui',
                 style: TextStyle(
                   color: AppColors.text,
@@ -167,10 +203,10 @@ class _TodayHeader extends StatelessWidget {
                   height: 0.98,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Analyse des marchés en temps réel',
-                style: TextStyle(
+                _subtitleForProvenance(provenance),
+                style: const TextStyle(
                   color: Color(0xFFB6C1D2),
                   fontSize: 20,
                   height: 1.15,
@@ -188,11 +224,84 @@ class _TodayHeader extends StatelessWidget {
             _HeaderButton(
               icon: Icons.calendar_today_rounded,
               label: _formatFrenchDate(DateTime.now()),
+              onTap: () => _showDateInfo(context, provenance),
             ),
-            const _SquareHeaderButton(icon: Icons.settings_outlined),
+            _SquareHeaderButton(
+              icon: Icons.settings_outlined,
+              onTap: () => _showSettings(context, provenance, onRefresh),
+            ),
           ],
         ),
       ],
+    );
+  }
+
+  void _showDateInfo(BuildContext context, DataProvenance provenance) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Données affichées'),
+        content: Text(
+          provenance.describe(),
+          style: const TextStyle(color: AppColors.textMuted, height: 1.35),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSettings(
+    BuildContext context,
+    DataProvenance provenance,
+    VoidCallback onRefresh,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: mobilePanel,
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 20, 22, 34),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Réglages de lecture',
+              style: TextStyle(
+                color: AppColors.text,
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              provenance.describe(),
+              style: const TextStyle(
+                color: mobileMuted,
+                fontSize: 15,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onRefresh();
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Rafraîchir les données'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -205,39 +314,205 @@ class _MarketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final meta = _AssetMeta.forAsset(read.asset);
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF101927).withValues(alpha: 0.86),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(17),
-        border: Border.all(color: const Color(0xFF1F4A7E), width: 1.4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.34),
-            blurRadius: 24,
-            offset: const Offset(0, 15),
+        onTap: () => _showDetails(context, read, meta),
+        child: Ink(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF101927).withValues(alpha: 0.86),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(color: const Color(0xFF1F4A7E), width: 1.4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.34),
+                blurRadius: 24,
+                offset: const Offset(0, 15),
+              ),
+              BoxShadow(
+                color: const Color(0xFF1A67B3).withValues(alpha: 0.12),
+                blurRadius: 28,
+                spreadRadius: -8,
+              ),
+            ],
           ),
-          BoxShadow(
-            color: const Color(0xFF1A67B3).withValues(alpha: 0.12),
-            blurRadius: 28,
-            spreadRadius: -8,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _AssetHeader(read: read, meta: meta),
+              const SizedBox(height: 22),
+              _VerdictPanel(read: read),
+              const SizedBox(height: 16),
+              _MetricGrid(read: read),
+              const SizedBox(height: 20),
+              const Divider(height: 1, color: Color(0xFF2A3B51)),
+              const SizedBox(height: 16),
+              _DetailRows(read: read),
+              const SizedBox(height: 22),
+              _WhyPanel(read: read),
+            ],
           ),
-        ],
+        ),
       ),
-      child: Column(
+    );
+  }
+
+  void _showDetails(BuildContext context, TodayRead read, _AssetMeta meta) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: mobilePanel,
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.70,
+        minChildSize: 0.35,
+        maxChildSize: 0.92,
+        builder: (context, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(22, 18, 22, 32),
+          children: [
+            Row(
+              children: [
+                _CryptoLogo(meta: meta),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    '${read.asset} · ${meta.name}',
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            _TodaySheetLine(
+              label: 'Prix',
+              value: _marketPriceLabel(read.marketData),
+            ),
+            _TodaySheetLine(
+              label: '24h',
+              value: _marketChangeLabel(read.marketData),
+            ),
+            _TodaySheetLine(
+              label: 'Fraîcheur',
+              value: _marketFreshnessLabel(read.marketData),
+            ),
+            _TodaySheetLine(
+              label: 'Providers',
+              value: _marketProvidersLabel(read.marketData),
+            ),
+            _TodaySheetLine(
+              label: 'Direction',
+              value:
+                  '${_directionLabel(read.summary.marketDirection)} (${read.summary.directionConfidence} %)',
+            ),
+            _TodaySheetLine(
+              label: 'Source',
+              value: read.directionSource.isEmpty
+                  ? 'Non précisée'
+                  : read.directionSource,
+            ),
+            _TodaySheetLine(
+              label: 'Edge',
+              value:
+                  '${_edgeLabel(read.edgeState)} · ${read.admittedCount} validé, ${read.rejectedCount} rejeté',
+            ),
+            _TodaySheetLine(
+                label: 'Crowding', value: _crowdingLabel(read.crowdingLevel)),
+            _TodaySheetLine(label: 'Funding', value: _fundingLabel(read)),
+            _TodaySheetLine(
+              label: 'Volatilité',
+              value: _volatilityLabel(read.volatilityRegime),
+            ),
+            _TodaySheetLine(
+              label: 'Incertitude',
+              value:
+                  '${_uncertaintyLabel(read.uncertaintyLevel)} ${read.uncertaintyScore.toStringAsFixed(0)}/100',
+            ),
+            if (read.uncertaintyDrivers.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Text(
+                'Drivers',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final driver in read.uncertaintyDrivers)
+                Text(
+                  '• ${_sentenceCase(driver.driver.replaceAll('_', ' '))}: ${driver.detail}',
+                  style: const TextStyle(
+                    color: mobileMuted,
+                    fontSize: 15,
+                    height: 1.34,
+                  ),
+                ),
+            ],
+            if (read.summary.caveats.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Text(
+                'Caveats',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              for (final caveat in read.summary.caveats)
+                Text(
+                  '• $caveat',
+                  style: const TextStyle(
+                    color: mobileMuted,
+                    fontSize: 15,
+                    height: 1.34,
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TodaySheetLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TodaySheetLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _AssetHeader(read: read, meta: meta),
-          const SizedBox(height: 22),
-          _VerdictPanel(read: read),
-          const SizedBox(height: 16),
-          _MetricGrid(read: read),
-          const SizedBox(height: 20),
-          const Divider(height: 1, color: Color(0xFF2A3B51)),
-          const SizedBox(height: 16),
-          _DetailRows(read: read),
-          const SizedBox(height: 22),
-          _WhyPanel(read: read),
+          SizedBox(
+            width: 112,
+            child: Text(
+              label,
+              style: const TextStyle(color: mobileMuted, fontSize: 15),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.text,
+                fontSize: 15,
+                height: 1.3,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -282,15 +557,25 @@ class _AssetHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              meta.price,
+              _marketPriceLabel(read.marketData),
               style: const TextStyle(
                 color: AppColors.text,
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
-            _ChangePill(label: meta.change),
+            _ChangePill(
+              label: _marketChangeLabel(read.marketData),
+              positive: (read.marketData?.change24hPct ?? 0) >= 0,
+              available: read.marketData?.change24hPct != null,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              _marketFreshnessShort(read.marketData),
+              textAlign: TextAlign.right,
+              style: const TextStyle(color: mobileMuted, fontSize: 12),
+            ),
           ],
         ),
         const SizedBox(width: 16),
@@ -511,8 +796,8 @@ class _DetailRows extends StatelessWidget {
         ),
         _InfoRow(
           icon: Icons.check_box_rounded,
-          label: 'Action recommandée',
-          value: read.summary.actionable ? 'A SURVEILLER' : 'AUCUNE',
+          label: 'Opportunité d’entrée',
+          value: _entryTimingLabel(read.summary.entryTiming),
         ),
       ],
     );
@@ -794,27 +1079,39 @@ class _WhyPanel extends StatelessWidget {
 class _HeaderButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final VoidCallback onTap;
 
-  const _HeaderButton({required this.icon, required this.label});
+  const _HeaderButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 66,
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF121D2B).withValues(alpha: 0.82),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF34506F), width: 1.4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: AppColors.text, size: 26),
-          const SizedBox(width: 16),
-          Text(label,
-              style: const TextStyle(color: AppColors.text, fontSize: 19)),
-        ],
+        onTap: onTap,
+        child: Ink(
+          height: 66,
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          decoration: BoxDecoration(
+            color: const Color(0xFF121D2B).withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF34506F), width: 1.4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppColors.text, size: 26),
+              const SizedBox(width: 16),
+              Text(label,
+                  style: const TextStyle(color: AppColors.text, fontSize: 19)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -822,41 +1119,62 @@ class _HeaderButton extends StatelessWidget {
 
 class _SquareHeaderButton extends StatelessWidget {
   final IconData icon;
+  final VoidCallback onTap;
 
-  const _SquareHeaderButton({required this.icon});
+  const _SquareHeaderButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 66,
-      height: 66,
-      decoration: BoxDecoration(
-        color: const Color(0xFF121D2B).withValues(alpha: 0.82),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF34506F), width: 1.4),
+        onTap: onTap,
+        child: Ink(
+          width: 66,
+          height: 66,
+          decoration: BoxDecoration(
+            color: const Color(0xFF121D2B).withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF34506F), width: 1.4),
+          ),
+          child: Icon(icon, color: AppColors.text, size: 30),
+        ),
       ),
-      child: Icon(icon, color: AppColors.text, size: 30),
     );
   }
 }
 
 class _ChangePill extends StatelessWidget {
   final String label;
+  final bool positive;
+  final bool available;
 
-  const _ChangePill({required this.label});
+  const _ChangePill({
+    required this.label,
+    this.positive = true,
+    this.available = true,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D633F).withValues(alpha: 0.82),
+        color: (available
+                ? (positive ? const Color(0xFF0D633F) : AppColors.bad)
+                : AppColors.textMuted)
+            .withValues(alpha: 0.26),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF63F39F),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: available
+              ? (positive ? const Color(0xFF63F39F) : AppColors.bad)
+              : AppColors.textMuted,
           fontSize: 18,
           fontWeight: FontWeight.w800,
         ),
@@ -1015,15 +1333,11 @@ class _SolBar extends StatelessWidget {
 
 class _AssetMeta {
   final String name;
-  final String price;
-  final String change;
   final Widget logo;
   final List<Color> logoGradient;
 
   const _AssetMeta({
     required this.name,
-    required this.price,
-    required this.change,
     required this.logo,
     required this.logoGradient,
   });
@@ -1031,22 +1345,16 @@ class _AssetMeta {
   static _AssetMeta forAsset(String asset) => switch (asset) {
         'ETH' => const _AssetMeta(
             name: 'Ethereum',
-            price: '€2 210',
-            change: '+1,8 %',
             logo: _EthMark(),
             logoGradient: [Color(0xFF7A63F8), Color(0xFF5146E8)],
           ),
         'SOL' => const _AssetMeta(
             name: 'Solana',
-            price: '€128',
-            change: '+3,1 %',
             logo: _SolMark(),
             logoGradient: [Color(0xFF112F38), Color(0xFF151423)],
           ),
         _ => const _AssetMeta(
             name: 'Bitcoin',
-            price: '€52 840',
-            change: '+2,4 %',
             logo: Text(
               '₿',
               style: TextStyle(
@@ -1075,6 +1383,166 @@ String _formatFrenchDate(DateTime date) {
     'déc.',
   ];
   return '${date.day} ${months[date.month - 1]} ${date.year}';
+}
+
+DataProvenance _provenanceForReads(
+  DataProvenance provenance,
+  List<TodayRead> reads,
+) {
+  if (provenance.origin != DataOrigin.snapshot ||
+      provenance.generatedAt != null) {
+    return provenance;
+  }
+
+  // asOf and timestamp arrive as ISO strings, not DateTime. Parsing must be
+  // tolerant: a snapshot whose date cannot be read is treated as undated
+  // rather than as fresh, so DataProvenance.isStale flags it.
+  DateTime? generatedAt;
+  for (final read in reads) {
+    final raw = read.marketData?.asOf ?? read.marketData?.timestamp;
+    if (raw == null) continue;
+    final candidate = DateTime.tryParse(raw)?.toUtc();
+    if (candidate == null) continue;
+    if (generatedAt == null || candidate.isAfter(generatedAt)) {
+      generatedAt = candidate;
+    }
+  }
+
+  return DataProvenance(DataOrigin.snapshot, generatedAt: generatedAt);
+}
+
+String _subtitleForProvenance(DataProvenance provenance) {
+  if (provenance.origin == DataOrigin.live) {
+    return 'Analyse des marchés en temps réel';
+  }
+  if (provenance.origin == DataOrigin.snapshot) {
+    if (provenance.generatedAt == null) {
+      return 'Données périmées · instantané sans date';
+    }
+    if (provenance.isStale) {
+      return 'Données périmées · dernière mise à jour ${_formatFrenchDate(provenance.generatedAt!.toLocal())}';
+    }
+    return 'Analyse hors ligne · instantané du ${_formatFrenchDate(provenance.generatedAt!.toLocal())}';
+  }
+  return 'Source des données non confirmée';
+}
+
+String _marketPriceLabel(MarketPriceRead? market) {
+  if (market == null || !market.available || market.displayPrice == null) {
+    return 'INDISPONIBLE';
+  }
+  final value = market.displayPrice!;
+  final symbol = market.displayUnit == 'EUR' ? '€' : r'$';
+  final digits = value >= 1000 ? 0 : 2;
+  return '$symbol${_numberFr(value, digits: digits)}';
+}
+
+String _marketChangeLabel(MarketPriceRead? market) {
+  final value = market?.change24hPct;
+  if (value == null || value.isNaN) return '24h N/A';
+  final sign = value > 0 ? '+' : '';
+  return '$sign${_numberFr(value, digits: 1)} %';
+}
+
+String _marketFreshnessShort(MarketPriceRead? market) {
+  if (market == null) return 'marché indisponible';
+  final status = _dataStatusLabel(market.status);
+  final source = _marketPrimarySource(market);
+  return source.isEmpty ? status : '$status · $source';
+}
+
+String _marketFreshnessLabel(MarketPriceRead? market) {
+  if (market == null) return 'INDISPONIBLE';
+  final age = market.ageSeconds == null
+      ? ''
+      : ' · âge ${_ageLabel(market.ageSeconds!)}';
+  final asOf =
+      market.asOf == null ? '' : ' · as_of ${_dateTimeLabel(market.asOf!)}';
+  return '${_dataStatusLabel(market.status)}$age$asOf';
+}
+
+String _marketProvidersLabel(MarketPriceRead? market) {
+  if (market == null || market.providers.isEmpty) return 'Aucun provider';
+  final ok = market.providers
+      .where((provider) => provider.status == 'OK' && provider.price != null)
+      .map((provider) => _providerSourceLabel(provider))
+      .toList();
+  if (ok.isEmpty) {
+    return market.providers
+        .map((provider) => '${provider.provider}: ${provider.status}')
+        .join(', ');
+  }
+  final fx = market.fxSource == null ? '' : ' · FX: ${market.fxSource}';
+  return '${ok.join(', ')}$fx';
+}
+
+String _marketPrimarySource(MarketPriceRead? market) {
+  if (market == null) return '';
+  MarketProviderRead? provider;
+  for (final candidate in market.providers) {
+    if (candidate.status == 'OK' &&
+        candidate.price != null &&
+        candidate.unit == market.displayUnit) {
+      provider = candidate;
+      break;
+    }
+  }
+  provider ??= () {
+    for (final candidate in market.providers) {
+      if (candidate.status == 'OK') return candidate;
+    }
+    return null;
+  }();
+  if (provider == null) return '';
+  return _providerSourceLabel(provider);
+}
+
+String _providerSourceLabel(MarketProviderRead provider) {
+  final raw = provider.source.isEmpty ? provider.provider : provider.source;
+  if (provider.provider == 'fixtures' ||
+      raw.toUpperCase().contains('MOCK FIXTURES')) {
+    return 'fixtures hors ligne';
+  }
+  return raw;
+}
+
+String _dataStatusLabel(String raw) => switch (raw.toUpperCase()) {
+      'LIVE' => 'LIVE',
+      'DELAYED' => 'RETARDÉ',
+      'SNAPSHOT' => 'INSTANTANÉ',
+      'STALE' => 'PÉRIMÉ',
+      'ERROR' => 'ERREUR',
+      'UNAVAILABLE' => 'INDISPONIBLE',
+      _ => raw.replaceAll('_', ' '),
+    };
+
+String _ageLabel(double seconds) {
+  final value = seconds.round();
+  if (value < 60) return '${value}s';
+  if (value < 3600) return '${(value / 60).round()} min';
+  if (value < 86400) return '${(value / 3600).round()} h';
+  return '${(value / 86400).round()} j';
+}
+
+String _dateTimeLabel(String raw) {
+  final parsed = DateTime.tryParse(raw);
+  if (parsed == null) return raw;
+  final local = parsed.toLocal();
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '${_formatFrenchDate(local)} ${local.hour}:$minute';
+}
+
+String _numberFr(num value, {int digits = 2}) {
+  final parts = value.toStringAsFixed(digits).replaceAll('.', ',').split(',');
+  final whole = parts.first;
+  final buffer = StringBuffer();
+  for (var i = 0; i < whole.length; i += 1) {
+    final remaining = whole.length - i;
+    buffer.write(whole[i]);
+    if (remaining > 1 && remaining % 3 == 1) buffer.write(' ');
+  }
+  if (digits == 0) return buffer.toString();
+  return '${buffer.toString()},${parts.last}';
 }
 
 String _directionLabel(String raw) {
@@ -1168,6 +1636,17 @@ String _volatilityLabel(String raw) => switch (raw.toUpperCase()) {
       'MODERATE' => 'MODÉRÉE',
       'HIGH' => 'ÉLEVÉE',
       'EXTREME' => 'EXTRÊME',
+      _ => raw.replaceAll('_', ' '),
+    };
+
+String _entryTimingLabel(String raw) => switch (raw.toUpperCase()) {
+      'VERY_UNFAVORABLE' => 'TRÈS DÉFAVORABLE',
+      'UNFAVORABLE' => 'DÉFAVORABLE',
+      'NEUTRAL' => 'NEUTRE',
+      'FAVORABLE' => 'FAVORABLE',
+      'VERY_FAVORABLE' => 'TRÈS FAVORABLE',
+      'INSUFFICIENT_DATA' => 'DONNÉES INSUFFISANTES',
+      'UNDETERMINED' => 'INDISPONIBLE',
       _ => raw.replaceAll('_', ' '),
     };
 

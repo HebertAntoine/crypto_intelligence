@@ -1,0 +1,91 @@
+{
+  "control_suite": {
+    "controls": [
+      {
+        "detail": {
+          "median_p": 0.4577,
+          "n_significant": 11,
+          "tolerance_upper": 0.09
+        },
+        "expected_rate": 0.05,
+        "false_positive_rate": 0.055,
+        "kind": "negative",
+        "name": "random_signal",
+        "note": "5.5% of 200 random signals came back significant at 5%, against a tolerance of 9.0%. The stratified test is correctly calibrated on noise.",
+        "passed": true,
+        "trials": 200
+      },
+      {
+        "detail": {
+          "event_rate_preserved": 0.1501,
+          "median_p": 0.5265,
+          "tolerance_upper": 0.09
+        },
+        "expected_rate": 0.05,
+        "false_positive_rate": 0.04,
+        "kind": "negative",
+        "name": "shuffled_signal",
+        "note": "Shuffling the signal in time leaves 4.0% of trials significant, against a 9.0% tolerance. Timing, not frequency, is what the test responds to.",
+        "passed": true,
+        "trials": 200
+      },
+      {
+        "detail": {
+          "attenuation_factor": 1.365,
+          "detected_by_residualisation": false,
+          "detected_by_stratification": true,
+          "folds": 3,
+          "injected_effect_pct": 2.0,
+          "recovered_after_residualisation_pct": 2.7304,
+          "recovered_raw_pct": 2.2709,
+          "residual_worst_p": 0.813278,
+          "stratified_p": 0.009923
+        },
+        "expected_rate": 0.05,
+        "false_positive_rate": null,
+        "kind": "positive",
+        "name": "injected_effect",
+        "note": "A 2.0% effect was inserted. Stratification recovered 2.27% and residualisation 2.73% (136% of what was inserted). The pipeline failed to detect an effect it was handed. Its null results cannot be read as evidence of absence.",
+        "passed": false,
+        "trials": 1
+      }
+    ],
+    "generated_at": "2026-09-07T10:42:49.031304+00:00",
+    "horizon_bars": 30,
+    "negatives_passed": true,
+    "note": "At least one control failed. Until it is fixed, results from this pipeline - positive and negative alike - should not be relied on.",
+    "pipeline_trustworthy": false,
+    "positive_passed": false,
+    "rows": 3077,
+    "status": "OK"
+  },
+  "detection_floors": [
+    {
+      "analytic_mde_pct": 3.248,
+      "empirical_floor_pct": 3.0,
+      "floor_above_meaningful": true,
+      "horizon_days": 7,
+      "meaningful_effect_pct": 1.0,
+      "note": "The smallest planted effect this pipeline certifies at a 7-bar horizon is 3.0%, against a declared meaningful effect of 1.00%. Every null result at this horizon is therefore silent about effects between those two numbers: they were planted and missed. Null results here are not evidence of absence below the floor."
+    },
+    {
+      "analytic_mde_pct": 6.754,
+      "empirical_floor_pct": 4.0,
+      "floor_above_meaningful": true,
+      "horizon_days": 14,
+      "meaningful_effect_pct": 1.5,
+      "note": "The smallest planted effect this pipeline certifies at a 14-bar horizon is 4.0%, against a declared meaningful effect of 1.50%. Every null result at this horizon is therefore silent about effects between those two numbers: they were planted and missed. Null results here are not evidence of absence below the floor."
+    },
+    {
+      "analytic_mde_pct": 15.371,
+      "empirical_floor_pct": 8.0,
+      "floor_above_meaningful": true,
+      "horizon_days": 30,
+      "meaningful_effect_pct": 2.0,
+      "note": "The smallest planted effect this pipeline certifies at a 30-bar horizon is 8.0%, against a declared meaningful effect of 2.00%. Every null result at this horizon is therefore silent about effects between those two numbers: they were planted and missed. Null results here are not evidence of absence below the floor."
+    }
+  ],
+  "generated_at": "2026-09-07T10:43:13.403735+00:00",
+  "note": "The pipeline does not manufacture findings from noise, which makes its positive results meaningful. But its detection floor sits above the effect size declared as meaningful at every horizon tested, which means its null results are silent in exactly the band worth knowing about.",
+  "verdict": "PIPELINE_CALIBRATED_BUT_INSENSITIVE"
+}

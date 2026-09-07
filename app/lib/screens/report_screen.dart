@@ -58,8 +58,7 @@ class _ReportScreenState extends State<ReportScreen> {
     _future = widget.client.dailyReport(_asset);
   }
 
-  void _reload() =>
-      setState(() => _future = widget.client.dailyReport(_asset));
+  void _reload() => setState(() => _future = widget.client.dailyReport(_asset));
 
   @override
   Widget build(BuildContext context) {
@@ -69,8 +68,8 @@ class _ReportScreenState extends State<ReportScreen> {
         child: FutureBuilder<DailyReport>(
           future: _future,
           builder: (context, snapshot) {
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+            return MobileScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 26, 24, 260),
               children: [
                 MobileHeader(
                   title: 'Rapport',
@@ -227,7 +226,7 @@ class _Conclusion extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                line,
+                _reportLineFr(line),
                 style: const TextStyle(
                   fontSize: 14.5,
                   height: 1.5,
@@ -265,10 +264,15 @@ class _SectionCard extends StatelessWidget {
       borderColor: _isContradiction
           ? AppColors.warn.withValues(alpha: 0.65)
           : mobileBorder,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: index <= 2 || _isContradiction || _isEdge,
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(left: 26, top: 8, bottom: 4),
+          iconColor: AppColors.text,
+          collapsedIconColor: mobileMuted,
+          title: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
@@ -295,11 +299,9 @@ class _SectionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          if (!section.available)
-            Padding(
-              padding: const EdgeInsets.only(left: 26),
-              child: Column(
+          children: [
+            if (!section.available)
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const MobilePill(
@@ -309,7 +311,7 @@ class _SectionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    section.reason,
+                    _reportLineFr(section.reason),
                     style: const TextStyle(
                       fontSize: 12,
                       color: mobileMuted,
@@ -318,19 +320,16 @@ class _SectionCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(left: 26),
-              child: Column(
+              )
+            else
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   for (final line in section.lines)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 5),
                       child: Text(
-                        line,
+                        _reportLineFr(line),
                         style: TextStyle(
                           fontSize: 13,
                           height: 1.42,
@@ -342,9 +341,87 @@ class _SectionCard extends StatelessWidget {
                     ),
                 ],
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
+}
+
+String _reportLineFr(String raw) {
+  var text = raw.trim();
+  if (text.isEmpty) return text;
+
+  final conclusion = RegExp(
+    r'^([A-Z]+) is strongly bullish; timeframes are in transition\.$',
+  ).firstMatch(text);
+  if (conclusion != null) {
+    return '${conclusion.group(1)} est fortement haussier; les unités de temps sont en transition.';
+  }
+
+  text = text
+      .replaceAll(
+        'Configuration reads NEUTRAL, and the measured edge is NO_MEASURABLE_EDGE.',
+        "La configuration est NEUTRE, et l'edge mesuré est AUCUNE EDGE MESURABLE.",
+      )
+      .replaceAll(
+        'Uncertainty HIGH. Nothing here has been shown to predict returns, so this is a description of conditions, not a reason to act.',
+        "Incertitude ÉLEVÉE. Rien ici n'a démontré une capacité à prédire les rendements; c'est une description des conditions, pas une raison d'agir.",
+      )
+      .replaceAll(
+        'reconstructed from price structure; the multi-domain engine needs a full pipeline run',
+        'reconstruit depuis la structure du prix; le moteur multi-domaines nécessite une exécution complète du pipeline',
+      )
+      .replaceAll(
+        'the regime above is reconstructed from DAILY price structure; the weekly line here comes from confirmed weekly swings, so the two can legitimately differ',
+        'le régime ci-dessus est reconstruit depuis la structure journalière du prix; la ligne hebdomadaire vient des swings hebdomadaires confirmés, donc les deux peuvent légitimement diverger',
+      )
+      .replaceAll(
+        'the daily regime reads STRONGLY BULLISH while the weekly structure reads BEARISH STRUCTURE',
+        'le régime journalier indique FORTEMENT HAUSSIER alors que la structure hebdomadaire indique STRUCTURE BAISSIÈRE',
+      )
+      .replaceAll(
+        'both are computed correctly: the regime is an EMA/ADX summary of daily bars, the weekly structure is a sequence of confirmed weekly swings, and they respond at different speeds',
+        'les deux sont calculés correctement: le régime synthétise EMA/ADX sur les bougies journalières, la structure hebdomadaire suit les swings hebdomadaires confirmés, et ils réagissent à des vitesses différentes',
+      )
+      .replaceAll(
+        'treat the direction as genuinely unsettled rather than picking the one that suits',
+        "traiter la direction comme réellement incertaine plutôt que choisir la lecture qui arrange",
+      )
+      .replaceAll(
+        'a favourable configuration with no measured edge is the normal case, not a contradiction',
+        "une configuration favorable sans edge mesuré est le cas normal, pas une contradiction",
+      )
+      .replaceAll(
+        'Nothing here has been shown to predict returns',
+        "Rien ici n'a démontré une capacité à prédire les rendements",
+      )
+      .replaceAll('held ', 'présent ')
+      .replaceAll(' of the last ', ' des ')
+      .replaceAll(' days', ' derniers jours')
+      .replaceAll('relationship(s) admitted', 'relation(s) validée(s)')
+      .replaceAll('rejected', 'rejetée(s)')
+      .replaceAll('alignment:', 'alignement:')
+      .replaceAll('mid range', 'milieu du range')
+      .replaceAll('near range top', 'proche du haut du range')
+      .replaceAll('near range bottom', 'proche du bas du range')
+      .replaceAll('upper third', 'tiers supérieur')
+      .replaceAll('lower third', 'tiers inférieur')
+      .replaceAll('BEARISH STRUCTURE', 'STRUCTURE BAISSIÈRE')
+      .replaceAll('BULLISH STRUCTURE', 'STRUCTURE HAUSSIÈRE')
+      .replaceAll('STRONGLY BULLISH', 'FORTEMENT HAUSSIER')
+      .replaceAll('STRONGLY BEARISH', 'FORTEMENT BAISSIER')
+      .replaceAll('NO_MEASURABLE_EDGE', 'AUCUNE EDGE MESURABLE')
+      .replaceAll('INSUFFICIENT_DATA', 'DONNÉES INSUFFISANTES')
+      .replaceAll('UNDETERMINED', 'INDÉTERMINÉ')
+      .replaceAll('NEUTRAL', 'NEUTRE')
+      .replaceAll('HIGH', 'ÉLEVÉE')
+      .replaceAll('LOW', 'FAIBLE')
+      .replaceAll('UNKNOWN', 'INCONNU')
+      .replaceAll('bearish', 'baissier')
+      .replaceAll('bullish', 'haussier')
+      .replaceAll('transition', 'transition')
+      .replaceAll('range', 'range');
+
+  return text;
 }

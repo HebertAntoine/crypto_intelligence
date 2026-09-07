@@ -67,7 +67,8 @@ class DecisionSummary {
     required this.caveats,
   });
 
-  factory DecisionSummary.fromJson(Map<String, dynamic> json) => DecisionSummary(
+  factory DecisionSummary.fromJson(Map<String, dynamic> json) =>
+      DecisionSummary(
         asset: json['asset'] as String? ?? '',
         marketDirection: json['market_direction'] as String? ?? 'UNDETERMINED',
         directionConfidence: '${json['direction_confidence'] ?? '—'}',
@@ -93,15 +94,135 @@ class UncertaintyDriver {
     required this.detail,
   });
 
-  factory UncertaintyDriver.fromJson(Map<String, dynamic> json) => UncertaintyDriver(
+  factory UncertaintyDriver.fromJson(Map<String, dynamic> json) =>
+      UncertaintyDriver(
         driver: json['driver'] as String? ?? '',
         contribution: json['contribution'] as num? ?? 0,
         detail: json['detail'] as String? ?? '',
       );
 }
 
+class MarketProviderRead {
+  final String provider;
+  final String source;
+  final String status;
+  final String unit;
+  final double? price;
+  final double? change24hPct;
+  final String? timestamp;
+  final String? fetchedAt;
+  final String freshness;
+  final String quality;
+  final String message;
+
+  const MarketProviderRead({
+    required this.provider,
+    required this.source,
+    required this.status,
+    required this.unit,
+    required this.price,
+    required this.change24hPct,
+    required this.timestamp,
+    required this.fetchedAt,
+    required this.freshness,
+    required this.quality,
+    required this.message,
+  });
+
+  factory MarketProviderRead.fromJson(Map<String, dynamic> json) =>
+      MarketProviderRead(
+        provider: json['provider'] as String? ?? '',
+        source: json['source'] as String? ?? '',
+        status: json['status'] as String? ?? 'UNAVAILABLE',
+        unit: json['unit'] as String? ?? '',
+        price: (json['price'] as num?)?.toDouble(),
+        change24hPct: (json['change_24h_pct'] as num?)?.toDouble(),
+        timestamp: json['timestamp'] as String?,
+        fetchedAt: json['fetched_at'] as String?,
+        freshness: json['freshness'] as String? ?? 'UNAVAILABLE',
+        quality: json['quality'] as String? ?? 'UNAVAILABLE',
+        message: json['message'] as String? ?? '',
+      );
+}
+
+class MarketPriceRead {
+  final String asset;
+  final String status;
+  final double? priceUsd;
+  final double? priceEur;
+  final double? change24hPct;
+  final String? timestamp;
+  final String? asOf;
+  final String? fetchedAt;
+  final double? ageSeconds;
+  final List<MarketProviderRead> providers;
+  final int providerCount;
+  final double? dispersionPct;
+  final String quality;
+  final String freshness;
+  final double? fxRate;
+  final String? fxTimestamp;
+  final String? fxSource;
+  final String method;
+
+  const MarketPriceRead({
+    required this.asset,
+    required this.status,
+    required this.priceUsd,
+    required this.priceEur,
+    required this.change24hPct,
+    required this.timestamp,
+    required this.asOf,
+    required this.fetchedAt,
+    required this.ageSeconds,
+    required this.providers,
+    required this.providerCount,
+    required this.dispersionPct,
+    required this.quality,
+    required this.freshness,
+    required this.fxRate,
+    required this.fxTimestamp,
+    required this.fxSource,
+    required this.method,
+  });
+
+  factory MarketPriceRead.fromJson(Map<String, dynamic> json) =>
+      MarketPriceRead(
+        asset: json['asset'] as String? ?? '',
+        status: json['status'] as String? ?? 'UNAVAILABLE',
+        priceUsd: (json['price_usd'] as num?)?.toDouble(),
+        priceEur: (json['price_eur'] as num?)?.toDouble(),
+        change24hPct: (json['change_24h_pct'] as num?)?.toDouble(),
+        timestamp: json['timestamp'] as String?,
+        asOf: json['as_of'] as String?,
+        fetchedAt: json['fetched_at'] as String?,
+        ageSeconds: (json['age_seconds'] as num?)?.toDouble(),
+        providers: ((json['providers'] as List?) ?? const [])
+            .map((item) => MarketProviderRead.fromJson(
+                (item as Map).cast<String, dynamic>()))
+            .toList(),
+        providerCount: (json['provider_count'] as num?)?.toInt() ?? 0,
+        dispersionPct: (json['dispersion_pct'] as num?)?.toDouble(),
+        quality: json['quality'] as String? ?? 'UNAVAILABLE',
+        freshness: json['freshness'] as String? ?? 'UNAVAILABLE',
+        fxRate: (json['fx_rate'] as num?)?.toDouble(),
+        fxTimestamp: json['fx_timestamp'] as String?,
+        fxSource: json['fx_source'] as String?,
+        method: json['method'] as String? ?? '',
+      );
+
+  bool get available => priceUsd != null && status != 'UNAVAILABLE';
+
+  bool get displaysEur => priceEur != null;
+
+  double? get displayPrice => priceEur ?? priceUsd;
+
+  String get displayUnit => displaysEur ? 'EUR' : 'USD';
+}
+
 class TodayRead {
   final String asset;
+  final MarketPriceRead? marketData;
   final DecisionSummary summary;
   final String directionSource;
   final EdgeState edgeState;
@@ -121,6 +242,7 @@ class TodayRead {
 
   const TodayRead({
     required this.asset,
+    required this.marketData,
     required this.summary,
     required this.directionSource,
     required this.edgeState,
@@ -141,14 +263,21 @@ class TodayRead {
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
     final edge = json['edge'] as Map<String, dynamic>? ?? const {};
-    final uncertainty = json['uncertainty'] as Map<String, dynamic>? ?? const {};
+    final uncertainty =
+        json['uncertainty'] as Map<String, dynamic>? ?? const {};
     final crowding = json['crowding'] as Map<String, dynamic>? ?? const {};
-    final leverage = json['leverage_state'] as Map<String, dynamic>? ?? const {};
+    final leverage =
+        json['leverage_state'] as Map<String, dynamic>? ?? const {};
     final funding = json['funding'] as Map<String, dynamic>? ?? const {};
     final volatility = json['volatility'] as Map<String, dynamic>? ?? const {};
 
     return TodayRead(
       asset: json['asset'] as String? ?? '',
+      marketData: json['market_data'] == null
+          ? null
+          : MarketPriceRead.fromJson(
+              json['market_data'] as Map<String, dynamic>,
+            ),
       summary: DecisionSummary.fromJson(
         json['decision_summary'] as Map<String, dynamic>? ?? const {},
       ),
@@ -286,12 +415,14 @@ class StructuralLocation {
     required this.range,
   });
 
-  factory StructuralLocation.fromJson(Map<String, dynamic> json) => StructuralLocation(
+  factory StructuralLocation.fromJson(Map<String, dynamic> json) =>
+      StructuralLocation(
         state: json['state'] as String? ?? 'NO_VALID_RANGE',
         price: (json['price'] as num?)?.toDouble(),
         relativePosition: (json['relative_position'] as num?)?.toDouble(),
         distanceToTopAtr: (json['distance_to_top_atr'] as num?)?.toDouble(),
-        distanceToBottomAtr: (json['distance_to_bottom_atr'] as num?)?.toDouble(),
+        distanceToBottomAtr:
+            (json['distance_to_bottom_atr'] as num?)?.toDouble(),
         rangeSummary: json['range_summary'] as String? ?? '',
         invalidation: json['invalidation'] as String? ?? '',
         explanation: (json['explanation'] as List?)?.cast<String>() ?? const [],
@@ -345,7 +476,8 @@ class MarketStructure {
     required this.caveat,
   });
 
-  factory MarketStructure.fromJson(Map<String, dynamic> json) => MarketStructure(
+  factory MarketStructure.fromJson(Map<String, dynamic> json) =>
+      MarketStructure(
         state: json['state'] as String? ?? 'UNCLEAR',
         labels: (json['labels'] as List?)?.cast<String>() ?? const [],
         lastConfirmedHh: (json['last_confirmed_hh'] as num?)?.toDouble(),
@@ -388,13 +520,15 @@ class DetectedPattern {
     required this.separationNote,
   });
 
-  factory DetectedPattern.fromJson(Map<String, dynamic> json) => DetectedPattern(
+  factory DetectedPattern.fromJson(Map<String, dynamic> json) =>
+      DetectedPattern(
         name: json['name'] as String? ?? '',
         patternClass: json['pattern_class'] as String? ?? '',
         state: json['state'] as String? ?? '',
         recognitionConfidence:
             (json['recognition_confidence'] as num?)?.toDouble() ?? 0,
-        directionIfTextbook: json['direction_if_textbook'] as String? ?? 'NEUTRAL',
+        directionIfTextbook:
+            json['direction_if_textbook'] as String? ?? 'NEUTRAL',
         keyLevels: ((json['key_levels'] as Map?) ?? const {}).map(
           (key, value) => MapEntry('$key', (value as num?)?.toDouble() ?? 0),
         ),
@@ -468,7 +602,8 @@ class EntryOpportunity {
     required this.missing,
   });
 
-  factory EntryOpportunity.fromJson(Map<String, dynamic> json) => EntryOpportunity(
+  factory EntryOpportunity.fromJson(Map<String, dynamic> json) =>
+      EntryOpportunity(
         state: json['state'] as String? ?? 'INSUFFICIENT_DATA',
         score: (json['score'] as num?)?.toDouble(),
         whyNow: (json['why_now'] as List?)?.cast<String>() ?? const [],
@@ -478,6 +613,115 @@ class EntryOpportunity {
         disclaimer: json['disclaimer'] as String? ?? '',
         missing: (json['missing'] as List?)?.cast<String>() ?? const [],
       );
+}
+
+class CandlePoint {
+  final DateTime? time;
+  final double open;
+  final double high;
+  final double low;
+  final double close;
+  final double volume;
+
+  const CandlePoint({
+    required this.time,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
+
+  factory CandlePoint.fromJson(Map<String, dynamic> json) => CandlePoint(
+        time: DateTime.tryParse('${json['time'] ?? ''}'),
+        open: (json['open'] as num?)?.toDouble() ?? 0,
+        high: (json['high'] as num?)?.toDouble() ?? 0,
+        low: (json['low'] as num?)?.toDouble() ?? 0,
+        close: (json['close'] as num?)?.toDouble() ?? 0,
+        volume: (json['volume'] as num?)?.toDouble() ?? 0,
+      );
+}
+
+class ChartRead {
+  final String asset;
+  final String timeframe;
+  final String period;
+  final bool available;
+  final String reason;
+  final List<CandlePoint> candles;
+  final Map<String, List<double?>> overlays;
+  final Map<String, List<double?>> panels;
+  final Map<String, dynamic> levels;
+  final List<Map<String, dynamic>> patterns;
+  final Map<String, dynamic> summary;
+
+  const ChartRead({
+    required this.asset,
+    required this.timeframe,
+    required this.period,
+    required this.available,
+    required this.reason,
+    required this.candles,
+    required this.overlays,
+    required this.panels,
+    required this.levels,
+    required this.patterns,
+    required this.summary,
+  });
+
+  factory ChartRead.fromJson(Map<String, dynamic> json) => ChartRead(
+        asset: json['asset'] as String? ?? '',
+        timeframe: json['timeframe'] as String? ?? '',
+        period: json['period'] as String? ?? '',
+        available: json['available'] as bool? ?? false,
+        reason: json['reason'] as String? ?? '',
+        candles: ((json['candles'] as List?) ?? const [])
+            .map((item) => CandlePoint.fromJson(
+                  (item as Map).cast<String, dynamic>(),
+                ))
+            .where((candle) =>
+                candle.high > 0 && candle.low > 0 && candle.close > 0)
+            .toList(),
+        overlays: _seriesMap(json['overlays'] as Map?),
+        panels: _seriesMap(json['panels'] as Map?),
+        levels: (json['levels'] as Map?)?.cast<String, dynamic>() ?? const {},
+        patterns: ((json['patterns'] as List?) ?? const [])
+            .map((item) => (item as Map).cast<String, dynamic>())
+            .toList(),
+        summary: (json['summary'] as Map?)?.cast<String, dynamic>() ?? const {},
+      );
+
+  double? get lastPrice {
+    final value = summary['last_price'];
+    if (value is num) return value.toDouble();
+    if (candles.isNotEmpty) return candles.last.close;
+    return null;
+  }
+
+  double? get changePct {
+    final value = summary['change_pct'];
+    if (value is num) return value.toDouble();
+    if (candles.length < 2) return null;
+    final first = candles.first.close;
+    if (first == 0) return null;
+    return (candles.last.close - first) / first * 100;
+  }
+
+  int get bars {
+    final value = summary['bars'];
+    if (value is num) return value.toInt();
+    return candles.length;
+  }
+
+  static Map<String, List<double?>> _seriesMap(Map? raw) {
+    if (raw == null) return const {};
+    return raw.cast<String, dynamic>().map((key, value) {
+      final points = ((value as List?) ?? const [])
+          .map<double?>((point) => point is num ? point.toDouble() : null)
+          .toList();
+      return MapEntry(key, points);
+    });
+  }
 }
 
 // --- LOT 6A models --------------------------------------------------------
@@ -624,7 +868,8 @@ class MultiTimeframeRead {
             .map((e) => TimeframeReading.fromJson(e as Map<String, dynamic>))
             .toList(),
         alignment: json['alignment'] as String? ?? 'INSUFFICIENT_DATA',
-        dominantDirection: json['dominant_direction'] as String? ?? 'UNDETERMINED',
+        dominantDirection:
+            json['dominant_direction'] as String? ?? 'UNDETERMINED',
         conflicts: (json['conflicts'] as List?)?.cast<String>() ?? const [],
         narrative: json['narrative'] as String? ?? '',
         caveat: json['caveat'] as String? ?? '',

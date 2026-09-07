@@ -1,0 +1,2575 @@
+{
+  "assets_pooled": [
+    "BTC",
+    "ETH"
+  ],
+  "assets_unavailable": {
+    "SOL": "no DVOL series exists; no proxy was constructed"
+  },
+  "generated_at": "2026-09-07T10:25:23.163353+00:00",
+  "mean_cross_asset_correlation": 0.778,
+  "multiple_testing": {
+    "fdr_significant": 0,
+    "p_rule": "worst p-value across the four pooling methods",
+    "raw_significant": 0,
+    "tests_performed": 12
+  },
+  "results": [
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": -1,
+      "horizon_days": 7,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "hypothesis_key": "dvol_pooled__premium_expensive__h7",
+      "matches_hypothesis": false,
+      "panel_rows": 3608,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": 0.7888,
+            "fixed_effects": 0.6227,
+            "hierarchical": 1.4601,
+            "meta_analysis": 1.6713
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.1407,
+            "fixed_effects": 0.6619,
+            "hierarchical": 0.399,
+            "meta_analysis": 0.0718
+          },
+          "signs_agree": true,
+          "spread": 1.0486,
+          "spread_relative_to_effect": 0.92
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.1,
+          "information_gain_pct": 9.8,
+          "mean_correlation": 0.821,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.82 carry the information of 1.10 independent series, not 2. Pooling raises the effective sample by about 10%, not by 100% per extra asset.",
+          "overlapping_dates": 1804,
+          "pairwise": {
+            "BTC~ETH": 0.821
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 38.5,
+          "effective_n_single_asset": 35,
+          "events_per_year": 7.56,
+          "gain_from_pooling": "x1.10",
+          "independent_blocks": 41,
+          "non_overlapping_events": 35,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 152
+        },
+        "horizon_days": 7,
+        "hypothesis": "H1 options expensive precedes lower returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": 0.7888,
+            "effect_sd": 0.094,
+            "method": "asset_normalised",
+            "n_baseline": 3422,
+            "n_blocks": 41,
+            "n_event": 186,
+            "note": "Effect of 0.094 standard deviations. The two assets differ in dispersion by a factor of 1.32; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.14073991482037676,
+            "p_value_naive": 0.27607983848645806,
+            "per_asset_scale": {
+              "BTC": 7.2164,
+              "ETH": 9.5591
+            },
+            "scale_ratio": 1.32,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": 0.6227,
+            "ci_95": [
+              -2.1784,
+              3.4239
+            ],
+            "heterogeneity_note": "1/2 assets share the pooled sign at a comparable magnitude. The pooled effect is carried by one asset and must not be presented as a cross-asset result.",
+            "method": "fixed_effects",
+            "n_blocks": 258,
+            "n_per_asset": {
+              "BTC": 1804,
+              "ETH": 1804
+            },
+            "n_raw": 3608,
+            "n_unique_dates": 1804,
+            "note": "3608 rows over 1804 dates, clustered into 258 blocks of 7 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.6619078405946679,
+            "per_asset_beta": {
+              "BTC": 3.105,
+              "ETH": -0.3622
+            },
+            "single_asset_driven": true,
+            "status": "OK",
+            "std_error": 1.4225,
+            "t_stat": 0.438
+          },
+          "hierarchical": {
+            "between_asset_variance": 4.23362,
+            "full_pooling": false,
+            "method": "hierarchical",
+            "note": "Between-asset variance 4.2336 exceeds what sampling error explains; the assets are shrunk toward each other but keep distinct estimates.",
+            "p_value": 0.39904751748346245,
+            "pooled_effect": 1.4601,
+            "raw_estimates": {
+              "BTC": 3.105,
+              "ETH": -0.3622
+            },
+            "shrunk_estimates": {
+              "BTC": 2.6811,
+              "ETH": 0.239
+            },
+            "status": "OK",
+            "std_error": 1.7313,
+            "t_stat": 0.843
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -0.1484,
+              3.491
+            ],
+            "combinable": false,
+            "heterogeneity_p": 0.06589997963065952,
+            "heterogeneity_q": 3.382,
+            "i_squared_pct": 70.4,
+            "method": "meta_analysis",
+            "note": "I2 = 70% of the variation across assets is beyond sampling error. The assets disagree more than chance allows; the pooled number should not be quoted as a single effect.",
+            "p_value": 0.07183346577400518,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 3.105,
+                "n_baseline": 1753,
+                "n_blocks": 23,
+                "n_event": 51,
+                "std_error": 1.2123
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -0.3622,
+                "n_baseline": 1669,
+                "n_blocks": 31,
+                "n_event": 135,
+                "std_error": 1.4438
+              }
+            },
+            "pooled_effect": 1.6713,
+            "signs_agree": false,
+            "status": "OK",
+            "std_error": 0.9284
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 154.0,
+          "effective_n_event": 38.5,
+          "meaningful_effect_pct": 1.0,
+          "minimum_detectable_effect_pct": 4.2748,
+          "note": "With 38 effective event observations the smallest detectable difference is 4.27%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.1,
+          "std_dev": 8.4682,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 665.1,
+          "current_effective_n": 38.5,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 7.56,
+          "note": "38 effective observations now, 704 needed to detect a 1.00% effect at 80% power: a shortfall of 665. At 7.6 independent events per year that is about 88.0 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 703.6,
+          "std_dev": 8.4682,
+          "target_effect_pct": 1.0,
+          "years_to_decide": 88.0
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 186,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "effect runs against the pre-registered direction",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 1,
+        "mean_excess_pct": -7.397,
+        "median_p_value": 0.0001103321330400835,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "ETH": -7.397
+        },
+        "sign_consistent": true,
+        "status": "OK",
+        "worst_p_value": 0.0001103321330400835
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": -1,
+      "horizon_days": 14,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "hypothesis_key": "dvol_pooled__premium_expensive__h14",
+      "matches_hypothesis": true,
+      "panel_rows": 3594,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": -2.3471,
+            "fixed_effects": -2.768,
+            "hierarchical": -1.5696,
+            "meta_analysis": -1.1343
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.9053,
+            "fixed_effects": 0.2375,
+            "hierarchical": 0.5378,
+            "meta_analysis": 0.2876
+          },
+          "signs_agree": true,
+          "spread": 1.6337,
+          "spread_relative_to_effect": 0.84
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.1,
+          "information_gain_pct": 9.8,
+          "mean_correlation": 0.821,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.82 carry the information of 1.10 independent series, not 2. Pooling raises the effective sample by about 10%, not by 100% per extra asset.",
+          "overlapping_dates": 1797,
+          "pairwise": {
+            "BTC~ETH": 0.821
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 26.4,
+          "effective_n_single_asset": 24,
+          "events_per_year": 5.19,
+          "gain_from_pooling": "x1.10",
+          "independent_blocks": 26,
+          "non_overlapping_events": 24,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 152
+        },
+        "horizon_days": 14,
+        "hypothesis": "H1 options expensive precedes lower returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": -2.3471,
+            "effect_sd": -0.1953,
+            "method": "asset_normalised",
+            "n_baseline": 3408,
+            "n_blocks": 26,
+            "n_event": 186,
+            "note": "Effect of -0.195 standard deviations. The two assets differ in dispersion by a factor of 1.31; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.9052599187097918,
+            "p_value_naive": 0.02161441212355116,
+            "per_asset_scale": {
+              "BTC": 10.4109,
+              "ETH": 13.6225
+            },
+            "scale_ratio": 1.31,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": -2.768,
+            "ci_95": [
+              -7.3831,
+              1.8471
+            ],
+            "heterogeneity_note": "1/2 assets share the pooled sign at a comparable magnitude. The pooled effect is carried by one asset and must not be presented as a cross-asset result.",
+            "method": "fixed_effects",
+            "n_blocks": 129,
+            "n_per_asset": {
+              "BTC": 1797,
+              "ETH": 1797
+            },
+            "n_raw": 3594,
+            "n_unique_dates": 1797,
+            "note": "3594 rows over 1797 dates, clustered into 129 blocks of 14 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.23752438053510105,
+            "per_asset_beta": {
+              "BTC": 0.8825,
+              "ETH": -4.2168
+            },
+            "single_asset_driven": true,
+            "status": "OK",
+            "std_error": 2.3324,
+            "t_stat": -1.187
+          },
+          "hierarchical": {
+            "between_asset_variance": 10.622,
+            "full_pooling": false,
+            "method": "hierarchical",
+            "note": "Between-asset variance 10.6220 exceeds what sampling error explains; the assets are shrunk toward each other but keep distinct estimates.",
+            "p_value": 0.5378459818124446,
+            "pooled_effect": -1.5696,
+            "raw_estimates": {
+              "BTC": 0.8825,
+              "ETH": -4.2168
+            },
+            "shrunk_estimates": {
+              "BTC": 0.5134,
+              "ETH": -3.6527
+            },
+            "status": "OK",
+            "std_error": 2.5478,
+            "t_stat": -0.616
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -3.2249,
+              0.9564
+            ],
+            "combinable": false,
+            "heterogeneity_p": 0.01941117181794627,
+            "heterogeneity_q": 5.464,
+            "i_squared_pct": 81.7,
+            "method": "meta_analysis",
+            "note": "I2 = 82% of the variation across assets is beyond sampling error. The assets disagree more than chance allows; the pooled number should not be quoted as a single effect.",
+            "p_value": 0.2876117154372819,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 0.8825,
+                "n_baseline": 1746,
+                "n_blocks": 16,
+                "n_event": 51,
+                "std_error": 1.3719
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -4.2168,
+                "n_baseline": 1662,
+                "n_blocks": 21,
+                "n_event": 135,
+                "std_error": 1.6961
+              }
+            },
+            "pooled_effect": -1.1343,
+            "signs_agree": false,
+            "status": "OK",
+            "std_error": 1.0667
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 105.6,
+          "effective_n_event": 26.4,
+          "meaningful_effect_pct": 1.5,
+          "minimum_detectable_effect_pct": 7.39,
+          "note": "With 26 effective event observations the smallest detectable difference is 7.39%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.088,
+          "std_dev": 12.1224,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 614.4,
+          "current_effective_n": 26.4,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 5.19,
+          "note": "26 effective observations now, 641 needed to detect a 1.50% effect at 80% power: a shortfall of 614. At 5.2 independent events per year that is about 118.4 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 640.8,
+          "std_dev": 12.1224,
+          "target_effect_pct": 1.5,
+          "years_to_decide": 118.4
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 186,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 2,
+        "mean_excess_pct": -10.9599,
+        "median_p_value": 4.3234670287435143e-07,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "ETH": -10.9599
+        },
+        "sign_consistent": true,
+        "status": "OK",
+        "worst_p_value": 8.646019995308694e-07
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": -1,
+      "horizon_days": 30,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "hypothesis_key": "dvol_pooled__premium_expensive__h30",
+      "matches_hypothesis": true,
+      "panel_rows": 3562,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": -6.886,
+            "fixed_effects": -7.733,
+            "hierarchical": -5.921,
+            "meta_analysis": -5.6491
+          },
+          "methods_significant": [
+            "fixed_effects",
+            "meta_analysis"
+          ],
+          "n_methods_significant": 2,
+          "p_values": {
+            "asset_normalised": 0.3419,
+            "fixed_effects": 0.0066,
+            "hierarchical": 0.0981,
+            "meta_analysis": 0.0232
+          },
+          "signs_agree": true,
+          "spread": 2.0839,
+          "spread_relative_to_effect": 0.32
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.1,
+          "information_gain_pct": 9.8,
+          "mean_correlation": 0.822,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.82 carry the information of 1.10 independent series, not 2. Pooling raises the effective sample by about 10%, not by 100% per extra asset.",
+          "overlapping_dates": 1781,
+          "pairwise": {
+            "BTC~ETH": 0.822
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 19.8,
+          "effective_n_single_asset": 18,
+          "events_per_year": 3.89,
+          "gain_from_pooling": "x1.10",
+          "independent_blocks": 23,
+          "non_overlapping_events": 18,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 152
+        },
+        "horizon_days": 30,
+        "hypothesis": "H1 options expensive precedes lower returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": -6.886,
+            "effect_sd": -0.3745,
+            "method": "asset_normalised",
+            "n_baseline": 3376,
+            "n_blocks": 23,
+            "n_event": 186,
+            "note": "Effect of -0.374 standard deviations. The two assets differ in dispersion by a factor of 1.34; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.34191280944897073,
+            "p_value_naive": 2.6797454505547698e-08,
+            "per_asset_scale": {
+              "BTC": 15.6877,
+              "ETH": 21.0876
+            },
+            "scale_ratio": 1.34,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": -7.733,
+            "ci_95": [
+              -13.227,
+              -2.239
+            ],
+            "heterogeneity_note": "2/2 assets share the pooled sign at a comparable magnitude.",
+            "method": "fixed_effects",
+            "n_blocks": 60,
+            "n_per_asset": {
+              "BTC": 1781,
+              "ETH": 1781
+            },
+            "n_raw": 3562,
+            "n_unique_dates": 1781,
+            "note": "3562 rows over 1781 dates, clustered into 60 blocks of 30 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.006592961842471601,
+            "per_asset_beta": {
+              "BTC": -2.5947,
+              "ETH": -9.7732
+            },
+            "single_asset_driven": false,
+            "status": "OK",
+            "std_error": 2.7456,
+            "t_stat": -2.816
+          },
+          "hierarchical": {
+            "between_asset_variance": 13.10004,
+            "full_pooling": false,
+            "method": "hierarchical",
+            "note": "Between-asset variance 13.1000 exceeds what sampling error explains; the assets are shrunk toward each other but keep distinct estimates.",
+            "p_value": 0.09810665031397603,
+            "pooled_effect": -5.921,
+            "raw_estimates": {
+              "BTC": -2.5947,
+              "ETH": -9.7732
+            },
+            "shrunk_estimates": {
+              "BTC": -4.0961,
+              "ETH": -7.7459
+            },
+            "status": "OK",
+            "std_error": 3.5796,
+            "t_stat": -1.654
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -10.5263,
+              -0.7719
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.15378321246659732,
+            "heterogeneity_q": 2.034,
+            "i_squared_pct": 50.8,
+            "method": "meta_analysis",
+            "note": "I2 = 51% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.023196306623387786,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": -2.5947,
+                "n_baseline": 1730,
+                "n_blocks": 16,
+                "n_event": 51,
+                "std_error": 3.283
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -9.7732,
+                "n_baseline": 1646,
+                "n_blocks": 17,
+                "n_event": 135,
+                "std_error": 3.8148
+              }
+            },
+            "pooled_effect": -5.6491,
+            "signs_agree": true,
+            "status": "OK",
+            "std_error": 2.4884
+          }
+        },
+        "note": "The estimates agree in direction, but only 2 of 4 methods reject zero: fixed_effects, meta_analysis. Significance rests on the assumption, not on the data.",
+        "verdict": "METHOD_DEPENDENT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 79.2,
+          "effective_n_event": 19.8,
+          "meaningful_effect_pct": 2.0,
+          "minimum_detectable_effect_pct": 13.0811,
+          "note": "With 20 effective event observations the smallest detectable difference is 13.08%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.071,
+          "std_dev": 18.5831,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 827.2,
+          "current_effective_n": 19.8,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 3.89,
+          "note": "20 effective observations now, 847 needed to detect a 2.00% effect at 80% power: a shortfall of 827. At 3.9 independent events per year that is about 212.7 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 847.0,
+          "std_dev": 18.5831,
+          "target_effect_pct": 2.0,
+          "years_to_decide": 212.7
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 186,
+      "reasons": [
+        "pooling verdict is METHOD_DEPENDENT",
+        "does not survive FDR correction across the pooled family",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 2,
+        "mean_excess_pct": -11.1369,
+        "median_p_value": 0.01251427136627747,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "ETH": -11.1369
+        },
+        "sign_consistent": true,
+        "status": "OK",
+        "worst_p_value": 0.025027503154708225
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": 1,
+      "horizon_days": 7,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "hypothesis_key": "dvol_pooled__premium_cheap__h7",
+      "matches_hypothesis": true,
+      "panel_rows": 3608,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": 0.5543,
+            "fixed_effects": 0.5022,
+            "hierarchical": 0.6677,
+            "meta_analysis": 0.6677
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.6741,
+            "fixed_effects": 0.517,
+            "hierarchical": 0.3234,
+            "meta_analysis": 0.3234
+          },
+          "signs_agree": true,
+          "spread": 0.1655,
+          "spread_relative_to_effect": 0.28
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.1,
+          "information_gain_pct": 9.8,
+          "mean_correlation": 0.821,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.82 carry the information of 1.10 independent series, not 2. Pooling raises the effective sample by about 10%, not by 100% per extra asset.",
+          "overlapping_dates": 1804,
+          "pairwise": {
+            "BTC~ETH": 0.821
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 93.5,
+          "effective_n_single_asset": 85,
+          "events_per_year": 18.64,
+          "gain_from_pooling": "x1.10",
+          "independent_blocks": 92,
+          "non_overlapping_events": 85,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 456
+        },
+        "horizon_days": 7,
+        "hypothesis": "H2 options cheap precedes higher returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": 0.5543,
+            "effect_sd": 0.0661,
+            "method": "asset_normalised",
+            "n_baseline": 2932,
+            "n_blocks": 76,
+            "n_event": 676,
+            "note": "Effect of 0.066 standard deviations. The two assets differ in dispersion by a factor of 1.32; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.6740922860679953,
+            "p_value_naive": 0.11443874969650177,
+            "per_asset_scale": {
+              "BTC": 7.2164,
+              "ETH": 9.5591
+            },
+            "scale_ratio": 1.32,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": 0.5022,
+            "ci_95": [
+              -1.0221,
+              2.0266
+            ],
+            "heterogeneity_note": "2/2 assets share the pooled sign at a comparable magnitude.",
+            "method": "fixed_effects",
+            "n_blocks": 258,
+            "n_per_asset": {
+              "BTC": 1804,
+              "ETH": 1804
+            },
+            "n_raw": 3608,
+            "n_unique_dates": 1804,
+            "note": "3608 rows over 1804 dates, clustered into 258 blocks of 7 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.517039202481971,
+            "per_asset_beta": {
+              "BTC": 0.8533,
+              "ETH": 0.1904
+            },
+            "single_asset_driven": false,
+            "status": "OK",
+            "std_error": 0.7741,
+            "t_stat": 0.649
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.3233616668363051,
+            "pooled_effect": 0.6677,
+            "raw_estimates": {
+              "BTC": 0.8533,
+              "ETH": 0.1904
+            },
+            "shrunk_estimates": {
+              "BTC": 0.6677,
+              "ETH": 0.6677
+            },
+            "status": "OK",
+            "std_error": 0.6761,
+            "t_stat": 0.988
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -0.6575,
+              1.993
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.65982178675366,
+            "heterogeneity_q": 0.194,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.3233616668363051,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 0.8533,
+                "n_baseline": 1492,
+                "n_blocks": 48,
+                "n_event": 312,
+                "std_error": 0.7968
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": 0.1904,
+                "n_baseline": 1440,
+                "n_blocks": 42,
+                "n_event": 364,
+                "std_error": 1.278
+              }
+            },
+            "pooled_effect": 0.6677,
+            "signs_agree": true,
+            "status": "OK",
+            "std_error": 0.6761
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 374.0,
+          "effective_n_event": 93.5,
+          "meaningful_effect_pct": 1.0,
+          "minimum_detectable_effect_pct": 2.7431,
+          "note": "With 94 effective event observations the smallest detectable difference is 2.74%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.175,
+          "std_dev": 8.4682,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 1874.1,
+          "current_effective_n": 93.5,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 18.64,
+          "note": "94 effective observations now, 1968 needed to detect a 0.60% effect at 80% power: a shortfall of 1874. At 18.6 independent events per year that is about 100.5 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 1967.6,
+          "std_dev": 8.4682,
+          "target_effect_pct": 0.598,
+          "years_to_decide": 100.5
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 676,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 6,
+        "mean_excess_pct": 0.7591,
+        "median_p_value": 0.3675206459783908,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": 0.6216,
+          "ETH": 0.8966
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 0.5490548455593857
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": 1,
+      "horizon_days": 14,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "hypothesis_key": "dvol_pooled__premium_cheap__h14",
+      "matches_hypothesis": true,
+      "panel_rows": 3594,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": 1.3609,
+            "fixed_effects": 1.333,
+            "hierarchical": 1.4031,
+            "meta_analysis": 1.4031
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.598,
+            "fixed_effects": 0.4677,
+            "hierarchical": 0.0836,
+            "meta_analysis": 0.0836
+          },
+          "signs_agree": true,
+          "spread": 0.0701,
+          "spread_relative_to_effect": 0.05
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.1,
+          "information_gain_pct": 9.8,
+          "mean_correlation": 0.821,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.82 carry the information of 1.10 independent series, not 2. Pooling raises the effective sample by about 10%, not by 100% per extra asset.",
+          "overlapping_dates": 1797,
+          "pairwise": {
+            "BTC~ETH": 0.821
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 57.2,
+          "effective_n_single_asset": 52,
+          "events_per_year": 11.45,
+          "gain_from_pooling": "x1.10",
+          "independent_blocks": 57,
+          "non_overlapping_events": 52,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 449
+        },
+        "horizon_days": 14,
+        "hypothesis": "H2 options cheap precedes higher returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": 1.3609,
+            "effect_sd": 0.1133,
+            "method": "asset_normalised",
+            "n_baseline": 2928,
+            "n_blocks": 52,
+            "n_event": 666,
+            "note": "Effect of 0.113 standard deviations. The two assets differ in dispersion by a factor of 1.31; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.5979950859627189,
+            "p_value_naive": 0.01038009330627456,
+            "per_asset_scale": {
+              "BTC": 10.4109,
+              "ETH": 13.6225
+            },
+            "scale_ratio": 1.31,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": 1.333,
+            "ci_95": [
+              -2.2879,
+              4.954
+            ],
+            "heterogeneity_note": "2/2 assets share the pooled sign at a comparable magnitude.",
+            "method": "fixed_effects",
+            "n_blocks": 129,
+            "n_per_asset": {
+              "BTC": 1797,
+              "ETH": 1797
+            },
+            "n_raw": 3594,
+            "n_unique_dates": 1797,
+            "note": "3594 rows over 1797 dates, clustered into 129 blocks of 14 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.4676736336967404,
+            "per_asset_beta": {
+              "BTC": 1.4528,
+              "ETH": 1.2259
+            },
+            "single_asset_driven": false,
+            "status": "OK",
+            "std_error": 1.83,
+            "t_stat": 0.728
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.08363358585772018,
+            "pooled_effect": 1.4031,
+            "raw_estimates": {
+              "BTC": 1.4528,
+              "ETH": 1.2259
+            },
+            "shrunk_estimates": {
+              "BTC": 1.4031,
+              "ETH": 1.4031
+            },
+            "status": "OK",
+            "std_error": 0.8111,
+            "t_stat": 1.73
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -0.1866,
+              2.9928
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.9079094260291929,
+            "heterogeneity_q": 0.013,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.08363358585772018,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 1.4528,
+                "n_baseline": 1488,
+                "n_blocks": 37,
+                "n_event": 309,
+                "std_error": 0.9177
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": 1.2259,
+                "n_baseline": 1440,
+                "n_blocks": 36,
+                "n_event": 357,
+                "std_error": 1.7336
+              }
+            },
+            "pooled_effect": 1.4031,
+            "signs_agree": true,
+            "status": "OK",
+            "std_error": 0.8111
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 228.8,
+          "effective_n_event": 57.2,
+          "meaningful_effect_pct": 1.5,
+          "minimum_detectable_effect_pct": 5.0205,
+          "note": "With 57 effective event observations the smallest detectable difference is 5.02%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.133,
+          "std_dev": 12.1224,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 705.4,
+          "current_effective_n": 57.2,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 11.45,
+          "note": "57 effective observations now, 763 needed to detect a 1.38% effect at 80% power: a shortfall of 705. At 11.4 independent events per year that is about 61.6 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 762.6,
+          "std_dev": 12.1224,
+          "target_effect_pct": 1.375,
+          "years_to_decide": 61.6
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 666,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 6,
+        "mean_excess_pct": 1.9301,
+        "median_p_value": 0.03960659224156168,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": 1.5586,
+          "ETH": 2.3016
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 0.2846852718204957
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": 1,
+      "horizon_days": 30,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "hypothesis_key": "dvol_pooled__premium_cheap__h30",
+      "matches_hypothesis": true,
+      "panel_rows": 3562,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": 4.0356,
+            "fixed_effects": 4.0784,
+            "hierarchical": 3.6783,
+            "meta_analysis": 3.6783
+          },
+          "methods_significant": [
+            "hierarchical",
+            "meta_analysis"
+          ],
+          "n_methods_significant": 2,
+          "p_values": {
+            "asset_normalised": 0.6679,
+            "fixed_effects": 0.2996,
+            "hierarchical": 0.0296,
+            "meta_analysis": 0.0296
+          },
+          "signs_agree": true,
+          "spread": 0.4001,
+          "spread_relative_to_effect": 0.1
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.1,
+          "information_gain_pct": 9.8,
+          "mean_correlation": 0.822,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.82 carry the information of 1.10 independent series, not 2. Pooling raises the effective sample by about 10%, not by 100% per extra asset.",
+          "overlapping_dates": 1781,
+          "pairwise": {
+            "BTC~ETH": 0.822
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 28.6,
+          "effective_n_single_asset": 26,
+          "events_per_year": 5.95,
+          "gain_from_pooling": "x1.10",
+          "independent_blocks": 37,
+          "non_overlapping_events": 26,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 446
+        },
+        "horizon_days": 30,
+        "hypothesis": "H2 options cheap precedes higher returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": 4.0356,
+            "effect_sd": 0.2195,
+            "method": "asset_normalised",
+            "n_baseline": 2899,
+            "n_blocks": 37,
+            "n_event": 663,
+            "note": "Effect of 0.219 standard deviations. The two assets differ in dispersion by a factor of 1.34; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.6678548473343009,
+            "p_value_naive": 7.132265321338041e-07,
+            "per_asset_scale": {
+              "BTC": 15.6877,
+              "ETH": 21.0876
+            },
+            "scale_ratio": 1.34,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": 4.0784,
+            "ci_95": [
+              -3.72,
+              11.8768
+            ],
+            "heterogeneity_note": "2/2 assets share the pooled sign at a comparable magnitude.",
+            "method": "fixed_effects",
+            "n_blocks": 60,
+            "n_per_asset": {
+              "BTC": 1781,
+              "ETH": 1781
+            },
+            "n_raw": 3562,
+            "n_unique_dates": 1781,
+            "note": "3562 rows over 1781 dates, clustered into 60 blocks of 30 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.299609803225116,
+            "per_asset_beta": {
+              "BTC": 3.4012,
+              "ETH": 4.6882
+            },
+            "single_asset_driven": false,
+            "status": "OK",
+            "std_error": 3.8973,
+            "t_stat": 1.046
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.029561791985899033,
+            "pooled_effect": 3.6783,
+            "raw_estimates": {
+              "BTC": 3.4012,
+              "ETH": 4.6882
+            },
+            "shrunk_estimates": {
+              "BTC": 3.6783,
+              "ETH": 3.6783
+            },
+            "status": "OK",
+            "std_error": 1.6905,
+            "t_stat": 2.176
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              0.365,
+              6.9916
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.7543381058495396,
+            "heterogeneity_q": 0.098,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.029561791985899033,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 3.4012,
+                "n_baseline": 1472,
+                "n_blocks": 28,
+                "n_event": 309,
+                "std_error": 1.9083
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": 4.6882,
+                "n_baseline": 1427,
+                "n_blocks": 27,
+                "n_event": 354,
+                "std_error": 3.6433
+              }
+            },
+            "pooled_effect": 3.6783,
+            "signs_agree": true,
+            "status": "OK",
+            "std_error": 1.6905
+          }
+        },
+        "note": "The estimates agree in direction, but only 2 of 4 methods reject zero: hierarchical, meta_analysis. Significance rests on the assumption, not on the data.",
+        "verdict": "METHOD_DEPENDENT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 114.4,
+          "effective_n_event": 28.6,
+          "meaningful_effect_pct": 2.0,
+          "minimum_detectable_effect_pct": 10.8841,
+          "note": "With 29 effective event observations the smallest detectable difference is 10.88%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.081,
+          "std_dev": 18.5831,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 818.4,
+          "current_effective_n": 28.6,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 5.95,
+          "note": "29 effective observations now, 847 needed to detect a 2.00% effect at 80% power: a shortfall of 818. At 6.0 independent events per year that is about 137.5 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 847.0,
+          "std_dev": 18.5831,
+          "target_effect_pct": 2.0,
+          "years_to_decide": 137.5
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 663,
+      "reasons": [
+        "pooling verdict is METHOD_DEPENDENT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 6,
+        "mean_excess_pct": 3.7307,
+        "median_p_value": 2.0861848142999814e-09,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": 4.8562,
+          "ETH": 2.6053
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 0.9653231075735443
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": -1,
+      "horizon_days": 7,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "hypothesis_key": "dvol_pooled__dvol_spike__h7",
+      "matches_hypothesis": false,
+      "panel_rows": 3906,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": 0.7372,
+            "fixed_effects": 0.6886,
+            "hierarchical": 0.7228,
+            "meta_analysis": 0.7228
+          },
+          "methods_significant": [
+            "asset_normalised"
+          ],
+          "n_methods_significant": 1,
+          "p_values": {
+            "asset_normalised": 0.0007,
+            "fixed_effects": 0.5073,
+            "hierarchical": 0.3586,
+            "meta_analysis": 0.3586
+          },
+          "signs_agree": true,
+          "spread": 0.0486,
+          "spread_relative_to_effect": 0.07
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.11,
+          "information_gain_pct": 10.9,
+          "mean_correlation": 0.804,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.80 carry the information of 1.11 independent series, not 2. Pooling raises the effective sample by about 11%, not by 100% per extra asset.",
+          "overlapping_dates": 1953,
+          "pairwise": {
+            "BTC~ETH": 0.804
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 64.4,
+          "effective_n_single_asset": 58,
+          "events_per_year": 11.2,
+          "gain_from_pooling": "x1.11",
+          "independent_blocks": 65,
+          "non_overlapping_events": 58,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 259
+        },
+        "horizon_days": 7,
+        "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": 0.7372,
+            "effect_sd": 0.0832,
+            "method": "asset_normalised",
+            "n_baseline": 3466,
+            "n_blocks": 54,
+            "n_event": 440,
+            "note": "Effect of 0.083 standard deviations. The two assets differ in dispersion by a factor of 1.35; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.0006719400740296005,
+            "p_value_naive": 0.091936843588794,
+            "per_asset_scale": {
+              "BTC": 7.537,
+              "ETH": 10.1915
+            },
+            "scale_ratio": 1.35,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": 0.6886,
+            "ci_95": [
+              -1.3531,
+              2.7303
+            ],
+            "heterogeneity_note": "2/2 assets share the pooled sign at a comparable magnitude.",
+            "method": "fixed_effects",
+            "n_blocks": 279,
+            "n_per_asset": {
+              "BTC": 1953,
+              "ETH": 1953
+            },
+            "n_raw": 3906,
+            "n_unique_dates": 1953,
+            "note": "3906 rows over 1953 dates, clustered into 279 blocks of 7 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.5073099938827541,
+            "per_asset_beta": {
+              "BTC": 0.8725,
+              "ETH": 0.491
+            },
+            "single_asset_driven": false,
+            "status": "OK",
+            "std_error": 1.0372,
+            "t_stat": 0.664
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.3585746827477214,
+            "pooled_effect": 0.7228,
+            "raw_estimates": {
+              "BTC": 0.8725,
+              "ETH": 0.491
+            },
+            "shrunk_estimates": {
+              "BTC": 0.7228,
+              "ETH": 0.7228
+            },
+            "status": "OK",
+            "std_error": 0.7873,
+            "t_stat": 0.918
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -0.8203,
+              2.2659
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.8129664102593608,
+            "heterogeneity_q": 0.056,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.3585746827477214,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 0.8725,
+                "n_baseline": 1724,
+                "n_blocks": 45,
+                "n_event": 229,
+                "std_error": 1.01
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": 0.491,
+                "n_baseline": 1742,
+                "n_blocks": 39,
+                "n_event": 211,
+                "std_error": 1.2569
+              }
+            },
+            "pooled_effect": 0.7228,
+            "signs_agree": true,
+            "status": "OK",
+            "std_error": 0.7873
+          }
+        },
+        "note": "The estimates agree in direction, but only 1 of 4 methods reject zero: asset_normalised. Significance rests on the assumption, not on the data.",
+        "verdict": "METHOD_DEPENDENT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 257.6,
+          "effective_n_event": 64.4,
+          "meaningful_effect_pct": 1.0,
+          "minimum_detectable_effect_pct": 3.498,
+          "note": "With 64 effective event observations the smallest detectable difference is 3.50%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.126,
+          "std_dev": 8.962,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 1464.8,
+          "current_effective_n": 64.4,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 11.2,
+          "note": "64 effective observations now, 1529 needed to detect a 0.72% effect at 80% power: a shortfall of 1465. At 11.2 independent events per year that is about 130.8 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 1529.2,
+          "std_dev": 8.962,
+          "target_effect_pct": 0.718,
+          "years_to_decide": 130.8
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 440,
+      "reasons": [
+        "pooling verdict is METHOD_DEPENDENT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "effect runs against the pre-registered direction",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 4,
+        "mean_excess_pct": 2.3293,
+        "median_p_value": 0.02655109997912313,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": 1.0501,
+          "ETH": 3.6084
+        },
+        "sign_consistent": true,
+        "status": "OK",
+        "worst_p_value": 0.6227096180149564
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": -1,
+      "horizon_days": 14,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "hypothesis_key": "dvol_pooled__dvol_spike__h14",
+      "matches_hypothesis": false,
+      "panel_rows": 3892,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": 0.4036,
+            "fixed_effects": 0.3101,
+            "hierarchical": 0.3634,
+            "meta_analysis": 0.3634
+          },
+          "methods_significant": [
+            "asset_normalised"
+          ],
+          "n_methods_significant": 1,
+          "p_values": {
+            "asset_normalised": 0.0069,
+            "fixed_effects": 0.8635,
+            "hierarchical": 0.7634,
+            "meta_analysis": 0.7634
+          },
+          "signs_agree": true,
+          "spread": 0.0935,
+          "spread_relative_to_effect": 0.26
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.11,
+          "information_gain_pct": 10.9,
+          "mean_correlation": 0.804,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.80 carry the information of 1.11 independent series, not 2. Pooling raises the effective sample by about 11%, not by 100% per extra asset.",
+          "overlapping_dates": 1946,
+          "pairwise": {
+            "BTC~ETH": 0.804
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 40.0,
+          "effective_n_single_asset": 36,
+          "events_per_year": 6.95,
+          "gain_from_pooling": "x1.11",
+          "independent_blocks": 45,
+          "non_overlapping_events": 36,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 259
+        },
+        "horizon_days": 14,
+        "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": 0.4036,
+            "effect_sd": 0.0318,
+            "method": "asset_normalised",
+            "n_baseline": 3452,
+            "n_blocks": 42,
+            "n_event": 440,
+            "note": "Effect of 0.032 standard deviations. The two assets differ in dispersion by a factor of 1.35; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.006940426464645061,
+            "p_value_naive": 0.52240988856453,
+            "per_asset_scale": {
+              "BTC": 10.7985,
+              "ETH": 14.584
+            },
+            "scale_ratio": 1.35,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": 0.3101,
+            "ci_95": [
+              -3.2493,
+              3.8694
+            ],
+            "heterogeneity_note": "1/2 assets share the pooled sign at a comparable magnitude. The pooled effect is carried by one asset and must not be presented as a cross-asset result.",
+            "method": "fixed_effects",
+            "n_blocks": 139,
+            "n_per_asset": {
+              "BTC": 1946,
+              "ETH": 1946
+            },
+            "n_raw": 3892,
+            "n_unique_dates": 1946,
+            "note": "3892 rows over 1946 dates, clustered into 139 blocks of 14 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.8634898038300971,
+            "per_asset_beta": {
+              "BTC": 0.8471,
+              "ETH": -0.2668
+            },
+            "single_asset_driven": true,
+            "status": "OK",
+            "std_error": 1.8001,
+            "t_stat": 0.172
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.7634328768233671,
+            "pooled_effect": 0.3634,
+            "raw_estimates": {
+              "BTC": 0.8471,
+              "ETH": -0.2668
+            },
+            "shrunk_estimates": {
+              "BTC": 0.3634,
+              "ETH": 0.3634
+            },
+            "status": "OK",
+            "std_error": 1.2074,
+            "t_stat": 0.301
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -2.0031,
+              2.7298
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.6474667839475428,
+            "heterogeneity_q": 0.209,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.7634328768233671,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 0.8471,
+                "n_baseline": 1717,
+                "n_blocks": 36,
+                "n_event": 229,
+                "std_error": 1.6052
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -0.2668,
+                "n_baseline": 1735,
+                "n_blocks": 33,
+                "n_event": 211,
+                "std_error": 1.8322
+              }
+            },
+            "pooled_effect": 0.3634,
+            "signs_agree": false,
+            "status": "OK",
+            "std_error": 1.2074
+          }
+        },
+        "note": "The estimates agree in direction, but only 1 of 4 methods reject zero: asset_normalised. Significance rests on the assumption, not on the data.",
+        "verdict": "METHOD_DEPENDENT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 160.0,
+          "effective_n_event": 40.0,
+          "meaningful_effect_pct": 1.5,
+          "minimum_detectable_effect_pct": 6.3542,
+          "note": "With 40 effective event observations the smallest detectable difference is 6.35%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.101,
+          "std_dev": 12.8301,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 12412.9,
+          "current_effective_n": 40.0,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 6.95,
+          "note": "40 effective observations now, 12453 needed to detect a 0.36% effect at 80% power: a shortfall of 12413. At 7.0 independent events per year that is about 1786.0 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 12452.9,
+          "std_dev": 12.8301,
+          "target_effect_pct": 0.36,
+          "years_to_decide": 1786.0
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 440,
+      "reasons": [
+        "pooling verdict is METHOD_DEPENDENT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "effect runs against the pre-registered direction",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 4,
+        "mean_excess_pct": 3.3571,
+        "median_p_value": 0.00032045340304773365,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": -0.0591,
+          "ETH": 6.7732
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 0.03448426065551898
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": -1,
+      "horizon_days": 30,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "hypothesis_key": "dvol_pooled__dvol_spike__h30",
+      "matches_hypothesis": true,
+      "panel_rows": 3860,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": -3.1982,
+            "fixed_effects": -3.2805,
+            "hierarchical": -2.9712,
+            "meta_analysis": -2.9712
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.841,
+            "fixed_effects": 0.4058,
+            "hierarchical": 0.0588,
+            "meta_analysis": 0.0588
+          },
+          "signs_agree": true,
+          "spread": 0.3093,
+          "spread_relative_to_effect": 0.1
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.09,
+          "information_gain_pct": 9.4,
+          "mean_correlation": 0.828,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.83 carry the information of 1.09 independent series, not 2. Pooling raises the effective sample by about 9%, not by 100% per extra asset.",
+          "overlapping_dates": 1930,
+          "pairwise": {
+            "BTC~ETH": 0.828
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 24.0,
+          "effective_n_single_asset": 22,
+          "events_per_year": 4.25,
+          "gain_from_pooling": "x1.09",
+          "independent_blocks": 30,
+          "non_overlapping_events": 22,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 259
+        },
+        "horizon_days": 30,
+        "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": -3.1982,
+            "effect_sd": -0.1678,
+            "method": "asset_normalised",
+            "n_baseline": 3420,
+            "n_blocks": 30,
+            "n_event": 440,
+            "note": "Effect of -0.168 standard deviations. The two assets differ in dispersion by a factor of 1.32; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.8410184593895492,
+            "p_value_naive": 0.0006555376228976344,
+            "per_asset_scale": {
+              "BTC": 16.4099,
+              "ETH": 21.7192
+            },
+            "scale_ratio": 1.32,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": -3.2805,
+            "ci_95": [
+              -11.1116,
+              4.5505
+            ],
+            "heterogeneity_note": "2/2 assets share the pooled sign at a comparable magnitude.",
+            "method": "fixed_effects",
+            "n_blocks": 65,
+            "n_per_asset": {
+              "BTC": 1930,
+              "ETH": 1930
+            },
+            "n_raw": 3860,
+            "n_unique_dates": 1930,
+            "note": "3860 rows over 1930 dates, clustered into 65 blocks of 30 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.4057770233558222,
+            "per_asset_beta": {
+              "BTC": -2.1711,
+              "ETH": -4.472
+            },
+            "single_asset_driven": false,
+            "status": "OK",
+            "std_error": 3.92,
+            "t_stat": -0.837
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.058839326927978775,
+            "pooled_effect": -2.9712,
+            "raw_estimates": {
+              "BTC": -2.1711,
+              "ETH": -4.472
+            },
+            "shrunk_estimates": {
+              "BTC": -2.9712,
+              "ETH": -2.9712
+            },
+            "status": "OK",
+            "std_error": 1.5726,
+            "t_stat": -1.889
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -6.0534,
+              0.111
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.48591171274358513,
+            "heterogeneity_q": 0.486,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.058839326927978775,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": -2.1711,
+                "n_baseline": 1701,
+                "n_blocks": 26,
+                "n_event": 229,
+                "std_error": 1.9471
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -4.472,
+                "n_baseline": 1719,
+                "n_blocks": 25,
+                "n_event": 211,
+                "std_error": 2.6668
+              }
+            },
+            "pooled_effect": -2.9712,
+            "signs_agree": true,
+            "status": "OK",
+            "std_error": 1.5726
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 96.0,
+          "effective_n_event": 24.0,
+          "meaningful_effect_pct": 2.0,
+          "minimum_detectable_effect_pct": 12.3054,
+          "note": "With 24 effective event observations the smallest detectable difference is 12.31%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.074,
+          "std_dev": 19.2461,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 884.5,
+          "current_effective_n": 24.0,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 4.25,
+          "note": "24 effective observations now, 909 needed to detect a 2.00% effect at 80% power: a shortfall of 885. At 4.2 independent events per year that is about 208.1 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 908.5,
+          "std_dev": 19.2461,
+          "target_effect_pct": 2.0,
+          "years_to_decide": 208.1
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 440,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 4,
+        "mean_excess_pct": 3.1212,
+        "median_p_value": 1.3745473599841322e-05,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": -0.6651,
+          "ETH": 6.9075
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 0.3924431606213004
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": 0,
+      "horizon_days": 7,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "hypothesis_key": "dvol_pooled__dvol_compressed__h7",
+      "matches_hypothesis": false,
+      "panel_rows": 3608,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": -0.2632,
+            "fixed_effects": -0.317,
+            "hierarchical": -0.0763,
+            "meta_analysis": -0.0763
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.3899,
+            "fixed_effects": 0.525,
+            "hierarchical": 0.8762,
+            "meta_analysis": 0.8762
+          },
+          "signs_agree": true,
+          "spread": 0.2407,
+          "spread_relative_to_effect": 1.31
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.19,
+          "information_gain_pct": 18.6,
+          "mean_correlation": 0.686,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.69 carry the information of 1.19 independent series, not 2. Pooling raises the effective sample by about 19%, not by 100% per extra asset.",
+          "overlapping_dates": 1804,
+          "pairwise": {
+            "BTC~ETH": 0.686
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 170.2,
+          "effective_n_single_asset": 143,
+          "events_per_year": 29.16,
+          "gain_from_pooling": "x1.19",
+          "independent_blocks": 151,
+          "non_overlapping_events": 143,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 871
+        },
+        "horizon_days": 7,
+        "hypothesis": "H4 compressed implied volatility precedes larger moves",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": -0.2632,
+            "effect_sd": -0.0453,
+            "method": "asset_normalised",
+            "n_baseline": 2186,
+            "n_blocks": 94,
+            "n_event": 1422,
+            "note": "Effect of -0.045 standard deviations. The two assets differ in dispersion by a factor of 1.31; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.38989626322397075,
+            "p_value_naive": 0.1881017419243548,
+            "per_asset_scale": {
+              "BTC": 5.0382,
+              "ETH": 6.5939
+            },
+            "scale_ratio": 1.31,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": -0.317,
+            "ci_95": [
+              -1.2977,
+              0.6637
+            ],
+            "heterogeneity_note": "1/2 assets share the pooled sign at a comparable magnitude. The pooled effect is carried by one asset and must not be presented as a cross-asset result.",
+            "method": "fixed_effects",
+            "n_blocks": 258,
+            "n_per_asset": {
+              "BTC": 1804,
+              "ETH": 1804
+            },
+            "n_raw": 3608,
+            "n_unique_dates": 1804,
+            "note": "3608 rows over 1804 dates, clustered into 258 blocks of 7 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.5249903357862722,
+            "per_asset_beta": {
+              "BTC": 0.0773,
+              "ETH": -0.7631
+            },
+            "single_asset_driven": true,
+            "status": "OK",
+            "std_error": 0.498,
+            "t_stat": -0.637
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.8762176837603342,
+            "pooled_effect": -0.0763,
+            "raw_estimates": {
+              "BTC": 0.0773,
+              "ETH": -0.7631
+            },
+            "shrunk_estimates": {
+              "BTC": -0.0763,
+              "ETH": -0.0763
+            },
+            "status": "OK",
+            "std_error": 0.49,
+            "t_stat": -0.156
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -1.0367,
+              0.884
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.5073757558853217,
+            "heterogeneity_q": 0.439,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.8762176837603342,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 0.0773,
+                "n_baseline": 970,
+                "n_blocks": 56,
+                "n_event": 834,
+                "std_error": 0.542
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -0.7631,
+                "n_baseline": 1216,
+                "n_blocks": 33,
+                "n_event": 588,
+                "std_error": 1.146
+              }
+            },
+            "pooled_effect": -0.0763,
+            "signs_agree": false,
+            "status": "OK",
+            "std_error": 0.49
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 680.8,
+          "effective_n_event": 170.2,
+          "meaningful_effect_pct": 1.0,
+          "minimum_detectable_effect_pct": 1.4241,
+          "note": "With 170 effective event observations the smallest detectable difference is 1.42%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.503,
+          "std_dev": 5.9313,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 10113.7,
+          "current_effective_n": 170.2,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 29.16,
+          "note": "170 effective observations now, 10284 needed to detect a 0.18% effect at 80% power: a shortfall of 10114. At 29.2 independent events per year that is about 346.8 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 10283.9,
+          "std_dev": 5.9313,
+          "target_effect_pct": 0.183,
+          "years_to_decide": 346.8
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 1422,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "effect runs against the pre-registered direction",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 3,
+        "mean_excess_pct": 1.0671,
+        "median_p_value": 0.018271518256318266,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": 0.5335,
+          "ETH": 2.1344
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 0.5019638497596064
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": 0,
+      "horizon_days": 14,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "hypothesis_key": "dvol_pooled__dvol_compressed__h14",
+      "matches_hypothesis": true,
+      "panel_rows": 3594,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": 0.0016,
+            "fixed_effects": -0.0776,
+            "hierarchical": 0.1508,
+            "meta_analysis": 0.1508
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.2047,
+            "fixed_effects": 0.9354,
+            "hierarchical": 0.8579,
+            "meta_analysis": 0.8579
+          },
+          "signs_agree": false,
+          "spread": 0.2284,
+          "spread_relative_to_effect": 2.4
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.21,
+          "information_gain_pct": 21.3,
+          "mean_correlation": 0.649,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.65 carry the information of 1.21 independent series, not 2. Pooling raises the effective sample by about 21%, not by 100% per extra asset.",
+          "overlapping_dates": 1797,
+          "pairwise": {
+            "BTC~ETH": 0.649
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 92.0,
+          "effective_n_single_asset": 76,
+          "events_per_year": 15.57,
+          "gain_from_pooling": "x1.21",
+          "independent_blocks": 83,
+          "non_overlapping_events": 76,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 869
+        },
+        "horizon_days": 14,
+        "hypothesis": "H4 compressed implied volatility precedes larger moves",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": 0.0016,
+            "effect_sd": 0.0002,
+            "method": "asset_normalised",
+            "n_baseline": 2175,
+            "n_blocks": 61,
+            "n_event": 1419,
+            "note": "Effect of 0.000 standard deviations. The two assets differ in dispersion by a factor of 1.24; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.20469198357899654,
+            "p_value_naive": 0.9952118977741183,
+            "per_asset_scale": {
+              "BTC": 7.1654,
+              "ETH": 8.92
+            },
+            "scale_ratio": 1.24,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": -0.0776,
+            "ci_95": [
+              -1.9695,
+              1.8143
+            ],
+            "heterogeneity_note": "1/2 assets share the pooled sign at a comparable magnitude. The pooled effect is carried by one asset and must not be presented as a cross-asset result.",
+            "method": "fixed_effects",
+            "n_blocks": 129,
+            "n_per_asset": {
+              "BTC": 1797,
+              "ETH": 1797
+            },
+            "n_raw": 3594,
+            "n_unique_dates": 1797,
+            "note": "3594 rows over 1797 dates, clustered into 129 blocks of 14 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.935427972316289,
+            "per_asset_beta": {
+              "BTC": 0.6117,
+              "ETH": -0.8568
+            },
+            "single_asset_driven": true,
+            "status": "OK",
+            "std_error": 0.9561,
+            "t_stat": -0.081
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.8579476620223923,
+            "pooled_effect": 0.1508,
+            "raw_estimates": {
+              "BTC": 0.6117,
+              "ETH": -0.8568
+            },
+            "shrunk_estimates": {
+              "BTC": 0.1508,
+              "ETH": 0.1508
+            },
+            "status": "OK",
+            "std_error": 0.8428,
+            "t_stat": 0.179
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -1.501,
+              1.8027
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.4187520351931624,
+            "heterogeneity_q": 0.654,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.8579476620223923,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 0.6117,
+                "n_baseline": 965,
+                "n_blocks": 43,
+                "n_event": 832,
+                "std_error": 1.0174
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -0.8568,
+                "n_baseline": 1210,
+                "n_blocks": 26,
+                "n_event": 587,
+                "std_error": 1.5044
+              }
+            },
+            "pooled_effect": 0.1508,
+            "signs_agree": false,
+            "status": "OK",
+            "std_error": 0.8428
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 368.0,
+          "effective_n_event": 92.0,
+          "meaningful_effect_pct": 1.5,
+          "minimum_detectable_effect_pct": 2.6783,
+          "note": "With 92 effective event observations the smallest detectable difference is 2.68%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.348,
+          "std_dev": 8.2017,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 207381.7,
+          "current_effective_n": 92.0,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 15.57,
+          "note": "92 effective observations now, 207474 needed to detect a 0.06% effect at 80% power: a shortfall of 207382. At 15.6 independent events per year that is about 13319.3 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 207473.7,
+          "std_dev": 8.2017,
+          "target_effect_pct": 0.056,
+          "years_to_decide": 13319.3
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 1419,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 3,
+        "mean_excess_pct": 2.9002,
+        "median_p_value": 0.00014036438796285,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": 0.9089,
+          "ETH": 6.8828
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 0.0356114406366495
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "assets": [
+        "BTC",
+        "ETH"
+      ],
+      "expected_sign": 0,
+      "horizon_days": 30,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "hypothesis_key": "dvol_pooled__dvol_compressed__h30",
+      "matches_hypothesis": false,
+      "panel_rows": 3562,
+      "pooling": {
+        "agreement": {
+          "effects": {
+            "asset_normalised": -0.2828,
+            "fixed_effects": -0.4483,
+            "hierarchical": 0.2855,
+            "meta_analysis": 0.2855
+          },
+          "methods_significant": [],
+          "n_methods_significant": 0,
+          "p_values": {
+            "asset_normalised": 0.6251,
+            "fixed_effects": 0.8162,
+            "hierarchical": 0.8285,
+            "meta_analysis": 0.8285
+          },
+          "signs_agree": false,
+          "spread": 0.7338,
+          "spread_relative_to_effect": 2.25
+        },
+        "cross_asset_correlation": {
+          "assets": [
+            "BTC",
+            "ETH"
+          ],
+          "effective_independent_series": 1.22,
+          "information_gain_pct": 21.9,
+          "mean_correlation": 0.641,
+          "naive_multiplier": 2,
+          "note": "2 assets correlated at 0.64 carry the information of 1.22 independent series, not 2. Pooling raises the effective sample by about 22%, not by 100% per extra asset.",
+          "overlapping_dates": 1781,
+          "pairwise": {
+            "BTC~ETH": 0.641
+          },
+          "status": "OK"
+        },
+        "effective_sample": {
+          "effective_n_pooled": 48.8,
+          "effective_n_single_asset": 40,
+          "events_per_year": 8.26,
+          "gain_from_pooling": "x1.22",
+          "independent_blocks": 45,
+          "non_overlapping_events": 40,
+          "note": "Pooling multiplies the effective sample by the number of effective independent series, not by the number of assets. Rows double; information does not.",
+          "unique_event_dates": 854
+        },
+        "horizon_days": 30,
+        "hypothesis": "H4 compressed implied volatility precedes larger moves",
+        "methods": {
+          "asset_normalised": {
+            "effect_pct_equivalent": -0.2828,
+            "effect_sd": -0.0234,
+            "method": "asset_normalised",
+            "n_baseline": 2173,
+            "n_blocks": 39,
+            "n_event": 1389,
+            "note": "Effect of -0.023 standard deviations. The two assets differ in dispersion by a factor of 1.33; the percent equivalent assumes that difference is pure scale.",
+            "p_value_clustered": 0.6251313652979885,
+            "p_value_naive": 0.49555525214255325,
+            "per_asset_scale": {
+              "BTC": 10.4046,
+              "ETH": 13.8169
+            },
+            "scale_ratio": 1.33,
+            "status": "OK"
+          },
+          "fixed_effects": {
+            "beta": -0.4483,
+            "ci_95": [
+              -4.2907,
+              3.394
+            ],
+            "heterogeneity_note": "1/2 assets share the pooled sign at a comparable magnitude. The pooled effect is carried by one asset and must not be presented as a cross-asset result.",
+            "method": "fixed_effects",
+            "n_blocks": 60,
+            "n_per_asset": {
+              "BTC": 1781,
+              "ETH": 1781
+            },
+            "n_raw": 3562,
+            "n_unique_dates": 1781,
+            "note": "3562 rows over 1781 dates, clustered into 60 blocks of 30 days. Standard errors allow arbitrary correlation within a block and assume independence only across blocks.",
+            "p_value": 0.8161969415848949,
+            "per_asset_beta": {
+              "BTC": 0.6823,
+              "ETH": -1.736
+            },
+            "single_asset_driven": true,
+            "status": "OK",
+            "std_error": 1.9202,
+            "t_stat": -0.233
+          },
+          "hierarchical": {
+            "between_asset_variance": 0.0,
+            "full_pooling": true,
+            "method": "hierarchical",
+            "note": "Between-asset variance is zero, so the assets are statistically indistinguishable and full pooling applies.",
+            "p_value": 0.8285272520180453,
+            "pooled_effect": 0.2855,
+            "raw_estimates": {
+              "BTC": 0.6823,
+              "ETH": -1.736
+            },
+            "shrunk_estimates": {
+              "BTC": 0.2855,
+              "ETH": 0.2855
+            },
+            "status": "OK",
+            "std_error": 1.318,
+            "t_stat": 0.217
+          },
+          "meta_analysis": {
+            "all_clustered": true,
+            "ci_95": [
+              -2.2979,
+              2.8688
+            ],
+            "combinable": true,
+            "heterogeneity_p": 0.49679931634855545,
+            "heterogeneity_q": 0.462,
+            "i_squared_pct": 0.0,
+            "method": "meta_analysis",
+            "note": "I2 = 0% of the variation across assets is beyond sampling error. The assets are consistent and combining them is defensible.",
+            "p_value": 0.8285272520180453,
+            "per_asset": {
+              "BTC": {
+                "clustered": true,
+                "effect": 0.6823,
+                "n_baseline": 964,
+                "n_blocks": 33,
+                "n_event": 817,
+                "std_error": 1.4416
+              },
+              "ETH": {
+                "clustered": true,
+                "effect": -1.736,
+                "n_baseline": 1209,
+                "n_blocks": 18,
+                "n_event": 572,
+                "std_error": 3.2537
+              }
+            },
+            "pooled_effect": 0.2855,
+            "signs_agree": false,
+            "status": "OK",
+            "std_error": 1.318
+          }
+        },
+        "note": "No method finds a pooled effect distinguishable from zero. Pooling did not rescue the single-asset result.",
+        "verdict": "NO_POOLED_EFFECT"
+      },
+      "power": {
+        "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+        "power": {
+          "effective_n_baseline": 195.2,
+          "effective_n_event": 48.8,
+          "meaningful_effect_pct": 2.0,
+          "minimum_detectable_effect_pct": 5.5603,
+          "note": "With 49 effective event observations the smallest detectable difference is 5.56%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+          "power_at_meaningful_effect": 0.172,
+          "std_dev": 12.4008,
+          "verdict": "UNDERPOWERED"
+        },
+        "requirement": {
+          "additional_effective_n": 941743.1,
+          "current_effective_n": 48.8,
+          "decidable_before": "NOT_IN_A_USEFUL_TIMEFRAME",
+          "events_per_year": 8.26,
+          "note": "49 effective observations now, 941792 needed to detect a 0.04% effect at 80% power: a shortfall of 941743. At 8.3 independent events per year that is about 114012.5 more years of data. This question cannot be settled by waiting. Either the effect must be larger than assumed, or the sample must be widened across assets, or it should be abandoned.",
+          "required_effective_n": 941791.9,
+          "std_dev": 12.4008,
+          "target_effect_pct": 0.04,
+          "years_to_decide": 114012.5
+        },
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 1389,
+      "reasons": [
+        "pooling verdict is NO_POOLED_EFFECT",
+        "does not survive FDR correction across the pooled family",
+        "does not survive residualisation against price and volatility controls",
+        "effect runs against the pre-registered direction",
+        "underpowered: the sample cannot detect a meaningful effect"
+      ],
+      "residualisation": {
+        "folds": 3,
+        "mean_excess_pct": 3.8487,
+        "median_p_value": 5.285518826836163e-09,
+        "note": "Controls are fitted per asset on training data only; the worst fold p-value is reported because a signal that survives on average but fails in one period has not survived.",
+        "per_asset_mean": {
+          "BTC": 0.1222,
+          "ETH": 11.3017
+        },
+        "sign_consistent": false,
+        "status": "OK",
+        "worst_p_value": 1.634135409246261e-06
+      },
+      "status": "OK",
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    }
+  ],
+  "verdict_counts": {
+    "INSUFFICIENT_DATA": 12
+  }
+}

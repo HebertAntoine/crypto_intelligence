@@ -5,6 +5,7 @@
 /// edge verdict lives in one place, so the phone and the web UI can never
 /// disagree with each other or with the research.
 library;
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -34,11 +35,13 @@ class DataProvenance {
   bool get isSnapshot => origin == DataOrigin.snapshot;
 
   /// How stale the snapshot is. Null when the data is live or undated.
-  Duration? get age =>
-      generatedAt == null ? null : DateTime.now().toUtc().difference(generatedAt!);
+  Duration? get age => generatedAt == null
+      ? null
+      : DateTime.now().toUtc().difference(generatedAt!);
 
   /// A snapshot older than this is misleading if labelled "today".
   bool get isStale {
+    if (origin == DataOrigin.snapshot && generatedAt == null) return true;
     final elapsed = age;
     return elapsed != null && elapsed > const Duration(hours: 12);
   }
@@ -47,9 +50,13 @@ class DataProvenance {
     if (origin == DataOrigin.live) return 'Données en direct';
     if (origin != DataOrigin.snapshot) return 'Origine inconnue';
     final elapsed = age;
-    if (elapsed == null) return 'Instantané intégré, date inconnue';
-    if (elapsed.inHours < 1) return 'Instantané intégré, il y a ${elapsed.inMinutes} min';
-    if (elapsed.inHours < 48) return 'Instantané intégré, il y a ${elapsed.inHours} h';
+    if (elapsed == null) return 'Instantané intégré, âge inconnu';
+    if (elapsed.inHours < 1) {
+      return 'Instantané intégré, il y a ${elapsed.inMinutes} min';
+    }
+    if (elapsed.inHours < 48) {
+      return 'Instantané intégré, il y a ${elapsed.inHours} h';
+    }
     return 'Instantané intégré, il y a ${elapsed.inDays} jours';
   }
 }
@@ -80,8 +87,7 @@ class ApiClient {
     String? baseUrl,
     this.timeout = const Duration(seconds: 30),
     Future<String> Function(String)? loadAsset,
-  })
-      : _http = client ?? http.Client(),
+  })  : _http = client ?? http.Client(),
         baseUrl = baseUrl ?? AppConfig.apiBaseUrl,
         _loadAsset = loadAsset ?? rootBundle.loadString;
 
@@ -148,7 +154,8 @@ class ApiClient {
   ) async {
     if (!_canUseStaticSnapshot) return null;
     try {
-      final decoded = jsonDecode(await _loadAsset(_staticSnapshotPath(path, query)));
+      final decoded =
+          jsonDecode(await _loadAsset(_staticSnapshotPath(path, query)));
       lastProvenance = DataProvenance(
         DataOrigin.snapshot,
         generatedAt: _snapshotTimestamp(decoded),
@@ -210,7 +217,8 @@ class ApiClient {
     return results;
   }
 
-  Future<StructureRead> structure(String asset, {String timeframe = '4h'}) async =>
+  Future<StructureRead> structure(String asset,
+          {String timeframe = '4h'}) async =>
       StructureRead.fromJson(
         await _get('/structure/$asset', {'timeframe': timeframe})
             as Map<String, dynamic>,
@@ -227,8 +235,8 @@ class ApiClient {
       );
 
   Future<DailyReport> dailyReport(String asset) async {
-    final payload =
-        await _get('/daily-report-v2', {'asset': asset}) as Map<String, dynamic>;
+    final payload = await _get('/daily-report-v2', {'asset': asset})
+        as Map<String, dynamic>;
     final assets = payload['assets'] as Map<String, dynamic>? ?? const {};
     final entry = assets[asset] as Map<String, dynamic>?;
     if (entry == null) {
@@ -252,15 +260,33 @@ class ApiClient {
   Future<Map<String, dynamic>> marketLiquidity() async =>
       await _get('/market/liquidity') as Map<String, dynamic>;
 
+  Future<MarketPriceRead> marketPrice(String asset) async =>
+      MarketPriceRead.fromJson(
+        await _get('/market/price/$asset') as Map<String, dynamic>,
+      );
+
   Future<Map<String, dynamic>> leverage(String asset) async =>
       await _get('/leverage/$asset') as Map<String, dynamic>;
 
   Future<Map<String, dynamic>> volatility(String asset) async =>
       await _get('/volatility/$asset') as Map<String, dynamic>;
 
-  Future<Map<String, dynamic>> breakout(String asset, {String timeframe = '4h'}) async =>
+  Future<Map<String, dynamic>> breakout(String asset,
+          {String timeframe = '4h'}) async =>
       await _get('/breakout/$asset', {'timeframe': timeframe})
           as Map<String, dynamic>;
+
+  Future<ChartRead> chart(
+    String asset, {
+    String timeframe = '4h',
+    String period = '7d',
+  }) async =>
+      ChartRead.fromJson(
+        await _get('/chart/$asset', {
+          'period': period,
+          'timeframe': timeframe,
+        }) as Map<String, dynamic>,
+      );
 
   Future<Map<String, dynamic>> liquidations(String asset) async =>
       await _get('/liquidations/$asset') as Map<String, dynamic>;
@@ -300,6 +326,27 @@ class ApiClient {
 
   Future<Map<String, dynamic>> edgeAll() async =>
       await _get('/edge') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> evidence() async =>
+      await _get('/evidence') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> power() async =>
+      await _get('/power') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> pooling() async =>
+      await _get('/pooling') as Map<String, dynamic>;
+
+  // LOT 6B additions: the ladder definition, the frozen hypothesis registry
+  // and the prospective experiments. Together with evidence() and power()
+  // above they let a screen show a verdict with the context that bounds it.
+  Future<Map<String, dynamic>> evidenceLadder() async =>
+      await _get('/evidence/ladder') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> hypotheses() async =>
+      await _get('/hypotheses') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> liveExperiments() async =>
+      await _get('/live-experiments') as Map<String, dynamic>;
 
   Future<Map<String, dynamic>> derivativesAggregate(String asset) async =>
       await _get('/derivatives/aggregate/$asset') as Map<String, dynamic>;

@@ -7,7 +7,6 @@ going through them.
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -32,7 +31,7 @@ async def edge_state(symbol: str) -> dict[str, Any]:
     from ..engines.edge import EdgeEngine
 
     asset = _parse_asset(symbol)
-    return (await asyncio.to_thread(EdgeEngine().assess, asset)).model_dump()
+    return EdgeEngine().assess(asset).model_dump()
 
 
 @router.get("/edge")
@@ -40,9 +39,7 @@ async def edge_all() -> dict[str, Any]:
     from ..engines.edge import EdgeEngine
 
     engine = EdgeEngine()
-    results = await asyncio.to_thread(
-        lambda: {a.value: engine.assess(a).model_dump() for a in Asset.tradables()}
-    )
+    results = {a.value: engine.assess(a).model_dump() for a in Asset.tradables()}
     return {
         "assets": results,
         "note": (
@@ -59,7 +56,7 @@ async def leverage(symbol: str) -> dict[str, Any]:
     from ..engines.leverage import LeverageCrowdingEngine
 
     asset = _parse_asset(symbol)
-    return await asyncio.to_thread(LeverageCrowdingEngine().assess, asset)
+    return LeverageCrowdingEngine().assess(asset)
 
 
 @router.get("/volatility/{symbol}")
@@ -67,7 +64,7 @@ async def volatility(symbol: str) -> dict[str, Any]:
     from ..engines.volatility import VolatilityRegimeEngine
 
     asset = _parse_asset(symbol)
-    return (await asyncio.to_thread(VolatilityRegimeEngine().assess, asset)).model_dump()
+    return VolatilityRegimeEngine().assess(asset).model_dump()
 
 
 @router.get("/derivatives/aggregate/{symbol}")
@@ -77,6 +74,15 @@ async def derivatives_aggregate(symbol: str) -> dict[str, Any]:
 
     asset = _parse_asset(symbol)
     return (await aggregate(asset)).to_dict()
+
+
+@router.get("/market/price/{symbol}")
+async def market_price(symbol: str) -> dict[str, Any]:
+    """Fast spot price consensus, separate from slower analytical data."""
+    from ..engines.market_price import market_price_snapshot
+
+    asset = _parse_asset(symbol)
+    return (await market_price_snapshot(asset)).model_dump(mode="json")
 
 
 class _ReconstructedRegime:
@@ -149,7 +155,11 @@ async def today(symbol: str) -> dict[str, Any]:
             "volatility": vol.model_dump(),
         }
 
-    return await asyncio.to_thread(build)
+    from ..engines.market_price import market_price_snapshot
+
+    payload = build()
+    payload["market_data"] = (await market_price_snapshot(asset)).model_dump(mode="json")
+    return payload
 
 
 @router.get("/research/funding-conditioned")
@@ -177,7 +187,7 @@ async def funding_conditioned(
                 log.warning("stored_study_unreadable", error=str(exc))
 
     assets = [_parse_asset(asset)] if asset else None
-    return await asyncio.to_thread(run_all, assets)
+    return run_all(assets)
 
 
 @router.get("/cross-asset/{symbol}")
@@ -186,9 +196,7 @@ async def cross_asset(symbol: str, window: int = Query(90, ge=30, le=365)) -> di
     from ..engines.cross_asset import CrossAssetAnalyzer
 
     asset = _parse_asset(symbol)
-    return (
-        await asyncio.to_thread(CrossAssetAnalyzer(window=window).assess, asset)
-    ).model_dump()
+    return CrossAssetAnalyzer(window=window).assess(asset).model_dump()
 
 
 @router.get("/market/ratios")
@@ -196,21 +204,21 @@ async def market_ratios() -> dict[str, Any]:
     """ETH/BTC, SOL/BTC, SOL/ETH and BTC dominance."""
     from ..engines.cross_asset import MarketRatiosEngine
 
-    return await asyncio.to_thread(MarketRatiosEngine().assess)
+    return MarketRatiosEngine().assess()
 
 
 @router.get("/market/breadth")
 async def market_breadth() -> dict[str, Any]:
     from ..engines.cross_asset import CryptoBreadthEngine
 
-    return (await asyncio.to_thread(CryptoBreadthEngine().assess)).model_dump()
+    return CryptoBreadthEngine().assess().model_dump()
 
 
 @router.get("/market/liquidity")
 async def market_liquidity() -> dict[str, Any]:
     from ..engines.cross_asset import LiquidityRegimeEngine
 
-    return (await asyncio.to_thread(LiquidityRegimeEngine().assess)).model_dump()
+    return LiquidityRegimeEngine().assess().model_dump()
 
 
 @router.get("/breakout/{symbol}")
@@ -224,9 +232,7 @@ async def breakout(symbol: str, timeframe: str = "1d") -> dict[str, Any]:
         tf = Timeframe(timeframe)
     except ValueError:
         raise HTTPException(400, f"Unknown timeframe '{timeframe}'") from None
-    return (
-        await asyncio.to_thread(BreakoutQualityEngine().assess, asset, tf)
-    ).model_dump()
+    return BreakoutQualityEngine().assess(asset, tf).model_dump()
 
 
 @router.get("/liquidations/{symbol}")
@@ -244,7 +250,7 @@ async def research_baselines(asset: str | None = None) -> dict[str, Any]:
     from ..research.baselines import run_all
 
     assets = [_parse_asset(asset)] if asset else None
-    return await asyncio.to_thread(run_all, assets)
+    return run_all(assets)
 
 
 @router.get("/research/patterns")
@@ -264,7 +270,7 @@ async def research_patterns(asset: str | None = None, recompute: bool = False) -
     from ..research.pattern_validation import run_all
 
     assets = [_parse_asset(asset)] if asset else None
-    return await asyncio.to_thread(run_all, assets)
+    return run_all(assets)
 
 
 @router.get("/research/drift")
@@ -273,7 +279,7 @@ async def research_drift(asset: str | None = None) -> dict[str, Any]:
     from ..research.drift import run_all
 
     assets = [_parse_asset(asset)] if asset else None
-    return await asyncio.to_thread(run_all, assets)
+    return run_all(assets)
 
 
 @router.get("/research/features")

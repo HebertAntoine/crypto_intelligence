@@ -1,0 +1,46 @@
+{
+  "actionable_from": 6,
+  "levels": [
+    {
+      "level": 0,
+      "meaning": "declared but never run",
+      "name": "NOT_TESTED"
+    },
+    {
+      "level": 1,
+      "meaning": "a difference exists in sample",
+      "name": "OBSERVED"
+    },
+    {
+      "level": 2,
+      "meaning": "survives comparison against a conditioned baseline",
+      "name": "BASELINE_RELATIVE"
+    },
+    {
+      "level": 3,
+      "meaning": "survives regime stratification",
+      "name": "STRATIFIED"
+    },
+    {
+      "level": 4,
+      "meaning": "survives residualisation on purged folds",
+      "name": "CONTROLLED"
+    },
+    {
+      "level": 5,
+      "meaning": "survives leave-one-year, leave-one-asset and cycle deletion",
+      "name": "ROBUST"
+    },
+    {
+      "level": 6,
+      "meaning": "reproduces on data not used to find it",
+      "name": "REPLICATED"
+    },
+    {
+      "level": 7,
+      "meaning": "confirmed prospectively on data that did not exist at claim time",
+      "name": "LIVE_CONFIRMED"
+    }
+  ],
+  "note": "Rungs are cumulative and strictly ordered. A claim that survives a harder test while failing an easier one stops at the easier one, because that pattern nearly always means the harder test was misapplied rather than that the claim is strong."
+}
