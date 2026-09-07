@@ -201,7 +201,13 @@ class ApiClient {
       final suffix = pairs.map((e) => '${e.key}-${e.value}').join('__');
       name = '${name}__$suffix';
     }
-    return 'assets/static_api/$name.json';
+    // Le dossier a ete renomme une fois, volontairement. L'ancien chemin
+    // etait servi avec `Cache-Control: immutable, max-age=1 an` alors que
+    // Flutter ne hache pas les noms d'assets: les navigateurs qui l'avaient
+    // en cache ne revalidaient plus, et affichaient indefiniment des
+    // instantanes anterieurs a l'ajout du prix. Changer l'URL est le seul
+    // moyen d'evincer ces entrees sans demander a chacun de vider son cache.
+    return 'assets/api_snapshots/$name.json';
   }
 
   Future<Map<String, dynamic>> health() async =>

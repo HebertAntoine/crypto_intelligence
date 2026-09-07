@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 APP_LIB = Path(__file__).resolve().parents[2] / "app" / "lib"
@@ -99,7 +100,7 @@ def test_bundled_snapshots_still_carry_an_observation_timestamp():
     """
     import json
 
-    snapshots = Path(__file__).resolve().parents[2] / "app" / "assets" / "static_api"
+    snapshots = Path(__file__).resolve().parents[2] / "app" / "assets" / "api_snapshots"
     for asset in ("BTC", "ETH", "SOL"):
         path = snapshots / f"today__{asset}.json"
         if not path.exists():
@@ -145,3 +146,39 @@ def test_deployment_never_caches_data_snapshots_as_immutable():
                 assert "max-age=31536000" not in value, (
                     f"{name} pins {source} for a year"
                 )
+
+
+def test_the_client_asks_for_the_directory_pubspec_actually_ships():
+    """A mismatch here fails silently and looks exactly like missing data.
+
+    If the client requests `assets/x/` while pubspec bundles `assets/y/`, every
+    snapshot lookup misses and the page renders UNAVAILABLE across the board -
+    indistinguishable, on screen, from a backend outage. The two must be read
+    from the same string.
+    """
+    root = Path(__file__).resolve().parents[2]
+
+    client = (root / "app" / "lib" / "api" / "client.dart").read_text(encoding="utf-8")
+    requested = re.search(r"return '(assets/[^/]+)/\$name\.json';", client)
+    assert requested, "the snapshot path is no longer a recognisable literal"
+    directory = requested.group(1)
+
+    pubspec = (root / "app" / "pubspec.yaml").read_text(encoding="utf-8")
+    assert f"- {directory}/" in pubspec, (
+        f"client requests {directory}/ but pubspec does not bundle it"
+    )
+
+    shipped = root / "app" / directory
+    assert shipped.is_dir(), f"{directory} does not exist on disk"
+    assert list(shipped.glob("today__*.json")), f"{directory} ships no today snapshots"
+
+
+def test_the_export_script_writes_where_the_app_reads():
+    root = Path(__file__).resolve().parents[2]
+    client = (root / "app" / "lib" / "api" / "client.dart").read_text(encoding="utf-8")
+    directory = re.search(r"return 'assets/([^/]+)/\$name\.json';", client).group(1)
+
+    script = (root / "scripts" / "export_flutter_static_api.py").read_text(encoding="utf-8")
+    assert f'"{directory}"' in script, (
+        f"the export script does not write into assets/{directory}"
+    )

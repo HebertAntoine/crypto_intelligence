@@ -166,7 +166,7 @@ void main() {
           return http.Response('<html>app shell</html>', 200);
         }),
         loadAsset: (path) async {
-          expect(path, 'assets/static_api/health.json');
+          expect(path, 'assets/api_snapshots/health.json');
           return '{"status":"ok","source":"static"}';
         },
       );
@@ -184,7 +184,7 @@ void main() {
         client: StubClient(
             (_) async => http.Response('<html>app shell</html>', 200)),
         loadAsset: (path) async {
-          expect(path, 'assets/static_api/health.json');
+          expect(path, 'assets/api_snapshots/health.json');
           return '{"status":"ok","source":"static"}';
         },
       );

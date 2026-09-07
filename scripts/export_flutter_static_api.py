@@ -15,7 +15,7 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = PROJECT_ROOT / "app" / "assets" / "static_api"
+OUT_DIR = PROJECT_ROOT / "app" / "assets" / "api_snapshots"
 ASSETS = ("BTC", "ETH", "SOL")
 TIMEFRAMES = ("15m", "1h", "4h", "1d", "1w")
 
