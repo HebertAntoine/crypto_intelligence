@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query
 from ..core.enums import Asset, Timeframe
 from ..db import repo
 from ..engines.technical import indicators as ind
+from ..engines.technical import window as window_module
 from ..history import backfill as backfill_module
 from ..history import snapshots, store
 from ..knowledge.store import knowledge_stats
@@ -36,38 +37,60 @@ def _parse_asset(symbol: str) -> Asset:
 async def chart(
     symbol: str,
     timeframe: str = Query("1d"),
-    limit: int = Query(400, le=2000),
+    period: str = Query("3m", description="7d, 30d, 3m, 1y or max"),
     indicators: str = Query("ema20,ema50,ema200,bb,rsi,macd"),
 ) -> dict[str, Any]:
     """Candles plus overlays, served from the local history store.
 
     Reading from storage rather than re-fetching keeps chart navigation instant
     and means the chart shows exactly the data the analysis used.
+
+    Indicators are computed on the FULL window and only then carried through the
+    same aggregation as the candles. Computing them on already-aggregated bars
+    would produce an EMA200 that is not the EMA200 the analysis used.
     """
     asset = _parse_asset(symbol)
     try:
         tf = Timeframe(timeframe)
     except ValueError:
         raise HTTPException(400, f"Unknown timeframe '{timeframe}'") from None
+    if period not in window_module.PERIOD_DAYS:
+        known = ", ".join(window_module.PERIOD_DAYS)
+        raise HTTPException(400, f"Unknown period '{period}'. Known: {known}")
 
-    df = store.load_candles(asset, tf, limit=limit)
-    if df.empty:
+    full = store.load_candles(asset, tf)
+    if full.empty:
         return {
-            "asset": asset.value, "timeframe": tf.value, "available": False,
+            "asset": asset.value, "timeframe": tf.value, "period": period,
+            "available": False,
             "reason": (
                 "UNAVAILABLE - no stored candles for this timeframe. "
                 "Run `make backfill` to populate history."
             ),
-            "candles": [],
+            "candles": [], "summary": {"available": False},
         }
 
+    win = window_module.build_window(full, period, tf)
+    # Three series, deliberately distinct:
+    #   `warm`   the window plus preceding bars - what indicators are computed on
+    #   `source` the real bars of the window - what patterns and levels analyse
+    #   `df`     the possibly aggregated bars - what actually gets drawn
+    warm, warm_bars = window_module.slice_with_warmup(full, period, tf)
+    source, _ = window_module.slice_period(full, period, tf)
+    df = win.candles
+    factor = win.downsample_factor
+
     wanted = {name.strip().lower() for name in indicators.split(",") if name.strip()}
-    close = df["close"]
+    close = warm["close"]
 
     def series(values) -> list[float | None]:
-        # None (not 0) for the warm-up region, so the chart draws a gap rather
+        # Computed over the warm-up too, then trimmed back to the window, so a
+        # 200-period EMA has a value on the first drawn bar of a 7-day view.
+        trimmed = values.iloc[warm_bars:] if warm_bars else values
+        carried = window_module.downsample_series(trimmed, source, factor)
+        # None (not 0) for any residual warm-up, so the chart draws a gap rather
         # than a fabricated line at zero.
-        return [None if v != v else round(float(v), 8) for v in values]
+        return [None if v != v else round(float(v), 8) for v in carried]
 
     overlays: dict[str, Any] = {}
     if "ema20" in wanted:
@@ -99,9 +122,12 @@ async def chart(
         from ..core.models import Candle, OHLCVSeries, Provenance
         from ..engines.technical.engine import TechnicalAnalysisEngine
 
+        # `source`, not `df`: a pattern found on 4:1 aggregated bars is a
+        # pattern on a timeframe the user did not select, and its levels would
+        # not match the ones the rest of the system computed.
         candles = [
             Candle(timestamp=ts, open=r.open, high=r.high, low=r.low, close=r.close, volume=r.volume)
-            for ts, r in df.iterrows()
+            for ts, r in source.iterrows()
         ]
         snapshot = TechnicalAnalysisEngine().analyze(
             OHLCVSeries(
@@ -133,7 +159,9 @@ async def chart(
         log.debug("chart_overlay_failed", error=str(exc))
 
     return {
-        "asset": asset.value, "timeframe": tf.value, "available": True,
+        "asset": asset.value, "timeframe": tf.value, "period": period,
+        "available": True,
+        "summary": win.summary(),
         "candles": [
             {
                 "time": ts.isoformat(),

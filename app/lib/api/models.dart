@@ -479,3 +479,206 @@ class EntryOpportunity {
         missing: (json['missing'] as List?)?.cast<String>() ?? const [],
       );
 }
+
+// --- LOT 6A models --------------------------------------------------------
+
+/// Implied volatility and the variance risk premium.
+///
+/// The only family sourced from a market other than spot or perpetuals. SOL
+/// has no Deribit index and is reported unavailable rather than approximated.
+class ImpliedVolatilityRead {
+  final String asset;
+  final bool available;
+  final String unavailableReason;
+  final double? dvol;
+  final double? dvolPercentile;
+  final double? dvolChange30d;
+  final double? realisedVolAnnualised;
+  final double? variancePremium;
+  final double? premiumPercentile;
+  final String pricing;
+  final String compression;
+  final int historyDays;
+  final String interpretation;
+  final String edgeNote;
+
+  const ImpliedVolatilityRead({
+    required this.asset,
+    required this.available,
+    required this.unavailableReason,
+    required this.dvol,
+    required this.dvolPercentile,
+    required this.dvolChange30d,
+    required this.realisedVolAnnualised,
+    required this.variancePremium,
+    required this.premiumPercentile,
+    required this.pricing,
+    required this.compression,
+    required this.historyDays,
+    required this.interpretation,
+    required this.edgeNote,
+  });
+
+  factory ImpliedVolatilityRead.fromJson(Map<String, dynamic> json) =>
+      ImpliedVolatilityRead(
+        asset: json['asset'] as String? ?? '',
+        available: json['available'] as bool? ?? false,
+        unavailableReason: json['unavailable_reason'] as String? ?? '',
+        dvol: (json['dvol'] as num?)?.toDouble(),
+        dvolPercentile: (json['dvol_percentile'] as num?)?.toDouble(),
+        dvolChange30d: (json['dvol_change_30d'] as num?)?.toDouble(),
+        realisedVolAnnualised:
+            (json['realised_vol_annualised'] as num?)?.toDouble(),
+        variancePremium: (json['variance_premium'] as num?)?.toDouble(),
+        premiumPercentile: (json['premium_percentile'] as num?)?.toDouble(),
+        pricing: json['pricing'] as String? ?? 'UNKNOWN',
+        compression: json['compression'] as String? ?? 'UNKNOWN',
+        historyDays: (json['history_days'] as num?)?.toInt() ?? 0,
+        interpretation: json['interpretation'] as String? ?? '',
+        edgeNote: json['edge_note'] as String? ?? '',
+      );
+
+  /// French label for the pricing state.
+  String get pricingLabel => switch (pricing) {
+        'EXPENSIVE' => 'chères',
+        'SLIGHTLY_EXPENSIVE' => 'un peu chères',
+        'FAIR' => 'au juste prix',
+        'SLIGHTLY_CHEAP' => 'un peu bon marché',
+        'CHEAP' => 'bon marché',
+        _ => 'inconnu',
+      };
+}
+
+class TimeframeReading {
+  final String timeframe;
+  final bool available;
+  final int bars;
+  final String structure;
+  final String location;
+  final double? relativePosition;
+  final double? rangeTop;
+  final double? rangeBottom;
+  final String reasonUnavailable;
+
+  const TimeframeReading({
+    required this.timeframe,
+    required this.available,
+    required this.bars,
+    required this.structure,
+    required this.location,
+    required this.relativePosition,
+    required this.rangeTop,
+    required this.rangeBottom,
+    required this.reasonUnavailable,
+  });
+
+  factory TimeframeReading.fromJson(Map<String, dynamic> json) =>
+      TimeframeReading(
+        timeframe: json['timeframe'] as String? ?? '',
+        available: json['available'] as bool? ?? false,
+        bars: (json['bars'] as num?)?.toInt() ?? 0,
+        structure: json['structure'] as String? ?? 'UNCLEAR',
+        location: json['location'] as String? ?? 'NO_VALID_RANGE',
+        relativePosition: (json['relative_position'] as num?)?.toDouble(),
+        rangeTop: (json['range_top'] as num?)?.toDouble(),
+        rangeBottom: (json['range_bottom'] as num?)?.toDouble(),
+        reasonUnavailable: json['reason_unavailable'] as String? ?? '',
+      );
+
+  String get structureLabel => switch (structure) {
+        'BULLISH_STRUCTURE' => 'haussière',
+        'BEARISH_STRUCTURE' => 'baissière',
+        'RANGE_STRUCTURE' => 'range',
+        'TRANSITION' => 'transition',
+        _ => 'indéterminée',
+      };
+}
+
+/// One reading per timeframe plus what they say together.
+///
+/// A conflict between timeframes is the normal state of a market, not an
+/// error. It is named rather than averaged away.
+class MultiTimeframeRead {
+  final String asset;
+  final List<TimeframeReading> timeframes;
+  final String alignment;
+  final String dominantDirection;
+  final List<String> conflicts;
+  final String narrative;
+  final String caveat;
+
+  const MultiTimeframeRead({
+    required this.asset,
+    required this.timeframes,
+    required this.alignment,
+    required this.dominantDirection,
+    required this.conflicts,
+    required this.narrative,
+    required this.caveat,
+  });
+
+  factory MultiTimeframeRead.fromJson(Map<String, dynamic> json) =>
+      MultiTimeframeRead(
+        asset: json['asset'] as String? ?? '',
+        timeframes: ((json['timeframes'] as List?) ?? const [])
+            .map((e) => TimeframeReading.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        alignment: json['alignment'] as String? ?? 'INSUFFICIENT_DATA',
+        dominantDirection: json['dominant_direction'] as String? ?? 'UNDETERMINED',
+        conflicts: (json['conflicts'] as List?)?.cast<String>() ?? const [],
+        narrative: json['narrative'] as String? ?? '',
+        caveat: json['caveat'] as String? ?? '',
+      );
+
+  String get alignmentLabel => switch (alignment) {
+        'HIGHER_TIMEFRAME_ALIGNMENT' => 'unités alignées',
+        'CONFLICT' => 'unités en conflit',
+        'TRANSITION' => 'transition',
+        _ => 'données insuffisantes',
+      };
+}
+
+/// A section of the daily report. An unavailable section carries its reason.
+class ReportSection {
+  final String title;
+  final List<String> lines;
+  final bool available;
+  final String reason;
+
+  const ReportSection({
+    required this.title,
+    required this.lines,
+    required this.available,
+    required this.reason,
+  });
+
+  factory ReportSection.fromJson(Map<String, dynamic> json) => ReportSection(
+        title: json['title'] as String? ?? '',
+        lines: (json['lines'] as List?)?.cast<String>() ?? const [],
+        available: json['available'] as bool? ?? true,
+        reason: json['reason'] as String? ?? '',
+      );
+}
+
+class DailyReport {
+  final String asset;
+  final String generatedAt;
+  final List<ReportSection> sections;
+  final List<String> conclusion;
+
+  const DailyReport({
+    required this.asset,
+    required this.generatedAt,
+    required this.sections,
+    required this.conclusion,
+  });
+
+  factory DailyReport.fromJson(Map<String, dynamic> json) => DailyReport(
+        asset: json['asset'] as String? ?? '',
+        generatedAt: json['generated_at'] as String? ?? '',
+        sections: ((json['sections'] as List?) ?? const [])
+            .map((e) => ReportSection.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        conclusion: (json['conclusion'] as List?)?.cast<String>() ?? const [],
+      );
+}

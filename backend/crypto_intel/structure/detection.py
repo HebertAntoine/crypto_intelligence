@@ -33,6 +33,7 @@ from enum import StrEnum
 from typing import Any
 
 from ..core.enums import Timeframe
+from .geometry import GeometryPoint, GeometryZone, PatternGeometry, TrendLine
 from .patterns import PatternClass, PatternEdgeState, PatternState, StructuralPattern
 
 
@@ -84,104 +85,6 @@ class SignalVerdict(StrEnum):
     NEUTRAL = "NEUTRAL"
     ADVERSE = "ADVERSE"
     UNAVAILABLE = "UNAVAILABLE"
-
-
-# --- geometry --------------------------------------------------------------
-#
-# Everything below carries real timestamps rather than bar indices. An index is
-# meaningless to a chart that has loaded a different window of candles, and it
-# breaks silently when the store gains earlier history.
-
-
-@dataclass(slots=True, frozen=True)
-class GeometryPoint:
-    """One named point of the figure - a peak, a trough, a shoulder."""
-
-    time: datetime
-    price: float
-    role: str = ""          # "first_top", "head", "left_shoulder", ...
-    kind: str = "pivot"     # "pivot" | "close" | "projected"
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "time": self.time.isoformat(),
-            "price": self.price,
-            "role": self.role,
-            "kind": self.kind,
-        }
-
-
-@dataclass(slots=True, frozen=True)
-class TrendLine:
-    """A segment between two points, optionally extended to the right.
-
-    `extend` exists because a triangle's boundaries are meaningful ahead of the
-    last bar, while a neckline drawn across two completed tops is not.
-    """
-
-    start: GeometryPoint
-    end: GeometryPoint
-    role: str = ""          # "upper", "lower", "neckline", "pole", ...
-    extend: bool = False
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "start": self.start.to_dict(),
-            "end": self.end.to_dict(),
-            "role": self.role,
-            "extend": self.extend,
-        }
-
-
-@dataclass(slots=True, frozen=True)
-class GeometryZone:
-    """A rectangular area - a breakout band, an invalidation region."""
-
-    start_time: datetime
-    end_time: datetime
-    low: float
-    high: float
-    role: str = ""          # "breakout", "invalidation", "target", ...
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "start_time": self.start_time.isoformat(),
-            "end_time": self.end_time.isoformat(),
-            "low": self.low,
-            "high": self.high,
-            "role": self.role,
-        }
-
-
-@dataclass(slots=True)
-class PatternGeometry:
-    """Enough to redraw the figure without recomputing it.
-
-    A frontend holding this and the candles can reconstruct exactly what the
-    detector saw. It never re-derives geometry of its own, which is what keeps
-    the drawing and the analysis from disagreeing.
-    """
-
-    points: list[GeometryPoint] = field(default_factory=list)
-    trend_lines: list[TrendLine] = field(default_factory=list)
-    zones: list[GeometryZone] = field(default_factory=list)
-    neckline: TrendLine | None = None
-    breakout_area: GeometryZone | None = None
-
-    @property
-    def is_empty(self) -> bool:
-        return not (self.points or self.trend_lines or self.zones or self.neckline)
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "points": [p.to_dict() for p in self.points],
-            "trend_lines": [line.to_dict() for line in self.trend_lines],
-            "zones": [z.to_dict() for z in self.zones],
-            "neckline": self.neckline.to_dict() if self.neckline else None,
-            "breakout_area": (
-                self.breakout_area.to_dict() if self.breakout_area else None
-            ),
-        }
 
 
 @dataclass(slots=True, frozen=True)
@@ -383,6 +286,29 @@ _STATE_TO_STATUS: dict[PatternState, PatternStatus] = {
 }
 
 
+#: How close to its trigger price must sit, in ATR, to read as pending rather
+#: than merely detected. Under a quarter of an ATR the next bar can plausibly
+#: resolve it; further away the figure is simply still forming.
+BREAKOUT_PROXIMITY_ATR = 0.25
+
+
+def _lifecycle_status(
+    pattern: StructuralPattern,
+    trigger: float | None,
+    last_close: float | None,
+    atr: float | None,
+) -> PatternStatus:
+    """Map the detector's three states onto the six-state lifecycle."""
+    base = _STATE_TO_STATUS[pattern.state]
+    if base is not PatternStatus.DETECTED:
+        return base
+    if trigger is None or last_close is None or atr is None or atr <= 0:
+        return base
+    if abs(last_close - trigger) / atr <= BREAKOUT_PROXIMITY_ATR:
+        return PatternStatus.BREAKOUT_PENDING
+    return base
+
+
 def family_for(pattern_type: str) -> PatternFamily:
     """The family of a detector, or a clear error when it was never declared."""
     try:
@@ -405,12 +331,22 @@ def from_structural(
     status: PatternStatus | None = None,
     breakout_level: float | None = None,
     target_level: float | None = None,
+    last_close: float | None = None,
+    atr: float | None = None,
 ) -> PatternDetection:
     """Publish a detector's finding, without reinterpreting it.
 
     Everything the detector decided - the score, its components, the levels, the
     class - is carried across unchanged. This function adds context the detector
     does not have (which asset, which window, how to draw it) and nothing else.
+
+    The one judgement made here is BREAKOUT_PENDING, and only because the
+    detector cannot make it: `PatternState` has three values, while the
+    lifecycle §6 asks for distinguishes "the shape is complete" from "price is
+    sitting on the trigger without having closed through it". Given the current
+    close and an ATR to scale by, that distinction is measurable rather than
+    guessed - and without them the status stays DETECTED rather than being
+    invented.
     """
     # Numeric component scores are the ones that explain the confidence; the
     # detectors also record raw measurements (ATR distances, bar counts) in the
@@ -432,6 +368,10 @@ def from_structural(
     }
 
     direction = PatternDirection(pattern.direction_if_textbook)
+    trigger = (
+        breakout_level if breakout_level is not None
+        else pattern.key_levels.get("neckline")
+    )
 
     return PatternDetection(
         symbol=symbol,
@@ -445,7 +385,7 @@ def from_structural(
         confirmed_at=pattern.confirmation_time
         if pattern.state is PatternState.CONFIRMED
         else None,
-        status=status or _STATE_TO_STATUS[pattern.state],
+        status=status or _lifecycle_status(pattern, trigger, last_close, atr),
         recognition_confidence=pattern.recognition_confidence,
         confidence_components=score_components,
         pattern_class=pattern.pattern_class,
@@ -461,3 +401,23 @@ def from_structural(
         metadata={**raw_measurements, "key_levels": pattern.key_levels},
         notes=pattern.notes,
     )
+
+
+#: Re-exported so consumers can import the whole pattern vocabulary from one
+#: place; the definitions live in `geometry.py` to keep detection and drawing
+#: free of a circular import.
+__all__ = [
+    "ConfirmationSignal",
+    "GeometryPoint",
+    "GeometryZone",
+    "PatternDetection",
+    "PatternDirection",
+    "PatternFamily",
+    "PatternGeometry",
+    "PatternStatus",
+    "SignalVerdict",
+    "TrendLine",
+    "family_for",
+    "from_structural",
+    "make_pattern_id",
+]

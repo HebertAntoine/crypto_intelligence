@@ -122,6 +122,8 @@ void main() {
     });
   });
 
+  _lot6ModelTests();
+
   group('Absent values', () {
     test('formatters render null as an explicit dash, never as zero', () {
       expect(fmt(null), '—');
@@ -137,6 +139,100 @@ void main() {
         const MaterialApp(home: Scaffold(body: UnavailableText())),
       );
       expect(find.text('INDISPONIBLE'), findsOneWidget);
+    });
+  });
+}
+
+/// LOT 6A models exposed in the app.
+void _lot6ModelTests() {
+  group('Implied volatility', () {
+    test('an unavailable asset is never given a substituted value', () {
+      final reading = ImpliedVolatilityRead.fromJson(const {
+        'asset': 'SOL',
+        'available': false,
+        'unavailable_reason': 'Deribit lists no volatility index for this asset.',
+      });
+      expect(reading.available, isFalse);
+      expect(reading.dvol, isNull);
+      expect(reading.variancePremium, isNull);
+      expect(reading.unavailableReason, contains('no volatility index'));
+    });
+
+    test('the premium and its percentile are read', () {
+      final reading = ImpliedVolatilityRead.fromJson(const {
+        'asset': 'BTC',
+        'available': true,
+        'dvol': 39.08,
+        'realised_vol_annualised': 47.44,
+        'variance_premium': -8.36,
+        'premium_percentile': 7.9,
+        'pricing': 'CHEAP',
+      });
+      expect(reading.variancePremium, -8.36);
+      expect(reading.pricingLabel, 'bon marché');
+    });
+  });
+
+  group('Multi-timeframe', () {
+    test('a conflict is carried through, not averaged away', () {
+      final reading = MultiTimeframeRead.fromJson(const {
+        'asset': 'BTC',
+        'alignment': 'CONFLICT',
+        'conflicts': ['1w is bearish while 4h is bullish'],
+        'timeframes': [
+          {'timeframe': '1w', 'available': true, 'structure': 'BEARISH_STRUCTURE'},
+          {'timeframe': '4h', 'available': true, 'structure': 'BULLISH_STRUCTURE'},
+        ],
+      });
+      expect(reading.conflicts, hasLength(1));
+      expect(reading.alignmentLabel, 'unités en conflit');
+      expect(reading.timeframes.first.structureLabel, 'baissière');
+    });
+
+    test('an unreadable timeframe carries its reason', () {
+      final reading = MultiTimeframeRead.fromJson(const {
+        'timeframes': [
+          {'timeframe': '15m', 'available': false, 'reason_unavailable': 'only 12 bars'},
+        ],
+      });
+      expect(reading.timeframes.single.available, isFalse);
+      expect(reading.timeframes.single.reasonUnavailable, 'only 12 bars');
+    });
+  });
+
+  group('Daily report', () {
+    test('an unavailable section keeps its reason instead of going blank', () {
+      final report = DailyReport.fromJson(const {
+        'asset': 'BTC',
+        'sections': [
+          {
+            'title': 'NETWORK FUNDAMENTALS',
+            'available': false,
+            'reason': 'on-chain history not ingested',
+            'lines': [],
+          },
+        ],
+        'conclusion': ['BTC is bullish.'],
+      });
+      final section = report.sections.single;
+      expect(section.available, isFalse);
+      expect(section.reason, isNotEmpty);
+    });
+
+    test('measured edge follows entry opportunity in the section order', () {
+      final report = DailyReport.fromJson(const {
+        'sections': [
+          {'title': 'ENTRY OPPORTUNITY', 'lines': [], 'available': true},
+          {'title': 'MEASURED EDGE', 'lines': [], 'available': true},
+        ],
+      });
+      final titles = report.sections.map((s) => s.title).toList();
+      expect(
+        titles.indexOf('MEASURED EDGE'),
+        titles.indexOf('ENTRY OPPORTUNITY') + 1,
+        reason: 'a favourable configuration must never be readable without the '
+            'edge verdict beside it',
+      );
     });
   });
 }

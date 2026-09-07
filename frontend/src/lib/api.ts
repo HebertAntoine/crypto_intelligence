@@ -38,9 +38,9 @@ export const api = {
     request<Evidence[]>("/why/batch", { method: "POST", body: JSON.stringify(ids) }),
 
   // --- LOT 2 ---------------------------------------------------------------
-  chart: (symbol: string, timeframe: string, indicators?: string) =>
+  chart: (symbol: string, timeframe: string, period = "3m", indicators?: string) =>
     request<ChartData>(
-      `/chart/${symbol}?timeframe=${timeframe}` +
+      `/chart/${symbol}?timeframe=${timeframe}&period=${period}` +
         (indicators ? `&indicators=${encodeURIComponent(indicators)}` : ""),
     ),
   etfVsPrice: (symbol: string, days = 365, lag = 0) =>
@@ -174,9 +174,30 @@ export interface EntryTimingAssessment {
   freshness: string;
 }
 
+export interface ChartSummary {
+  available: boolean;
+  last_price?: number;
+  first_price?: number;
+  change_pct?: number | null;
+  period_high?: number;
+  period_low?: number;
+  high_time?: string;
+  low_time?: string;
+  first_time?: string;
+  last_time?: string;
+  bars?: number;
+  truncated?: boolean;
+  downsampled?: boolean;
+  downsample_factor?: number;
+  effective_interval_minutes?: number;
+  note?: string;
+}
+
 export interface ChartData {
   asset: string;
   timeframe: string;
+  period: string;
+  summary: ChartSummary;
   available: boolean;
   reason?: string;
   candles: { time: string; open: number; high: number; low: number; close: number; volume: number }[];
@@ -186,6 +207,7 @@ export interface ChartData {
   patterns: {
     pattern: string; confidence: number; state: string; direction: string;
     invalidation: number | null; notes: string;
+    start_index?: number | null; end_index?: number | null;
   }[];
   markers: {
     time: string; kind: string; label: string; importance: string;
@@ -812,12 +834,45 @@ export interface LocationRead {
   range: RangeRead | null;
 }
 
+export interface GeometryPoint {
+  time: string;
+  price: number;
+  role: string;
+  kind: string;
+}
+
+export interface GeometryTrendLine {
+  start: GeometryPoint;
+  end: GeometryPoint;
+  role: string;
+  extend: boolean;
+}
+
+export interface GeometryZone {
+  start_time: string;
+  end_time: string;
+  low: number;
+  high: number;
+  role: string;
+}
+
+/** Everything needed to redraw a figure on the chart, keyed by time not index. */
+export interface PatternGeometry {
+  points: GeometryPoint[];
+  trend_lines: GeometryTrendLine[];
+  zones: GeometryZone[];
+  neckline: GeometryTrendLine | null;
+  breakout_area: GeometryZone | null;
+}
+
 export interface PatternRead {
   name: string;
   pattern_class: string;
   state: string;
   recognition_confidence: number;
   detected_at: string;
+  geometry?: PatternGeometry;
+  bars_span?: number;
   direction_if_textbook: string;
   key_levels: Record<string, number>;
   invalidation_level: number | null;

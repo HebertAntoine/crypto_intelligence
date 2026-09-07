@@ -2,29 +2,154 @@
   "asset": "SOL",
   "location": {
     "asset": "SOL",
-    "distance_to_bottom_atr": null,
-    "distance_to_top_atr": null,
-    "explanation": [],
-    "invalidation": "",
-    "price": null,
-    "range": null,
-    "range_summary": "no price history",
-    "relative_position": null,
-    "state": "NO_VALID_RANGE",
+    "distance_to_bottom_atr": 1.847,
+    "distance_to_top_atr": 3.066,
+    "explanation": [
+      "resistance zone tested 2 times",
+      "touches agree within 0.12 ATR",
+      "median reaction from the zone 0.81 ATR",
+      "never closed through the zone",
+      "last tested 35 bars ago",
+      "range active for 67 bars",
+      "3 deviation(s) recorded, 2 of which reversed back through the range"
+    ],
+    "invalidation": "A 15m close outside 105.33-107.42 would invalidate the current range reading.",
+    "price": 106.16,
+    "range": {
+      "bars_outside_recent": 0,
+      "bottom_touches": 6,
+      "bottom_zone": {
+        "first_touch": "2026-09-06T05:00:00+00:00",
+        "high": 105.50821977,
+        "kind": "support",
+        "last_touch": "2026-09-06T19:45:00+00:00",
+        "low": 105.33178023,
+        "midpoint": 105.42,
+        "quality": {
+          "age_bars": 67,
+          "close_penetrations": 8,
+          "components": {
+            "integrity": 4.0,
+            "reaction_depth": 60.1,
+            "recency": 96.5,
+            "touch_agreement": 60.0,
+            "touches": 25.0
+          },
+          "dispersion_atr": 0.24,
+          "median_reaction_atr": 1.502,
+          "recency_bars": 7,
+          "score": 49.1,
+          "touches": 2,
+          "wick_penetrations": 13
+        },
+        "touch_count": 2
+      },
+      "close_penetrations": 8,
+      "confidence": 59.7,
+      "deviations": [
+        {
+          "bars_outside": 11,
+          "closed_outside": true,
+          "direction": "below",
+          "ended_at": "2026-09-06T09:00:00+00:00",
+          "followed_through": true,
+          "max_distance_atr": 1.248,
+          "reentry_strength_atr": 1.419,
+          "started_at": "2026-09-06T06:30:00+00:00"
+        },
+        {
+          "bars_outside": 1,
+          "closed_outside": false,
+          "direction": "below",
+          "ended_at": "2026-09-06T14:30:00+00:00",
+          "followed_through": false,
+          "max_distance_atr": 0.272,
+          "reentry_strength_atr": 0.824,
+          "started_at": "2026-09-06T14:30:00+00:00"
+        },
+        {
+          "bars_outside": 1,
+          "closed_outside": false,
+          "direction": "below",
+          "ended_at": "2026-09-06T15:00:00+00:00",
+          "followed_through": true,
+          "max_distance_atr": 0.662,
+          "reentry_strength_atr": 1.006,
+          "started_at": "2026-09-06T15:00:00+00:00"
+        }
+      ],
+      "duration_bars": 67,
+      "false_breakouts": 1,
+      "midpoint": 106.375,
+      "range_type": "HORIZONTAL_RANGE",
+      "reason": "",
+      "reintegrations": 3,
+      "started_at": "2026-09-06T05:00:00+00:00",
+      "top_touches": 2,
+      "top_zone": {
+        "first_touch": "2026-09-06T09:30:00+00:00",
+        "high": 107.41821977,
+        "kind": "resistance",
+        "last_touch": "2026-09-06T12:45:00+00:00",
+        "low": 107.24178023,
+        "midpoint": 107.33,
+        "quality": {
+          "age_bars": 49,
+          "close_penetrations": 0,
+          "components": {
+            "integrity": 100.0,
+            "reaction_depth": 32.5,
+            "recency": 82.5,
+            "touch_agreement": 80.0,
+            "touches": 25.0
+          },
+          "dispersion_atr": 0.12,
+          "median_reaction_atr": 0.812,
+          "recency_bars": 35,
+          "score": 64.0,
+          "touches": 2,
+          "wick_penetrations": 0
+        },
+        "touch_count": 2
+      },
+      "trend_before": "FLAT",
+      "valid": true,
+      "volatility_inside": 0.295,
+      "wick_penetrations": 13,
+      "width_atr": 5.41,
+      "width_pct": 1.812
+    },
+    "range_summary": "HORIZONTAL_RANGE between 105.33-105.51 and 107.24-107.42, 5.4 ATR wide, held for 67 bars with 6 bottom and 2 top touches, 3 deviation(s). Recognition confidence 60/100.",
+    "relative_position": 0.3874,
+    "state": "MID_RANGE",
     "timeframe": "15m"
   },
   "market_structure": {
     "asset": "SOL",
     "caveat": "BOS and CHOCH are descriptions of the swing sequence. Neither has been shown to carry predictive information and neither is treated as a signal.",
-    "events": [],
-    "interpretation": "only 0 bars, too few to establish structure",
-    "labels": [],
-    "last_confirmed_hh": null,
-    "last_confirmed_hl": null,
-    "last_confirmed_lh": null,
-    "last_confirmed_ll": null,
-    "state": "UNCLEAR",
-    "swings_used": 0,
+    "events": [
+      {
+        "broken_at": "2026-09-06T19:45:00+00:00",
+        "confirmation_time": "2026-09-06T21:00:00+00:00",
+        "direction": "bullish",
+        "kind": "CHOCH",
+        "level": 105.36,
+        "note": "a higher low appeared after a sequence of lower lows"
+      }
+    ],
+    "interpretation": "RANGE_STRUCTURE from the confirmed swing sequence [HH LH LL HL] across 1523 confirmed pivots. Structural events: CHOCH bullish.",
+    "labels": [
+      "HH",
+      "LH",
+      "LL",
+      "HL"
+    ],
+    "last_confirmed_hh": 107.36,
+    "last_confirmed_hl": 105.36,
+    "last_confirmed_lh": 106.59,
+    "last_confirmed_ll": 104.93,
+    "state": "RANGE_STRUCTURE",
+    "swings_used": 1523,
     "timeframe": "15m"
   },
   "patterns": [],

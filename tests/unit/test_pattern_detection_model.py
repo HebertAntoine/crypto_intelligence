@@ -305,3 +305,47 @@ def test_full_payload_is_json_serialisable():
     assert payload["family"] == "REVERSAL"
     assert payload["geometry"]["points"][0]["role"] == "first_top"
     assert payload["available_families"] == ["volume"]
+
+
+# --- lifecycle beyond the detector's three states --------------------------
+
+def test_price_sitting_on_the_trigger_reads_as_breakout_pending():
+    """§6 separates "shape complete" from "about to resolve"."""
+    detection = from_structural(
+        _structural(), symbol="BTC", timeframe=Timeframe.H4,
+        start_time=START, end_time=END,
+        last_close=95.1, atr=2.0,          # neckline is 95.0
+    )
+
+    assert detection.status is PatternStatus.BREAKOUT_PENDING
+
+
+def test_price_far_from_the_trigger_stays_merely_detected():
+    detection = from_structural(
+        _structural(), symbol="BTC", timeframe=Timeframe.H4,
+        start_time=START, end_time=END,
+        last_close=99.0, atr=2.0,
+    )
+
+    assert detection.status is PatternStatus.DETECTED
+
+
+def test_without_price_context_the_status_is_not_invented():
+    """No close and no ATR means the finer state cannot be known - so it is not claimed."""
+    detection = from_structural(
+        _structural(), symbol="BTC", timeframe=Timeframe.H4,
+        start_time=START, end_time=END,
+    )
+
+    assert detection.status is PatternStatus.DETECTED
+
+
+def test_a_confirmed_pattern_is_never_downgraded_to_pending():
+    """Proximity only refines DETECTED; it must not undo a real confirmation."""
+    detection = from_structural(
+        _structural(state=PatternState.CONFIRMED, confirmation_time=END),
+        symbol="BTC", timeframe=Timeframe.H4, start_time=START, end_time=END,
+        last_close=95.05, atr=2.0,
+    )
+
+    assert detection.status is PatternStatus.CONFIRMED

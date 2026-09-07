@@ -140,3 +140,119 @@
   margin-top: 0.3rem;
   padding-top: 0.35rem;
 }
+
+/* --- Graphiques & Patterns --------------------------------------------- */
+
+.market-selector {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;
+  justify-content: space-between;
+}
+.selector-controls { display: flex; flex-wrap: wrap; gap: 12px; }
+.selector-group { display: flex; flex-direction: column; gap: 4px; }
+.selector-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-faint); font-weight: 600;
+}
+.selector-select {
+  background: var(--bg-panel-2); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: 4px;
+  padding: 7px 10px; font-size: 13px; font-family: inherit;
+  min-width: 120px; cursor: pointer;
+}
+.selector-select:hover { border-color: var(--info); }
+.selector-select:focus-visible { outline: 2px solid var(--info); outline-offset: 1px; }
+
+.chart-panel { padding-bottom: 12px; }
+.chart-header {
+  display: flex; flex-wrap: wrap; gap: 12px 24px;
+  align-items: baseline; justify-content: space-between;
+  padding-bottom: 12px; margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.chart-price { display: flex; align-items: baseline; gap: 10px; }
+.chart-price-value { font-family: var(--mono); font-size: 26px; font-weight: 600; }
+.chart-price-change { font-family: var(--mono); font-size: 14px; }
+.chart-extremes {
+  display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 12px;
+}
+
+.chart-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.chart-toolbar-panels { margin-top: 12px; margin-bottom: 6px; }
+.chart-readout {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  min-height: 18px; padding-bottom: 4px;
+}
+.chart-canvas { min-height: 260px; }
+
+.pattern-grid { display: flex; flex-direction: column; gap: 8px; }
+.pattern-card-open { border-color: var(--border-strong); }
+.pattern-head {
+  display: grid; align-items: center; gap: 10px;
+  grid-template-columns: minmax(140px, 1.4fr) 90px 1fr auto;
+  width: 100%; text-align: left;
+}
+.pattern-direction { font-size: 12px; font-weight: 600; }
+.pattern-meta { color: var(--text-faint); }
+.pattern-pills { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; }
+
+.stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px; margin-bottom: 14px;
+}
+.stat-box {
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 6px; padding: 14px;
+}
+.stat-label {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-faint); font-weight: 600; margin-bottom: 6px;
+}
+.stat-value { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+
+/* Wide content scrolls inside its own box; the page itself never does. */
+.table-scroll { overflow-x: auto; }
+
+/* --- responsive --------------------------------------------------------- */
+
+/* The nav holds eleven links (~860px) beside the title and badges, so it stops
+   fitting well before tablet width. Scrolling it is what keeps the PAGE from
+   scrolling horizontally - the failure this breakpoint exists to prevent. */
+@media (max-width: 1150px) {
+  .header { flex-wrap: wrap; height: auto; gap: 10px; padding: 10px 16px; }
+  .header nav {
+    margin-left: 0; width: 100%;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin; padding-bottom: 2px;
+  }
+  .header nav a { white-space: nowrap; }
+}
+
+@media (max-width: 900px) {
+  .main { padding: 14px; }
+  .pattern-head {
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "name pills" "direction direction" "meta meta";
+    row-gap: 4px;
+  }
+  .pattern-name { grid-area: name; }
+  .pattern-pills { grid-area: pills; }
+  .pattern-direction { grid-area: direction; }
+  .pattern-meta { grid-area: meta; }
+}
+
+@media (max-width: 640px) {
+  .main { padding: 10px; }
+  .header { padding: 10px 12px; }
+
+  /* Filters must stay reachable without eating the screen: the three selects
+     share the width rather than stacking into a column of full-width rows. */
+  .selector-controls { width: 100%; gap: 8px; }
+  .selector-group { flex: 1 1 30%; min-width: 0; }
+  .selector-select { min-width: 0; width: 100%; padding: 8px 6px; }
+
+  .chart-price-value { font-size: 20px; }
+  .chart-extremes { gap: 10px; font-size: 11px; }
+  .chart-canvas { height: 300px !important; }
+  .panel { padding: 12px; }
+  .stat-grid { grid-template-columns: 1fr; }
+}

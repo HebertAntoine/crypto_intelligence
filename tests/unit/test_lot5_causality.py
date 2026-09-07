@@ -265,9 +265,15 @@ def test_every_pattern_declares_its_reliability_class():
 
 
 def test_subjective_patterns_are_marked_experimental():
-    """Wedges and flags are genuinely ambiguous; they must say so."""
-    assert PATTERN_CLASSES["wedge"].value == "EXPERIMENTAL"
+    """A figure defined by judgement must say so.
+
+    The flag still is: "sharp pole" and "shallow consolidation" have no
+    specified thresholds. The wedge was in the same position until LOT 4 gave
+    it fitted boundaries, a minimum alignment and slopes measured in ATR per
+    bar - reproducible, so HEURISTIC rather than EXPERIMENTAL.
+    """
     assert PATTERN_CLASSES["flag"].value == "EXPERIMENTAL"
+    assert PATTERN_CLASSES["wedge"].value == "HEURISTIC"
 
 
 def test_double_bottom_is_not_confirmed_before_the_neckline_breaks():

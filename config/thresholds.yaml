@@ -111,3 +111,35 @@ alerts:
   etf_outflow_spike_musd: -500
   oi_spike_pct: 15
   breakout_volume_ratio: 1.8
+
+structure_patterns:
+  # Seuils du moteur structurel (structure/patterns.py). Durcis au LOT 4 :
+  # avant, les detecteurs se declenchaient sur ~80 % des bougies quotidiennes.
+  # Plancher global : rien n'est annonce en dessous, quel que soit le detecteur.
+  min_confidence: 55
+
+  double:
+    min_bars: 12               # deux tests plus rapproches ne sont qu'un creux
+    max_bars: 250              # deux creux trop eloignes ne sont pas une figure
+    min_pivot_quality: 40      # les deux extremes doivent avoir provoque une reaction
+    min_confidence: 58
+    extreme_tolerance_atr: 0.7 # ecart max entre les deux extremes
+    min_reaction_atr: 1.5      # reaction min entre eux, sinon c'est une seule base
+
+  triangle:
+    min_bars: 20
+    max_bars: 250
+    min_pivots: 3
+    min_alignment: 55          # les pivots doivent vraiment tenir sur la droite
+    min_convergence: 0.35      # les bornes doivent se resserrer d'au moins 35 %
+    flat_slope_atr: 0.015      # en dessous, une borne est consideree horizontale
+    min_confidence: 58
+
+  wedge:
+    min_bars: 20
+    max_bars: 250
+    min_pivots: 3
+    min_alignment: 60          # plus strict que le triangle : figure plus ambigue
+    min_convergence: 0.30
+    flat_slope_atr: 0.015
+    min_confidence: 60

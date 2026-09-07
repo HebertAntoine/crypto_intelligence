@@ -15,21 +15,28 @@
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
+    },
+    {
+      "contribution": -5.0,
+      "detail": "15m price is above range, zone quality 61/100",
+      "is_measured_edge": false,
+      "name": "structural location",
+      "source": "structure"
     }
   ],
-  "invalidation": "no validated range, so no objective structural invalidation can be stated",
+  "invalidation": "A 15m close back below 2502.93 would mean the breakout failed and price has reintegrated the range.",
   "measured_edge_note": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict f",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [
-    "4h structure is TRANSITION",
-    "no validated range on this timeframe"
+    "4h structure is TRANSITION"
   ],
-  "score": 8.0,
+  "score": 3.7,
   "state": "NEUTRAL",
-  "statement": "ETH 15m configuration is NEUTRAL (+8). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: 4h structure is TRANSITION; no validated range on this timeframe.",
+  "statement": "ETH 15m configuration is NEUTRAL (+4). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: 4h structure is TRANSITION.",
   "timeframe": "15m",
   "why_now": [
     "funding is mid-range at the 38th percentile",
-    "volatility LOW at the 15.6th percentile - moves are small, which cuts both ways"
+    "volatility LOW at the 15.6th percentile - moves are small, which cuts both ways",
+    "15m price is above range, zone quality 61/100"
   ]
 }

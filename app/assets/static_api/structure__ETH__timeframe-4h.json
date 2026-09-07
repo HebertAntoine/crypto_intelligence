@@ -134,6 +134,7 @@
   },
   "patterns": [
     {
+      "bars_span": 0,
       "components": {
         "head_prominence": 32.4,
         "prominence_atr": 0.81,
@@ -145,6 +146,13 @@
       "direction_if_textbook": "BEARISH",
       "edge_note": "",
       "edge_state": "NOT_YET_TESTED",
+      "geometry": {
+        "breakout_area": null,
+        "neckline": null,
+        "points": [],
+        "trend_lines": [],
+        "zones": []
+      },
       "invalidation_level": 2566.53,
       "invalidation_rule": "a 4h close beyond the head at 2566.53 invalidates the pattern",
       "key_levels": {
@@ -157,84 +165,6 @@
       "notes": "head stands 0.81 ATR beyond shoulders that agree within 0.05 ATR",
       "pattern_class": "HEURISTIC",
       "recognition_confidence": 64.5,
-      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
-      "state": "CANDIDATE"
-    },
-    {
-      "components": {
-        "bars_between": 20,
-        "difference_atr": 0.81,
-        "extreme_agreement": 19.0,
-        "reaction_atr": 2.562,
-        "reaction_depth": 85.4,
-        "time_separation": 50.0
-      },
-      "confirmation_time": "2026-08-31T12:00:00+00:00",
-      "detected_at": "2026-09-04T20:00:00+00:00",
-      "direction_if_textbook": "BEARISH",
-      "edge_note": "",
-      "edge_state": "NOT_YET_TESTED",
-      "invalidation_level": 2566.53,
-      "invalidation_rule": "a 4h close above 2566.53 would break both highs and invalidate the double top",
-      "key_levels": {
-        "first_extreme": 2566.53,
-        "neckline": 2435.23,
-        "second_extreme": 2534.98
-      },
-      "name": "double_top",
-      "notes": "two tops within 0.81 ATR of each other, separated by 20 bars, with a 2.56 ATR reaction between them",
-      "pattern_class": "DETERMINISTIC",
-      "recognition_confidence": 51.5,
-      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
-      "state": "CANDIDATE"
-    },
-    {
-      "components": {
-        "bars_between": 15,
-        "difference_atr": 0.793,
-        "extreme_agreement": 20.7,
-        "reaction_atr": 2.428,
-        "reaction_depth": 80.9,
-        "time_separation": 37.5
-      },
-      "confirmation_time": "2026-09-03T04:00:00+00:00",
-      "detected_at": "2026-09-04T20:00:00+00:00",
-      "direction_if_textbook": "BULLISH",
-      "edge_note": "",
-      "edge_state": "NOT_YET_TESTED",
-      "invalidation_level": 2356.41,
-      "invalidation_rule": "a 4h close below 2356.41 would break both lows and invalidate the double bottom",
-      "key_levels": {
-        "first_extreme": 2387.28,
-        "neckline": 2481.84,
-        "second_extreme": 2356.41
-      },
-      "name": "double_bottom",
-      "notes": "two bottoms within 0.79 ATR of each other, separated by 15 bars, with a 2.43 ATR reaction between them",
-      "pattern_class": "DETERMINISTIC",
-      "recognition_confidence": 46.4,
-      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
-      "state": "CANDIDATE"
-    },
-    {
-      "components": {
-        "spread_atr": 0.862
-      },
-      "confirmation_time": "2026-08-31T12:00:00+00:00",
-      "detected_at": "2026-09-04T20:00:00+00:00",
-      "direction_if_textbook": "BEARISH",
-      "edge_note": "",
-      "edge_state": "NOT_YET_TESTED",
-      "invalidation_level": 2566.53,
-      "invalidation_rule": "a 4h close beyond 2566.53 invalidates the triple top",
-      "key_levels": {
-        "extremes": 2544.82,
-        "neckline": 2435.23
-      },
-      "name": "triple_top",
-      "notes": "three tops within 0.86 ATR across 37 bars",
-      "pattern_class": "DETERMINISTIC",
-      "recognition_confidence": 28.1,
       "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
       "state": "CANDIDATE"
     }

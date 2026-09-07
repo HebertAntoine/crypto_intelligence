@@ -263,3 +263,30 @@ async def research_revalidation(recompute: bool = False) -> dict[str, Any]:
     from ..research.revalidation import run_all
 
     return await asyncio.to_thread(run_all)
+
+
+@router.get("/volatility/implied/{symbol}")
+async def implied_volatility(symbol: str) -> dict[str, Any]:
+    """DVOL and the variance risk premium.
+
+    The only family in the project sourced from a market other than spot or
+    perpetuals. Returns UNAVAILABLE for SOL rather than substituting a proxy.
+    """
+    from ..engines.implied_volatility import ImpliedVolatilityEngine
+
+    asset = _parse_asset(symbol)
+    return (
+        await asyncio.to_thread(ImpliedVolatilityEngine().assess, asset)
+    ).to_dict()
+
+
+@router.get("/research/dvol")
+async def research_dvol(recompute: bool = False) -> dict[str, Any]:
+    """The 24 pre-registered implied-volatility hypotheses."""
+    if not recompute:
+        stored = _stored("dvol_study.json")
+        if stored:
+            return {**stored, "source": "stored"}
+    from ..research.dvol_study import run_all
+
+    return await asyncio.to_thread(run_all)

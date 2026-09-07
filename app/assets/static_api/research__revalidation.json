@@ -1,0 +1,2048 @@
+{
+  "candidates_preregistered": 10,
+  "framework": "LOT 6A - purged folds, dual control, power-aware verdicts",
+  "generated_at": "2026-09-06T21:59:56.066631+00:00",
+  "note": "All ten candidates were declared before any of these numbers existed. Demotions are reported as prominently as confirmations.",
+  "results": [
+    {
+      "asset": "ETH",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "changed_from_lot5": "LOT 5 +4.04% \u2192 stratified +4.04%; residualised +1.78%",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 52.0,
+          "independent_blocks": 82.0
+        },
+        "effective_n": 52.0,
+        "informational": {
+          "variance_adjusted": 55.9
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 289
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0513,
+        "embargo_bars": 7,
+        "note": "target autocorrelation at lag 7 is +0.051; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2022-02-21T00:00:00+00:00",
+            "2023-08-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2023-08-25T00:00:00+00:00",
+            "2025-02-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 0,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2742,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2025-02-25T00:00:00+00:00",
+            "2026-08-28T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 7,
+      "id": "ETH_ABOVE_RANGE_7",
+      "label": "ABOVE_RANGE",
+      "lot5_excess_pct": 4.04,
+      "power": {
+        "effective_n_baseline": 208.0,
+        "effective_n_event": 52.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 5.2973,
+        "note": "With 52 effective event observations the smallest detectable difference is 5.30%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.083,
+        "std_dev": 12.1955,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 289,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.851)"
+      ],
+      "residual_excess_pct": 1.7824,
+      "residual_folds_agreeing": 1,
+      "residual_folds_total": 2,
+      "residual_p_value": 0.8513176003076158,
+      "residualised_folds": [
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": null,
+          "n_baseline": 531,
+          "n_event": 19,
+          "note": "event=19, baseline=531 on the test folds",
+          "p_value": null,
+          "status": "INSUFFICIENT_DATA",
+          "t_stat": null,
+          "train_r2": 0.0097
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -0.1816,
+          "n_baseline": 489,
+          "n_event": 61,
+          "note": "controls fitted on 2675 training rows (R2 0.0094), residuals tested on 550 held-out rows",
+          "p_value": 0.8513176003076158,
+          "status": "OK",
+          "t_stat": -0.188,
+          "train_r2": 0.0094
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": 3.7464,
+          "n_baseline": 513,
+          "n_event": 37,
+          "note": "controls fitted on 2682 training rows (R2 0.0063), residuals tested on 550 held-out rows",
+          "p_value": 0.018759120424282127,
+          "status": "OK",
+          "t_stat": 2.444,
+          "train_r2": 0.0063
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.9068,
+          "covered": 2811,
+          "total": 3100
+        },
+        "by_year": {
+          "2019": 4.785,
+          "2020": 6.991,
+          "2021": 1.207,
+          "2022": 6.675,
+          "2023": -1.905,
+          "2024": 1.678,
+          "2025": 8.829,
+          "2026": 1.474
+        },
+        "excess_pct": 4.0363,
+        "p_value": 1.9976918598809784e-06,
+        "regimes_used": 4,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": 0.988,
+            "n_events": 17,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -0.287,
+            "n_events": 22,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": 5.775,
+            "n_events": 26,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": 4.49,
+            "n_events": 224,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": 4.834
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "changed_from_lot5": "LOT 5 +5.55% \u2192 stratified +5.55%; residualised +3.21%",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 52.0,
+          "independent_blocks": 52.0
+        },
+        "effective_n": 52.0,
+        "informational": {
+          "variance_adjusted": 28.1
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 282
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0768,
+        "embargo_bars": 14,
+        "note": "target autocorrelation at lag 14 is +0.077; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 14,
+          "n_purged": 14,
+          "n_test": 548,
+          "n_train_kept": 2716,
+          "n_train_raw": 2744,
+          "purge_rate": 0.0051,
+          "test_period": [
+            "2022-02-18T00:00:00+00:00",
+            "2023-08-19T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 14,
+          "n_purged": 14,
+          "n_test": 548,
+          "n_train_kept": 2716,
+          "n_train_raw": 2744,
+          "purge_rate": 0.0051,
+          "test_period": [
+            "2023-08-20T00:00:00+00:00",
+            "2025-02-17T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 2,
+          "n_purged": 14,
+          "n_test": 548,
+          "n_train_kept": 2728,
+          "n_train_raw": 2744,
+          "purge_rate": 0.0051,
+          "test_period": [
+            "2025-02-18T00:00:00+00:00",
+            "2026-08-19T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 14,
+      "id": "ETH_ABOVE_RANGE_14",
+      "label": "ABOVE_RANGE",
+      "lot5_excess_pct": 5.55,
+      "power": {
+        "effective_n_baseline": 208.0,
+        "effective_n_event": 52.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 7.897,
+        "note": "With 52 effective event observations the smallest detectable difference is 7.90%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.083,
+        "std_dev": 18.1806,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 289,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.437)"
+      ],
+      "residual_excess_pct": 3.2123,
+      "residual_folds_agreeing": 2,
+      "residual_folds_total": 2,
+      "residual_p_value": 0.4373531372702722,
+      "residualised_folds": [
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": null,
+          "n_baseline": 529,
+          "n_event": 19,
+          "note": "event=19, baseline=529 on the test folds",
+          "p_value": null,
+          "status": "INSUFFICIENT_DATA",
+          "t_stat": null,
+          "train_r2": 0.0149
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": 1.2386,
+          "n_baseline": 487,
+          "n_event": 61,
+          "note": "controls fitted on 2656 training rows (R2 0.0137), residuals tested on 548 held-out rows",
+          "p_value": 0.4373531372702722,
+          "status": "OK",
+          "t_stat": 0.781,
+          "train_r2": 0.0137
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": 5.1859,
+          "n_baseline": 520,
+          "n_event": 28,
+          "note": "controls fitted on 2668 training rows (R2 0.0105), residuals tested on 548 held-out rows",
+          "p_value": 0.02536448839683736,
+          "status": "OK",
+          "t_stat": 2.346,
+          "train_r2": 0.0105
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.9088,
+          "covered": 2811,
+          "total": 3093
+        },
+        "by_year": {
+          "2019": 11.286,
+          "2020": 7.541,
+          "2021": -1.929,
+          "2022": 11.038,
+          "2023": -0.3,
+          "2024": 4.254,
+          "2025": 10.106,
+          "2026": 1.673
+        },
+        "excess_pct": 5.5478,
+        "p_value": 6.504317717898072e-07,
+        "regimes_used": 4,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": 3.886,
+            "n_events": 17,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -1.571,
+            "n_events": 22,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": 15.967,
+            "n_events": 26,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": 5.151,
+            "n_events": 217,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": 5.062
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "changed_from_lot5": "LOT 5 -1.14% \u2192 stratified -1.14%; residualised -0.67%",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 47.0,
+          "independent_blocks": 65.0
+        },
+        "effective_n": 47.0,
+        "informational": {
+          "variance_adjusted": 50.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 262
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0562,
+        "embargo_bars": 7,
+        "note": "target autocorrelation at lag 7 is +0.056; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2022-02-21T00:00:00+00:00",
+            "2023-08-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2023-08-25T00:00:00+00:00",
+            "2025-02-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 0,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2742,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2025-02-25T00:00:00+00:00",
+            "2026-08-28T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 7,
+      "id": "BTC_double_top_CONFIRMED_7",
+      "label": "double_top|CONFIRMED",
+      "lot5_excess_pct": -1.14,
+      "power": {
+        "effective_n_baseline": 188.0,
+        "effective_n_event": 47.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 4.3103,
+        "note": "With 47 effective event observations the smallest detectable difference is 4.31%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.1,
+        "std_dev": 9.434,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 262,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.127)"
+      ],
+      "residual_excess_pct": -0.6683,
+      "residual_folds_agreeing": 2,
+      "residual_folds_total": 3,
+      "residual_p_value": 0.12735495766186292,
+      "residualised_folds": [
+        {
+          "condition_number": 4.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -1.2929,
+          "n_baseline": 496,
+          "n_event": 54,
+          "note": "controls fitted on 2675 training rows (R2 0.0177), residuals tested on 550 held-out rows",
+          "p_value": 0.12735495766186292,
+          "status": "OK",
+          "t_stat": -1.54,
+          "train_r2": 0.0177
+        },
+        {
+          "condition_number": 4.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -3.2109,
+          "n_baseline": 496,
+          "n_event": 54,
+          "note": "controls fitted on 2675 training rows (R2 0.018), residuals tested on 550 held-out rows",
+          "p_value": 6.980008076412571e-05,
+          "status": "OK",
+          "t_stat": -4.206,
+          "train_r2": 0.018
+        },
+        {
+          "condition_number": 4.4,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": 2.4988,
+          "n_baseline": 519,
+          "n_event": 31,
+          "note": "controls fitted on 2682 training rows (R2 0.015), residuals tested on 550 held-out rows",
+          "p_value": 0.009095412664648184,
+          "status": "OK",
+          "t_stat": 2.759,
+          "train_r2": 0.015
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.9206,
+          "covered": 2854,
+          "total": 3100
+        },
+        "by_year": {
+          "2018": -4.404,
+          "2019": -0.563,
+          "2020": -2.232,
+          "2021": 1.831,
+          "2022": -0.567,
+          "2023": -2.649,
+          "2024": -3.693,
+          "2025": 2.136,
+          "2026": -6.886
+        },
+        "excess_pct": -1.1418,
+        "p_value": 0.015194628734356739,
+        "regimes_used": 4,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": -5.755,
+            "n_events": 18,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -1.404,
+            "n_events": 67,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": 0.649,
+            "n_events": 48,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": -1.01,
+            "n_events": 111,
+            "regime": "STRONGLY_BEARISH"
+          }
+        ],
+        "t_stat": -2.439
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "changed_from_lot5": "LOT 5 -4.35% \u2192 stratified -4.35%; residualised -5.02%",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 148.0,
+          "independent_blocks": 72.0
+        },
+        "effective_n": 72.0,
+        "informational": {
+          "variance_adjusted": 30.3
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 655
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.1369,
+        "embargo_bars": 30,
+        "note": "target autocorrelation at lag 30 is +0.137; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 30,
+          "n_purged": 30,
+          "n_test": 546,
+          "n_train_kept": 2670,
+          "n_train_raw": 2730,
+          "purge_rate": 0.011,
+          "test_period": [
+            "2022-02-10T00:00:00+00:00",
+            "2023-08-09T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 30,
+          "n_purged": 30,
+          "n_test": 546,
+          "n_train_kept": 2670,
+          "n_train_raw": 2730,
+          "purge_rate": 0.011,
+          "test_period": [
+            "2023-08-10T00:00:00+00:00",
+            "2025-02-05T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 0,
+          "n_purged": 30,
+          "n_test": 546,
+          "n_train_kept": 2700,
+          "n_train_raw": 2730,
+          "purge_rate": 0.011,
+          "test_period": [
+            "2025-02-06T00:00:00+00:00",
+            "2026-08-05T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 30,
+      "id": "BTC_MID_RANGE_30",
+      "label": "MID_RANGE",
+      "lot5_excess_pct": -4.35,
+      "power": {
+        "effective_n_baseline": 288.0,
+        "effective_n_event": 72.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 8.3405,
+        "note": "With 72 effective event observations the smallest detectable difference is 8.34%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.103,
+        "std_dev": 22.5943,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 662,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.903)"
+      ],
+      "residual_excess_pct": -5.0181,
+      "residual_folds_agreeing": 3,
+      "residual_folds_total": 3,
+      "residual_p_value": 0.902955686570655,
+      "residualised_folds": [
+        {
+          "condition_number": 4.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -8.6382,
+          "n_baseline": 463,
+          "n_event": 83,
+          "note": "controls fitted on 2610 training rows (R2 0.0346), residuals tested on 546 held-out rows",
+          "p_value": 1.6291470944212696e-07,
+          "status": "OK",
+          "t_stat": -5.516,
+          "train_r2": 0.0346
+        },
+        {
+          "condition_number": 4.6,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -0.1916,
+          "n_baseline": 434,
+          "n_event": 112,
+          "note": "controls fitted on 2610 training rows (R2 0.0405), residuals tested on 546 held-out rows",
+          "p_value": 0.902955686570655,
+          "status": "OK",
+          "t_stat": -0.122,
+          "train_r2": 0.0405
+        },
+        {
+          "condition_number": 4.4,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -6.2244,
+          "n_baseline": 410,
+          "n_event": 136,
+          "note": "controls fitted on 2640 training rows (R2 0.0289), residuals tested on 546 held-out rows",
+          "p_value": 2.1558645215294898e-05,
+          "status": "OK",
+          "t_stat": -4.36,
+          "train_r2": 0.0289
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.7933,
+          "covered": 2441,
+          "total": 3077
+        },
+        "by_year": {
+          "2018": -10.384,
+          "2019": -15.421,
+          "2020": -6.776,
+          "2021": 4.424,
+          "2022": -8.257,
+          "2023": 1.459,
+          "2024": -5.74,
+          "2025": -3.223,
+          "2026": -8.459
+        },
+        "excess_pct": -4.3463,
+        "p_value": 1.469688959611032e-07,
+        "regimes_used": 5,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": -8.286,
+            "n_events": 84,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -0.657,
+            "n_events": 176,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": 1.14,
+            "n_events": 98,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": -10.382,
+            "n_events": 139,
+            "regime": "STRONGLY_BEARISH"
+          },
+          {
+            "excess_pct": -4.469,
+            "n_events": 139,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": -5.292
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "changed_from_lot5": "LOT 5 -3.78% \u2192 stratified -3.78%; residualised -4.23%",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 63.0,
+          "independent_blocks": 90.0
+        },
+        "effective_n": 63.0,
+        "informational": {
+          "variance_adjusted": 62.2
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 1344
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.1369,
+        "embargo_bars": 30,
+        "note": "target autocorrelation at lag 30 is +0.137; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 30,
+          "n_purged": 30,
+          "n_test": 546,
+          "n_train_kept": 2670,
+          "n_train_raw": 2730,
+          "purge_rate": 0.011,
+          "test_period": [
+            "2022-02-10T00:00:00+00:00",
+            "2023-08-09T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 30,
+          "n_purged": 30,
+          "n_test": 546,
+          "n_train_kept": 2670,
+          "n_train_raw": 2730,
+          "purge_rate": 0.011,
+          "test_period": [
+            "2023-08-10T00:00:00+00:00",
+            "2025-02-05T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 0,
+          "n_purged": 30,
+          "n_test": 546,
+          "n_train_kept": 2700,
+          "n_train_raw": 2730,
+          "purge_rate": 0.011,
+          "test_period": [
+            "2025-02-06T00:00:00+00:00",
+            "2026-08-05T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 30,
+      "id": "BTC_RANGE_STRUCTURE_30",
+      "label": "RANGE_STRUCTURE",
+      "lot5_excess_pct": -3.78,
+      "power": {
+        "effective_n_baseline": 252.0,
+        "effective_n_event": 63.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 8.9202,
+        "note": "With 63 effective event observations the smallest detectable difference is 8.92%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.096,
+        "std_dev": 22.6039,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 1374,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.331)"
+      ],
+      "residual_excess_pct": -4.2315,
+      "residual_folds_agreeing": 3,
+      "residual_folds_total": 3,
+      "residual_p_value": 0.33141518314889973,
+      "residualised_folds": [
+        {
+          "condition_number": 4.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -1.3806,
+          "n_baseline": 318,
+          "n_event": 228,
+          "note": "controls fitted on 2610 training rows (R2 0.0346), residuals tested on 546 held-out rows",
+          "p_value": 0.33141518314889973,
+          "status": "OK",
+          "t_stat": -0.972,
+          "train_r2": 0.0346
+        },
+        {
+          "condition_number": 4.6,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -3.0039,
+          "n_baseline": 322,
+          "n_event": 224,
+          "note": "controls fitted on 2610 training rows (R2 0.0405), residuals tested on 546 held-out rows",
+          "p_value": 0.03138005580809936,
+          "status": "OK",
+          "t_stat": -2.158,
+          "train_r2": 0.0405
+        },
+        {
+          "condition_number": 4.4,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -8.3099,
+          "n_baseline": 317,
+          "n_event": 229,
+          "note": "controls fitted on 2640 training rows (R2 0.0289), residuals tested on 546 held-out rows",
+          "p_value": 1.7534491302817705e-14,
+          "status": "OK",
+          "t_stat": -7.917,
+          "train_r2": 0.0289
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.5661,
+          "covered": 1742,
+          "total": 3077
+        },
+        "by_year": {
+          "2018": -8.307,
+          "2019": -6.165,
+          "2020": 4.858,
+          "2021": -15.382,
+          "2022": -1.104,
+          "2023": 4.902,
+          "2024": -8.836,
+          "2025": -4.294,
+          "2026": -10.655
+        },
+        "excess_pct": -3.7818,
+        "p_value": 9.383350153667418e-08,
+        "regimes_used": 5,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": 0.871,
+            "n_events": 169,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -1.299,
+            "n_events": 208,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": -7.715,
+            "n_events": 122,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": -1.805,
+            "n_events": 373,
+            "regime": "STRONGLY_BEARISH"
+          },
+          {
+            "excess_pct": -7.152,
+            "n_events": 463,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": -5.352
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "changed_from_lot5": "LOT 5 -1.60% \u2192 stratified -1.60%; residualised -1.79%",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 121.0,
+          "independent_blocks": 126.0
+        },
+        "effective_n": 121.0,
+        "informational": {
+          "variance_adjusted": 79.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 413
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0513,
+        "embargo_bars": 7,
+        "note": "target autocorrelation at lag 7 is +0.051; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2022-02-21T00:00:00+00:00",
+            "2023-08-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2023-08-25T00:00:00+00:00",
+            "2025-02-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 0,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2742,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2025-02-25T00:00:00+00:00",
+            "2026-08-28T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 7,
+      "id": "ETH_MID_RANGE_7",
+      "label": "MID_RANGE",
+      "lot5_excess_pct": -1.6,
+      "power": {
+        "effective_n_baseline": 484.0,
+        "effective_n_event": 121.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 3.483,
+        "note": "With 121 effective event observations the smallest detectable difference is 3.48%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.127,
+        "std_dev": 12.2318,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 413,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.372)"
+      ],
+      "residual_excess_pct": -1.7912,
+      "residual_folds_agreeing": 3,
+      "residual_folds_total": 3,
+      "residual_p_value": 0.37214524183468045,
+      "residualised_folds": [
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -1.0424,
+          "n_baseline": 455,
+          "n_event": 95,
+          "note": "controls fitted on 2675 training rows (R2 0.0097), residuals tested on 550 held-out rows",
+          "p_value": 0.37214524183468045,
+          "status": "OK",
+          "t_stat": -0.896,
+          "train_r2": 0.0097
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -3.1744,
+          "n_baseline": 453,
+          "n_event": 97,
+          "note": "controls fitted on 2675 training rows (R2 0.0094), residuals tested on 550 held-out rows",
+          "p_value": 0.0015118692414108005,
+          "status": "OK",
+          "t_stat": -3.237,
+          "train_r2": 0.0094
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -1.1568,
+          "n_baseline": 479,
+          "n_event": 71,
+          "note": "controls fitted on 2682 training rows (R2 0.0063), residuals tested on 550 held-out rows",
+          "p_value": 0.3093421414314407,
+          "status": "OK",
+          "t_stat": -1.022,
+          "train_r2": 0.0063
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.8668,
+          "covered": 2687,
+          "total": 3100
+        },
+        "by_year": {
+          "2018": -4.607,
+          "2019": -1.58,
+          "2020": 7.023,
+          "2021": -8.772,
+          "2022": -3.316,
+          "2023": 3.028,
+          "2024": -3.534,
+          "2025": -1.27,
+          "2026": -3.267
+        },
+        "excess_pct": -1.6026,
+        "p_value": 0.004501554206014537,
+        "regimes_used": 5,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": -2.292,
+            "n_events": 92,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -2.282,
+            "n_events": 72,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": -1.765,
+            "n_events": 110,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": -1.414,
+            "n_events": 113,
+            "regime": "STRONGLY_BEARISH"
+          },
+          {
+            "excess_pct": 2.588,
+            "n_events": 26,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": -2.852
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "changed_from_lot5": "LOT 5 -1.23% \u2192 stratified -1.23%; residualised -1.93%",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 62.0,
+          "independent_blocks": 195.0
+        },
+        "effective_n": 62.0,
+        "informational": {
+          "variance_adjusted": 187.5
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 970
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0513,
+        "embargo_bars": 7,
+        "note": "target autocorrelation at lag 7 is +0.051; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2022-02-21T00:00:00+00:00",
+            "2023-08-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2023-08-25T00:00:00+00:00",
+            "2025-02-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 0,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2742,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2025-02-25T00:00:00+00:00",
+            "2026-08-28T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 7,
+      "id": "ETH_TRANSITION_7",
+      "label": "TRANSITION",
+      "lot5_excess_pct": -1.23,
+      "power": {
+        "effective_n_baseline": 248.0,
+        "effective_n_event": 62.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 4.8624,
+        "note": "With 62 effective event observations the smallest detectable difference is 4.86%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.089,
+        "std_dev": 12.2232,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 970,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.844)"
+      ],
+      "residual_excess_pct": -1.934,
+      "residual_folds_agreeing": 3,
+      "residual_folds_total": 3,
+      "residual_p_value": 0.8443814116597874,
+      "residualised_folds": [
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -2.1949,
+          "n_baseline": 361,
+          "n_event": 189,
+          "note": "controls fitted on 2675 training rows (R2 0.0097), residuals tested on 550 held-out rows",
+          "p_value": 0.01840361274900875,
+          "status": "OK",
+          "t_stat": -2.369,
+          "train_r2": 0.0097
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -0.1529,
+          "n_baseline": 373,
+          "n_event": 177,
+          "note": "controls fitted on 2675 training rows (R2 0.0094), residuals tested on 550 held-out rows",
+          "p_value": 0.8443814116597874,
+          "status": "OK",
+          "t_stat": -0.196,
+          "train_r2": 0.0094
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -3.4543,
+          "n_baseline": 397,
+          "n_event": 153,
+          "note": "controls fitted on 2682 training rows (R2 0.0063), residuals tested on 550 held-out rows",
+          "p_value": 5.674968357014615e-05,
+          "status": "OK",
+          "t_stat": -4.078,
+          "train_r2": 0.0063
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.6926,
+          "covered": 2147,
+          "total": 3100
+        },
+        "by_year": {
+          "2018": -1.738,
+          "2019": 2.162,
+          "2020": 0.42,
+          "2021": -0.502,
+          "2022": -2.558,
+          "2023": -1.357,
+          "2024": -1.076,
+          "2025": -3.273,
+          "2026": -3.215
+        },
+        "excess_pct": -1.2336,
+        "p_value": 0.005560092062724388,
+        "regimes_used": 5,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": -5.74,
+            "n_events": 71,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": 1.398,
+            "n_events": 99,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": 2.708,
+            "n_events": 101,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": -1.37,
+            "n_events": 472,
+            "regime": "STRONGLY_BEARISH"
+          },
+          {
+            "excess_pct": -2.54,
+            "n_events": 210,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": -2.776
+      },
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 24.0 < 30",
+      "changed_from_lot5": "LOT 5 +2.76% \u2192 stratified +2.76%; residualised -0.82%; the two control methods disagree in SIGN",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 24.0,
+          "independent_blocks": 58.0
+        },
+        "effective_n": 24.0,
+        "informational": {
+          "variance_adjusted": 55.5
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 131
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0289,
+        "embargo_bars": 3,
+        "note": "target autocorrelation at lag 3 is +0.029",
+        "status": "OK",
+        "sufficient": true,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 3,
+          "n_purged": 3,
+          "n_test": 550,
+          "n_train_kept": 2747,
+          "n_train_raw": 2753,
+          "purge_rate": 0.0011,
+          "test_period": [
+            "2022-02-23T00:00:00+00:00",
+            "2023-08-26T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 3,
+          "n_purged": 3,
+          "n_test": 550,
+          "n_train_kept": 2747,
+          "n_train_raw": 2753,
+          "purge_rate": 0.0011,
+          "test_period": [
+            "2023-08-27T00:00:00+00:00",
+            "2025-02-26T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 2,
+          "n_purged": 3,
+          "n_test": 550,
+          "n_train_kept": 2748,
+          "n_train_raw": 2753,
+          "purge_rate": 0.0011,
+          "test_period": [
+            "2025-02-27T00:00:00+00:00",
+            "2026-08-30T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 3,
+      "id": "ETH_double_top_FAILED_3",
+      "label": "double_top|FAILED",
+      "lot5_excess_pct": 2.76,
+      "power": {
+        "effective_n_baseline": 96.0,
+        "effective_n_event": 24.0,
+        "meaningful_effect_pct": 0.7,
+        "minimum_detectable_effect_pct": 4.9438,
+        "note": "With 24 effective event observations the smallest detectable difference is 4.94%, against a meaningful effect of 0.70%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.068,
+        "std_dev": 7.7322,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 131,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": -0.824,
+      "residual_folds_agreeing": 1,
+      "residual_folds_total": 1,
+      "residual_p_value": 0.26175570548612587,
+      "residualised_folds": [
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": null,
+          "n_baseline": 532,
+          "n_event": 18,
+          "note": "event=18, baseline=532 on the test folds",
+          "p_value": null,
+          "status": "INSUFFICIENT_DATA",
+          "t_stat": null,
+          "train_r2": 0.0083
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -0.824,
+          "n_baseline": 509,
+          "n_event": 41,
+          "note": "controls fitted on 2687 training rows (R2 0.0086), residuals tested on 550 held-out rows",
+          "p_value": 0.26175570548612587,
+          "status": "OK",
+          "t_stat": -1.135,
+          "train_r2": 0.0086
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": null,
+          "n_baseline": 545,
+          "n_event": 5,
+          "note": "event=5, baseline=545 on the test folds",
+          "p_value": null,
+          "status": "INSUFFICIENT_DATA",
+          "t_stat": null,
+          "train_r2": 0.007
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.9577963917525774,
+          "note": "stratified baseline covers 95.8% of the sample (2973/3104). A conditioned subgroup cannot exceed 95%; this mask is unconditional in disguise and would reintrodu"
+        },
+        "by_year": {
+          "2019": 4.035,
+          "2020": 4.668,
+          "2021": 4.566,
+          "2022": 3.436,
+          "2023": -0.696,
+          "2024": -0.192,
+          "2026": 2.401
+        },
+        "excess_pct": 2.7582,
+        "p_value": 0.0015986960665094522,
+        "regimes_used": 2,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": 1.367,
+            "n_events": 14,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": 2.937,
+            "n_events": 109,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": 3.22
+      },
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 25.0 < 30",
+      "changed_from_lot5": "LOT 5 -2.13% \u2192 stratified -2.13%; residualised -1.83%",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 25.0,
+          "independent_blocks": 74.0
+        },
+        "effective_n": 25.0,
+        "informational": {
+          "variance_adjusted": 73.7
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 381
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0513,
+        "embargo_bars": 7,
+        "note": "target autocorrelation at lag 7 is +0.051; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2022-02-21T00:00:00+00:00",
+            "2023-08-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 7,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2735,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2023-08-25T00:00:00+00:00",
+            "2025-02-24T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 0,
+          "n_purged": 7,
+          "n_test": 550,
+          "n_train_kept": 2742,
+          "n_train_raw": 2749,
+          "purge_rate": 0.0025,
+          "test_period": [
+            "2025-02-25T00:00:00+00:00",
+            "2026-08-28T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 7,
+      "id": "ETH_rising_wedge_7",
+      "label": "rising_wedge|CANDIDATE",
+      "lot5_excess_pct": -2.13,
+      "power": {
+        "effective_n_baseline": 100.0,
+        "effective_n_event": 25.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 7.6681,
+        "note": "With 25 effective event observations the smallest detectable difference is 7.67%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.065,
+        "std_dev": 12.2405,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 381,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": -1.8327,
+      "residual_folds_agreeing": 3,
+      "residual_folds_total": 3,
+      "residual_p_value": 0.7478019635831094,
+      "residualised_folds": [
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -4.7646,
+          "n_baseline": 440,
+          "n_event": 110,
+          "note": "controls fitted on 2675 training rows (R2 0.0097), residuals tested on 550 held-out rows",
+          "p_value": 2.693163279605555e-07,
+          "status": "OK",
+          "t_stat": -5.315,
+          "train_r2": 0.0097
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -0.4066,
+          "n_baseline": 493,
+          "n_event": 57,
+          "note": "controls fitted on 2675 training rows (R2 0.0094), residuals tested on 550 held-out rows",
+          "p_value": 0.6344903104408857,
+          "status": "OK",
+          "t_stat": -0.477,
+          "train_r2": 0.0094
+        },
+        {
+          "condition_number": 3.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": -0.3268,
+          "n_baseline": 452,
+          "n_event": 98,
+          "note": "controls fitted on 2682 training rows (R2 0.0063), residuals tested on 550 held-out rows",
+          "p_value": 0.7478019635831094,
+          "status": "OK",
+          "t_stat": -0.322,
+          "train_r2": 0.0063
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.8771,
+          "covered": 2719,
+          "total": 3100
+        },
+        "by_year": {
+          "2019": -7.975,
+          "2020": 4.327,
+          "2021": -0.83,
+          "2022": -7.981,
+          "2023": -2.844,
+          "2024": -2.832,
+          "2025": 4.429,
+          "2026": -1.947
+        },
+        "excess_pct": -2.1296,
+        "p_value": 0.00024441192100082616,
+        "regimes_used": 5,
+        "stability_verdict": "STABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": -2.624,
+            "n_events": 44,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -3.901,
+            "n_events": 73,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": -0.851,
+            "n_events": 49,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": -4.397,
+            "n_events": 45,
+            "regime": "STRONGLY_BEARISH"
+          },
+          {
+            "excess_pct": -1.009,
+            "n_events": 170,
+            "regime": "STRONGLY_BULLISH"
+          }
+        ],
+        "t_stat": -3.693
+      },
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "effective_n 23.0 < 30",
+      "changed_from_lot5": "LOT 5 -4.38% \u2192 stratified -1.31%; residualised +1.29%; the two control methods disagree in SIGN",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 23.0,
+          "independent_blocks": 28.0
+        },
+        "effective_n": 23.0,
+        "informational": {
+          "variance_adjusted": 15.5
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 158
+      },
+      "embargo_check": {
+        "autocorrelation_at_embargo": 0.0835,
+        "embargo_bars": 14,
+        "note": "target autocorrelation at lag 14 is +0.084; embargo should be lengthened",
+        "status": "OK",
+        "sufficient": false,
+        "threshold": 0.05
+      },
+      "folds": [
+        {
+          "index": 0,
+          "n_embargoed": 14,
+          "n_purged": 14,
+          "n_test": 548,
+          "n_train_kept": 2716,
+          "n_train_raw": 2744,
+          "purge_rate": 0.0051,
+          "test_period": [
+            "2022-02-18T00:00:00+00:00",
+            "2023-08-19T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 1,
+          "n_embargoed": 14,
+          "n_purged": 14,
+          "n_test": 548,
+          "n_train_kept": 2716,
+          "n_train_raw": 2744,
+          "purge_rate": 0.0051,
+          "test_period": [
+            "2023-08-20T00:00:00+00:00",
+            "2025-02-17T00:00:00+00:00"
+          ]
+        },
+        {
+          "index": 2,
+          "n_embargoed": 2,
+          "n_purged": 14,
+          "n_test": 548,
+          "n_train_kept": 2728,
+          "n_train_raw": 2744,
+          "purge_rate": 0.0051,
+          "test_period": [
+            "2025-02-18T00:00:00+00:00",
+            "2026-08-19T00:00:00+00:00"
+          ]
+        }
+      ],
+      "horizon_days": 14,
+      "id": "BTC_inverse_hs_14",
+      "label": "inverse_head_and_shoulders|CANDIDATE",
+      "lot5_excess_pct": -4.38,
+      "power": {
+        "effective_n_baseline": 92.0,
+        "effective_n_event": 23.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 9.2427,
+        "note": "With 23 effective event observations the smallest detectable difference is 9.24%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.074,
+        "std_dev": 14.1516,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 158,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": 1.2913,
+      "residual_folds_agreeing": 1,
+      "residual_folds_total": 1,
+      "residual_p_value": 0.45285197489538576,
+      "residualised_folds": [
+        {
+          "condition_number": 4.8,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": null,
+          "n_baseline": 538,
+          "n_event": 10,
+          "note": "event=10, baseline=538 on the test folds",
+          "p_value": null,
+          "status": "INSUFFICIENT_DATA",
+          "t_stat": null,
+          "train_r2": 0.0273
+        },
+        {
+          "condition_number": 4.7,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": null,
+          "n_baseline": 542,
+          "n_event": 6,
+          "note": "event=6, baseline=542 on the test folds",
+          "p_value": null,
+          "status": "INSUFFICIENT_DATA",
+          "t_stat": null,
+          "train_r2": 0.0261
+        },
+        {
+          "condition_number": 4.4,
+          "controls_used": [
+            "return_1",
+            "return_5",
+            "return_20",
+            "return_60",
+            "realised_vol_20",
+            "realised_vol_60",
+            "dist_ema200_pct",
+            "adx_14"
+          ],
+          "excess_pct": 1.2913,
+          "n_baseline": 524,
+          "n_event": 24,
+          "note": "controls fitted on 2668 training rows (R2 0.0231), residuals tested on 548 held-out rows",
+          "p_value": 0.45285197489538576,
+          "status": "OK",
+          "t_stat": 0.762,
+          "train_r2": 0.0231
+        }
+      ],
+      "status": "OK",
+      "stratified": {
+        "baseline_coverage": {
+          "coverage": 0.9496,
+          "covered": 2937,
+          "total": 3093
+        },
+        "by_year": {
+          "2018": -6.629,
+          "2019": -8.465,
+          "2020": 14.755,
+          "2021": 2.172,
+          "2022": 14.12,
+          "2024": -1.077,
+          "2025": -6.698,
+          "2026": 3.178
+        },
+        "excess_pct": -1.3099,
+        "p_value": 0.27551560674923503,
+        "regimes_used": 4,
+        "stability_verdict": "UNSTABLE",
+        "status": "OK",
+        "strata": [
+          {
+            "excess_pct": 6.781,
+            "n_events": 15,
+            "regime": "BEARISH"
+          },
+          {
+            "excess_pct": -5.778,
+            "n_events": 17,
+            "regime": "BULLISH"
+          },
+          {
+            "excess_pct": -16.003,
+            "n_events": 20,
+            "regime": "NEUTRAL"
+          },
+          {
+            "excess_pct": 1.2,
+            "n_events": 99,
+            "regime": "STRONGLY_BEARISH"
+          }
+        ],
+        "t_stat": -1.094
+      },
+      "verdict": "INSUFFICIENT_DATA"
+    }
+  ],
+  "source": "stored",
+  "verdict_counts": {
+    "INCONCLUSIVE": 7,
+    "INSUFFICIENT_DATA": 3
+  }
+}

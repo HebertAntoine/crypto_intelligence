@@ -40,11 +40,23 @@ def _endpoints() -> list[tuple[str, dict[str, str] | None]]:
         ("/research/claim-validation", None),
         ("/knowledge/dataset-quality", None),
         ("/sources/hierarchy", None),
+        # LOT 6A: the studies the app now renders.
+        ("/research/revalidation", None),
+        ("/research/dvol", None),
+        ("/market/ratios", None),
+        ("/market/breadth", None),
+        ("/market/liquidity", None),
     ]
     for asset in ASSETS:
         endpoints.append((f"/today/{asset}", None))
         endpoints.append((f"/derivatives/aggregate/{asset}", None))
         endpoints.append((f"/cross-asset/{asset}", None))
+        endpoints.append((f"/multi-timeframe/{asset}", None))
+        endpoints.append((f"/volatility/implied/{asset}", None))
+        endpoints.append((f"/volatility/{asset}", None))
+        endpoints.append((f"/leverage/{asset}", None))
+        endpoints.append((f"/liquidations/{asset}", None))
+        endpoints.append(("/daily-report-v2", {"asset": asset}))
         for timeframe in TIMEFRAMES:
             query = {"timeframe": timeframe}
             endpoints.append((f"/structure/{asset}", query))

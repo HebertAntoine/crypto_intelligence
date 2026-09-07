@@ -216,6 +216,55 @@ class ApiClient {
             as Map<String, dynamic>,
       );
 
+  Future<MultiTimeframeRead> multiTimeframeRead(String asset) async =>
+      MultiTimeframeRead.fromJson(
+        await _get('/multi-timeframe/$asset') as Map<String, dynamic>,
+      );
+
+  Future<ImpliedVolatilityRead> impliedVolatility(String asset) async =>
+      ImpliedVolatilityRead.fromJson(
+        await _get('/volatility/implied/$asset') as Map<String, dynamic>,
+      );
+
+  Future<DailyReport> dailyReport(String asset) async {
+    final payload =
+        await _get('/daily-report-v2', {'asset': asset}) as Map<String, dynamic>;
+    final assets = payload['assets'] as Map<String, dynamic>? ?? const {};
+    final entry = assets[asset] as Map<String, dynamic>?;
+    if (entry == null) {
+      throw ApiException('No daily report returned for $asset');
+    }
+    return DailyReport.fromJson(entry);
+  }
+
+  Future<Map<String, dynamic>> revalidation() async =>
+      await _get('/research/revalidation') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> dvolStudy() async =>
+      await _get('/research/dvol') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> marketRatios() async =>
+      await _get('/market/ratios') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> marketBreadth() async =>
+      await _get('/market/breadth') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> marketLiquidity() async =>
+      await _get('/market/liquidity') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> leverage(String asset) async =>
+      await _get('/leverage/$asset') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> volatility(String asset) async =>
+      await _get('/volatility/$asset') as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> breakout(String asset, {String timeframe = '4h'}) async =>
+      await _get('/breakout/$asset', {'timeframe': timeframe})
+          as Map<String, dynamic>;
+
+  Future<Map<String, dynamic>> liquidations(String asset) async =>
+      await _get('/liquidations/$asset') as Map<String, dynamic>;
+
   Future<Map<String, dynamic>> multiTimeframe(String asset) async =>
       await _get('/structure/$asset/multi-timeframe') as Map<String, dynamic>;
 

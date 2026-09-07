@@ -1,0 +1,83 @@
+{
+  "alignment": "TRANSITION",
+  "asset": "SOL",
+  "available_timeframes": [
+    "1w",
+    "1d",
+    "4h",
+    "1h",
+    "15m"
+  ],
+  "caveat": "Timeframe alignment is descriptive. A conflict between timeframes is the normal state of a market, not an error, and alignment has not been shown to precede better returns.",
+  "conflicts": [],
+  "dominant_direction": "BEARISH",
+  "missing_timeframes": [],
+  "narrative": "1w: transition, above range \u00b7 1d: range, above range \u00b7 4h: bearish, near range top \u00b7 1h: transition, mid range \u00b7 15m: range, mid range. The higher timeframe holds a direction while a lower one consolidates - a pause inside a move rather than a disagreement.",
+  "timeframes": [
+    {
+      "available": true,
+      "bars": 317,
+      "direction": 0,
+      "invalidation": "A 1w close back below 94.91 would mean the breakout failed and price has reintegrated the range.",
+      "location": "ABOVE_RANGE",
+      "range_bottom": 12.665,
+      "range_top": 98.045,
+      "reason_unavailable": "",
+      "relative_position": 1.0427,
+      "structure": "TRANSITION",
+      "timeframe": "1w"
+    },
+    {
+      "available": true,
+      "bars": 2216,
+      "direction": 0,
+      "invalidation": "A 1d close back below 96.76 would mean the breakout failed and price has reintegrated the range.",
+      "location": "ABOVE_RANGE",
+      "range_bottom": 75.045,
+      "range_top": 98.045,
+      "reason_unavailable": "",
+      "relative_position": 1.1585,
+      "structure": "RANGE_STRUCTURE",
+      "timeframe": "1d"
+    },
+    {
+      "available": true,
+      "bars": 6000,
+      "direction": -1,
+      "invalidation": "A 4h close above 103.39 would break the range top zone and invalidate the current range reading.",
+      "location": "NEAR_RANGE_TOP",
+      "range_bottom": 74.473333,
+      "range_top": 102.91,
+      "reason_unavailable": "",
+      "relative_position": 0.9571,
+      "structure": "BEARISH_STRUCTURE",
+      "timeframe": "4h"
+    },
+    {
+      "available": true,
+      "bars": 10000,
+      "direction": 0,
+      "invalidation": "A 1h close outside 98.21-104.79 would invalidate the current range reading.",
+      "location": "MID_RANGE",
+      "range_bottom": 98.425,
+      "range_top": 104.48,
+      "reason_unavailable": "",
+      "relative_position": 0.5392,
+      "structure": "TRANSITION",
+      "timeframe": "1h"
+    },
+    {
+      "available": true,
+      "bars": 12000,
+      "direction": 0,
+      "invalidation": "A 15m close outside 105.33-107.42 would invalidate the current range reading.",
+      "location": "MID_RANGE",
+      "range_bottom": 105.42,
+      "range_top": 107.33,
+      "reason_unavailable": "",
+      "relative_position": 0.3874,
+      "structure": "RANGE_STRUCTURE",
+      "timeframe": "15m"
+    }
+  ]
+}

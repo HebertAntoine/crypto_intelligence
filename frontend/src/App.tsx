@@ -11,7 +11,7 @@ import KnowledgePage from "./pages/Knowledge";
 import DailyReportPage from "./pages/DailyReport";
 import MarketStructurePage from "./pages/MarketStructure";
 import TrackRecordPage from "./pages/TrackRecord";
-import ChartIntelligencePage from "./pages/ChartIntelligence";
+import ChartsPatternsPage from "./pages/ChartsPatterns";
 import TraderKnowledgePage from "./pages/TraderKnowledge";
 import { api, type Health } from "./lib/api";
 
@@ -41,7 +41,7 @@ export default function App() {
           <NavLink to="/daily">Daily Report</NavLink>
           <NavLink to="/global">Global</NavLink>
           <NavLink to="/calendar">Calendar</NavLink>
-          <NavLink to="/chart">Chart Intelligence</NavLink>
+          <NavLink to="/chart">Graphiques &amp; Patterns</NavLink>
           <NavLink to="/trader-knowledge">Trader Knowledge</NavLink>
           <NavLink to="/structure">Structure</NavLink>
           <NavLink to="/track-record">Track Record</NavLink>
@@ -57,7 +57,7 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily" element={<DailyReportPage />} />
           <Route path="/structure" element={<MarketStructurePage />} />
-          <Route path="/chart" element={<ChartIntelligencePage />} />
+          <Route path="/chart" element={<ChartsPatternsPage />} />
           <Route path="/trader-knowledge" element={<TraderKnowledgePage />} />
           <Route path="/track-record" element={<TrackRecordPage />} />
           <Route path="/asset/:symbol" element={<AssetPage />} />

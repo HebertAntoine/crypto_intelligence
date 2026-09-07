@@ -1,0 +1,1082 @@
+{
+  "assets_tested": [
+    "BTC",
+    "ETH"
+  ],
+  "assets_unavailable": [
+    "SOL"
+  ],
+  "generated_at": "2026-09-06T22:01:08.145370+00:00",
+  "hypotheses_preregistered": 24,
+  "multiple_testing": {
+    "expected_false_positives": 1.2,
+    "fdr_significant": 10,
+    "raw_significant": 11,
+    "tests_performed": 24
+  },
+  "note": "Hypotheses were declared in the module before any result existed. Realised volatility is an explicit control: without it the study would measure volatility clustering rather than options pricing.",
+  "results": [
+    {
+      "asset": "BTC",
+      "binding_reason": "effective_n 23.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 24.0,
+          "independent_blocks": 23.0
+        },
+        "effective_n": 23.0,
+        "informational": {
+          "variance_adjusted": 10.1
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 51
+      },
+      "expected_sign": -1,
+      "horizon_days": 7,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 92.0,
+        "effective_n_event": 23.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 4.7132,
+        "note": "With 23 effective event observations the smallest detectable difference is 4.71%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.091,
+        "std_dev": 7.2164,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 51,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": null,
+      "residual_p_value": null,
+      "status": "OK",
+      "stratified_excess_pct": 4.1556,
+      "stratified_p_value": 0.004262236777511114,
+      "survives_fdr": true,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "effective_n 16.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 24.0,
+          "independent_blocks": 16.0
+        },
+        "effective_n": 16.0,
+        "informational": {
+          "variance_adjusted": 5.1
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 51
+      },
+      "expected_sign": -1,
+      "horizon_days": 14,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 64.0,
+        "effective_n_event": 16.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 8.1525,
+        "note": "With 16 effective event observations the smallest detectable difference is 8.15%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.081,
+        "std_dev": 10.4109,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 51,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": null,
+      "residual_p_value": null,
+      "status": "OK",
+      "stratified_excess_pct": 3.6593,
+      "stratified_p_value": 0.08781076034256757,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "effective_n 16.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 24.0,
+          "independent_blocks": 16.0
+        },
+        "effective_n": 16.0,
+        "informational": {
+          "variance_adjusted": 2.4
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 51
+      },
+      "expected_sign": -1,
+      "horizon_days": 30,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 64.0,
+        "effective_n_event": 16.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 12.2845,
+        "note": "With 16 effective event observations the smallest detectable difference is 12.28%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.074,
+        "std_dev": 15.6877,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 51,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": null,
+      "residual_p_value": null,
+      "status": "OK",
+      "stratified_excess_pct": -0.0477,
+      "stratified_p_value": 0.9875479916575806,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 42.0,
+          "independent_blocks": 70.0
+        },
+        "effective_n": 42.0,
+        "informational": {
+          "variance_adjusted": 61.5
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 312
+      },
+      "expected_sign": 1,
+      "horizon_days": 7,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 168.0,
+        "effective_n_event": 42.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 3.4878,
+        "note": "With 42 effective event observations the smallest detectable difference is 3.49%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.127,
+        "std_dev": 7.2164,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 312,
+      "reasons": [
+        "With 42 effective event observations the smallest detectable difference is 3.49%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 0.6216,
+      "residual_folds": 3,
+      "residual_p_value": 0.5490548455593857,
+      "status": "OK",
+      "stratified_excess_pct": 0.8131,
+      "stratified_p_value": 0.049263589602994894,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "effect +1.46% below the 1.50% meaningful floor",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 39.0,
+          "independent_blocks": 43.0
+        },
+        "effective_n": 39.0,
+        "informational": {
+          "variance_adjusted": 30.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 309
+      },
+      "expected_sign": 1,
+      "horizon_days": 14,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 156.0,
+        "effective_n_event": 39.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 5.2218,
+        "note": "With 39 effective event observations the smallest detectable difference is 5.22%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.127,
+        "std_dev": 10.4109,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 309,
+      "reasons": [
+        "effect +1.46% below the 1.50% meaningful floor",
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.245)"
+      ],
+      "residual_excess_pct": 1.5586,
+      "residual_folds": 3,
+      "residual_p_value": 0.2452395086838521,
+      "status": "OK",
+      "stratified_excess_pct": 1.4648,
+      "stratified_p_value": 0.020424579210903463,
+      "survives_fdr": true,
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "effective_n 28.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 39.0,
+          "independent_blocks": 28.0
+        },
+        "effective_n": 28.0,
+        "informational": {
+          "variance_adjusted": 14.4
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 309
+      },
+      "expected_sign": 1,
+      "horizon_days": 30,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 112.0,
+        "effective_n_event": 28.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 9.2862,
+        "note": "With 28 effective event observations the smallest detectable difference is 9.29%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.093,
+        "std_dev": 15.6877,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 309,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": 4.8562,
+      "residual_folds": 3,
+      "residual_p_value": 4.1259333947425164e-09,
+      "status": "OK",
+      "stratified_excess_pct": 3.5035,
+      "stratified_p_value": 0.0001594995791236363,
+      "survives_fdr": true,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "not confirmed in purged out-of-sample",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 42.0,
+          "independent_blocks": 59.0
+        },
+        "effective_n": 42.0,
+        "informational": {
+          "variance_adjusted": 45.4
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 229
+      },
+      "expected_sign": -1,
+      "horizon_days": 7,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 168.0,
+        "effective_n_event": 42.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 3.6428,
+        "note": "With 42 effective event observations the smallest detectable difference is 3.64%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.12,
+        "std_dev": 7.537,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 229,
+      "reasons": [
+        "not confirmed in purged out-of-sample",
+        "survives stratification but not residualisation (p=0.623)"
+      ],
+      "residual_excess_pct": 1.0501,
+      "residual_folds": 2,
+      "residual_p_value": 0.6227096180149564,
+      "status": "OK",
+      "stratified_excess_pct": 1.3131,
+      "stratified_p_value": 0.006033803026557022,
+      "survives_fdr": true,
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 42.0,
+          "independent_blocks": 39.0
+        },
+        "effective_n": 39.0,
+        "informational": {
+          "variance_adjusted": 22.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 229
+      },
+      "expected_sign": -1,
+      "horizon_days": 14,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 156.0,
+        "effective_n_event": 39.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 5.4162,
+        "note": "With 39 effective event observations the smallest detectable difference is 5.42%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.121,
+        "std_dev": 10.7985,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 229,
+      "reasons": [
+        "With 39 effective event observations the smallest detectable difference is 5.42%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": -0.0591,
+      "residual_folds": 2,
+      "residual_p_value": 0.03448426065551898,
+      "status": "OK",
+      "stratified_excess_pct": 1.1819,
+      "stratified_p_value": 0.09348034957997431,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "effective_n 26.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 42.0,
+          "independent_blocks": 26.0
+        },
+        "effective_n": 26.0,
+        "informational": {
+          "variance_adjusted": 10.7
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 229
+      },
+      "expected_sign": -1,
+      "horizon_days": 30,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 104.0,
+        "effective_n_event": 26.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 10.0804,
+        "note": "With 26 effective event observations the smallest detectable difference is 10.08%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.086,
+        "std_dev": 16.4099,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 229,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": -0.6651,
+      "residual_folds": 2,
+      "residual_p_value": 2.5586812402439204e-05,
+      "status": "OK",
+      "stratified_excess_pct": -1.444,
+      "stratified_p_value": 0.19764256311957876,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 52.0,
+          "independent_blocks": 146.0
+        },
+        "effective_n": 52.0,
+        "informational": {
+          "variance_adjusted": 197.4
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 834
+      },
+      "expected_sign": 0,
+      "horizon_days": 7,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 208.0,
+        "effective_n_event": 52.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 2.1884,
+        "note": "With 52 effective event observations the smallest detectable difference is 2.19%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.249,
+        "std_dev": 5.0382,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 834,
+      "reasons": [
+        "With 52 effective event observations the smallest detectable difference is 2.19%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 0.5335,
+      "residual_folds": 2,
+      "residual_p_value": 0.5019638497596064,
+      "status": "OK",
+      "stratified_excess_pct": 0.062,
+      "stratified_p_value": 0.7960430155455613,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 50.0,
+          "independent_blocks": 81.0
+        },
+        "effective_n": 50.0,
+        "informational": {
+          "variance_adjusted": 100.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 832
+      },
+      "expected_sign": 0,
+      "horizon_days": 14,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 200.0,
+        "effective_n_event": 50.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 3.1741,
+        "note": "With 50 effective event observations the smallest detectable difference is 3.17%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.263,
+        "std_dev": 7.1654,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 832,
+      "reasons": [
+        "With 50 effective event observations the smallest detectable difference is 3.17%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 0.9089,
+      "residual_folds": 2,
+      "residual_p_value": 0.0356114406366495,
+      "status": "OK",
+      "stratified_excess_pct": 0.4824,
+      "stratified_p_value": 0.1582300704383395,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "BTC",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 50.0,
+          "independent_blocks": 44.0
+        },
+        "effective_n": 44.0,
+        "informational": {
+          "variance_adjusted": 50.1
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 817
+      },
+      "expected_sign": 0,
+      "horizon_days": 30,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 176.0,
+        "effective_n_event": 44.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 4.9131,
+        "note": "With 44 effective event observations the smallest detectable difference is 4.91%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.207,
+        "std_dev": 10.4046,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 817,
+      "reasons": [
+        "With 44 effective event observations the smallest detectable difference is 4.91%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 0.1222,
+      "residual_folds": 2,
+      "residual_p_value": 1.634135409246261e-06,
+      "status": "OK",
+      "stratified_excess_pct": 0.377,
+      "stratified_p_value": 0.4490640378701046,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 31.0,
+          "independent_blocks": 36.0
+        },
+        "effective_n": 31.0,
+        "informational": {
+          "variance_adjusted": 27.0
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 135
+      },
+      "expected_sign": -1,
+      "horizon_days": 7,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 124.0,
+        "effective_n_event": 31.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 5.3777,
+        "note": "With 31 effective event observations the smallest detectable difference is 5.38%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.082,
+        "std_dev": 9.5591,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 135,
+      "reasons": [
+        "With 31 effective event observations the smallest detectable difference is 5.38%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": -7.397,
+      "residual_folds": 1,
+      "residual_p_value": 0.0001103321330400835,
+      "status": "OK",
+      "stratified_excess_pct": -0.4639,
+      "stratified_p_value": 0.6252128204617381,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 22.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 31.0,
+          "independent_blocks": 22.0
+        },
+        "effective_n": 22.0,
+        "informational": {
+          "variance_adjusted": 13.5
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 135
+      },
+      "expected_sign": -1,
+      "horizon_days": 14,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 88.0,
+        "effective_n_event": 22.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 9.0971,
+        "note": "With 22 effective event observations the smallest detectable difference is 9.10%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.075,
+        "std_dev": 13.6225,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 135,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": -10.9599,
+      "residual_folds": 2,
+      "residual_p_value": 8.646019995308694e-07,
+      "status": "OK",
+      "stratified_excess_pct": -4.5263,
+      "stratified_p_value": 0.00023563580440501953,
+      "survives_fdr": true,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 18.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 31.0,
+          "independent_blocks": 18.0
+        },
+        "effective_n": 18.0,
+        "informational": {
+          "variance_adjusted": 6.4
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 135
+      },
+      "expected_sign": -1,
+      "horizon_days": 30,
+      "hypothesis": "H1 options expensive precedes lower returns",
+      "hypothesis_id": "premium_expensive",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 72.0,
+        "effective_n_event": 18.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 15.5686,
+        "note": "With 18 effective event observations the smallest detectable difference is 15.57%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.065,
+        "std_dev": 21.0876,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 135,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": -11.1369,
+      "residual_folds": 2,
+      "residual_p_value": 0.025027503154708225,
+      "status": "OK",
+      "stratified_excess_pct": -10.1559,
+      "stratified_p_value": 1.0472213161919352e-13,
+      "survives_fdr": true,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 36.0,
+          "independent_blocks": 73.0
+        },
+        "effective_n": 36.0,
+        "informational": {
+          "variance_adjusted": 72.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 364
+      },
+      "expected_sign": 1,
+      "horizon_days": 7,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 144.0,
+        "effective_n_event": 36.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 4.9903,
+        "note": "With 36 effective event observations the smallest detectable difference is 4.99%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.087,
+        "std_dev": 9.5591,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 364,
+      "reasons": [
+        "With 36 effective event observations the smallest detectable difference is 4.99%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 0.8966,
+      "residual_folds": 3,
+      "residual_p_value": 0.4211998271246595,
+      "status": "OK",
+      "stratified_excess_pct": -0.031,
+      "stratified_p_value": 0.9567401429095161,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 36.0,
+          "independent_blocks": 46.0
+        },
+        "effective_n": 36.0,
+        "informational": {
+          "variance_adjusted": 35.7
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 357
+      },
+      "expected_sign": 1,
+      "horizon_days": 14,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 144.0,
+        "effective_n_event": 36.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 7.1115,
+        "note": "With 36 effective event observations the smallest detectable difference is 7.11%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.091,
+        "std_dev": 13.6225,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 357,
+      "reasons": [
+        "With 36 effective event observations the smallest detectable difference is 7.11%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 2.3016,
+      "residual_folds": 3,
+      "residual_p_value": 0.2846852718204957,
+      "status": "OK",
+      "stratified_excess_pct": 0.7127,
+      "stratified_p_value": 0.40593759157013254,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 29.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 35.0,
+          "independent_blocks": 29.0
+        },
+        "effective_n": 29.0,
+        "informational": {
+          "variance_adjusted": 16.7
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 354
+      },
+      "expected_sign": 1,
+      "horizon_days": 30,
+      "hypothesis": "H2 options cheap precedes higher returns",
+      "hypothesis_id": "premium_cheap",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 116.0,
+        "effective_n_event": 29.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 12.2656,
+        "note": "With 29 effective event observations the smallest detectable difference is 12.27%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.074,
+        "std_dev": 21.0876,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 354,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": 2.6053,
+      "residual_folds": 3,
+      "residual_p_value": 0.9653231075735443,
+      "status": "OK",
+      "stratified_excess_pct": 3.6517,
+      "stratified_p_value": 0.008767336644883108,
+      "survives_fdr": true,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 38.0,
+          "independent_blocks": 52.0
+        },
+        "effective_n": 38.0,
+        "informational": {
+          "variance_adjusted": 41.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 211
+      },
+      "expected_sign": -1,
+      "horizon_days": 7,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 152.0,
+        "effective_n_event": 38.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 5.1785,
+        "note": "With 38 effective event observations the smallest detectable difference is 5.18%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.084,
+        "std_dev": 10.1915,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 211,
+      "reasons": [
+        "With 38 effective event observations the smallest detectable difference is 5.18%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 3.6084,
+      "residual_folds": 2,
+      "residual_p_value": 0.02612668793995074,
+      "status": "OK",
+      "stratified_excess_pct": 0.1446,
+      "stratified_p_value": 0.8554582129051723,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "null result on an underpowered test",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 38.0,
+          "independent_blocks": 37.0
+        },
+        "effective_n": 37.0,
+        "informational": {
+          "variance_adjusted": 21.8
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 211
+      },
+      "expected_sign": -1,
+      "horizon_days": 14,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 148.0,
+        "effective_n_event": 37.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 7.5099,
+        "note": "With 37 effective event observations the smallest detectable difference is 7.51%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.087,
+        "std_dev": 14.584,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 211,
+      "reasons": [
+        "With 37 effective event observations the smallest detectable difference is 7.51%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect."
+      ],
+      "residual_excess_pct": 6.7732,
+      "residual_folds": 2,
+      "residual_p_value": 0.0004874223203479942,
+      "status": "OK",
+      "stratified_excess_pct": -0.8531,
+      "stratified_p_value": 0.471880893901572,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 25.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 38.0,
+          "independent_blocks": 25.0
+        },
+        "effective_n": 25.0,
+        "informational": {
+          "variance_adjusted": 10.0
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 211
+      },
+      "expected_sign": -1,
+      "horizon_days": 30,
+      "hypothesis": "H3 implied volatility rising sharply precedes lower returns",
+      "hypothesis_id": "dvol_spike",
+      "matches_hypothesis": true,
+      "power": {
+        "effective_n_baseline": 100.0,
+        "effective_n_event": 25.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 13.606,
+        "note": "With 25 effective event observations the smallest detectable difference is 13.61%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.07,
+        "std_dev": 21.7192,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 211,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": 6.9075,
+      "residual_folds": 2,
+      "residual_p_value": 0.3924431606213004,
+      "status": "OK",
+      "stratified_excess_pct": -5.0897,
+      "stratified_p_value": 0.003162633367371137,
+      "survives_fdr": true,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effect -0.81% below the 1.00% meaningful floor",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 30.0,
+          "independent_blocks": 100.0
+        },
+        "effective_n": 30.0,
+        "informational": {
+          "variance_adjusted": 142.5
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 588
+      },
+      "expected_sign": 0,
+      "horizon_days": 7,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 120.0,
+        "effective_n_event": 30.0,
+        "meaningful_effect_pct": 1.0,
+        "minimum_detectable_effect_pct": 3.7709,
+        "note": "With 30 effective event observations the smallest detectable difference is 3.77%, against a meaningful effect of 1.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.115,
+        "std_dev": 6.5939,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 588,
+      "reasons": [
+        "effect -0.81% below the 1.00% meaningful floor",
+        "methods disagree in sign: stratified -0.81%, residualised +2.13%"
+      ],
+      "residual_excess_pct": 2.1344,
+      "residual_folds": 1,
+      "residual_p_value": 0.018271518256318266,
+      "status": "OK",
+      "stratified_excess_pct": -0.8077,
+      "stratified_p_value": 0.012686034148483755,
+      "survives_fdr": true,
+      "verdict": "INCONCLUSIVE"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 29.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "clusters",
+        "components": {
+          "clusters": 29.0,
+          "independent_blocks": 54.0
+        },
+        "effective_n": 29.0,
+        "informational": {
+          "variance_adjusted": 72.7
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 587
+      },
+      "expected_sign": 0,
+      "horizon_days": 14,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 116.0,
+        "effective_n_event": 29.0,
+        "meaningful_effect_pct": 1.5,
+        "minimum_detectable_effect_pct": 5.1883,
+        "note": "With 29 effective event observations the smallest detectable difference is 5.19%, against a meaningful effect of 1.50%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.128,
+        "std_dev": 8.92,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 587,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": 6.8828,
+      "residual_folds": 1,
+      "residual_p_value": 7.206827981120566e-08,
+      "status": "OK",
+      "stratified_excess_pct": -0.7503,
+      "stratified_p_value": 0.08359347833208898,
+      "survives_fdr": false,
+      "verdict": "INSUFFICIENT_DATA"
+    },
+    {
+      "asset": "ETH",
+      "binding_reason": "effective_n 28.0 < 30",
+      "effective_sample": {
+        "binding_constraint": "independent_blocks",
+        "components": {
+          "clusters": 29.0,
+          "independent_blocks": 28.0
+        },
+        "effective_n": 28.0,
+        "informational": {
+          "variance_adjusted": 35.6
+        },
+        "method": "min(clusters of consecutive occurrences, independent horizon-length blocks containing an occurrence). The variance adjustment from the target's autocorrelation is reported separately because it measures the same overlap the block count already handles.",
+        "raw_n": 572
+      },
+      "expected_sign": 0,
+      "horizon_days": 30,
+      "hypothesis": "H4 compressed implied volatility precedes larger moves",
+      "hypothesis_id": "dvol_compressed",
+      "matches_hypothesis": false,
+      "power": {
+        "effective_n_baseline": 112.0,
+        "effective_n_event": 28.0,
+        "meaningful_effect_pct": 2.0,
+        "minimum_detectable_effect_pct": 8.1788,
+        "note": "With 28 effective event observations the smallest detectable difference is 8.18%, against a meaningful effect of 2.00%. A null result here is uninformative: the test could not have seen a meaningful effect.",
+        "power_at_meaningful_effect": 0.105,
+        "std_dev": 13.8169,
+        "verdict": "UNDERPOWERED"
+      },
+      "raw_occurrences": 572,
+      "reasons": [
+        "not convertible by adding assets or horizons: the sample is genuinely this small"
+      ],
+      "residual_excess_pct": 11.3017,
+      "residual_folds": 1,
+      "residual_p_value": 1.2374631925590969e-12,
+      "status": "OK",
+      "stratified_excess_pct": -1.8946,
+      "stratified_p_value": 0.004497770214808191,
+      "survives_fdr": true,
+      "verdict": "INSUFFICIENT_DATA"
+    }
+  ],
+  "source": "stored",
+  "verdict_counts": {
+    "INCONCLUSIVE": 3,
+    "INSUFFICIENT_DATA": 21
+  }
+}

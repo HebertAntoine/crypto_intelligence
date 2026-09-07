@@ -30,7 +30,16 @@ import pandas as pd
 
 from ..core.enums import Timeframe
 from ..logging_setup import get_logger
-from .swings import SwingSeries
+from .geometry import GeometryPoint, GeometryZone, PatternGeometry, TrendLine
+from .quality import (
+    PatternCriteria,
+    QualityReport,
+    fit_line,
+    pivot_quality,
+    symmetry_score,
+    volume_trend_score,
+)
+from .swings import CausalSwing, SwingSeries
 
 log = get_logger("structure.patterns")
 
@@ -79,6 +88,11 @@ class StructuralPattern:
     edge_state: PatternEdgeState = PatternEdgeState.NOT_YET_TESTED
     edge_note: str = ""
     notes: str = ""
+    #: Enough to redraw the figure on a chart. Produced by the detector, which
+    #: is the only place that knows which pivots define the shape.
+    geometry: PatternGeometry = field(default_factory=PatternGeometry)
+    #: Bars from the first defining pivot to the last, for the bar-count gates.
+    bars_span: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -98,6 +112,8 @@ class StructuralPattern:
             "edge_state": self.edge_state.value,
             "edge_note": self.edge_note,
             "notes": self.notes,
+            "geometry": self.geometry.to_dict(),
+            "bars_span": self.bars_span,
             "separation_note": (
                 "recognition_confidence describes how cleanly the shape matches its "
                 "definition. It is NOT a probability of any price outcome."
@@ -154,26 +170,124 @@ def detect_double_top(ctx: PatternContext) -> StructuralPattern | None:
     return _detect_double(ctx, kind="top")
 
 
+#: Hard gates per detector. Written down rather than inlined so §14's
+#: "minimum criteria, tolerances, bar counts, pivot control, slope validation"
+#: can be read in one place, and so a rejection names the gate that stopped it.
+#:
+#: The defaults below are the tuned values; `config/thresholds.yaml` overrides
+#: any of them under `structure_patterns:`, following the project convention
+#: that a threshold is a setting rather than a constant in the code.
+_CRITERIA_DEFAULTS: dict[str, dict[str, Any]] = {
+    "double": {
+        "min_bars": 12, "max_bars": 250, "min_pivots": 2,
+        "min_pivot_quality": 40.0, "min_confidence": 58.0,
+        "extreme_tolerance_atr": 0.7, "min_reaction_atr": 1.5,
+    },
+    "triangle": {
+        "min_bars": 20, "max_bars": 250, "min_pivots": 3,
+        "min_pivot_quality": 35.0, "min_alignment": 55.0, "min_confidence": 58.0,
+        "min_convergence": 0.35, "flat_slope_atr": 0.015,
+    },
+    "wedge": {
+        "min_bars": 20, "max_bars": 250, "min_pivots": 3,
+        "min_pivot_quality": 35.0, "min_alignment": 60.0, "min_confidence": 60.0,
+        "min_convergence": 0.30, "flat_slope_atr": 0.015,
+    },
+}
+
+
+def _load_criteria() -> dict[str, PatternCriteria]:
+    """Merge the YAML overrides onto the defaults, one detector at a time.
+
+    A malformed or absent config falls back to the defaults rather than
+    disabling detection: a missing setting must not silently turn a gate off.
+    """
+    from ..config_loader import threshold
+
+    configured = threshold("structure_patterns", default={}) or {}
+    out: dict[str, PatternCriteria] = {}
+    for name, defaults in _CRITERIA_DEFAULTS.items():
+        overrides = configured.get(name) or {}
+        merged = {**defaults}
+        for key, value in overrides.items():
+            if key in defaults:
+                merged[key] = type(defaults[key])(value)
+            else:
+                log.warning("unknown_pattern_criterion", detector=name, key=key)
+        out[name] = PatternCriteria(**merged)
+    return out
+
+
+CRITERIA: dict[str, PatternCriteria] = _load_criteria()
+
+
+def _point(ctx: PatternContext, swing: CausalSwing, role: str) -> GeometryPoint:
+    return GeometryPoint(
+        time=ctx.close.index[swing.pivot_index],
+        price=round(swing.price, 6),
+        role=role,
+        kind="pivot",
+    )
+
+
+def _horizontal(ctx: PatternContext, price: float, start_index: int, role: str) -> TrendLine:
+    """A flat line from a bar to the last one - a neckline or a range boundary."""
+    start = GeometryPoint(time=ctx.close.index[start_index], price=round(price, 6), role=role)
+    end = GeometryPoint(time=ctx.now, price=round(price, 6), role=role)
+    return TrendLine(start=start, end=end, role=role, extend=True)
+
+
+def _fitted_line(
+    ctx: PatternContext, fit: Any, first_index: int, last_index: int, role: str
+) -> TrendLine:
+    """The regression line drawn between two bar positions."""
+    return TrendLine(
+        start=GeometryPoint(
+            time=ctx.close.index[first_index],
+            price=round(fit.price_at(first_index), 6),
+            role=role,
+            kind="projected",
+        ),
+        end=GeometryPoint(
+            time=ctx.close.index[last_index],
+            price=round(fit.price_at(last_index), 6),
+            role=role,
+            kind="projected",
+        ),
+        role=role,
+        extend=True,
+    )
+
+
 def _detect_double(ctx: PatternContext, kind: str) -> StructuralPattern | None:
+    """Two comparable extremes separated by a genuine reaction.
+
+    Every rejection below is a gate the previous version did not have. The old
+    detector accepted any two swings within 1 ATR that were eight bars apart,
+    which on nine years of daily bars is most of the time. What is added:
+
+      * a maximum span - two lows 400 bars apart are not one figure;
+      * pivot quality - both extremes must have produced a real reaction, not
+        be rounding artefacts in a drift;
+      * a confidence floor, so a marginal shape is not reported at all.
+    """
+    criteria = CRITERIA["double"]
     atr = ctx.current_atr
     if atr <= 0:
         return None
     swings = ctx.swings.lows if kind == "bottom" else ctx.swings.highs
-    if len(swings) < 2:
+    if len(swings) < criteria.min_pivots:
         return None
 
     second, first = swings[-1], swings[-2]
-    separation_bars = second.pivot_index - first.pivot_index
-    if separation_bars < 8:
+    span = second.pivot_index - first.pivot_index
+    if not criteria.bars_ok(span):
         return None
 
-    # The two extremes must agree within a fraction of ATR.
     difference_atr = abs(second.price - first.price) / atr
-    if difference_atr > 1.0:
+    if difference_atr > criteria.extreme_tolerance_atr:
         return None
 
-    # There must be a genuine reaction between them, otherwise it is one broad
-    # base rather than two distinct tests.
     between = ctx.close.iloc[first.pivot_index:second.pivot_index + 1]
     if between.empty:
         return None
@@ -186,7 +300,24 @@ def _detect_double(ctx: PatternContext, kind: str) -> StructuralPattern | None:
         reaction_atr = (min(first.price, second.price) - neckline) / atr
         textbook = "BEARISH"
 
-    if reaction_atr < 1.2:
+    if reaction_atr < criteria.min_reaction_atr:
+        return None
+
+    # Both tests must be pivots the market actually respected.
+    quality = pivot_quality([first, second])
+    if quality < criteria.min_pivot_quality:
+        return None
+
+    report = QualityReport(components={
+        "extreme_agreement": symmetry_score([first.price, second.price], atr),
+        "reaction_depth": round(
+            float(np.clip(reaction_atr / 3.0, 0.0, 1.0)) * 100.0, 1
+        ),
+        "time_separation": round(float(np.clip(span / 60.0, 0.0, 1.0)) * 100.0, 1),
+        "pivot_quality": quality,
+    })
+    confidence = report.confidence()
+    if confidence < criteria.min_confidence:
         return None
 
     last = ctx.last_close
@@ -213,14 +344,24 @@ def _detect_double(ctx: PatternContext, kind: str) -> StructuralPattern | None:
         else PatternState.CANDIDATE
     )
 
-    # Recognition: how textbook the shape is. Tighter extremes, a deeper
-    # reaction and better time separation all make it cleaner.
-    components = {
-        "extreme_agreement": round(float(np.clip((1.0 - difference_atr) * 100, 0, 100)), 1),
-        "reaction_depth": round(float(np.clip(reaction_atr / 3.0 * 100, 0, 100)), 1),
-        "time_separation": round(float(np.clip(separation_bars / 40 * 100, 0, 100)), 1),
-    }
-    confidence = round(float(np.mean(list(components.values()))), 1)
+    geometry = PatternGeometry(
+        points=[
+            _point(ctx, first, f"first_{kind}"),
+            _point(ctx, second, f"second_{kind}"),
+        ],
+        neckline=_horizontal(ctx, neckline, first.pivot_index, "neckline"),
+        zones=[
+            GeometryZone(
+                start_time=ctx.close.index[first.pivot_index],
+                end_time=ctx.now,
+                low=round(min(invalidation, neckline), 6),
+                high=round(max(invalidation, neckline), 6),
+                role="breakout",
+            )
+        ],
+    )
+    geometry.trend_lines = [geometry.neckline]
+    geometry.breakout_area = geometry.zones[0]
 
     return StructuralPattern(
         name=f"double_{kind}",
@@ -238,16 +379,19 @@ def _detect_double(ctx: PatternContext, kind: str) -> StructuralPattern | None:
         invalidation_level=round(invalidation, 6),
         invalidation_rule=rule,
         components={
-            **components,
+            **report.components,
             "difference_atr": round(difference_atr, 3),
             "reaction_atr": round(reaction_atr, 3),
-            "bars_between": separation_bars,
+            "bars_between": span,
         },
+        geometry=geometry,
+        bars_span=span,
         notes=(
             f"two {kind}s within {difference_atr:.2f} ATR of each other, separated by "
-            f"{separation_bars} bars, with a {reaction_atr:.2f} ATR reaction between them"
+            f"{span} bars, with a {reaction_atr:.2f} ATR reaction between them"
         ),
     )
+
 
 
 def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPattern | None:
@@ -264,7 +408,13 @@ def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPatter
     spread_atr = (max(prices) - min(prices)) / atr
     if spread_atr > 1.2:
         return None
-    if third.pivot_index - first.pivot_index < 20:
+    span = third.pivot_index - first.pivot_index
+    # Bounded at both ends: three lows spread over two years are not one figure,
+    # which the lower bound alone never caught.
+    if not (20 <= span <= CRITERIA["double"].max_bars):
+        return None
+    quality = pivot_quality([first, second, third])
+    if quality < CRITERIA["double"].min_pivot_quality:
         return None
 
     between = ctx.close.iloc[first.pivot_index:third.pivot_index + 1]
@@ -273,7 +423,13 @@ def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPatter
     confirmed = last > neckline if kind == "bottom" else last < neckline
     invalidation = min(prices) if kind == "bottom" else max(prices)
 
-    confidence = round(float(np.clip((1.2 - spread_atr) / 1.2 * 100, 0, 100)), 1)
+    # Named parts rather than one opaque formula, so §22 holds here too.
+    report = QualityReport(components={
+        "extreme_agreement": symmetry_score(prices, atr),
+        "pivot_quality": quality,
+        "time_separation": round(float(np.clip(span / 80.0, 0.0, 1.0)) * 100.0, 1),
+    })
+    confidence = report.confidence()
     return StructuralPattern(
         name=f"triple_{kind}",
         pattern_class=PatternClass.DETERMINISTIC,
@@ -291,8 +447,9 @@ def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPatter
             f"a {ctx.timeframe.value} close beyond {invalidation:.2f} invalidates the "
             f"triple {kind}"
         ),
-        components={"spread_atr": round(spread_atr, 3)},
-        notes=f"three {kind}s within {spread_atr:.2f} ATR across {third.pivot_index - first.pivot_index} bars",
+        components={**report.components, "spread_atr": round(spread_atr, 3)},
+        bars_span=span,
+        notes=f"three {kind}s within {spread_atr:.2f} ATR across {span} bars",
     )
 
 
@@ -367,102 +524,276 @@ def detect_head_and_shoulders(
     )
 
 
-def detect_triangle(ctx: PatternContext) -> StructuralPattern | None:
-    """Converging highs and lows. HEURISTIC - trendline fitting is a choice."""
+def _converging_boundaries(
+    ctx: PatternContext, criteria: PatternCriteria
+) -> tuple[Any, Any, list[CausalSwing], list[CausalSwing], float, int] | None:
+    """Shared front half of triangles and wedges: two fitted, converging lines.
+
+    Returns the two fits, the pivots behind them, the convergence achieved and
+    the bar span - or None when any structural gate fails. Both figures need
+    exactly this, and computing it once means a triangle and a wedge can never
+    disagree about the same price action.
+    """
     atr = ctx.current_atr
-    if atr <= 0 or len(ctx.swings.highs) < 3 or len(ctx.swings.lows) < 3:
+    if atr <= 0:
         return None
 
-    highs = ctx.swings.highs[-3:]
-    lows = ctx.swings.lows[-3:]
-    high_slope = np.polyfit([s.pivot_index for s in highs], [s.price for s in highs], 1)[0]
-    low_slope = np.polyfit([s.pivot_index for s in lows], [s.price for s in lows], 1)[0]
-
-    first_width = abs(highs[0].price - lows[0].price)
-    last_width = abs(highs[-1].price - lows[-1].price)
-    if first_width <= 0 or last_width >= first_width * 0.85:
+    highs = ctx.swings.highs[-4:]
+    lows = ctx.swings.lows[-4:]
+    if len(highs) < criteria.min_pivots or len(lows) < criteria.min_pivots:
         return None
 
-    if high_slope < -1e-9 and abs(low_slope) < abs(high_slope) * 0.35:
-        name, textbook = "descending_triangle", "BEARISH"
-    elif low_slope > 1e-9 and abs(high_slope) < abs(low_slope) * 0.35:
+    first_index = min(highs[0].pivot_index, lows[0].pivot_index)
+    last_index = max(highs[-1].pivot_index, lows[-1].pivot_index)
+    span = last_index - first_index
+    if not criteria.bars_ok(span):
+        return None
+
+    upper = fit_line(highs, atr)
+    lower = fit_line(lows, atr)
+    if upper is None or lower is None:
+        return None
+
+    # The pivots must actually sit on their lines. This is the gate the old
+    # detector lacked entirely: it ran polyfit through three points and never
+    # asked how far they were from the result, so any three swings became a
+    # trendline.
+    if (
+        upper.alignment_score < criteria.min_alignment
+        or lower.alignment_score < criteria.min_alignment
+    ):
+        return None
+
+    if pivot_quality(highs + lows) < criteria.min_pivot_quality:
+        return None
+
+    start_width = upper.price_at(first_index) - lower.price_at(first_index)
+    end_width = upper.price_at(last_index) - lower.price_at(last_index)
+    # Boundaries that cross before the last pivot describe an apex already
+    # passed, not a figure still forming.
+    if start_width <= 0 or end_width <= 0:
+        return None
+    # A figure narrower than an ATR is noise dressed as geometry.
+    if start_width / atr < 1.5:
+        return None
+
+    convergence = 1.0 - end_width / start_width
+    if convergence < criteria.min_convergence:
+        return None
+
+    return upper, lower, highs, lows, convergence, span
+
+
+def _converging_geometry(
+    ctx: PatternContext,
+    upper: Any,
+    lower: Any,
+    highs: list[CausalSwing],
+    lows: list[CausalSwing],
+) -> PatternGeometry:
+    first_index = min(highs[0].pivot_index, lows[0].pivot_index)
+    last_index = max(highs[-1].pivot_index, lows[-1].pivot_index)
+    upper_line = _fitted_line(ctx, upper, first_index, last_index, "upper")
+    lower_line = _fitted_line(ctx, lower, first_index, last_index, "lower")
+    return PatternGeometry(
+        points=(
+            [_point(ctx, s, "upper_pivot") for s in highs]
+            + [_point(ctx, s, "lower_pivot") for s in lows]
+        ),
+        trend_lines=[upper_line, lower_line],
+    )
+
+
+def detect_triangle(ctx: PatternContext) -> StructuralPattern | None:
+    """Converging boundaries, one of which is flat.
+
+    A triangle is classified by which boundary is horizontal: a flat top with
+    rising lows is ascending, a flat bottom with falling highs is descending,
+    both sloping toward each other is symmetrical. "Flat" is measured in ATR
+    per bar so it means the same thing on any asset, rather than being a
+    ratio between two slopes that both happen to be small.
+    """
+    criteria = CRITERIA["triangle"]
+    found = _converging_boundaries(ctx, criteria)
+    if found is None:
+        return None
+    upper, lower, highs, lows, convergence, span = found
+
+    upper_flat = abs(upper.slope_atr_per_bar) < criteria.flat_slope_atr
+    lower_flat = abs(lower.slope_atr_per_bar) < criteria.flat_slope_atr
+
+    if upper_flat and lower.slope_atr_per_bar > criteria.flat_slope_atr:
         name, textbook = "ascending_triangle", "BULLISH"
-    elif high_slope < 0 < low_slope:
+    elif lower_flat and upper.slope_atr_per_bar < -criteria.flat_slope_atr:
+        name, textbook = "descending_triangle", "BEARISH"
+    elif upper.slope_atr_per_bar < -criteria.flat_slope_atr < criteria.flat_slope_atr < lower.slope_atr_per_bar:
         name, textbook = "symmetrical_triangle", "NEUTRAL"
     else:
+        # Both boundaries sloping the same way is a wedge, not a triangle, and
+        # is left to the wedge detector rather than being forced into this one.
         return None
 
-    convergence = 1.0 - (last_width / first_width)
+    report = QualityReport(components={
+        "convergence_quality": round(float(np.clip(convergence / 0.7, 0.0, 1.0)) * 100.0, 1),
+        "geometry_score": round((upper.alignment_score + lower.alignment_score) / 2, 1),
+        "pivot_quality": pivot_quality(highs + lows),
+        "volume_confirmation": volume_trend_score(
+            ctx.volume.iloc[min(highs[0].pivot_index, lows[0].pivot_index):].tolist()
+        ),
+    })
+    confidence = report.confidence()
+    if confidence < criteria.min_confidence:
+        return None
+
+    last_index = len(ctx.close) - 1
+    upper_now = upper.price_at(last_index)
+    lower_now = lower.price_at(last_index)
+    last = ctx.last_close
+    if last > upper_now:
+        state, invalidation = PatternState.CONFIRMED, lower_now
+    elif last < lower_now:
+        state, invalidation = PatternState.FAILED, upper_now
+    else:
+        state, invalidation = PatternState.CANDIDATE, lower_now
+
+    geometry = _converging_geometry(ctx, upper, lower, highs, lows)
+    geometry.breakout_area = GeometryZone(
+        start_time=ctx.close.index[max(highs[-1].pivot_index, lows[-1].pivot_index)],
+        end_time=ctx.now,
+        low=round(min(lower_now, upper_now), 6),
+        high=round(max(lower_now, upper_now), 6),
+        role="breakout",
+    )
+    geometry.zones = [geometry.breakout_area]
+
     return StructuralPattern(
         name=name,
         pattern_class=PatternClass.HEURISTIC,
-        state=PatternState.CANDIDATE,
-        recognition_confidence=round(float(np.clip(convergence * 130, 0, 100)), 1),
+        state=state,
+        recognition_confidence=confidence,
         detected_at=ctx.now,
         confirmation_time=max(highs[-1].confirmation_time, lows[-1].confirmation_time),
         direction_if_textbook=textbook,
         key_levels={
-            "upper": round(highs[-1].price, 6), "lower": round(lows[-1].price, 6),
+            "upper": round(upper_now, 6),
+            "lower": round(lower_now, 6),
         },
-        invalidation_level=None,
+        invalidation_level=round(invalidation, 6),
         invalidation_rule=(
-            "a close outside the converging boundaries resolves the triangle; direction "
-            "is not implied by the shape alone"
+            f"a {ctx.timeframe.value} close beyond the opposite boundary at "
+            f"{invalidation:.2f} resolves the triangle against this reading"
         ),
         components={
+            **report.components,
             "convergence": round(convergence, 3),
-            "high_slope": round(float(high_slope), 6),
-            "low_slope": round(float(low_slope), 6),
+            "upper_slope_atr_per_bar": round(upper.slope_atr_per_bar, 5),
+            "lower_slope_atr_per_bar": round(lower.slope_atr_per_bar, 5),
+            "upper_r2": round(upper.r_squared, 3),
+            "lower_r2": round(lower.r_squared, 3),
+            "bars_span": span,
         },
-        notes=f"boundaries converged {convergence * 100:.0f}% across the last three swings",
+        geometry=geometry,
+        bars_span=span,
+        notes=(
+            f"boundaries converged {convergence * 100:.0f}% over {span} bars; "
+            f"upper slope {upper.slope_atr_per_bar:+.4f} ATR/bar, lower "
+            f"{lower.slope_atr_per_bar:+.4f} ATR/bar"
+        ),
     )
 
 
 def detect_wedge(ctx: PatternContext) -> StructuralPattern | None:
     """Both boundaries sloping the same way while converging.
 
-    EXPERIMENTAL. Wedges are genuinely hard to pin down: the same price action
-    is drawn as a wedge, a channel or a triangle by different analysts, and no
-    threshold choice here is defensible enough to call reliable.
+    Previously EXPERIMENTAL because the definition rested on judgement. It is
+    now specified the same way as the triangle - fitted lines with a minimum
+    alignment, slopes measured in ATR per bar, a required convergence - so two
+    runs on the same bars give the same answer and the criteria can be read off.
+    That makes it HEURISTIC: reproducible, with thresholds that remain choices.
     """
-    atr = ctx.current_atr
-    if atr <= 0 or len(ctx.swings.highs) < 3 or len(ctx.swings.lows) < 3:
+    criteria = CRITERIA["wedge"]
+    found = _converging_boundaries(ctx, criteria)
+    if found is None:
+        return None
+    upper, lower, highs, lows, convergence, span = found
+
+    # Same-signed slopes, both meaningfully away from flat, is what separates a
+    # wedge from a triangle.
+    if np.sign(upper.slope_atr_per_bar) != np.sign(lower.slope_atr_per_bar):
+        return None
+    if (
+        abs(upper.slope_atr_per_bar) < criteria.flat_slope_atr
+        or abs(lower.slope_atr_per_bar) < criteria.flat_slope_atr
+    ):
         return None
 
-    highs = ctx.swings.highs[-3:]
-    lows = ctx.swings.lows[-3:]
-    high_slope = np.polyfit([s.pivot_index for s in highs], [s.price for s in highs], 1)[0]
-    low_slope = np.polyfit([s.pivot_index for s in lows], [s.price for s in lows], 1)[0]
-
-    if np.sign(high_slope) != np.sign(low_slope) or high_slope == 0:
+    rising = upper.slope_atr_per_bar > 0
+    report = QualityReport(components={
+        "convergence_quality": round(float(np.clip(convergence / 0.7, 0.0, 1.0)) * 100.0, 1),
+        "geometry_score": round((upper.alignment_score + lower.alignment_score) / 2, 1),
+        "slope_quality": round(
+            float(np.clip(min(abs(upper.slope_atr_per_bar), abs(lower.slope_atr_per_bar))
+                          / 0.05, 0.0, 1.0)) * 100.0, 1
+        ),
+        "pivot_quality": pivot_quality(highs + lows),
+    })
+    confidence = report.confidence()
+    if confidence < criteria.min_confidence:
         return None
-    first_width = abs(highs[0].price - lows[0].price)
-    last_width = abs(highs[-1].price - lows[-1].price)
-    if first_width <= 0 or last_width >= first_width * 0.85:
-        return None
 
-    rising = high_slope > 0
+    last_index = len(ctx.close) - 1
+    upper_now = upper.price_at(last_index)
+    lower_now = lower.price_at(last_index)
+    last = ctx.last_close
+    # A rising wedge reads bearish, so its trigger is the lower boundary.
+    if rising:
+        state = (
+            PatternState.CONFIRMED if last < lower_now
+            else PatternState.FAILED if last > upper_now
+            else PatternState.CANDIDATE
+        )
+        invalidation = upper_now
+    else:
+        state = (
+            PatternState.CONFIRMED if last > upper_now
+            else PatternState.FAILED if last < lower_now
+            else PatternState.CANDIDATE
+        )
+        invalidation = lower_now
+
+    geometry = _converging_geometry(ctx, upper, lower, highs, lows)
+
     return StructuralPattern(
         name="rising_wedge" if rising else "falling_wedge",
-        pattern_class=PatternClass.EXPERIMENTAL,
-        state=PatternState.CANDIDATE,
-        recognition_confidence=round(
-            float(np.clip((1 - last_width / first_width) * 120, 0, 100)), 1
-        ),
+        pattern_class=PatternClass.HEURISTIC,
+        state=state,
+        recognition_confidence=confidence,
         detected_at=ctx.now,
         confirmation_time=max(highs[-1].confirmation_time, lows[-1].confirmation_time),
         direction_if_textbook="BEARISH" if rising else "BULLISH",
-        key_levels={"upper": round(highs[-1].price, 6), "lower": round(lows[-1].price, 6)},
-        invalidation_rule="a close outside the wedge boundaries resolves it",
+        key_levels={"upper": round(upper_now, 6), "lower": round(lower_now, 6)},
+        invalidation_level=round(invalidation, 6),
+        invalidation_rule=(
+            f"a {ctx.timeframe.value} close beyond {invalidation:.2f} resolves the "
+            "wedge against this reading"
+        ),
         components={
-            "high_slope": round(float(high_slope), 6),
-            "low_slope": round(float(low_slope), 6),
+            **report.components,
+            "convergence": round(convergence, 3),
+            "upper_slope_atr_per_bar": round(upper.slope_atr_per_bar, 5),
+            "lower_slope_atr_per_bar": round(lower.slope_atr_per_bar, 5),
+            "upper_r2": round(upper.r_squared, 3),
+            "lower_r2": round(lower.r_squared, 3),
+            "bars_span": span,
         },
+        geometry=geometry,
+        bars_span=span,
         notes=(
-            "classified EXPERIMENTAL: wedge boundaries are drawn differently by "
-            "different analysts and no threshold here is well justified"
+            f"both boundaries {'rising' if rising else 'falling'} and converging "
+            f"{convergence * 100:.0f}% over {span} bars"
         ),
     )
+
 
 
 def detect_flag(ctx: PatternContext) -> StructuralPattern | None:
@@ -526,6 +857,11 @@ DETECTORS: dict[str, Any] = {
 }
 
 # Reliability of DETECTION, declared up front rather than implied.
+#
+# Keyed by BOTH the registry key and the pattern name a detector emits: the
+# triangle detector is registered once but produces three differently named
+# figures, and a consumer holding `ascending_triangle` must be able to look up
+# its class without knowing which detector produced it.
 PATTERN_CLASSES: dict[str, PatternClass] = {
     "double_bottom": PatternClass.DETERMINISTIC,
     "double_top": PatternClass.DETERMINISTIC,
@@ -534,12 +870,44 @@ PATTERN_CLASSES: dict[str, PatternClass] = {
     "head_and_shoulders": PatternClass.HEURISTIC,
     "inverse_head_and_shoulders": PatternClass.HEURISTIC,
     "triangle": PatternClass.HEURISTIC,
-    "wedge": PatternClass.EXPERIMENTAL,
+    "ascending_triangle": PatternClass.HEURISTIC,
+    "descending_triangle": PatternClass.HEURISTIC,
+    "symmetrical_triangle": PatternClass.HEURISTIC,
+    # Promoted from EXPERIMENTAL: the wedge definition is now specified the
+    # same way as the triangle - fitted boundaries with a minimum alignment,
+    # slopes in ATR per bar, a required convergence - so it is reproducible.
+    # The thresholds remain choices, which is exactly what HEURISTIC means.
+    "wedge": PatternClass.HEURISTIC,
+    "rising_wedge": PatternClass.HEURISTIC,
+    "falling_wedge": PatternClass.HEURISTIC,
+    # The flag detector is untouched by this lot: "sharp pole" and "shallow
+    # flag" are still judgements, so it keeps its warning label.
     "flag": PatternClass.EXPERIMENTAL,
+    "bull_flag": PatternClass.EXPERIMENTAL,
+    "bear_flag": PatternClass.EXPERIMENTAL,
 }
 
 
-def detect_all(ctx: PatternContext) -> list[StructuralPattern]:
+#: Nothing below this reaches a consumer, whatever the detector thinks.
+#:
+#: The detectors hardened in LOT 4 enforce their own, higher floors through
+#: `CRITERIA`. This is the backstop for the ones that have not been reworked
+#: yet: replayed over real history they were emitting figures at confidences
+#: down to 0.1/100, which is a shape the code found and no analyst would draw.
+#: A figure below the floor is not reported at all - §14's "mieux vaut ne rien
+#: dire" is a filter, not a caption.
+def _default_floor() -> float:
+    from ..config_loader import threshold
+
+    return float(threshold("structure_patterns", "min_confidence", default=55.0))
+
+
+DEFAULT_MIN_CONFIDENCE = _default_floor()
+
+
+def detect_all(
+    ctx: PatternContext, min_confidence: float = DEFAULT_MIN_CONFIDENCE
+) -> list[StructuralPattern]:
     """Run every detector. Returning nothing is a normal, common outcome."""
     found: list[StructuralPattern] = []
     for name, detector in DETECTORS.items():
@@ -548,8 +916,15 @@ def detect_all(ctx: PatternContext) -> list[StructuralPattern]:
         except Exception as exc:
             log.debug("detector_failed", detector=name, error=str(exc))
             continue
-        if pattern is not None:
-            found.append(pattern)
+        if pattern is None:
+            continue
+        if pattern.recognition_confidence < min_confidence:
+            log.debug(
+                "pattern_below_floor", detector=name,
+                confidence=pattern.recognition_confidence, floor=min_confidence,
+            )
+            continue
+        found.append(pattern)
     return sorted(found, key=lambda p: -p.recognition_confidence)
 
 
