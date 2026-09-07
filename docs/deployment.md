@@ -133,3 +133,35 @@ If splitting hosts is not worth it, the React frontend in `frontend/` is served
 by FastAPI itself from the same origin, so `docker compose up` gives a complete
 working app on one port with no CORS configuration at all. The Flutter app is
 the better choice when you want it on a phone.
+
+## Cache headers: why /assets/ must not be immutable
+
+Flutter does not content-hash asset filenames. `assets/api_snapshots/today__BTC.json`
+keeps that exact URL across every deployment, so an `immutable` header pins the
+file in the browser for the whole of its `max-age`.
+
+That combination was live and it produced a specific, confusing failure. The
+config served `main.dart.js` and `index.html` with `no-cache` while pinning
+`/assets/(.*)` for a year as immutable. Code updated on every deploy; data never
+did. The page rendered a current build against snapshots captured before those
+snapshots carried a price at all, so it showed a funding percentile and an
+uncertainty score from an older build above a price reading UNAVAILABLE.
+
+Flutter's service worker does not rescue this. It passes `{cache: 'reload'}`
+only for `CORE` - `main.dart.js`, `index.html`, `flutter_bootstrap.js` and the
+manifests. Everything else, including the snapshots, is fetched normally and
+honours the HTTP cache.
+
+Two consequences worth remembering:
+
+- `/assets/(.*)` is `no-cache, must-revalidate`. Revalidation is cheap; a
+  wrong number on screen is not. `canvaskit` gets a week rather than a year,
+  since its filenames are unhashed too.
+- `immutable` cannot be undone by fixing the header. Clients holding the
+  pinned copy do not revalidate until it expires, so the snapshot directory was
+  renamed once (`static_api` -> `api_snapshots`) to give them a URL no cache
+  had an entry for.
+
+Do not add explanatory keys to `vercel.json`. Its schema rejects any property
+outside `source`, `headers`, `has` and `missing` on a header rule, and the
+build fails before Flutter runs. Explanations belong here.

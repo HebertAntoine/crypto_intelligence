@@ -211,3 +211,35 @@ def test_a_dated_analysis_says_so_rather_than_claiming_the_present():
     assert "pas le marché actuel" in verdict, (
         "a stale reading must state that it does not describe the present"
     )
+
+
+def test_vercel_config_matches_the_schema_it_declares():
+    """An unknown key fails the deployment, not the app - so it fails silently here.
+
+    A `_comment` key added to a header rule to explain the cache policy was
+    rejected by Vercel's schema validation and broke the build. Nothing in the
+    repository catches that, because the config is never exercised locally.
+    """
+    import json
+
+    allowed_rule = {"source", "headers", "has", "missing"}
+    allowed_header = {"key", "value"}
+    allowed_rewrite = {"source", "destination", "has", "missing", "statusCode"}
+
+    root = Path(__file__).resolve().parents[2]
+    for name in ("vercel.json", "app/vercel.json"):
+        path = root / name
+        if not path.exists():
+            continue
+        config = json.loads(path.read_text(encoding="utf-8"))
+
+        for rule in config.get("headers", []):
+            extra = set(rule) - allowed_rule
+            assert not extra, f"{name}: header rule carries {extra}"
+            for header in rule.get("headers", []):
+                extra = set(header) - allowed_header
+                assert not extra, f"{name}: header entry carries {extra}"
+
+        for rewrite in config.get("rewrites", []):
+            extra = set(rewrite) - allowed_rewrite
+            assert not extra, f"{name}: rewrite carries {extra}"
