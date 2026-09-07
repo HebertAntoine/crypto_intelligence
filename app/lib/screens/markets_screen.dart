@@ -8,14 +8,17 @@ import 'package:flutter/material.dart';
 
 import '../api/client.dart';
 import '../api/models.dart';
+import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
 
 class MarketsScreen extends StatefulWidget {
   final ApiClient client;
+  final LivePriceSource? livePrices;
 
-  const MarketsScreen({super.key, required this.client});
+  const MarketsScreen({super.key, required this.client, this.livePrices});
 
   @override
   State<MarketsScreen> createState() => _MarketsScreenState();
@@ -102,6 +105,7 @@ class _MarketsScreenState extends State<MarketsScreen> {
                 for (final read in data.reads) ...[
                   _MarketLine(
                     read: read,
+                    livePrices: widget.livePrices,
                     timeframes: data.timeframes[read.asset],
                     impliedVolatility: data.impliedVolatility[read.asset],
                     onTap: () => _showMarketDetail(
@@ -177,17 +181,32 @@ class _MarketsScreenState extends State<MarketsScreen> {
               ],
             ),
             const SizedBox(height: 18),
-            _MarketSheetLine(
-              label: 'Prix',
-              value: _marketPriceLabel(read.marketData),
-            ),
-            _MarketSheetLine(
-              label: '24h',
-              value: _marketChangeLabel(read.marketData),
-            ),
-            _MarketSheetLine(
-              label: 'Fraîcheur',
-              value: _marketFreshnessLabel(read.marketData),
+            LivePriceBuilder(
+              source: widget.livePrices,
+              asset: read.asset,
+              builder: (context, live, connection) => Column(
+                children: [
+                  _MarketSheetLine(
+                    label: 'Prix',
+                    value: _marketPriceLabel(read.marketData, live),
+                  ),
+                  _MarketSheetLine(
+                    label: '24h',
+                    value: _marketChangeLabel(read.marketData, live),
+                  ),
+                  _MarketSheetLine(
+                    label: 'Fraîcheur',
+                    value: live == null
+                        ? _marketFreshnessLabel(read.marketData)
+                        : _liveFreshnessLabel(live, connection),
+                  ),
+                  if (live != null)
+                    const _MarketSheetLine(
+                      label: 'Source du prix',
+                      value: 'Kraken · WebSocket direct de l’app',
+                    ),
+                ],
+              ),
             ),
             _MarketSheetLine(
               label: 'Direction',
@@ -411,12 +430,14 @@ class _ContextPanel extends StatelessWidget {
 
 class _MarketLine extends StatelessWidget {
   final TodayRead read;
+  final LivePriceSource? livePrices;
   final MultiTimeframeRead? timeframes;
   final ImpliedVolatilityRead? impliedVolatility;
   final VoidCallback onTap;
 
   const _MarketLine({
     required this.read,
+    required this.livePrices,
     required this.onTap,
     this.timeframes,
     this.impliedVolatility,
@@ -430,98 +451,104 @@ class _MarketLine extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(17),
         onTap: onTap,
-        child: GlassPanel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CryptoLogo(asset: read.asset, size: 64),
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          read.asset,
-                          style: const TextStyle(
-                            color: AppColors.text,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
+        child: LivePriceBuilder(
+          source: livePrices,
+          asset: read.asset,
+          builder: (context, live, connection) => GlassPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CryptoLogo(asset: read.asset, size: 64),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            read.asset,
+                            style: const TextStyle(
+                              color: AppColors.text,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        Text(
-                          _assetName(read.asset),
-                          style:
-                              const TextStyle(color: mobileMuted, fontSize: 20),
-                        ),
-                      ],
-                    ),
-                  ),
-                  MobilePill(
-                    label: _marketPriceLabel(read.marketData),
-                    color: mobileBlue,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      _marketChangeLabel(read.marketData),
-                      style: TextStyle(
-                        color: _marketChangeColor(read.marketData),
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
+                          Text(
+                            _assetName(read.asset),
+                            style: const TextStyle(
+                                color: mobileMuted, fontSize: 20),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  Text(
-                    _marketFreshnessShort(read.marketData),
-                    style: const TextStyle(color: mobileMuted, fontSize: 12),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _statement(read),
-                style: const TextStyle(
-                    color: AppColors.text, fontSize: 19, height: 1.32),
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  MobilePill(
-                      label: _directionLabel(read.summary.marketDirection),
-                      color: bullish ? AppColors.measured : mobileBlue,
-                      filled: bullish,
-                      dense: true),
-                  MobilePill(
-                      label: _edgeLabel(read.edgeState),
-                      color: AppColors.warn,
-                      dense: true),
-                  MobilePill(
-                      label: readableLabel(read.crowdingLevel),
+                    MobilePill(
+                      label: _marketPriceLabel(read.marketData, live),
                       color: mobileBlue,
-                      dense: true),
-                  MobilePill(
-                      label: _volatilityLabel(read.volatilityRegime),
-                      color: const Color(0xFFBFD0FF),
-                      dense: true),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _marketChangeLabel(read.marketData, live),
+                        style: TextStyle(
+                          color: _marketChangeColor(read.marketData, live),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      live == null
+                          ? _marketFreshnessShort(read.marketData)
+                          : _liveFreshnessShort(connection),
+                      style: const TextStyle(color: mobileMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _statement(read),
+                  style: const TextStyle(
+                      color: AppColors.text, fontSize: 19, height: 1.32),
+                ),
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    MobilePill(
+                        label: _directionLabel(read.summary.marketDirection),
+                        color: bullish ? AppColors.measured : mobileBlue,
+                        filled: bullish,
+                        dense: true),
+                    MobilePill(
+                        label: _edgeLabel(read.edgeState),
+                        color: AppColors.warn,
+                        dense: true),
+                    MobilePill(
+                        label: readableLabel(read.crowdingLevel),
+                        color: mobileBlue,
+                        dense: true),
+                    MobilePill(
+                        label: _volatilityLabel(read.volatilityRegime),
+                        color: const Color(0xFFBFD0FF),
+                        dense: true),
+                  ],
+                ),
+                if (timeframes != null) ...[
+                  const SizedBox(height: 16),
+                  _TimeframeStrip(reading: timeframes!),
                 ],
-              ),
-              if (timeframes != null) ...[
-                const SizedBox(height: 16),
-                _TimeframeStrip(reading: timeframes!),
+                if (impliedVolatility != null) ...[
+                  const SizedBox(height: 14),
+                  _ImpliedVolatilityLine(reading: impliedVolatility!),
+                ],
               ],
-              if (impliedVolatility != null) ...[
-                const SizedBox(height: 14),
-                _ImpliedVolatilityLine(reading: impliedVolatility!),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -754,7 +781,13 @@ String _directionLabel(String value) => switch (value.toUpperCase()) {
       _ => readableLabel(value),
     };
 
-String _marketPriceLabel(MarketPriceRead? market) {
+String _marketPriceLabel(MarketPriceRead? market, [LivePriceTick? live]) {
+  if (live != null) {
+    return '€${_numberFr(
+      live.priceEur,
+      digits: live.priceEur >= 1000 ? 0 : 2,
+    )}';
+  }
   if (market == null || !market.available || market.displayPrice == null) {
     return 'INDISPONIBLE';
   }
@@ -763,17 +796,34 @@ String _marketPriceLabel(MarketPriceRead? market) {
   return '$symbol${_numberFr(value, digits: value >= 1000 ? 0 : 2)}';
 }
 
-String _marketChangeLabel(MarketPriceRead? market) {
-  final value = market?.change24hPct;
+String _marketChangeLabel(MarketPriceRead? market, [LivePriceTick? live]) {
+  final value = live?.change24hPct ?? market?.change24hPct;
   if (value == null || value.isNaN) return '24h indisponible';
   final sign = value > 0 ? '+' : '';
   return '$sign${_numberFr(value, digits: 1)} % sur 24 h';
 }
 
-Color _marketChangeColor(MarketPriceRead? market) {
-  final value = market?.change24hPct;
+Color _marketChangeColor(MarketPriceRead? market, [LivePriceTick? live]) {
+  final value = live?.change24hPct ?? market?.change24hPct;
   if (value == null || value.isNaN) return mobileMuted;
   return value >= 0 ? AppColors.measured : AppColors.bad;
+}
+
+String _liveFreshnessShort(LivePriceConnection connection) =>
+    connection == LivePriceConnection.live
+        ? 'LIVE · Kraken · flux 0,5 s'
+        : 'RECONNEXION · Kraken';
+
+String _liveFreshnessLabel(
+  LivePriceTick live,
+  LivePriceConnection connection,
+) {
+  final elapsed = DateTime.now().toUtc().difference(live.receivedAt);
+  final seconds = elapsed.isNegative ? 0 : elapsed.inSeconds;
+  final prefix = connection == LivePriceConnection.live
+      ? 'LIVE · flux 0,5 s'
+      : 'RECONNEXION · dernier prix reçu';
+  return '$prefix · Kraken · ${seconds}s';
 }
 
 String _marketFreshnessShort(MarketPriceRead? market) {

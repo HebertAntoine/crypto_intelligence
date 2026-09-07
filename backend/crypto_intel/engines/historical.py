@@ -40,6 +40,8 @@ class HistoricalMatch(BaseModel):
     index: int
     similarity: float
     forward_returns: dict[str, float | None] = Field(default_factory=dict)
+    mfe_7d_pct: float | None = None
+    mae_7d_pct: float | None = None
     features: dict[str, float] = Field(default_factory=dict)
 
 
@@ -51,8 +53,12 @@ class HistoricalAnalysis(BaseModel):
     current_features: dict[str, float] = Field(default_factory=dict)
     matches: list[HistoricalMatch] = Field(default_factory=list)
     sample_size: int = 0
+    effective_sample_size: float = 0.0
     avg_forward_returns: dict[str, float | None] = Field(default_factory=dict)
+    median_forward_returns: dict[str, float | None] = Field(default_factory=dict)
     hit_rate: dict[str, float | None] = Field(default_factory=dict)
+    median_mfe_7d_pct: float | None = None
+    median_mae_7d_pct: float | None = None
     interpretation: str = ""
     caveat: str = (
         "Historical analogues are descriptive, not predictive. A small sample of similar "
@@ -177,29 +183,60 @@ class HistoricalSimilarityEngine:
                 for col in fwd.columns
             }
             idx = df.index[i]
+            bars_7d = 7 * max(1, int(1440 / timeframe.minutes))
+            path = df["close"].iloc[i + 1:min(len(df), i + bars_7d + 1)]
+            entry_price = float(df["close"].iloc[i])
+            mfe = (
+                round(float((path.max() / entry_price - 1) * 100), 2)
+                if not path.empty and entry_price else None
+            )
+            mae = (
+                round(float((path.min() / entry_price - 1) * 100), 2)
+                if not path.empty and entry_price else None
+            )
             matches.append(HistoricalMatch(
                 date=idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx),
                 index=i, similarity=round(sim, 4), forward_returns=returns,
+                mfe_7d_pct=mfe, mae_7d_pct=mae,
                 features={k: round(float(features.iloc[i][k]), 3) for k in FEATURE_NAMES},
             ))
 
         avg: dict[str, float | None] = {}
+        median: dict[str, float | None] = {}
         hit: dict[str, float | None] = {}
         for col in fwd.columns:
             values = [m.forward_returns[col] for m in matches if m.forward_returns.get(col) is not None]
             if values:
                 avg[col] = round(float(np.mean(values)), 2)
+                median[col] = round(float(np.median(values)), 2)
                 hit[col] = round(sum(1 for v in values if v > 0) / len(values) * 100.0, 1)
             else:
                 avg[col] = None
+                median[col] = None
                 hit[col] = None
+
+        # Similar observations are not independent observations. Kish's
+        # effective sample size makes that limitation explicit instead of
+        # presenting top-k as if it were a large statistical sample.
+        weights = np.array([max(0.0, match.similarity) for match in matches])
+        effective_n = (
+            float(weights.sum() ** 2 / np.square(weights).sum())
+            if len(weights) and np.square(weights).sum() > 0 else 0.0
+        )
+        mfes = [m.mfe_7d_pct for m in matches if m.mfe_7d_pct is not None]
+        maes = [m.mae_7d_pct for m in matches if m.mae_7d_pct is not None]
 
         interpretation = self._interpret(matches, avg, hit)
         return HistoricalAnalysis(
             asset=asset, timeframe=timeframe, available=True,
             current_features={k: round(float(current[k]), 3) for k in FEATURE_NAMES},
             matches=matches, sample_size=len(matches),
-            avg_forward_returns=avg, hit_rate=hit, interpretation=interpretation,
+            effective_sample_size=round(effective_n, 2),
+            avg_forward_returns=avg, median_forward_returns=median,
+            hit_rate=hit,
+            median_mfe_7d_pct=round(float(np.median(mfes)), 2) if mfes else None,
+            median_mae_7d_pct=round(float(np.median(maes)), 2) if maes else None,
+            interpretation=interpretation,
         )
 
     def _interpret(self, matches, avg, hit) -> str:

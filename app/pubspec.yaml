@@ -9,9 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # The only third-party dependency. Everything else ships with Flutter -
-  # fewer packages means fewer things that can break a build months later.
   http: ^1.2.2
+  # One public socket opened by the app itself for BTC/ETH/SOL spot prices.
+  # No API key and no Crypto Intelligence backend round-trip are involved.
+  web_socket_channel: ^3.0.1
 
 dev_dependencies:
   flutter_test:

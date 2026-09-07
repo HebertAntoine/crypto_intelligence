@@ -7,9 +7,12 @@ to Vercel), Android and iOS from one codebase.
 
 ## What it renders
 
-The app computes nothing. Every threshold, verdict and edge decision is made by
-the backend, so the phone, the web build and the research output can never
-disagree about what the data says.
+The app computes no analysis. Every threshold, verdict and edge decision is
+made by the backend, so the phone, the web build and the research output cannot
+disagree about what the data says. BTC, ETH and SOL prices are the deliberate
+exception: the app opens one public Kraken WebSocket directly and refreshes
+only the price widgets every 500 ms. No API key and no Crypto Intelligence
+backend polling are involved.
 
 Four screens:
 

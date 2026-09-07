@@ -13,21 +13,23 @@ import '../api/freshness.dart';
 import '../diagnostics/entry_verdict.dart';
 import '../diagnostics/today_diagnostics.dart';
 import '../api/models.dart';
+import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
 
 class TodayScreen extends StatefulWidget {
   final ApiClient client;
+  final LivePriceSource? livePrices;
 
-  const TodayScreen({super.key, required this.client});
+  const TodayScreen({super.key, required this.client, this.livePrices});
 
   @override
   State<TodayScreen> createState() => _TodayScreenState();
 }
 
-class _TodayScreenState extends State<TodayScreen>
-    with WidgetsBindingObserver {
+class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   late Future<List<TodayRead>> _future;
   Timer? _refreshTimer;
   DateTime _lastFetch = DateTime.fromMillisecondsSinceEpoch(0);
@@ -123,7 +125,11 @@ class _TodayScreenState extends State<TodayScreen>
                 // recalculés contre l'horloge. Le répéter en tête de page
                 // n'ajoutait rien et occupait la première hauteur d'écran.
                 for (final read in reads) ...[
-                  _MarketCard(read: read, provenance: provenance),
+                  _MarketCard(
+                    read: read,
+                    provenance: provenance,
+                    livePrices: widget.livePrices,
+                  ),
                   // Sans encadrement, c'est l'espace qui separe les trois
                   // actifs: il doit etre plus franc qu'avec une bordure.
                   const SizedBox(height: 40),
@@ -217,16 +223,20 @@ class _TodayHeader extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _MarketCard extends StatelessWidget {
   final TodayRead read;
+  final LivePriceSource? livePrices;
 
   /// D'ou vient ce payload: le diagnostic ouvert au clic en a besoin.
   final DataProvenance provenance;
 
-  const _MarketCard({required this.read, required this.provenance});
+  const _MarketCard({
+    required this.read,
+    required this.provenance,
+    required this.livePrices,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +245,7 @@ class _MarketCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(17),
-        onTap: () => _showDetails(context, read, meta, provenance),
+        onTap: null,
         // Sans encadrement: la bordure, le fond et les ombres prenaient de la
         // largeur pour separer trois cartes que l'espacement vertical separe
         // deja. Le contenu occupe maintenant toute la largeur disponible.
@@ -244,23 +254,17 @@ class _MarketCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _AssetHeader(read: read, meta: meta),
-              const SizedBox(height: 22),
-              _VerdictPanel(read: read),
-              const SizedBox(height: 14),
-              // La réponse directe est placée juste sous le régime, parce que
-              // c'est la question que la page doit trancher.
+              _AssetHeader(
+                read: read,
+                meta: meta,
+                livePrices: livePrices,
+              ),
+              const SizedBox(height: 18),
+              _CompactRegimeRow(read: read),
+              const SizedBox(height: 12),
               _EntryAnswerPanel(read: read),
-              const SizedBox(height: 14),
-              _PressurePanel(pressure: read.pressure),
-              const SizedBox(height: 16),
-              _MetricGrid(read: read),
-              const SizedBox(height: 20),
-              const Divider(height: 1, color: Color(0xFF2A3B51)),
-              const SizedBox(height: 16),
-              _DetailRows(read: read),
-              const SizedBox(height: 22),
-              _WhyPanel(read: read),
+              const SizedBox(height: 12),
+              _MarketPressureSummary(pressure: read.pressure),
             ],
           ),
         ),
@@ -311,21 +315,33 @@ class _MarketCard extends StatelessWidget {
               diagnostics: buildDiagnostics(read, provenance),
             ),
             const SizedBox(height: 18),
-            _TodaySheetLine(
-              label: 'Prix',
-              value: _marketPriceLabel(read.marketData),
-            ),
-            _TodaySheetLine(
-              label: '24h',
-              value: _marketChangeLabel(read.marketData),
-            ),
-            _TodaySheetLine(
-              label: 'Fraîcheur',
-              value: _marketFreshnessLabel(read.marketData),
-            ),
-            _TodaySheetLine(
-              label: 'Providers',
-              value: _marketProvidersLabel(read.marketData),
+            LivePriceBuilder(
+              source: livePrices,
+              asset: read.asset,
+              builder: (context, live, connection) => Column(
+                children: [
+                  _TodaySheetLine(
+                    label: 'Prix',
+                    value: _marketPriceLabel(read.marketData, live),
+                  ),
+                  _TodaySheetLine(
+                    label: '24h',
+                    value: _marketChangeLabel(read.marketData, live),
+                  ),
+                  _TodaySheetLine(
+                    label: 'Fraîcheur',
+                    value: live == null
+                        ? _marketFreshnessLabel(read.marketData)
+                        : _liveFreshnessLabel(live, connection),
+                  ),
+                  _TodaySheetLine(
+                    label: 'Source du prix',
+                    value: live == null
+                        ? _marketProvidersLabel(read.marketData)
+                        : 'Kraken · WebSocket direct de l’app',
+                  ),
+                ],
+              ),
             ),
             _TodaySheetLine(
               label: 'Direction',
@@ -346,7 +362,8 @@ class _MarketCard extends StatelessWidget {
                   '${_edgeLabel(read.edgeState)} · ${read.admittedCount} validé, ${read.rejectedCount} rejeté',
             ),
             _TodaySheetLine(
-                label: 'Encombrement du marché', value: _crowdingLabel(read.crowdingLevel)),
+                label: 'Encombrement du marché',
+                value: _crowdingLabel(read.crowdingLevel)),
             _TodaySheetLine(label: 'Funding', value: _fundingLabel(read)),
             _TodaySheetLine(
               label: 'Volatilité',
@@ -629,8 +646,13 @@ class _TodaySheetLine extends StatelessWidget {
 class _AssetHeader extends StatelessWidget {
   final TodayRead read;
   final _AssetMeta meta;
+  final LivePriceSource? livePrices;
 
-  const _AssetHeader({required this.read, required this.meta});
+  const _AssetHeader({
+    required this.read,
+    required this.meta,
+    required this.livePrices,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -667,47 +689,103 @@ class _AssetHeader extends StatelessWidget {
         // donnees. Fige, il debordait de 211 px des que la largeur de
         // reference du design a ete reduite pour agrandir le texte.
         Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerRight,
-                child: Text(
-                  _marketPriceLabel(read.marketData),
-                  maxLines: 1,
-                  style: const TextStyle(
-                    color: AppColors.text,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
+          child: LivePriceBuilder(
+            source: livePrices,
+            asset: read.asset,
+            builder: (context, live, connection) => Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    _marketPriceLabel(read.marketData, live),
+                    maxLines: 1,
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              _ChangePill(
-                label: _marketChangeLabel(read.marketData),
-                positive: (read.marketData?.change24hPct ?? 0) >= 0,
-                // La variation reste lisible, mais perd sa couleur dès que
-                // l'horodatage n'est plus fiable: en vert ou en rouge elle se
-                // lirait comme un mouvement en cours.
-                available: read.marketData?.change24hPct != null &&
-                    (read.marketData?.derived().isTrustworthy ?? false),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _marketFreshnessShort(read.marketData),
-                textAlign: TextAlign.right,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: mobileMuted, fontSize: 12),
-              ),
-            ],
+                const SizedBox(height: 8),
+                _ChangePill(
+                  label: _marketChangeLabel(read.marketData, live),
+                  positive: (live?.change24hPct ??
+                          read.marketData?.change24hPct ??
+                          0) >=
+                      0,
+                  // A Kraken tick is current market data. The HTTP fallback
+                  // keeps its stricter timestamp-derived freshness policy.
+                  available: live != null ||
+                      (read.marketData?.change24hPct != null &&
+                          (read.marketData?.derived().isTrustworthy ?? false)),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  live == null
+                      ? _marketFreshnessShort(read.marketData)
+                      : _liveFreshnessShort(connection),
+                  textAlign: TextAlign.right,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: mobileMuted, fontSize: 12),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(width: 10),
-        const Icon(Icons.chevron_right_rounded,
-            color: AppColors.text, size: 30),
       ],
+    );
+  }
+}
+
+/// La surface n'expose que le régime et l'incertitude. Les métriques qui le
+/// composent restent dans les facteurs sourcés de l'explication.
+class _CompactRegimeRow extends StatelessWidget {
+  final TodayRead read;
+
+  const _CompactRegimeRow({required this.read});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101927).withValues(alpha: .55),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(color: const Color(0xFF23364C)),
+      ),
+      child: Row(
+        children: [
+          const Text(
+            'RÉGIME',
+            style: TextStyle(
+              color: mobileMuted,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              letterSpacing: .5,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _directionLabel(read.summary.marketDirection),
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: _directionColor(read.summary.marketDirection),
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Incertitude ${read.uncertaintyScore.toStringAsFixed(0)}/100',
+            style: const TextStyle(color: mobileMuted, fontSize: 14),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -725,87 +803,87 @@ class _EntryAnswerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final verdict = entryVerdict(read);
-    final (tone, icon) = switch (verdict.answer) {
-      EntryAnswer.active => (AppColors.measured, Icons.check_circle_outline),
-      EntryAnswer.watch => (AppColors.warn, Icons.visibility_outlined),
-      EntryAnswer.no => (AppColors.bad, Icons.do_not_disturb_on_outlined),
-      EntryAnswer.impossible => (AppColors.textMuted, Icons.help_outline),
-    };
+    final opportunity = read.opportunity;
+    final tone = _opportunityColour(opportunity.state);
+    final icon = _opportunityIcon(opportunity.state);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => _showJustification(context, read, verdict, tone),
+        onTap: () => _showOpportunityDetails(context, read, tone),
         child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: tone.withValues(alpha: 0.55), width: 1.4),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: tone.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: tone.withValues(alpha: 0.55), width: 1.4),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: tone, size: 30),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      verdictQuestion(read),
-                      style: const TextStyle(
-                        color: Color(0xFFB6C1D2),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
-                      ),
+              Row(
+                children: [
+                  Icon(icon, color: tone, size: 30),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'EST-CE UNE BONNE OPPORTUNITÉ D’ACHAT MAINTENANT ?',
+                          style: const TextStyle(
+                            color: Color(0xFFB6C1D2),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _opportunityLabel(opportunity.state),
+                          style: TextStyle(
+                            color: tone,
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            height: 1.05,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      verdict.headline,
-                      style: TextStyle(
-                        color: tone,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        height: 1.05,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            verdict.reason,
-            style: const TextStyle(
-              color: AppColors.text,
-              fontSize: 17,
-              height: 1.38,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
+              const SizedBox(height: 12),
               Text(
-                'Voir le détail',
-                style: TextStyle(
-                  color: tone,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                opportunity.summary.isEmpty
+                    ? 'Les données ne permettent pas encore une explication structurée.'
+                    : opportunity.summary,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontSize: 17,
+                  height: 1.38,
                 ),
               ),
-              const SizedBox(width: 4),
-              Icon(Icons.chevron_right_rounded, color: tone, size: 20),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Text(
+                    'Voir pourquoi',
+                    style: TextStyle(
+                      color: tone,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded, color: tone, size: 20),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
         ),
       ),
     );
@@ -1007,8 +1085,7 @@ class _PressurePanel extends StatelessWidget {
                     style: TextStyle(color: AppColors.bad, fontSize: 13)),
                 Spacer(),
                 Text('Achat',
-                    style: TextStyle(
-                        color: AppColors.measured, fontSize: 13)),
+                    style: TextStyle(color: AppColors.measured, fontSize: 13)),
               ],
             ),
           ],
@@ -1471,7 +1548,8 @@ class _InfoRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 20),
+                  style:
+                      const TextStyle(color: Color(0xFFB6C1D2), fontSize: 20),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1505,7 +1583,6 @@ class _InfoRow extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _SideNote extends StatelessWidget {
@@ -1953,7 +2030,11 @@ String _subtitleForProvenance(DataProvenance provenance) {
   return 'Source des données non confirmée';
 }
 
-String _marketPriceLabel(MarketPriceRead? market) {
+String _marketPriceLabel(MarketPriceRead? market, [LivePriceTick? live]) {
+  if (live != null) {
+    final digits = live.priceEur >= 1000 ? 0 : 2;
+    return '€${_numberFr(live.priceEur, digits: digits)}';
+  }
   if (market == null || !market.available || market.displayPrice == null) {
     return 'INDISPONIBLE';
   }
@@ -1968,11 +2049,28 @@ String _marketPriceLabel(MarketPriceRead? market) {
   return '$symbol${_numberFr(value, digits: digits)}';
 }
 
-String _marketChangeLabel(MarketPriceRead? market) {
-  final value = market?.change24hPct;
+String _marketChangeLabel(MarketPriceRead? market, [LivePriceTick? live]) {
+  final value = live?.change24hPct ?? market?.change24hPct;
   if (value == null || value.isNaN) return '24h N/A';
   final sign = value > 0 ? '+' : '';
   return '$sign${_numberFr(value, digits: 1)} %';
+}
+
+String _liveFreshnessShort(LivePriceConnection connection) =>
+    connection == LivePriceConnection.live
+        ? 'LIVE · Kraken · flux 0,5 s'
+        : 'RECONNEXION · dernier prix Kraken';
+
+String _liveFreshnessLabel(
+  LivePriceTick live,
+  LivePriceConnection connection,
+) {
+  final elapsed = DateTime.now().toUtc().difference(live.receivedAt);
+  final seconds = elapsed.isNegative ? 0 : elapsed.inSeconds;
+  final prefix = connection == LivePriceConnection.live
+      ? 'LIVE · flux 0,5 s'
+      : 'RECONNEXION · dernier prix reçu';
+  return '$prefix · Kraken · ${seconds}s';
 }
 
 String _marketFreshnessShort(MarketPriceRead? market) {

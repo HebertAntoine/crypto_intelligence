@@ -1,15 +1,17 @@
 /// Crypto Intelligence - mobile and web client.
 ///
-/// The app is a renderer. Every threshold, verdict and edge decision is made
-/// by the backend, so the phone, the web build and the research output can
-/// never disagree about what the data says.
+/// The app renders backend analysis and a separate direct market-price stream.
+/// Every threshold, verdict and edge decision remains backend-owned, while the
+/// BTC/ETH/SOL price widgets follow the app-owned public WebSocket.
 ///
 /// It performs analysis only and never places orders.
 library;
+
 import 'package:flutter/material.dart';
 
 import 'api/client.dart';
 import 'config.dart';
+import 'live_prices/live_price_service.dart';
 import 'screens/chart_screen.dart';
 import 'screens/evidence_screen.dart';
 import 'screens/knowledge_screen.dart';
@@ -31,9 +33,17 @@ class CryptoIntelligenceApp extends StatefulWidget {
 
 class _CryptoIntelligenceAppState extends State<CryptoIntelligenceApp> {
   final ApiClient _client = ApiClient();
+  late final LivePriceService _livePrices;
+
+  @override
+  void initState() {
+    super.initState();
+    _livePrices = LivePriceService()..start();
+  }
 
   @override
   void dispose() {
+    _livePrices.dispose();
     _client.close();
     super.dispose();
   }
@@ -44,15 +54,20 @@ class _CryptoIntelligenceAppState extends State<CryptoIntelligenceApp> {
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      home: HomeShell(client: _client),
+      home: HomeShell(client: _client, livePrices: _livePrices),
     );
   }
 }
 
 class HomeShell extends StatefulWidget {
   final ApiClient client;
+  final LivePriceSource livePrices;
 
-  const HomeShell({super.key, required this.client});
+  const HomeShell({
+    super.key,
+    required this.client,
+    required this.livePrices,
+  });
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -64,8 +79,8 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final screens = [
-      TodayScreen(client: widget.client),
-      MarketsScreen(client: widget.client),
+      TodayScreen(client: widget.client, livePrices: widget.livePrices),
+      MarketsScreen(client: widget.client, livePrices: widget.livePrices),
       ChartScreen(client: widget.client),
       ReportScreen(client: widget.client),
       EvidenceScreen(client: widget.client),
@@ -82,11 +97,14 @@ class _HomeShellState extends State<HomeShell> {
         destinations: const [
           MobileNavDestination(icon: Icons.home_rounded, label: 'Aujourd’hui'),
           MobileNavDestination(icon: Icons.bar_chart_rounded, label: 'Marchés'),
-          MobileNavDestination(icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
+          MobileNavDestination(
+              icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
           MobileNavDestination(icon: Icons.article_outlined, label: 'Rapport'),
           MobileNavDestination(icon: Icons.rule_rounded, label: 'Preuves'),
-          MobileNavDestination(icon: Icons.science_outlined, label: 'Recherche'),
-          MobileNavDestination(icon: Icons.menu_book_outlined, label: 'Connaissances'),
+          MobileNavDestination(
+              icon: Icons.science_outlined, label: 'Recherche'),
+          MobileNavDestination(
+              icon: Icons.menu_book_outlined, label: 'Connaissances'),
         ],
       ),
     );

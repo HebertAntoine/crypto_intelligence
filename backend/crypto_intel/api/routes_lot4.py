@@ -263,8 +263,205 @@ def _upcoming_macro(asset: Asset, days: int = 14) -> list[dict[str, Any]]:
             "importance": event.get("importance"),
             "hours_until": round(hours, 1),
             "days_until": round(hours / 24.0, 1),
+            "source": event.get("source_name") or "config/macro_calendar.yaml",
+            "source_url": event.get("source_url"),
         })
     return out[:5]
+
+
+def _structured_decision_context(asset: Asset) -> dict[str, Any]:
+    """Run the existing deterministic engines needed by the first page.
+
+    The page does not need every available metric.  This collector keeps the
+    full outputs for audit and promotes only material readings to ranked
+    ``DecisionFactor`` objects.  An unavailable family stays unavailable.
+    """
+    from datetime import UTC, datetime, timedelta
+
+    from ..db import repo
+    from ..engines.breakout import BreakoutQualityEngine
+    from ..engines.buy_opportunity import Category, DecisionFactor, Polarity
+    from ..engines.cross_asset import CrossAssetAnalyzer
+    from ..engines.historical import HistoricalSimilarityEngine
+    from ..engines.implied_volatility import ImpliedVolatilityEngine
+    from ..engines.liquidity import StablecoinLiquidityAnalyzer
+    from ..engines.macro import MacroAnalyzer
+    from ..engines.onchain import OnChainAnalyzer
+    from ..engines.whales import WhaleAnalyzer
+    from ..history import store
+    from ..research.structural_shadow import live_track_record
+    from ..structure.market_structure import MarketStructureEngine
+    from ..core.enums import Timeframe
+
+    now = datetime.now(UTC)
+    since = now - timedelta(days=45)
+    factors: list[DecisionFactor] = []
+
+    def latest_meta(observations: list[Any], fallback: str) -> tuple[str, str, str]:
+        if not observations:
+            return fallback, now.isoformat(), "UNAVAILABLE"
+        last = max(observations, key=lambda item: item.timestamp)
+        return (
+            last.provenance.source or fallback,
+            last.timestamp.isoformat(),
+            last.freshness.value,
+        )
+
+    mtf = MarketStructureEngine().multi_timeframe(
+        asset, [Timeframe.W1, Timeframe.D1, Timeframe.H4, Timeframe.H1]
+    )
+    bullish = mtf["bullish_timeframes"]
+    bearish = mtf["bearish_timeframes"]
+    conflict = mtf["conflict"]
+    measured = len(bullish) + len(bearish)
+    if measured:
+        structural_score = (len(bullish) - len(bearish)) / measured * 100
+        factors.append(DecisionFactor(
+            id="structure.multi_timeframe", category=Category.STRUCTURE,
+            title="Structures multi-unités contradictoires" if conflict else
+                  f"Structure dominante sur {measured} unité(s)",
+            short_text=conflict or (
+                f"Haussière: {', '.join(bullish) or 'aucune'}; "
+                f"baissière: {', '.join(bearish) or 'aucune'}."
+            ),
+            raw_value={"bullish": bullish, "bearish": bearish,
+                       "contradiction": 1.0 if conflict else 0.0},
+            normalized_value=round(structural_score, 1),
+            polarity=(Polarity.WAIT if conflict else
+                      Polarity.POSITIVE if structural_score > 0 else
+                      Polarity.NEGATIVE if structural_score < 0 else Polarity.NEUTRAL),
+            importance=84, confidence=min(.9, measured / 4),
+            timeframe="1W/1D/4H/1H", source="MarketStructureEngine",
+            as_of=now.isoformat(), freshness="RECENT",
+        ))
+
+    breakout = BreakoutQualityEngine().assess(asset, Timeframe.H4)
+    breakout_state = breakout.state.value
+    if breakout_state != "NONE":
+        failed = breakout_state in ("FAILED_BREAKOUT", "FAKEOUT", "REINTEGRATION")
+        factors.append(DecisionFactor(
+            id="structure.breakout", category=Category.STRUCTURE,
+            title=breakout_state.replace("_", " ").capitalize(),
+            short_text=breakout.interpretation + " La qualité du break ne prédit pas sa suite.",
+            raw_value={"state": breakout_state, "direction": breakout.direction,
+                       "quality": breakout.quality_score,
+                       "recent_change": 1.0 if breakout.bars_since_break is not None
+                       and breakout.bars_since_break <= 3 else 0.3},
+            normalized_value=(
+                -(breakout.quality_score or 50) if failed
+                else (breakout.quality_score or 50)
+            ),
+            polarity=Polarity.NEGATIVE if failed else Polarity.WAIT,
+            importance=76, confidence=.72, timeframe="4H",
+            source="BreakoutQualityEngine", as_of=now.isoformat(), freshness="RECENT",
+        ))
+
+    onchain_observations = repo.observations_since(asset, "onchain.", since)
+    onchain = OnChainAnalyzer().analyze(asset, onchain_observations)
+    if onchain.available and abs(onchain.strength) > 12:
+        source, observed_at, freshness = latest_meta(onchain_observations, "on-chain provider")
+        factors.append(DecisionFactor(
+            id="onchain.activity", category=Category.ONCHAIN,
+            title="Activité on-chain en amélioration" if onchain.strength > 0
+                  else "Activité on-chain en retrait",
+            short_text="; ".join(onchain.findings[:2]), raw_value=onchain.metrics,
+            normalized_value=onchain.strength,
+            polarity=Polarity.POSITIVE if onchain.strength > 0 else Polarity.NEGATIVE,
+            importance=54, confidence=.65, evidence_level="COMPUTATION",
+            timeframe="7D", source=source, as_of=observed_at, freshness=freshness,
+        ))
+
+    liquidity_observations = repo.observations_since(None, "stablecoin.", since)
+    liquidity = StablecoinLiquidityAnalyzer().analyze(liquidity_observations)
+    if liquidity.available and abs(liquidity.strength) > 12:
+        source, observed_at, freshness = latest_meta(
+            liquidity_observations, "stablecoin supply providers"
+        )
+        factors.append(DecisionFactor(
+            id="liquidity.stablecoins", category=Category.LIQUIDITY,
+            title=f"Liquidité stablecoin: {liquidity.regime.lower()}",
+            short_text="; ".join(liquidity.findings[:2]),
+            raw_value={"change_1d_pct": liquidity.change_1d_pct,
+                       "change_7d_pct": liquidity.change_7d_pct},
+            normalized_value=liquidity.strength,
+            polarity=Polarity.POSITIVE if liquidity.strength > 0 else Polarity.NEGATIVE,
+            importance=62, confidence=.72, timeframe="7D",
+            source=source, as_of=observed_at, freshness=freshness,
+        ))
+
+    macro_observations = repo.observations_since(None, "macro.", since)
+    macro = MacroAnalyzer().analyze(macro_observations, now=now)
+    if macro.available and abs(macro.strength) > 12:
+        source, observed_at, freshness = latest_meta(macro_observations, "macro providers")
+        factors.append(DecisionFactor(
+            id="macro.context", category=Category.MACRO,
+            title="Contexte macro porteur" if macro.strength > 0 else "Contexte macro contraignant",
+            short_text="; ".join(macro.findings[:2]),
+            raw_value={"risk_appetite": macro.risk_appetite,
+                       "dollar_trend": macro.dollar_trend,
+                       "rates_trend": macro.rates_trend},
+            normalized_value=macro.strength,
+            polarity=Polarity.POSITIVE if macro.strength > 0 else Polarity.NEGATIVE,
+            importance=68, confidence=.68, timeframe="5D",
+            source=source, as_of=observed_at, freshness=freshness,
+        ))
+
+    cross_asset = CrossAssetAnalyzer().assess(asset)
+    if cross_asset.risk_proxy_correlation is not None and abs(
+        cross_asset.risk_proxy_correlation
+    ) >= .4:
+        factors.append(DecisionFactor(
+            id="cross_asset.nasdaq", category=Category.CROSS_ASSET,
+            title="Dépendance élevée aux actifs risqués",
+            short_text=cross_asset.interpretation,
+            raw_value={"nasdaq_correlation": cross_asset.risk_proxy_correlation},
+            normalized_value=abs(cross_asset.risk_proxy_correlation) * 100,
+            polarity=Polarity.WAIT, importance=50, confidence=.65,
+            timeframe="90D", source="CrossAssetAnalyzer (OHLCV + indices)",
+            as_of=now.isoformat(), freshness="TODAY",
+        ))
+
+    daily = store.load_candles(asset, Timeframe.D1)
+    historical = HistoricalSimilarityEngine().analyze(asset, daily, Timeframe.D1)
+    historical_summary = None
+    if historical.available:
+        historical_summary = {
+            "raw_n": historical.sample_size,
+            "effective_n": historical.effective_sample_size,
+            "median_return": historical.median_forward_returns.get("7d"),
+            "mfe": historical.median_mfe_7d_pct,
+            "mae": historical.median_mae_7d_pct,
+            "hit_rate": historical.hit_rate.get("7d"),
+        }
+
+    live = live_track_record(asset)
+    rows = live.get("rows") or []
+    track_summary = {
+        "status": "TOO_EARLY",
+        "matured_predictions": sum(int(row.get("matured_predictions", 0)) for row in rows),
+    }
+    if rows and all(row.get("verdict") != "TOO_EARLY" for row in rows):
+        track_summary["status"] = "MATURE"
+
+    whale_observations = repo.observations_since(asset, "whale.", since)
+    whales = WhaleAnalyzer().analyze(
+        asset, whale_observations,
+        unavailable_reason=None if whale_observations else
+        "UNAVAILABLE - aucun fournisseur baleines fiable configuré",
+    )
+    implied = ImpliedVolatilityEngine().assess(asset)
+    return {
+        "factors": factors, "multi_timeframe": mtf,
+        "breakout": breakout.model_dump(mode="json"),
+        "onchain": onchain.model_dump(mode="json"),
+        "liquidity": liquidity.model_dump(mode="json"),
+        "macro": macro.model_dump(mode="json"),
+        "cross_asset": cross_asset.model_dump(mode="json"),
+        "historical": historical_summary,
+        "live_track_record": track_summary,
+        "whales": whales,
+        "implied_volatility": implied,
+    }
 
 
 @router.get("/today/{symbol}")
@@ -336,6 +533,8 @@ async def today(symbol: str) -> dict[str, Any]:
             crowding=crowding, volatility=vol,
         )
 
+        context = _structured_decision_context(asset)
+
         from ..engines.market_pressure import assess_pressure
 
         pressure = assess_pressure(
@@ -347,6 +546,8 @@ async def today(symbol: str) -> dict[str, Any]:
                 families["open_interest"].usable
                 if "open_interest" in families else False
             ),
+            whale_analysis=context["whales"],
+            family_states=families,
         )
 
         # La décision est une couche de traduction au-dessus des moteurs
@@ -363,6 +564,15 @@ async def today(symbol: str) -> dict[str, Any]:
             unusable_families=[
                 name for name, state in families.items() if not state.usable
             ],
+            critical_missing_families=[
+                name for name in ("price", "ohlcv_daily")
+                if name not in families or not families[name].usable
+            ],
+            regime=regime, timing=timing, volatility=vol,
+            implied_volatility=context["implied_volatility"],
+            historical_analogs=context["historical"],
+            live_track_record=context["live_track_record"],
+            extra_factors=context["factors"],
         )
 
         return {
@@ -390,6 +600,15 @@ async def today(symbol: str) -> dict[str, Any]:
             "leverage_state": leverage_state.model_dump(),
             "funding": funding.model_dump(),
             "volatility": vol.model_dump(),
+            "multi_timeframe_structure": context["multi_timeframe"],
+            "breakout": context["breakout"],
+            "implied_volatility": context["implied_volatility"].model_dump(mode="json"),
+            "historical_analogs": context["historical"],
+            "live_track_record": context["live_track_record"],
+            "onchain": context["onchain"],
+            "liquidity": context["liquidity"],
+            "macro_context": context["macro"],
+            "cross_asset": context["cross_asset"],
         }
 
     payload = build()

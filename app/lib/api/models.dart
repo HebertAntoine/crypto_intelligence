@@ -309,18 +309,28 @@ class PressureComponent {
   final String label;
   final bool available;
   final double? score;
+  final dynamic rawValue;
+  final double weight;
+  final double confidence;
   final String detail;
   final String source;
   final String reason;
+  final String? asOf;
+  final String freshness;
 
   const PressureComponent({
     required this.name,
     required this.label,
     required this.available,
     required this.score,
+    required this.rawValue,
+    required this.weight,
+    required this.confidence,
     required this.detail,
     required this.source,
     required this.reason,
+    required this.asOf,
+    required this.freshness,
   });
 
   factory PressureComponent.fromJson(Map<String, dynamic> json) =>
@@ -328,14 +338,22 @@ class PressureComponent {
         name: json['name'] as String? ?? '',
         label: json['label'] as String? ?? '',
         available: json['available'] as bool? ?? false,
-        score: (json['score'] as num?)?.toDouble(),
+        score: ((json['normalized_pressure'] ?? json['score']) as num?)
+            ?.toDouble(),
+        rawValue: json['raw_value'],
+        weight: (json['weight'] as num?)?.toDouble() ?? 1,
+        confidence: (json['confidence'] as num?)?.toDouble() ?? .5,
         detail: json['detail'] as String? ?? '',
         source: json['source'] as String? ?? '',
         reason: json['reason'] as String? ?? '',
+        asOf: json['as_of'] as String?,
+        freshness: json['freshness'] as String? ?? 'UNAVAILABLE',
       );
 }
 
 class MarketPressure {
+  final String state;
+  final double? pressureScore;
   /// 0 = vente totale, 50 = équilibre, 100 = achat total. Null si rien
   /// n'est mesurable: une absence ne vaut pas un équilibre.
   final double? balance;
@@ -344,27 +362,45 @@ class MarketPressure {
   final int measured;
   final List<String> missing;
   final String note;
+  final List<String> contradictions;
+  final String summary;
+  final String? asOf;
 
   const MarketPressure({
+    required this.state,
+    required this.pressureScore,
     required this.balance,
     required this.label,
     required this.components,
     required this.measured,
     required this.missing,
     required this.note,
+    required this.contradictions,
+    required this.summary,
+    required this.asOf,
   });
 
   static const unavailable = MarketPressure(
+    state: 'INSUFFICIENT_DATA',
+    pressureScore: null,
     balance: null,
     label: 'INDÉTERMINÉ',
     components: [],
     measured: 0,
     missing: [],
     note: '',
+    contradictions: [],
+    summary: '',
+    asOf: null,
   );
 
   factory MarketPressure.fromJson(Map<String, dynamic> json) => MarketPressure(
-        balance: (json['balance'] as num?)?.toDouble(),
+        state: json['state'] as String? ?? 'INSUFFICIENT_DATA',
+        pressureScore: (json['pressure_score'] as num?)?.toDouble(),
+        balance: (json['balance'] as num?)?.toDouble() ??
+            ((json['pressure_score'] as num?) == null
+                ? null
+                : ((json['pressure_score'] as num).toDouble() + 100) / 2),
         label: json['label'] as String? ?? 'INDÉTERMINÉ',
         components: ((json['components'] as List?) ?? const [])
             .map((item) =>
@@ -375,6 +411,11 @@ class MarketPressure {
             .map((item) => '$item')
             .toList(),
         note: json['note'] as String? ?? '',
+        contradictions: ((json['contradictions'] as List?) ?? const [])
+            .map((item) => '$item')
+            .toList(),
+        summary: json['summary'] as String? ?? json['note'] as String? ?? '',
+        asOf: json['as_of'] as String?,
       );
 }
 
@@ -409,9 +450,16 @@ class OpportunityFactor {
   final String category;
   final String title;
   final String explanation;
+  final dynamic rawValue;
+  final double? normalizedValue;
   final String polarity;
   final int importance;
+  final double confidence;
+  final String evidenceLevel;
+  final String timeframe;
   final String source;
+  final String? asOf;
+  final String freshness;
   final bool available;
 
   const OpportunityFactor({
@@ -419,9 +467,16 @@ class OpportunityFactor {
     required this.category,
     required this.title,
     required this.explanation,
+    required this.rawValue,
+    required this.normalizedValue,
     required this.polarity,
     required this.importance,
+    required this.confidence,
+    required this.evidenceLevel,
+    required this.timeframe,
     required this.source,
+    required this.asOf,
+    required this.freshness,
     required this.available,
   });
 
@@ -430,10 +485,18 @@ class OpportunityFactor {
         id: json['id'] as String? ?? '',
         category: json['category'] as String? ?? '',
         title: json['title'] as String? ?? '',
-        explanation: json['explanation'] as String? ?? '',
+        explanation: json['short_text'] as String? ??
+            json['explanation'] as String? ?? '',
+        rawValue: json['raw_value'],
+        normalizedValue: (json['normalized_value'] as num?)?.toDouble(),
         polarity: json['polarity'] as String? ?? 'NEUTRAL',
         importance: (json['importance'] as num?)?.toInt() ?? 0,
+        confidence: (json['confidence'] as num?)?.toDouble() ?? 0,
+        evidenceLevel: json['evidence_level'] as String? ?? 'UNAVAILABLE',
+        timeframe: json['timeframe'] as String? ?? '',
         source: json['source'] as String? ?? '',
+        asOf: json['as_of'] as String?,
+        freshness: json['freshness'] as String? ?? 'UNAVAILABLE',
         available: json['available'] as bool? ?? true,
       );
 }
@@ -453,6 +516,8 @@ class BuyOpportunity {
   final List<String> guardRails;
   final String measuredEdgeState;
   final String disclaimer;
+  final String? asOf;
+  final Map<String, dynamic> provenance;
 
   const BuyOpportunity({
     required this.state,
@@ -467,6 +532,8 @@ class BuyOpportunity {
     required this.guardRails,
     required this.measuredEdgeState,
     required this.disclaimer,
+    required this.asOf,
+    required this.provenance,
   });
 
   static const unavailable = BuyOpportunity(
@@ -477,6 +544,8 @@ class BuyOpportunity {
     whatWouldImprove: [], whatWouldDeteriorate: [], guardRails: [],
     measuredEdgeState: 'NO_MEASURABLE_EDGE',
     disclaimer: '',
+    asOf: null,
+    provenance: {},
   );
 
   bool get isEmpty => summary.isEmpty && positives.isEmpty && waits.isEmpty;
@@ -493,17 +562,24 @@ class BuyOpportunity {
   factory BuyOpportunity.fromJson(Map<String, dynamic> json) => BuyOpportunity(
         state: json['state'] as String? ?? 'INSUFFICIENT_DATA',
         headline: json['headline'] as String? ?? '',
-        summary: json['short_summary'] as String? ?? '',
+        summary: json['summary'] as String? ??
+            json['short_summary'] as String? ?? '',
         positives: _list(json['positives']),
         waits: _list(json['waits']),
         negatives: _list(json['negatives']),
         missing: _list(json['missing']),
-        whatWouldImprove: _strings(json['what_would_improve']),
-        whatWouldDeteriorate: _strings(json['what_would_deteriorate']),
+        whatWouldImprove: _strings(
+            json['improvement_conditions'] ?? json['what_would_improve']),
+        whatWouldDeteriorate: _strings(
+            json['deterioration_conditions'] ??
+                json['what_would_deteriorate']),
         guardRails: _strings(json['guard_rails_applied']),
         measuredEdgeState:
             json['measured_edge_state'] as String? ?? 'NO_MEASURABLE_EDGE',
         disclaimer: json['disclaimer'] as String? ?? '',
+        asOf: json['as_of'] as String?,
+        provenance: ((json['provenance'] as Map?) ?? const {})
+            .cast<String, dynamic>(),
       );
 }
 
