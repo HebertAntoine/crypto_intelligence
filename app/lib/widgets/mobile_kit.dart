@@ -515,7 +515,9 @@ class AssetVisuals {
   static AssetVisuals forAsset(String asset) => switch (asset) {
         'ETH' => AssetVisuals(
             name: 'Ethereum',
-            logoGradient: const [Color(0xFF7A63F8), Color(0xFF5146E8)],
+            // Disque clair: la marque Ethereum est grise, elle disparaîtrait
+            // sur le violet précédent. BTC garde son orange, SOL son noir.
+            logoGradient: const [Color(0xFFF4F6FA), Color(0xFFDDE3ED)],
             logoBuilder: (size) => EthMark(size: size * 0.67),
           ),
         'SOL' => AssetVisuals(
@@ -550,32 +552,82 @@ class EthMark extends StatelessWidget {
 }
 
 class _EthPainter extends CustomPainter {
+  // Six facettes, comme la marque officielle: l'octaèdre est coupé
+  // verticalement en une moitié claire et une moitié sombre, avec une taille
+  // marquée aux deux tiers de la hauteur. La version précédente n'en dessinait
+  // que deux, ce qui donnait un losange plat sans relief.
+  static const _light = Color(0xFF8C8C8C);
+  static const _mid = Color(0xFF3C3C3B);
+  static const _dark = Color(0xFF141414);
+  static const _midLight = Color(0xFF393939);
+
   @override
   void paint(Canvas canvas, Size size) {
-    final topPaint = Paint()..color = Colors.white.withValues(alpha: 0.94);
-    final bottomPaint = Paint()..color = Colors.white.withValues(alpha: 0.72);
-    final stroke = Paint()
-      ..color = const Color(0xFFB9C9FF).withValues(alpha: 0.56)
-      ..strokeWidth = 1.4
-      ..style = PaintingStyle.stroke;
+    final w = size.width;
+    final h = size.height;
+    final cx = w / 2;
 
-    final cx = size.width / 2;
-    final top = Path()
-      ..moveTo(cx, 0)
-      ..lineTo(size.width, size.height * 0.52)
-      ..lineTo(cx, size.height * 0.38)
-      ..lineTo(0, size.height * 0.52)
-      ..close();
-    final bottom = Path()
-      ..moveTo(0, size.height * 0.58)
-      ..lineTo(cx, size.height)
-      ..lineTo(size.width, size.height * 0.58)
-      ..lineTo(cx, size.height * 0.72)
-      ..close();
+    // Hauteurs des trois arêtes horizontales, en proportion de la marque.
+    final waist = h * 0.505;      // pointe des faces supérieures
+    final belt = h * 0.395;       // haut de la ceinture centrale
+    final lower = h * 0.575;      // départ de la pointe inférieure
 
-    canvas.drawPath(top, topPaint);
-    canvas.drawPath(bottom, bottomPaint);
-    canvas.drawLine(Offset(cx, 0), Offset(cx, size.height), stroke);
+    void fill(Path path, Color colour) =>
+        canvas.drawPath(path, Paint()..color = colour);
+
+    // Faces supérieures: gauche claire, droite sombre.
+    fill(
+      Path()
+        ..moveTo(cx, 0)
+        ..lineTo(0, waist)
+        ..lineTo(cx, belt)
+        ..close(),
+      _light,
+    );
+    fill(
+      Path()
+        ..moveTo(cx, 0)
+        ..lineTo(w, waist)
+        ..lineTo(cx, belt)
+        ..close(),
+      _mid,
+    );
+
+    // Ceinture centrale, plus sombre à droite.
+    fill(
+      Path()
+        ..moveTo(0, waist)
+        ..lineTo(cx, belt)
+        ..lineTo(cx, h * 0.66)
+        ..close(),
+      _midLight,
+    );
+    fill(
+      Path()
+        ..moveTo(w, waist)
+        ..lineTo(cx, belt)
+        ..lineTo(cx, h * 0.66)
+        ..close(),
+      _dark,
+    );
+
+    // Pointe inférieure, séparée de la ceinture par un liseré vide.
+    fill(
+      Path()
+        ..moveTo(0, lower)
+        ..lineTo(cx, h)
+        ..lineTo(cx, h * 0.735)
+        ..close(),
+      _light,
+    );
+    fill(
+      Path()
+        ..moveTo(w, lower)
+        ..lineTo(cx, h)
+        ..lineTo(cx, h * 0.735)
+        ..close(),
+      _mid,
+    );
   }
 
   @override
@@ -589,50 +641,66 @@ class SolMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SolBar(
-            width: width,
-            colorA: const Color(0xFF35E8AA),
-            colorB: const Color(0xFF8A6BFF)),
-        const SizedBox(height: 5),
-        _SolBar(
-            width: width,
-            colorA: const Color(0xFF8A6BFF),
-            colorB: const Color(0xFFE35EFF)),
-        const SizedBox(height: 5),
-        _SolBar(
-            width: width,
-            colorA: const Color(0xFFE35EFF),
-            colorB: const Color(0xFF35E8AA)),
-      ],
+    // Le dégradé traverse les trois barres au lieu de repartir de zéro sur
+    // chacune: sur la marque officielle c'est une seule transition du
+    // vert-bleu au violet, du bas à droite vers le haut à gauche.
+    return SizedBox(
+      width: width,
+      height: width * 0.80,
+      child: CustomPaint(painter: _SolPainter()),
     );
   }
 }
 
-class _SolBar extends StatelessWidget {
-  final double width;
-  final Color colorA;
-  final Color colorB;
-
-  const _SolBar(
-      {required this.width, required this.colorA, required this.colorB});
+class _SolPainter extends CustomPainter {
+  static const _teal = Color(0xFF19FB9B);
+  static const _blue = Color(0xFF41A5D4);
+  static const _purple = Color(0xFF9945FF);
 
   @override
-  Widget build(BuildContext context) {
-    return Transform(
-      transform: Matrix4.skewX(-0.22),
-      child: Container(
-        width: width,
-        height: width * 0.21,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(2),
-          gradient: LinearGradient(colors: [colorA, colorB]),
-        ),
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    final barHeight = h * 0.215;
+    final slant = w * 0.17;
+    final gap = (h - barHeight * 3) / 2;
+
+    final shader = const LinearGradient(
+      begin: Alignment.bottomLeft,
+      end: Alignment.topRight,
+      colors: [_purple, _blue, _teal],
+    ).createShader(Rect.fromLTWH(0, 0, w, h));
+    final paint = Paint()..shader = shader;
+
+    // Barre du haut et du bas penchées dans un sens, celle du milieu dans
+    // l'autre: c'est ce contraste qui donne sa forme au logo.
+    void bar(double top, {required bool leftLean}) {
+      final path = Path();
+      if (leftLean) {
+        path
+          ..moveTo(slant, top)
+          ..lineTo(w, top)
+          ..lineTo(w - slant, top + barHeight)
+          ..lineTo(0, top + barHeight)
+          ..close();
+      } else {
+        path
+          ..moveTo(0, top)
+          ..lineTo(w - slant, top)
+          ..lineTo(w, top + barHeight)
+          ..lineTo(slant, top + barHeight)
+          ..close();
+      }
+      canvas.drawPath(path, paint);
+    }
+
+    bar(0, leftLean: true);
+    bar(barHeight + gap, leftLean: false);
+    bar((barHeight + gap) * 2, leftLean: true);
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 String fmtFr(num? value, {int digits = 2, String suffix = ''}) {
