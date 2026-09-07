@@ -979,6 +979,41 @@ def cmd_revalidate(args) -> int:
     return 0
 
 
+def cmd_lot6b(args: argparse.Namespace) -> int:
+    """Run every LOT 6B stage and print what survived."""
+    from .research.lot6b import run_and_save
+
+    result = run_and_save()
+
+    calibration = result["calibration"]
+    print(f"pipeline: {calibration.get('verdict')}")
+    for key, floor in sorted(calibration.get("detection_floors", {}).items()):
+        print(
+            f"  {key:4s} detection floor {floor.get('empirical_floor_pct')}% "
+            f"vs meaningful {floor.get('meaningful_effect_pct')}%"
+        )
+
+    ablation = result["ablation"]
+    print(f"\nablation: {ablation.get('verdict')} "
+          f"(full-model out-of-sample R2 {ablation.get('full_model', {}).get('r2')})")
+
+    print("\nfunnel:")
+    for stage in result["evidence"]["funnel"]["stages"]:
+        print(f"  {stage['stage']:42s} {stage['count']:3d}")
+
+    print("\nshortlist:")
+    for entry in result["shortlist"]["shortlist"]:
+        print(
+            f"  L{entry['evidence_level']} {entry['level_name']:18s} "
+            f"{entry['claim'][:46]:46s} {entry['effect_pct']:+.2f}% "
+            f"blocked at {entry['blocked_at']}"
+        )
+
+    print(f"\nVERDICT: {result['verdict']}")
+    print("Written to data/research/lot6b.json")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="crypto-intel",
@@ -1099,6 +1134,9 @@ def main() -> int:
     p = sub.add_parser("daily-v2", help="Full daily read, sixteen sections")
     p.add_argument("--asset")
     p.set_defaults(func=cmd_daily_v2, is_async=False)
+
+    p = sub.add_parser("lot6b", help="Evidence, power and pooling (LOT 6B)")
+    p.set_defaults(func=cmd_lot6b)
 
     p = sub.add_parser("revalidate", help="Re-test candidates under LOT 6A rules")
     p.set_defaults(func=cmd_revalidate, is_async=False)

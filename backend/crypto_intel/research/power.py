@@ -283,3 +283,189 @@ def decide_verdict(inputs: VerdictInputs, horizon_bars: int, freq_days: float = 
         "binding_reason": "survives every filter under both control methods",
         "reasons": [],
     }
+
+
+# --- how much more data would settle the question ------------------------
+
+
+@dataclass(slots=True)
+class DataRequirement:
+    """What it would take to decide a question that is currently undecided."""
+
+    target_effect_pct: float = 0.0
+    std_dev: float = 0.0
+    current_effective_n: float = 0.0
+    required_effective_n: float | None = None
+    additional_effective_n: float | None = None
+    events_per_year: float = 0.0
+    years_to_decide: float | None = None
+    decidable_before: str = "UNKNOWN"
+    note: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "target_effect_pct": self.target_effect_pct,
+            "std_dev": self.std_dev,
+            "current_effective_n": self.current_effective_n,
+            "required_effective_n": self.required_effective_n,
+            "additional_effective_n": self.additional_effective_n,
+            "events_per_year": self.events_per_year,
+            "years_to_decide": self.years_to_decide,
+            "decidable_before": self.decidable_before,
+            "note": self.note,
+        }
+
+
+def required_effective_n(
+    effect: float,
+    std_dev: float,
+    baseline_ratio: float = 4.0,
+    alpha: float = DEFAULT_ALPHA,
+    power: float = DEFAULT_POWER,
+) -> float | None:
+    """Effective event count needed to detect `effect` at the stated power.
+
+    Inverting the MDE formula with n_baseline = k * n_event:
+
+        n_event = ((z_{1-a/2} + z_{power}) * sd / effect)^2 * (1 + 1/k)
+
+    The baseline is not free either, but it is usually abundant, so the event
+    count is the binding constraint and the one worth reporting.
+    """
+    if effect == 0 or std_dev <= 0 or baseline_ratio <= 0:
+        return None
+    z_alpha = float(stats.norm.ppf(1 - alpha / 2))
+    z_power = float(stats.norm.ppf(power))
+    return float(((z_alpha + z_power) * std_dev / abs(effect)) ** 2 * (1 + 1 / baseline_ratio))
+
+
+def data_requirement(
+    observed_effect: float | None,
+    std_dev: float,
+    current_effective_n: float,
+    horizon_bars: int,
+    events_per_year: float,
+    freq_days: float = 1.0,
+    baseline_ratio: float = 4.0,
+) -> DataRequirement:
+    """How many more independent observations would settle this question.
+
+    The effect used is the more demanding of the observed effect and the
+    declared meaningful threshold. Sizing a future study on an observed effect
+    alone is the classic mistake: observed effects in small samples are
+    inflated by selection, so the study designed to confirm them is
+    systematically too small. Where the observed effect is the larger of the
+    two, the meaningful threshold governs instead.
+    """
+    target = meaningful_effect(horizon_bars, freq_days)
+    effect = (
+        min(abs(observed_effect), target) if observed_effect not in (None, 0)
+        else target
+    )
+    requirement = DataRequirement(
+        target_effect_pct=round(effect, 3),
+        std_dev=round(std_dev, 4),
+        current_effective_n=round(current_effective_n, 1),
+        events_per_year=round(events_per_year, 2),
+    )
+
+    needed = required_effective_n(effect, std_dev, baseline_ratio)
+    if needed is None:
+        requirement.note = "cannot size: dispersion or effect is zero"
+        return requirement
+
+    requirement.required_effective_n = round(needed, 1)
+    shortfall = max(needed - current_effective_n, 0.0)
+    requirement.additional_effective_n = round(shortfall, 1)
+
+    if shortfall <= 0:
+        requirement.years_to_decide = 0.0
+        requirement.decidable_before = "ALREADY"
+        requirement.note = (
+            f"Already sufficient: {current_effective_n:.0f} effective observations "
+            f"against {needed:.0f} required for a {effect:.2f}% effect."
+        )
+        return requirement
+
+    if events_per_year > 0:
+        years = shortfall / events_per_year
+        requirement.years_to_decide = round(years, 1)
+        requirement.decidable_before = (
+            "WITHIN_2_YEARS" if years <= 2
+            else "WITHIN_10_YEARS" if years <= 10
+            else "NOT_IN_A_USEFUL_TIMEFRAME"
+        )
+        horizon_note = (
+            f" At {events_per_year:.1f} independent events per year that is about "
+            f"{years:.1f} more years of data."
+        )
+        if years > 10:
+            horizon_note += (
+                " This question cannot be settled by waiting. Either the effect "
+                "must be larger than assumed, or the sample must be widened "
+                "across assets, or it should be abandoned."
+            )
+    else:
+        horizon_note = " Event arrival rate is unknown, so no timeline can be given."
+
+    requirement.note = (
+        f"{current_effective_n:.0f} effective observations now, {needed:.0f} needed "
+        f"to detect a {effect:.2f}% effect at 80% power: a shortfall of "
+        f"{shortfall:.0f}." + horizon_note
+    )
+    return requirement
+
+
+class StatisticalPowerEngine:
+    """Answers, for any tested claim, what would be needed to decide it."""
+
+    def __init__(self, alpha: float = DEFAULT_ALPHA, power: float = DEFAULT_POWER) -> None:
+        self.alpha = alpha
+        self.power = power
+
+    def evaluate(
+        self,
+        observed_effect: float | None,
+        std_dev: float,
+        effective_n_event: float,
+        horizon_bars: int,
+        events_per_year: float = 0.0,
+        freq_days: float = 1.0,
+        baseline_ratio: float = 4.0,
+    ) -> dict[str, Any]:
+        assessment = assess_power(
+            effective_n_event, max(effective_n_event * baseline_ratio, MIN_EFFECTIVE_N),
+            std_dev, horizon_bars, freq_days,
+        )
+        requirement = data_requirement(
+            observed_effect, std_dev, effective_n_event, horizon_bars,
+            events_per_year, freq_days, baseline_ratio,
+        )
+        return {
+            "power": assessment.to_dict(),
+            "requirement": requirement.to_dict(),
+            "verdict": assessment.verdict.value,
+            "decidable_before": requirement.decidable_before,
+        }
+
+    def rank_by_tractability(self, claims: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Order claims by how close they are to being decidable.
+
+        Research time is finite. A question two years from an answer is worth
+        more attention than one thirty years away, regardless of how appealing
+        the second one looks today.
+        """
+        order = {
+            "ALREADY": 0, "WITHIN_2_YEARS": 1, "WITHIN_10_YEARS": 2,
+            "NOT_IN_A_USEFUL_TIMEFRAME": 3, "UNKNOWN": 4,
+        }
+        def years(claim: dict[str, Any]) -> float:
+            # `value or 1e9` would send years_to_decide == 0.0 - meaning the
+            # question is already decidable - to the back of the queue.
+            value = claim.get("requirement", {}).get("years_to_decide")
+            return float(value) if value is not None else 1e9
+
+        return sorted(
+            claims,
+            key=lambda c: (order.get(c.get("decidable_before", "UNKNOWN"), 4), years(c)),
+        )

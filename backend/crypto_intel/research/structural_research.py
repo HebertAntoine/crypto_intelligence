@@ -235,28 +235,62 @@ def _year_stability(
 
 
 def _walk_forward(
-    forward: pd.Series, mask: pd.Series, baseline_mask: pd.Series
+    forward: pd.Series,
+    mask: pd.Series,
+    baseline_mask: pd.Series,
+    horizon_bars: int,
 ) -> dict[str, Any]:
-    """Chronological train / validation / out-of-sample excess.
+    """Chronological train / validation / out-of-sample excess, purged.
 
     Splits are by time, never random: shuffling a time series and calling the
     result out-of-sample is one of the most common ways to fool yourself.
+
+    Splitting by time is not sufficient on its own. A bar on the last day of
+    the training window carries a forward return that runs `horizon_bars` into
+    the validation window, so the two windows share outcomes and their
+    agreement is partly mechanical. Each window therefore ends `horizon_bars`
+    early, and a further embargo of `horizon_bars` is dropped afterwards to
+    break the serial correlation that outlives the overlap itself. The cost is
+    a few percent of the sample; the alternative is a sign-consistency figure
+    that measures the split, not the signal.
     """
     index = forward.dropna().index
     if len(index) < 300:
         return {"status": "INSUFFICIENT_DATA", "bars": len(index)}
 
-    first_cut = index[int(len(index) * 0.5)]
-    second_cut = index[int(len(index) * 0.75)]
+    embargo = horizon_bars
+    first_cut = int(len(index) * 0.5)
+    second_cut = int(len(index) * 0.75)
+    gap = horizon_bars + embargo
+    if second_cut - first_cut <= gap or len(index) - second_cut <= gap:
+        return {
+            "status": "INSUFFICIENT_DATA",
+            "bars": len(index),
+            "note": (
+                f"a {horizon_bars}-bar horizon needs a {gap}-bar purge between "
+                "splits, which leaves no usable validation window"
+            ),
+        }
+
     windows = {
-        "train": (index[0], first_cut),
-        "validation": (first_cut, second_cut),
-        "oos": (second_cut, index[-1]),
+        "train": (0, first_cut - gap),
+        "validation": (first_cut, second_cut - gap),
+        "oos": (second_cut, len(index)),
     }
 
-    out: dict[str, Any] = {"status": "OK", "splits": {}}
+    out: dict[str, Any] = {
+        "status": "OK",
+        "splits": {},
+        "purge_bars": horizon_bars,
+        "embargo_bars": embargo,
+        "bars_discarded_to_purge": 2 * gap,
+    }
     excesses: list[float] = []
-    for name, (start, end) in windows.items():
+    for name, (lo, hi) in windows.items():
+        if hi <= lo:
+            out["splits"][name] = {"status": "INSUFFICIENT_DATA", "n": 0}
+            continue
+        start, end = index[lo], index[hi - 1]
         window = (forward.index >= start) & (forward.index <= end)
         events = forward[mask & window].dropna()
         baseline = forward[baseline_mask & ~mask & window].dropna()
@@ -509,7 +543,7 @@ def analyse(
                         float(events_returns.mean()) > best[1]
                     )
                 cell["stability"] = _year_stability(fwd, mask, primary)
-                cell["walk_forward"] = _walk_forward(fwd, mask, same_regime_mask)
+                cell["walk_forward"] = _walk_forward(fwd, mask, same_regime_mask, horizon)
                 tests.append((f"{label}|{horizon}b", stratified["p_value"]))
             else:
                 cell["note"] = (

@@ -65,8 +65,26 @@ def daily_funding(asset: Asset, index: pd.DatetimeIndex) -> pd.Series:
     return daily.reindex(index)
 
 
+# Open interest is stored under two metrics with different units: the live
+# scheduler writes notional USD to "oi.value", while the historical backfill
+# writes Bybit contract counts to "oi.contracts_bybit". They are never spliced
+# into one series - a level jump at the join would read as a real change in
+# positioning. The longer of the two is used and named in the result.
+OI_METRICS = ("oi.contracts_bybit", "oi.value")
+
+
+def open_interest_source(asset: Asset) -> tuple[str, pd.DataFrame]:
+    """The longest available open-interest series and the metric it came from."""
+    best_metric, best_frame = "", pd.DataFrame()
+    for metric in OI_METRICS:
+        frame = store.load_derivatives(asset, metric)
+        if len(frame) > len(best_frame):
+            best_metric, best_frame = metric, frame
+    return best_metric, best_frame
+
+
 def daily_open_interest(asset: Asset, index: pd.DatetimeIndex) -> pd.Series:
-    oi = store.load_derivatives(asset, "oi.value")
+    _, oi = open_interest_source(asset)
     if oi.empty:
         return pd.Series(index=index, dtype=float)
     daily = oi.resample("1D").mean()
