@@ -328,14 +328,20 @@ class _MobileNavItem extends StatelessWidget {
                     size:
                         compact ? (selected ? 24 : 22) : (selected ? 34 : 31)),
                 SizedBox(height: compact ? 4 : 8),
-                Text(
-                  destination.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: compact ? 10 : (selected ? 18 : 17),
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 0),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      destination.label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: compact ? 11 : (selected ? 18 : 17),
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
                   ),
                 ),
               ],
