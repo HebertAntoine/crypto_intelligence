@@ -243,7 +243,7 @@ class _MarketCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _AssetMeta.forAsset(read.asset);
+    final meta = AssetVisuals.forAsset(read.asset);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -283,7 +283,7 @@ class _MarketCard extends StatelessWidget {
   void _showDetails(
     BuildContext context,
     TodayRead read,
-    _AssetMeta meta,
+    AssetVisuals meta,
     DataProvenance provenance,
   ) {
     showModalBottomSheet<void>(
@@ -301,7 +301,7 @@ class _MarketCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                _CryptoLogo(meta: meta),
+                CryptoLogo(asset: read.asset, size: 82),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
@@ -653,7 +653,7 @@ class _TodaySheetLine extends StatelessWidget {
 
 class _AssetHeader extends StatelessWidget {
   final TodayRead read;
-  final _AssetMeta meta;
+  final AssetVisuals meta;
   final LivePriceSource? livePrices;
 
   const _AssetHeader({
@@ -666,7 +666,7 @@ class _AssetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _CryptoLogo(meta: meta),
+        CryptoLogo(asset: read.asset, size: 82),
         const SizedBox(width: 22),
         Expanded(
           child: Column(
@@ -2454,154 +2454,6 @@ class _OutlinePill extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CryptoLogo extends StatelessWidget {
-  final _AssetMeta meta;
-
-  const _CryptoLogo({required this.meta});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 82,
-      height: 82,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: meta.logoGradient,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: meta.logoGradient.last.withValues(alpha: 0.25),
-            blurRadius: 18,
-            spreadRadius: -2,
-          ),
-        ],
-      ),
-      child: Center(child: meta.logo),
-    );
-  }
-}
-
-class _EthMark extends StatelessWidget {
-  const _EthMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(size: const Size(43, 58), painter: _EthPainter());
-  }
-}
-
-class _EthPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final topPaint = Paint()..color = Colors.white.withValues(alpha: 0.94);
-    final bottomPaint = Paint()..color = Colors.white.withValues(alpha: 0.72);
-    final stroke = Paint()
-      ..color = const Color(0xFFB9C9FF).withValues(alpha: 0.56)
-      ..strokeWidth = 1.4
-      ..style = PaintingStyle.stroke;
-
-    final cx = size.width / 2;
-    final top = Path()
-      ..moveTo(cx, 0)
-      ..lineTo(size.width, size.height * 0.52)
-      ..lineTo(cx, size.height * 0.38)
-      ..lineTo(0, size.height * 0.52)
-      ..close();
-    final bottom = Path()
-      ..moveTo(0, size.height * 0.58)
-      ..lineTo(cx, size.height)
-      ..lineTo(size.width, size.height * 0.58)
-      ..lineTo(cx, size.height * 0.72)
-      ..close();
-
-    canvas.drawPath(top, topPaint);
-    canvas.drawPath(bottom, bottomPaint);
-    canvas.drawLine(Offset(cx, 0), Offset(cx, size.height), stroke);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _SolMark extends StatelessWidget {
-  const _SolMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _SolBar(colorA: Color(0xFF35E8AA), colorB: Color(0xFF8A6BFF)),
-        SizedBox(height: 6),
-        _SolBar(colorA: Color(0xFF8A6BFF), colorB: Color(0xFFE35EFF)),
-        SizedBox(height: 6),
-        _SolBar(colorA: Color(0xFFE35EFF), colorB: Color(0xFF35E8AA)),
-      ],
-    );
-  }
-}
-
-class _SolBar extends StatelessWidget {
-  final Color colorA;
-  final Color colorB;
-
-  const _SolBar({required this.colorA, required this.colorB});
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform(
-      transform: Matrix4.skewX(-0.22),
-      child: Container(
-        width: 42,
-        height: 9,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(2),
-          gradient: LinearGradient(colors: [colorA, colorB]),
-        ),
-      ),
-    );
-  }
-}
-
-class _AssetMeta {
-  final String name;
-  final Widget logo;
-  final List<Color> logoGradient;
-
-  const _AssetMeta({
-    required this.name,
-    required this.logo,
-    required this.logoGradient,
-  });
-
-  static _AssetMeta forAsset(String asset) => switch (asset) {
-        'ETH' => const _AssetMeta(
-            name: 'Ethereum',
-            logo: _EthMark(),
-            logoGradient: [Color(0xFF7A63F8), Color(0xFF5146E8)],
-          ),
-        'SOL' => const _AssetMeta(
-            name: 'Solana',
-            logo: _SolMark(),
-            logoGradient: [Color(0xFF112F38), Color(0xFF151423)],
-          ),
-        _ => const _AssetMeta(
-            name: 'Bitcoin',
-            logo: Text(
-              '₿',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 50,
-                  fontWeight: FontWeight.w800),
-            ),
-            logoGradient: [Color(0xFFFFA52C), Color(0xFFFF8B1F)],
-          ),
-      };
 }
 
 String _formatFrenchDate(DateTime date) {

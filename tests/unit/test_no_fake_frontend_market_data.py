@@ -324,3 +324,37 @@ def test_the_official_logos_are_bundled_and_declared():
     assert "assets/logos/${asset.toLowerCase()}.png" in widget
     # Le repli doit rester: un fichier retiré ne doit jamais laisser un vide.
     assert "errorBuilder:" in widget
+
+
+def test_only_one_widget_renders_an_asset_logo():
+    """Un second rendu privé est ce qui a laissé « Aujourd'hui » en arrière.
+
+    `today_screen.dart` avait sa propre classe `_CryptoLogo` avec ses propres
+    tracés vectoriels. Les fichiers PNG ont été branchés sur le widget partagé,
+    et l'écran principal a continué d'afficher les dessins sans que rien ne
+    signale l'écart.
+    """
+    root = Path(__file__).resolve().parents[2]
+    lib = root / "app" / "lib"
+
+    definitions: list[str] = []
+    for path in lib.rglob("*.dart"):
+        text = path.read_text(encoding="utf-8")
+        for marker in ("class CryptoLogo", "class _CryptoLogo"):
+            if marker in text:
+                definitions.append(f"{path.relative_to(lib)}:{marker}")
+
+    assert definitions == ["widgets/mobile_kit.dart:class CryptoLogo"], (
+        "plusieurs widgets rendent un logo: " + ", ".join(definitions)
+    )
+
+    # Les tracés vectoriels ne vivent qu'à côté du widget partagé, en repli.
+    for name in ("_EthPainter", "_SolPainter"):
+        holders = [
+            str(path.relative_to(lib))
+            for path in lib.rglob("*.dart")
+            if f"class {name}" in path.read_text(encoding="utf-8")
+        ]
+        assert holders in ([], ["widgets/mobile_kit.dart"]), (
+            f"{name} défini ailleurs que dans le kit partagé: {holders}"
+        )

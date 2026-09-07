@@ -172,13 +172,20 @@ class _AssetTabs extends StatelessWidget {
                     ),
                   ),
                   child: Center(
-                    child: Text(
-                      asset,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: asset == selected ? mobileBlue : mobileMuted,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CryptoLogo(asset: asset, size: 22),
+                        const SizedBox(width: 8),
+                        Text(
+                          asset,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: asset == selected ? mobileBlue : mobileMuted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
