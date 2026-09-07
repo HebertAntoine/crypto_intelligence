@@ -169,7 +169,7 @@ class MobilePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxWidth: 310),
+      constraints: const BoxConstraints(maxWidth: 560),
       padding: EdgeInsets.symmetric(horizontal: dense ? 12 : 16, vertical: dense ? 5 : 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: filled ? 0.22 : 0.10),
@@ -184,6 +184,113 @@ class MobilePill extends StatelessWidget {
           color: color,
           fontSize: dense ? 14 : 16,
           fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class MobileNavDestination {
+  final IconData icon;
+  final String label;
+
+  const MobileNavDestination({required this.icon, required this.label});
+}
+
+class MobileBottomNav extends StatelessWidget {
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+  final List<MobileNavDestination> destinations;
+
+  const MobileBottomNav({
+    super.key,
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.destinations,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF07111D),
+        border: const Border(top: BorderSide(color: Color(0xFF1A3149), width: 1)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.38),
+            blurRadius: 24,
+            offset: const Offset(0, -10),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 134,
+          child: Row(
+            children: [
+              for (var i = 0; i < destinations.length; i += 1)
+                Expanded(
+                  child: _MobileNavItem(
+                    destination: destinations[i],
+                    selected: i == selectedIndex,
+                    onTap: () => onSelected(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MobileNavItem extends StatelessWidget {
+  final MobileNavDestination destination;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _MobileNavItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? mobileBlue : const Color(0xFFD3D9EF);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onTap,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: selected
+                  ? const Color(0xFF123E71).withValues(alpha: 0.86)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(destination.icon, color: color, size: selected ? 34 : 31),
+                const SizedBox(height: 8),
+                Text(
+                  destination.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: selected ? 18 : 17,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

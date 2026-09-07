@@ -87,7 +87,7 @@ class _KnowledgeScreenState extends State<KnowledgeScreen> {
                     claims: snapshot.data!['claims'] as Map<String, dynamic>?,
                     validation: snapshot.data!['validation'] as Map<String, dynamic>?,
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 90),
                   _HumanExamplesPanel(
                     dataset: snapshot.data!['dataset'] as Map<String, dynamic>?,
                   ),
