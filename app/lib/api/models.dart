@@ -303,6 +303,81 @@ class FamilyState {
       );
 }
 
+/// Qui achète et qui vend, décomposé par source mesurable.
+class PressureComponent {
+  final String name;
+  final String label;
+  final bool available;
+  final double? score;
+  final String detail;
+  final String source;
+  final String reason;
+
+  const PressureComponent({
+    required this.name,
+    required this.label,
+    required this.available,
+    required this.score,
+    required this.detail,
+    required this.source,
+    required this.reason,
+  });
+
+  factory PressureComponent.fromJson(Map<String, dynamic> json) =>
+      PressureComponent(
+        name: json['name'] as String? ?? '',
+        label: json['label'] as String? ?? '',
+        available: json['available'] as bool? ?? false,
+        score: (json['score'] as num?)?.toDouble(),
+        detail: json['detail'] as String? ?? '',
+        source: json['source'] as String? ?? '',
+        reason: json['reason'] as String? ?? '',
+      );
+}
+
+class MarketPressure {
+  /// 0 = vente totale, 50 = équilibre, 100 = achat total. Null si rien
+  /// n'est mesurable: une absence ne vaut pas un équilibre.
+  final double? balance;
+  final String label;
+  final List<PressureComponent> components;
+  final int measured;
+  final List<String> missing;
+  final String note;
+
+  const MarketPressure({
+    required this.balance,
+    required this.label,
+    required this.components,
+    required this.measured,
+    required this.missing,
+    required this.note,
+  });
+
+  static const unavailable = MarketPressure(
+    balance: null,
+    label: 'INDÉTERMINÉ',
+    components: [],
+    measured: 0,
+    missing: [],
+    note: '',
+  );
+
+  factory MarketPressure.fromJson(Map<String, dynamic> json) => MarketPressure(
+        balance: (json['balance'] as num?)?.toDouble(),
+        label: json['label'] as String? ?? 'INDÉTERMINÉ',
+        components: ((json['components'] as List?) ?? const [])
+            .map((item) =>
+                PressureComponent.fromJson((item as Map).cast<String, dynamic>()))
+            .toList(),
+        measured: (json['components_measured'] as num?)?.toInt() ?? 0,
+        missing: ((json['components_missing'] as List?) ?? const [])
+            .map((item) => '$item')
+            .toList(),
+        note: json['note'] as String? ?? '',
+      );
+}
+
 class TodayRead {
   final String asset;
   final MarketPriceRead? marketData;
@@ -335,6 +410,14 @@ class TodayRead {
   /// Faux dès qu'une entrée critique n'est plus utilisable.
   final bool allowsAction;
 
+  /// Pression achat / vente, décomposée par source.
+  final MarketPressure pressure;
+
+  /// Score de -100 à +100 du moteur de timing. Null quand il n'a pas pu
+  /// s'exécuter — ce qui était le cas tant que l'endpoint ne l'appelait pas.
+  final double? timingScore;
+  final String timingSummary;
+
   const TodayRead({
     required this.asset,
     required this.marketData,
@@ -358,6 +441,9 @@ class TodayRead {
     this.overallStatus = 'UNAVAILABLE',
     this.overallStatusReason = '',
     this.allowsAction = false,
+    this.pressure = MarketPressure.unavailable,
+    this.timingScore,
+    this.timingSummary = '',
   });
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
@@ -380,6 +466,13 @@ class TodayRead {
       overallStatus: json['overall_status'] as String? ?? 'UNAVAILABLE',
       overallStatusReason: json['overall_status_reason'] as String? ?? '',
       allowsAction: json['allows_action'] as bool? ?? false,
+      pressure: MarketPressure.fromJson(
+        ((json['market_pressure'] as Map?) ?? const {}).cast<String, dynamic>(),
+      ),
+      timingScore: ((json['entry_timing'] as Map?)?['timing_score'] as num?)
+          ?.toDouble(),
+      timingSummary:
+          (json['entry_timing'] as Map?)?['summary'] as String? ?? '',
       asset: json['asset'] as String? ?? '',
       marketData: json['market_data'] == null
           ? null

@@ -27,8 +27,8 @@
     "crowding": "NORMAL",
     "direction_confidence": "95.0",
     "edge_state": "NO_MEASURABLE_EDGE",
-    "entry_timing": "UNDETERMINED",
-    "generated_at": "2026-09-07T16:56:22.005265Z",
+    "entry_timing": "WAIT",
+    "generated_at": "2026-09-07T17:24:24.676616Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "BTC is strongly bullish, but we currently hold no robust directional edge.",
     "uncertainty": 40.0,
@@ -165,9 +165,92 @@
       "usable": true
     }
   },
+  "entry_timing": {
+    "asset": "BTC",
+    "confidence": 51.3,
+    "evidence_ids": [],
+    "explanation": "Entry timing is a weighted average of independent factors, each scored from -100 (poor moment) to +100 (good moment):\n\n  RSI 1h = 30.8 -> +29 (weight 2.0) - Neutral momentum zone\n  distance to EMA20 = +2.74% -> -16 (weight 1.8) - Price 78,824.65 vs EMA20 76,719.18\n  resistance proximity = 19.9% away -> +25 (weight 1.0) - Room before the next resistance\n  Bollinger position = 58% of band -> -13 (weight 1.2) - 0% = lower band, 100% = upper band\n  RSI daily = 61.6 -> -8 (weight 1.2) - Neutral momentum zone\n\n  weighted sum / total weight (7.2) = +3.9 -> WAIT\n  Note: an imminent scheduled macro release is applied as a CAP on the score (weight 0 above), never averaged in - it can only worsen the moment.\n\nThresholds: >= +45 VERY_FAVORABLE, >= +15 FAVORABLE, -15..+15 WAIT, <= -15 UNFAVORABLE, <= -45 VERY_UNFAVORABLE.",
+    "factors": [
+      {
+        "contribution": 29.09062039989921,
+        "detail": "Neutral momentum zone",
+        "favourable": true,
+        "name": "RSI 1h",
+        "value": "30.8",
+        "weight": 2.0
+      },
+      {
+        "contribution": -7.966394059884962,
+        "detail": "Neutral momentum zone",
+        "favourable": false,
+        "name": "RSI daily",
+        "value": "61.6",
+        "weight": 1.2
+      },
+      {
+        "contribution": -16.46632269041303,
+        "detail": "Price 78,824.65 vs EMA20 76,719.18",
+        "favourable": false,
+        "name": "distance to EMA20",
+        "value": "+2.74%",
+        "weight": 1.8
+      },
+      {
+        "contribution": -13.314144074755792,
+        "detail": "0% = lower band, 100% = upper band",
+        "favourable": false,
+        "name": "Bollinger position",
+        "value": "58% of band",
+        "weight": 1.2
+      },
+      {
+        "contribution": 25.0,
+        "detail": "Room before the next resistance",
+        "favourable": true,
+        "name": "resistance proximity",
+        "value": "19.9% away",
+        "weight": 1.0
+      }
+    ],
+    "freshness": "UNAVAILABLE",
+    "invalidation_level": 67124.15,
+    "invalidation_reason": "Daily close below the nearest support (2 touches from swing clustering) invalidates the constructive case",
+    "missing": [
+      "volume confirmation (current daily bar only 72% elapsed)",
+      "derivatives (funding / open interest)",
+      "ETF flows"
+    ],
+    "negatives": [
+      "distance to EMA20: +2.74% \u2014 Price 78,824.65 vs EMA20 76,719.18",
+      "Bollinger position: 58% of band \u2014 0% = lower band, 100% = upper band",
+      "RSI daily: 61.6 \u2014 Neutral momentum zone"
+    ],
+    "positives": [
+      "RSI 1h: 30.8 \u2014 Neutral momentum zone",
+      "resistance proximity: 19.9% away \u2014 Room before the next resistance"
+    ],
+    "risks": [],
+    "summary": "BTC entry timing WAIT (score +4). Main obstacle: distance to EMA20: +2.74% \u2014 Price 78,824.65 vs EMA20 76,719.18.",
+    "timing": "WAIT",
+    "timing_score": 3.9,
+    "zones_to_watch": [
+      {
+        "basis": "swing cluster, 3 touches",
+        "high": 94981.90345000334,
+        "label": "Nearest resistance",
+        "low": 94036.80988333665
+      },
+      {
+        "basis": "swing cluster, 2 touches",
+        "high": 67459.77074999998,
+        "label": "Nearest support",
+        "low": 66788.52924999999
+      }
+    ]
+  },
   "families": {
     "dvol": {
-      "age_seconds": 60982.0,
+      "age_seconds": 62664.7,
       "available": true,
       "family": "dvol",
       "freshness": "RECENT",
@@ -179,10 +262,10 @@
       "valid": true
     },
     "funding": {
-      "age_seconds": 3382.0,
+      "age_seconds": 5064.7,
       "available": true,
       "family": "funding",
-      "freshness": "LIVE",
+      "freshness": "RECENT",
       "observed_at": "2026-09-07T16:00:00.003000+00:00",
       "points": 7009,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
@@ -191,7 +274,7 @@
       "valid": true
     },
     "ohlcv_daily": {
-      "age_seconds": 60982.0,
+      "age_seconds": 62664.7,
       "available": true,
       "family": "ohlcv_daily",
       "freshness": "LIVE",
@@ -203,7 +286,7 @@
       "valid": true
     },
     "open_interest": {
-      "age_seconds": 60982.0,
+      "age_seconds": 62664.7,
       "available": true,
       "family": "open_interest",
       "freshness": "RECENT",
@@ -215,11 +298,11 @@
       "valid": true
     },
     "price": {
-      "age_seconds": 0.5,
+      "age_seconds": 0.8,
       "available": true,
       "family": "price",
       "freshness": "LIVE",
-      "observed_at": "2026-09-07T16:56:21.549718+00:00",
+      "observed_at": "2026-09-07T17:24:23.907824+00:00",
       "points": 3,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
       "source": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
@@ -253,77 +336,125 @@
     "state": "QUIET"
   },
   "market_data": {
-    "age_seconds": 0.000407,
-    "as_of": "2026-09-07T16:56:21.549718Z",
+    "age_seconds": 0.000336,
+    "as_of": "2026-09-07T17:24:23.907824Z",
     "asset": "BTC",
-    "change_24h_pct": -0.858,
-    "dispersion_pct": 0.0175,
-    "fetched_at": "2026-09-07T16:56:21.550125Z",
+    "change_24h_pct": -0.766,
+    "dispersion_pct": 0.0178,
+    "fetched_at": "2026-09-07T17:24:23.908160Z",
     "freshness": "LIVE",
-    "fx_rate": 0.8603758,
+    "fx_rate": 0.86043713,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T16:56:21.550045Z",
+    "fx_timestamp": "2026-09-07T17:24:23.908085Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 67960.28,
-    "price_usd": 78989.065,
+    "price_eur": 68055.04,
+    "price_usd": 79093.565,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": -0.858,
-        "fetched_at": "2026-09-07T16:56:21.548872Z",
+        "change_24h_pct": -0.766,
+        "fetched_at": "2026-09-07T17:24:23.907028Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 79000.01,
+        "price": 79106.0,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:21.548846Z",
+        "timestamp": "2026-09-07T17:24:23.907004Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:21.549436Z",
+        "fetched_at": "2026-09-07T17:24:23.907548Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 78989.065,
+        "price": 79093.565,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:21.549427Z",
+        "timestamp": "2026-09-07T17:24:23.907540Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:21.549727Z",
+        "fetched_at": "2026-09-07T17:24:23.907831Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 78986.2,
+        "price": 79091.9,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:21.549718Z",
+        "timestamp": "2026-09-07T17:24:23.907824Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:21.550051Z",
+        "fetched_at": "2026-09-07T17:24:23.908091Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 67960.28,
+        "price": 68055.04,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:21.550045Z",
+        "timestamp": "2026-09-07T17:24:23.908085Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T16:56:21.549718Z"
+    "timestamp": "2026-09-07T17:24:23.907824Z"
+  },
+  "market_pressure": {
+    "asset": "BTC",
+    "balance": 51.5,
+    "components": [
+      {
+        "available": true,
+        "detail": "+610 M$ sur 5 s\u00e9ances \u2014 achat net",
+        "label": "Institutions (ETF spot)",
+        "name": "institutions",
+        "reason": "derni\u00e8re publication 2026-09-03",
+        "score": 61.019999999999996,
+        "source": "farside, flux publi\u00e9s par \u00e9metteur"
+      },
+      {
+        "available": true,
+        "detail": "24e percentile \u2014 les shorts paient \u2014 pression vendeuse",
+        "label": "Levier (funding perp\u00e9tuel)",
+        "name": "levier",
+        "reason": "",
+        "score": -52.0,
+        "source": "funding.rate, percentile sur l'historique de l'actif"
+      },
+      {
+        "available": true,
+        "detail": "aucun mouvement de positionnement marqu\u00e9",
+        "label": "Positionnement (prix + open interest)",
+        "name": "positionnement",
+        "reason": "",
+        "score": 0.0,
+        "source": "bougies journali\u00e8res et open interest"
+      },
+      {
+        "available": false,
+        "detail": "",
+        "label": "Baleines (gros portefeuilles)",
+        "name": "baleines",
+        "reason": "aucun fournisseur on-chain n'est configur\u00e9. Suivre les gros portefeuilles demande un service payant; rien n'est estim\u00e9 \u00e0 la place.",
+        "score": null,
+        "source": "fournisseur on-chain"
+      }
+    ],
+    "components_measured": 3,
+    "components_missing": [
+      "Baleines (gros portefeuilles)"
+    ],
+    "label": "\u00c9QUILIBR\u00c9",
+    "note": "3 composante(s) mesur\u00e9e(s) sur 4. Une composante absente est retir\u00e9e du calcul, jamais compt\u00e9e comme neutre: ignorer n'est pas \u00e9quilibrer."
   },
   "overall_status": "LIVE",
   "overall_status_reason": "toutes les entr\u00e9es critiques sont dans leur cadence",

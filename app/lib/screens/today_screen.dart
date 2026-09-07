@@ -44,9 +44,10 @@ class _TodayScreenState extends State<TodayScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _future = _load();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) {
-      if (mounted) _reload();
-    });
+    // Pas de rechargement périodique: voir la page se reconstruire toute
+    // seule pendant qu'on la lit est désagréable et n'apporte rien. Le
+    // rafraîchissement se déclenche à l'ouverture, au retour au premier plan,
+    // au bouton Recharger et au tirage vers le bas.
   }
 
   @override
@@ -119,11 +120,11 @@ class _TodayScreenState extends State<TodayScreen>
                   onRefresh: _reload,
                 ),
                 const SizedBox(height: 20),
-                // The app bundles snapshots so it can render without a
-                // backend. A snapshot is a photograph of a past moment;
-                // showing it as "today" without saying so would be the
-                // one thing this project exists not to do.
-                _ProvenanceBanner(provenance: provenance),
+                // Le bandeau d'instantané a été retiré: la provenance et
+                // l'âge sont déjà portés par le sous-titre de l'en-tête et
+                // par la ligne de fraîcheur de chaque actif, qui sont
+                // recalculés contre l'horloge. Le répéter en tête de page
+                // n'ajoutait rien et occupait la première hauteur d'écran.
                 for (final read in reads) ...[
                   _MarketCard(read: read, provenance: provenance),
                   // Sans encadrement, c'est l'espace qui separe les trois
@@ -133,72 +134,6 @@ class _TodayScreenState extends State<TodayScreen>
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-/// Says plainly where the numbers came from and how old they are.
-class _ProvenanceBanner extends StatelessWidget {
-  final DataProvenance provenance;
-
-  const _ProvenanceBanner({required this.provenance});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!provenance.isSnapshot) return const SizedBox.shrink();
-
-    final stale = provenance.isStale;
-    final colour = stale ? AppColors.warn : mobileMuted;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: colour.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colour.withValues(alpha: 0.55), width: 1.2),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              stale ? Icons.history_toggle_off : Icons.snippet_folder_outlined,
-              color: colour,
-              size: 20,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    provenance.describe(),
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      color: colour,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    stale
-                        ? "Ces chiffres ne décrivent pas le marché actuel. Aucun "
-                            "backend n'est joignable depuis cette page."
-                        : "Aucun backend joignable: lecture issue de l'instantané "
-                            'intégré à la version publiée.',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: mobileMuted,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -266,9 +201,11 @@ class _TodayHeader extends StatelessWidget {
                 label: _formatFrenchDate(DateTime.now()),
                 onTap: () => _showDateInfo(context, provenance),
               ),
+              // Recharger plutôt que réglages: la question posée devant cet
+              // écran est « est-ce à jour », pas « quels réglages ».
               _SquareHeaderButton(
-                icon: Icons.settings_outlined,
-                onTap: () => _showSettings(context, provenance, onRefresh),
+                icon: Icons.refresh_rounded,
+                onTap: onRefresh,
               ),
             ],
           ),
@@ -297,54 +234,6 @@ class _TodayHeader extends StatelessWidget {
     );
   }
 
-  void _showSettings(
-    BuildContext context,
-    DataProvenance provenance,
-    VoidCallback onRefresh,
-  ) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: mobilePanel,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(22, 20, 22, 34),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Réglages de lecture',
-              style: TextStyle(
-                color: AppColors.text,
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              provenance.describe(),
-              style: const TextStyle(
-                color: mobileMuted,
-                fontSize: 15,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  onRefresh();
-                },
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Rafraîchir les données'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _MarketCard extends StatelessWidget {
@@ -378,6 +267,8 @@ class _MarketCard extends StatelessWidget {
               // La réponse directe est placée juste sous le régime, parce que
               // c'est la question que la page doit trancher.
               _EntryAnswerPanel(read: read),
+              const SizedBox(height: 14),
+              _PressurePanel(pressure: read.pressure),
               const SizedBox(height: 16),
               _MetricGrid(read: read),
               const SizedBox(height: 20),
@@ -876,9 +767,9 @@ class _EntryAnswerPanel extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'EST-CE UNE OPPORTUNITÉ D’ACHAT ?',
-                      style: TextStyle(
+                    Text(
+                      verdictQuestion(read),
+                      style: const TextStyle(
                         color: Color(0xFFB6C1D2),
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
@@ -911,6 +802,198 @@ class _EntryAnswerPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Qui achète, qui vend, et sur quelles sources.
+///
+/// La barre ne descend jamais d'une intuition: chaque composante affichée est
+/// une mesure, avec sa source. Ce qui manque est écrit comme manquant plutôt
+/// que compté comme neutre - ignorer n'est pas équilibrer.
+class _PressurePanel extends StatelessWidget {
+  final MarketPressure pressure;
+
+  const _PressurePanel({required this.pressure});
+
+  @override
+  Widget build(BuildContext context) {
+    final balance = pressure.balance;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF101927).withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF23364C)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'QUI ACHÈTE, QUI VEND',
+                  style: TextStyle(
+                    color: Color(0xFFB6C1D2),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+              ),
+              Text(
+                pressure.label,
+                style: TextStyle(
+                  color: _balanceColour(balance),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (balance == null)
+            const Text(
+              'Aucune composante mesurable: la pression du marché ne peut pas '
+              'être établie.',
+              style: TextStyle(color: mobileMuted, fontSize: 15),
+            )
+          else ...[
+            _PressureBar(balance: balance),
+            const SizedBox(height: 6),
+            const Row(
+              children: [
+                Text('Vente',
+                    style: TextStyle(color: AppColors.bad, fontSize: 13)),
+                Spacer(),
+                Text('Achat',
+                    style: TextStyle(
+                        color: AppColors.measured, fontSize: 13)),
+              ],
+            ),
+          ],
+          const SizedBox(height: 14),
+          for (final component in pressure.components)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Icon(
+                      component.available
+                          ? Icons.check_circle_outline
+                          : Icons.remove_circle_outline,
+                      size: 17,
+                      color: component.available
+                          ? _scoreColour(component.score)
+                          : AppColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          component.label,
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          component.available
+                              ? component.detail
+                              : component.reason,
+                          style: const TextStyle(
+                            color: mobileMuted,
+                            fontSize: 14,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (pressure.note.isNotEmpty)
+            Text(
+              pressure.note,
+              style: const TextStyle(
+                  color: mobileMuted, fontSize: 13, height: 1.3),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static Color _balanceColour(double? balance) {
+    if (balance == null) return AppColors.textMuted;
+    if (balance >= 58) return AppColors.measured;
+    if (balance <= 42) return AppColors.bad;
+    return AppColors.accent;
+  }
+
+  static Color _scoreColour(double? score) {
+    if (score == null) return AppColors.textMuted;
+    if (score > 15) return AppColors.measured;
+    if (score < -15) return AppColors.bad;
+    return AppColors.accent;
+  }
+}
+
+/// La barre elle-même: rouge à gauche, verte à droite, curseur sur l'équilibre.
+class _PressureBar extends StatelessWidget {
+  final double balance;
+
+  const _PressureBar({required this.balance});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final position = (balance.clamp(0, 100) / 100) * width;
+        return SizedBox(
+          height: 22,
+          child: Stack(
+            children: [
+              Container(
+                height: 14,
+                margin: const EdgeInsets.only(top: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(7),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.bad.withValues(alpha: 0.75),
+                      const Color(0xFF3A4A5E),
+                      AppColors.measured.withValues(alpha: 0.75),
+                    ],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: (position - 3).clamp(0.0, width - 6),
+                child: Container(
+                  width: 6,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: AppColors.text,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -1194,11 +1277,14 @@ class _DetailRows extends StatelessWidget {
               '${_uncertaintyLabel(read.uncertaintyLevel)}  ${read.uncertaintyScore.toStringAsFixed(0)}/100',
           valuePill: true,
           valueColor: _uncertaintyColor(read.uncertaintyLevel),
+          // 40/100 ne dit rien à qui ne connaît pas l'échelle: 0 = tout
+          // concorde, 100 = rien n'est fiable.
+          sideBody: _uncertaintyReading(read.uncertaintyScore),
         ),
         _InfoRow(
           icon: Icons.check_box_rounded,
           label: 'Moment d’entrée',
-          value: _entryTimingLabel(read.summary.entryTiming),
+          value: _timingValue(read),
         ),
       ],
     );
@@ -2097,9 +2183,32 @@ String _entryTimingLabel(String raw) => switch (raw.toUpperCase()) {
       // n'a pas pu trancher. Le rendre par « INDISPONIBLE » confondait les
       // deux, alors que la distinction est celle que tout le reste du système
       // défend — DONNÉES INSUFFISANTES reste juste au-dessus.
+      'WAIT' => 'ATTENDRE',
       'UNDETERMINED' => 'INDÉTERMINÉ',
       _ => raw.replaceAll('_', ' '),
     };
+
+/// Le libellé, plus le score quand le moteur a pu le calculer.
+String _timingValue(TodayRead read) {
+  final label = _entryTimingLabel(read.summary.entryTiming);
+  final score = read.timingScore;
+  if (score == null) return label;
+  return '$label · ${score >= 0 ? '+' : ''}${score.toStringAsFixed(0)}/100';
+}
+
+/// L'incertitude a besoin d'être lue, pas seulement affichée: 40/100 ne dit
+/// rien à qui ne connaît pas l'échelle.
+String _uncertaintyReading(double score) {
+  final lecture = score <= 25
+      ? 'lecture fiable'
+      : score <= 45
+          ? 'lecture exploitable'
+          : score <= 70
+              ? 'prudence, plusieurs éléments manquent ou se contredisent'
+              : 'lecture peu fiable';
+  return '0 = tout concorde, 100 = rien n’est fiable. À '
+      '${score.toStringAsFixed(0)}: $lecture.';
+}
 
 String _uncertaintyLabel(String raw) => switch (raw.toUpperCase()) {
       'LOW' => 'FAIBLE',
@@ -2115,9 +2224,29 @@ Color _uncertaintyColor(String raw) => switch (raw.toUpperCase()) {
       _ => AppColors.warn,
     };
 
+/// La phrase du moteur arrive en anglais: elle est reformulée ici plutôt que
+/// recopiée. Les chiffres viennent du payload, jamais du texte.
 String _edgeExplanation(TodayRead read) {
-  if (read.edgeStatement.isNotEmpty) return read.edgeStatement;
-  return 'Le signal est affiché seulement si les données backend l’ont validé. Sans edge mesurable, l’application garde une recommandation prudente.';
+  final teste = read.admittedCount + read.rejectedCount;
+  if (teste == 0) {
+    return 'Aucune relation candidate n’a encore été testée pour le '
+        '${read.asset}. Sans test, rien ne peut être affirmé dans un sens ou '
+        'dans l’autre.';
+  }
+  if (read.admittedCount == 0) {
+    return '$teste relation${teste > 1 ? 's' : ''} candidate'
+        '${teste > 1 ? 's ont' : ' a'} été testée${teste > 1 ? 's' : ''} pour '
+        'le ${read.asset}, et aucune n’a survécu à la correction pour tests '
+        'multiples, à la taille d’échantillon minimale, au seuil de taille '
+        'd’effet et au contrôle de stabilité. Il n’existe donc aucune capacité '
+        'démontrée à prévoir les rendements futurs. Cela ne dit rien de la '
+        'direction que prendra le marché — seulement que nous ne pouvons pas '
+        'prétendre la connaître.';
+  }
+  return '${read.admittedCount} relation${read.admittedCount > 1 ? 's' : ''} '
+      'sur $teste testée${teste > 1 ? 's' : ''} a survécu à l’ensemble des '
+      'filtres. Un avantage mesuré reste une propriété historique: il ne '
+      'garantit pas le prochain mouvement.';
 }
 
 String _sentenceCase(String value) {

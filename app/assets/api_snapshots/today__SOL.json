@@ -27,8 +27,8 @@
     "crowding": "NORMAL",
     "direction_confidence": "90.0",
     "edge_state": "NO_MEASURABLE_EDGE",
-    "entry_timing": "UNDETERMINED",
-    "generated_at": "2026-09-07T16:56:49.709045Z",
+    "entry_timing": "WAIT",
+    "generated_at": "2026-09-07T17:24:52.982469Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "SOL is strongly bullish, but we currently hold no robust directional edge.",
     "uncertainty": 43.0,
@@ -239,6 +239,105 @@
       "usable": true
     }
   },
+  "entry_timing": {
+    "asset": "SOL",
+    "confidence": 62.0,
+    "evidence_ids": [],
+    "explanation": "Entry timing is a weighted average of independent factors, each scored from -100 (poor moment) to +100 (good moment):\n\n  distance to EMA20 = +5.29% -> -32 (weight 1.8) - Price 103.53 vs EMA20 98.33\n  RSI 1h = 38.1 -> +20 (weight 2.0) - Neutral momentum zone\n  Bollinger position = 65% of band -> -25 (weight 1.2) - 0% = lower band, 100% = upper band\n  resistance proximity = 39.8% away -> +25 (weight 1.0) - Room before the next resistance\n  RSI divergence (1h) = bearish -> -17 (weight 1.3) - strength 48/100\n  RSI daily = 62.3 -> -9 (weight 1.2) - Neutral momentum zone\n\n  weighted sum / total weight (8.5) = -6.3 -> WAIT\n  Note: an imminent scheduled macro release is applied as a CAP on the score (weight 0 above), never averaged in - it can only worsen the moment.\n\nThresholds: >= +45 VERY_FAVORABLE, >= +15 FAVORABLE, -15..+15 WAIT, <= -15 UNFAVORABLE, <= -45 VERY_UNFAVORABLE.",
+    "factors": [
+      {
+        "contribution": 20.310714830932415,
+        "detail": "Neutral momentum zone",
+        "favourable": true,
+        "name": "RSI 1h",
+        "value": "38.1",
+        "weight": 2.0
+      },
+      {
+        "contribution": -8.714804419984945,
+        "detail": "Neutral momentum zone",
+        "favourable": false,
+        "name": "RSI daily",
+        "value": "62.3",
+        "weight": 1.2
+      },
+      {
+        "contribution": -31.75492454840898,
+        "detail": "Price 103.53 vs EMA20 98.33",
+        "favourable": false,
+        "name": "distance to EMA20",
+        "value": "+5.29%",
+        "weight": 1.8
+      },
+      {
+        "contribution": -24.7230108515349,
+        "detail": "0% = lower band, 100% = upper band",
+        "favourable": false,
+        "name": "Bollinger position",
+        "value": "65% of band",
+        "weight": 1.2
+      },
+      {
+        "contribution": 25.0,
+        "detail": "Room before the next resistance",
+        "favourable": true,
+        "name": "resistance proximity",
+        "value": "39.8% away",
+        "weight": 1.0
+      },
+      {
+        "contribution": -16.905,
+        "detail": "strength 48/100",
+        "favourable": false,
+        "name": "RSI divergence (1h)",
+        "value": "bearish",
+        "weight": 1.3
+      }
+    ],
+    "freshness": "UNAVAILABLE",
+    "invalidation_level": 90.995,
+    "invalidation_reason": "Daily close below the nearest support (2 touches from swing clustering) invalidates the constructive case",
+    "missing": [
+      "volume confirmation (current daily bar only 73% elapsed)",
+      "derivatives (funding / open interest)"
+    ],
+    "negatives": [
+      "distance to EMA20: +5.29% \u2014 Price 103.53 vs EMA20 98.33",
+      "Bollinger position: 65% of band \u2014 0% = lower band, 100% = upper band",
+      "RSI divergence (1h): bearish \u2014 strength 48/100",
+      "RSI daily: 62.3 \u2014 Neutral momentum zone"
+    ],
+    "positives": [
+      "RSI 1h: 38.1 \u2014 Neutral momentum zone",
+      "resistance proximity: 39.8% away \u2014 Room before the next resistance"
+    ],
+    "risks": [
+      "Bearish RSI divergence on 1h (strength 48)"
+    ],
+    "summary": "SOL entry timing WAIT (score -6). Main obstacle: distance to EMA20: +5.29% \u2014 Price 103.53 vs EMA20 98.33.",
+    "timing": "WAIT",
+    "timing_score": -6.3,
+    "zones_to_watch": [
+      {
+        "basis": "swing cluster, 2 touches",
+        "high": 145.498875,
+        "label": "Nearest resistance",
+        "low": 144.051125
+      },
+      {
+        "basis": "swing cluster, 2 touches",
+        "high": 91.449975,
+        "label": "Nearest support",
+        "low": 90.540025
+      },
+      {
+        "basis": "20-day EMA, computed from candles",
+        "high": 99.30936437867456,
+        "label": "Pullback zone (EMA20 area)",
+        "low": 97.34284231177011
+      }
+    ]
+  },
   "families": {
     "dvol": {
       "age_seconds": null,
@@ -253,10 +352,10 @@
       "valid": false
     },
     "funding": {
-      "age_seconds": 3409.7,
+      "age_seconds": 5093.0,
       "available": true,
       "family": "funding",
-      "freshness": "LIVE",
+      "freshness": "RECENT",
       "observed_at": "2026-09-07T16:00:00.003000+00:00",
       "points": 6631,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
@@ -265,7 +364,7 @@
       "valid": true
     },
     "ohlcv_daily": {
-      "age_seconds": 61009.7,
+      "age_seconds": 62693.0,
       "available": true,
       "family": "ohlcv_daily",
       "freshness": "LIVE",
@@ -277,7 +376,7 @@
       "valid": true
     },
     "open_interest": {
-      "age_seconds": 61009.7,
+      "age_seconds": 62693.0,
       "available": true,
       "family": "open_interest",
       "freshness": "RECENT",
@@ -289,11 +388,11 @@
       "valid": true
     },
     "price": {
-      "age_seconds": 0.4,
+      "age_seconds": 0.6,
       "available": true,
       "family": "price",
       "freshness": "LIVE",
-      "observed_at": "2026-09-07T16:56:49.327227+00:00",
+      "observed_at": "2026-09-07T17:24:52.379218+00:00",
       "points": 3,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
       "source": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
@@ -327,77 +426,126 @@
     "state": "DELEVERAGING"
   },
   "market_data": {
-    "age_seconds": 0.000437,
-    "as_of": "2026-09-07T16:56:49.327227Z",
+    "age_seconds": 0.00042,
+    "as_of": "2026-09-07T17:24:52.379218Z",
     "asset": "SOL",
-    "change_24h_pct": -2.085,
-    "dispersion_pct": 0.0193,
-    "fetched_at": "2026-09-07T16:56:49.327664Z",
+    "change_24h_pct": -2.089,
+    "dispersion_pct": 0.0144,
+    "fetched_at": "2026-09-07T17:24:52.379638Z",
     "freshness": "LIVE",
-    "fx_rate": 0.86015704,
+    "fx_rate": 0.86016338,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T16:56:49.327564Z",
+    "fx_timestamp": "2026-09-07T17:24:52.379539Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 89.28,
-    "price_usd": 103.795,
+    "price_eur": 89.5,
+    "price_usd": 104.05,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": -2.085,
-        "fetched_at": "2026-09-07T16:56:49.326296Z",
+        "change_24h_pct": -2.089,
+        "fetched_at": "2026-09-07T17:24:52.378307Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 103.8,
+        "price": 104.06,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:49.326272Z",
+        "timestamp": "2026-09-07T17:24:52.378285Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:49.326895Z",
+        "fetched_at": "2026-09-07T17:24:52.378896Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 103.795,
+        "price": 104.045,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:49.326885Z",
+        "timestamp": "2026-09-07T17:24:52.378886Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:49.327234Z",
+        "fetched_at": "2026-09-07T17:24:52.379225Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 103.78,
+        "price": 104.05,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:49.327227Z",
+        "timestamp": "2026-09-07T17:24:52.379218Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:49.327571Z",
+        "fetched_at": "2026-09-07T17:24:52.379548Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 89.28,
+        "price": 89.5,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:49.327564Z",
+        "timestamp": "2026-09-07T17:24:52.379539Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T16:56:49.327227Z"
+    "timestamp": "2026-09-07T17:24:52.379218Z"
+  },
+  "market_pressure": {
+    "asset": "SOL",
+    "balance": 40.7,
+    "components": [
+      {
+        "available": false,
+        "detail": "",
+        "label": "Institutions (ETF spot)",
+        "name": "institutions",
+        "reason": "aucun ETF spot SOL n'existe, donc aucun flux \u00e0 mesurer",
+        "score": null,
+        "source": "farside, flux publi\u00e9s par \u00e9metteur"
+      },
+      {
+        "available": true,
+        "detail": "31e percentile \u2014 aucun c\u00f4t\u00e9 ne paie franchement",
+        "label": "Levier (funding perp\u00e9tuel)",
+        "name": "levier",
+        "reason": "",
+        "score": -37.2,
+        "source": "funding.rate, percentile sur l'historique de l'actif"
+      },
+      {
+        "available": true,
+        "detail": "r\u00e9duction du levier des deux c\u00f4t\u00e9s",
+        "label": "Positionnement (prix + open interest)",
+        "name": "positionnement",
+        "reason": "",
+        "score": 0.0,
+        "source": "bougies journali\u00e8res et open interest"
+      },
+      {
+        "available": false,
+        "detail": "",
+        "label": "Baleines (gros portefeuilles)",
+        "name": "baleines",
+        "reason": "aucun fournisseur on-chain n'est configur\u00e9. Suivre les gros portefeuilles demande un service payant; rien n'est estim\u00e9 \u00e0 la place.",
+        "score": null,
+        "source": "fournisseur on-chain"
+      }
+    ],
+    "components_measured": 2,
+    "components_missing": [
+      "Institutions (ETF spot)",
+      "Baleines (gros portefeuilles)"
+    ],
+    "label": "VENTE L\u00c9G\u00c8RE",
+    "note": "2 composante(s) mesur\u00e9e(s) sur 4. Une composante absente est retir\u00e9e du calcul, jamais compt\u00e9e comme neutre: ignorer n'est pas \u00e9quilibrer."
   },
   "overall_status": "DEGRADED",
   "overall_status_reason": "entr\u00e9es optionnelles manquantes sur: volatility",

@@ -198,6 +198,47 @@ def _family_states(asset: Asset, market: dict[str, Any] | None) -> dict[str, Any
     return states
 
 
+def _timing_context(asset: Asset) -> dict[str, Any]:
+    """Snapshots techniques nécessaires au moteur de timing d'entrée.
+
+    Le moteur existe et calcule un score de -100 à +100 avec ses facteurs
+    nommés. `/today` ne le lui demandait simplement jamais: il appelait
+    `build_decision_summary` sans `timing=`, donc l'entrée restait
+    UNDETERMINED alors que le calcul était disponible. Même famille d'oubli que
+    le régime, corrigée plus tôt.
+    """
+    from ..core.enums import Timeframe
+    from ..core.models import Candle, OHLCVSeries, Provenance
+    from ..engines.technical.engine import TechnicalAnalysisEngine
+    from ..history import store
+
+    engine = TechnicalAnalysisEngine()
+    snapshots: dict[Timeframe, Any] = {}
+    for timeframe in (Timeframe.D1, Timeframe.H4, Timeframe.H1):
+        df = store.load_candles(asset, timeframe)
+        if df.empty or len(df) < 60:
+            continue
+        candles = [
+            Candle(
+                timestamp=ts, open=row.open, high=row.high, low=row.low,
+                close=row.close, volume=row.volume,
+            )
+            for ts, row in df.tail(400).iterrows()
+        ]
+        try:
+            snapshots[timeframe] = engine.analyze(
+                OHLCVSeries(
+                    asset=asset, timeframe=timeframe, candles=candles,
+                    provenance=Provenance(
+                        source="local history", provider="ohlcv_store"
+                    ),
+                )
+            )
+        except (ValueError, KeyError) as exc:
+            log.warning("timing_snapshot_failed", timeframe=timeframe.value, error=str(exc))
+    return {"snapshots": snapshots}
+
+
 @router.get("/today/{symbol}")
 async def today(symbol: str) -> dict[str, Any]:
     """The decision summary: direction, timing, edge, crowding, uncertainty.
@@ -255,12 +296,34 @@ async def today(symbol: str) -> dict[str, Any]:
         uncertainty = UncertaintyEngine().assess(
             asset, edge, regime=regime, crowding=crowding, freshness=freshness_map,
         )
+        # Le moteur de timing reçoit enfin ses entrées: sans elles il
+        # renvoyait UNDETERMINED, ce que l'écran affichait comme si la question
+        # n'avait pas de réponse alors qu'elle n'avait pas été posée.
+        from ..engines.entry_timing import EntryTimingEngine
+
+        timing = EntryTimingEngine().assess(asset, _timing_context(asset))
         summary = build_decision_summary(
-            asset, edge, uncertainty, regime=regime, crowding=crowding, volatility=vol
+            asset, edge, uncertainty, regime=regime, timing=timing,
+            crowding=crowding, volatility=vol,
+        )
+
+        from ..engines.market_pressure import assess_pressure
+
+        pressure = assess_pressure(
+            asset,
+            funding_percentile=funding.percentile,
+            funding_usable=families["funding"].usable if "funding" in families else False,
+            leverage_state=str(getattr(leverage_state, "state", "")),
+            positioning_usable=(
+                families["open_interest"].usable
+                if "open_interest" in families else False
+            ),
         )
 
         return {
             "asset": asset.value,
+            "entry_timing": timing.model_dump(mode="json"),
+            "market_pressure": pressure.to_dict(),
             "overall_status": status.value,
             "overall_status_reason": status_reason,
             "allows_action": status.allows_action,

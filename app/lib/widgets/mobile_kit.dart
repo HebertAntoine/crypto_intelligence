@@ -485,7 +485,18 @@ class CryptoLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(child: meta.logoBuilder(size)),
+      // Le logo officiel s'il est fourni, le tracé vectoriel sinon. Un
+      // fichier manquant ne doit jamais laisser un rond vide: `errorBuilder`
+      // ramène au dessin plutôt que d'afficher une icône cassée.
+      child: Center(
+        child: Image.asset(
+          'assets/logos/${asset.toLowerCase()}.png',
+          width: size * 0.62,
+          height: size * 0.62,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stack) => meta.logoBuilder(size),
+        ),
+      ),
     );
   }
 }

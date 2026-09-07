@@ -27,8 +27,8 @@
     "crowding": "NORMAL",
     "direction_confidence": "100.0",
     "edge_state": "NO_MEASURABLE_EDGE",
-    "entry_timing": "UNDETERMINED",
-    "generated_at": "2026-09-07T16:56:35.874873Z",
+    "entry_timing": "WAIT",
+    "generated_at": "2026-09-07T17:24:38.897800Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "ETH is strongly bullish, but we currently hold no robust directional edge.",
     "uncertainty": 40.0,
@@ -309,9 +309,107 @@
       "usable": true
     }
   },
+  "entry_timing": {
+    "asset": "ETH",
+    "confidence": 58.0,
+    "evidence_ids": [],
+    "explanation": "Entry timing is a weighted average of independent factors, each scored from -100 (poor moment) to +100 (good moment):\n\n  MACD divergence (1d) = hidden bullish -> +35 (weight 1.3) - strength 100/100\n  distance to EMA20 = +3.72% -> -22 (weight 1.8) - Price 2,471.65 vs EMA20 2,383.05\n  RSI 1h = 38.6 -> +20 (weight 2.0) - Neutral momentum zone\n  resistance proximity = 23.6% away -> +25 (weight 1.0) - Room before the next resistance\n  Bollinger position = 59% of band -> -15 (weight 1.2) - 0% = lower band, 100% = upper band\n  RSI daily = 61.6 -> -8 (weight 1.2) - Neutral momentum zone\n\n  weighted sum / total weight (8.5) = +4.9 -> WAIT\n  Note: an imminent scheduled macro release is applied as a CAP on the score (weight 0 above), never averaged in - it can only worsen the moment.\n\nThresholds: >= +45 VERY_FAVORABLE, >= +15 FAVORABLE, -15..+15 WAIT, <= -15 UNFAVORABLE, <= -45 VERY_UNFAVORABLE.",
+    "factors": [
+      {
+        "contribution": 19.662197767385706,
+        "detail": "Neutral momentum zone",
+        "favourable": true,
+        "name": "RSI 1h",
+        "value": "38.6",
+        "weight": 2.0
+      },
+      {
+        "contribution": -7.931174290002863,
+        "detail": "Neutral momentum zone",
+        "favourable": false,
+        "name": "RSI daily",
+        "value": "61.6",
+        "weight": 1.2
+      },
+      {
+        "contribution": -22.306625731312337,
+        "detail": "Price 2,471.65 vs EMA20 2,383.05",
+        "favourable": false,
+        "name": "distance to EMA20",
+        "value": "+3.72%",
+        "weight": 1.8
+      },
+      {
+        "contribution": -15.08276254772518,
+        "detail": "0% = lower band, 100% = upper band",
+        "favourable": false,
+        "name": "Bollinger position",
+        "value": "59% of band",
+        "weight": 1.2
+      },
+      {
+        "contribution": 25.0,
+        "detail": "Room before the next resistance",
+        "favourable": true,
+        "name": "resistance proximity",
+        "value": "23.6% away",
+        "weight": 1.0
+      },
+      {
+        "contribution": 35.0,
+        "detail": "strength 100/100",
+        "favourable": true,
+        "name": "MACD divergence (1d)",
+        "value": "hidden bullish",
+        "weight": 1.3
+      }
+    ],
+    "freshness": "UNAVAILABLE",
+    "invalidation_level": 2199.01,
+    "invalidation_reason": "Daily close below the nearest support (2 touches from swing clustering) invalidates the constructive case",
+    "missing": [
+      "volume confirmation (current daily bar only 72% elapsed)",
+      "derivatives (funding / open interest)",
+      "ETF flows"
+    ],
+    "negatives": [
+      "distance to EMA20: +3.72% \u2014 Price 2,471.65 vs EMA20 2,383.05",
+      "Bollinger position: 59% of band \u2014 0% = lower band, 100% = upper band",
+      "RSI daily: 61.6 \u2014 Neutral momentum zone"
+    ],
+    "positives": [
+      "MACD divergence (1d): hidden bullish \u2014 strength 100/100",
+      "RSI 1h: 38.6 \u2014 Neutral momentum zone",
+      "resistance proximity: 23.6% away \u2014 Room before the next resistance"
+    ],
+    "risks": [],
+    "summary": "ETH entry timing WAIT (score +5). Main obstacle: distance to EMA20: +3.72% \u2014 Price 2,471.65 vs EMA20 2,383.05.",
+    "timing": "WAIT",
+    "timing_score": 4.9,
+    "zones_to_watch": [
+      {
+        "basis": "swing cluster, 2 touches",
+        "high": 3071.1041249999994,
+        "label": "Nearest resistance",
+        "low": 3040.545875
+      },
+      {
+        "basis": "swing cluster, 2 touches",
+        "high": 2210.00505,
+        "label": "Nearest support",
+        "low": 2188.01495
+      },
+      {
+        "basis": "20-day EMA, computed from candles",
+        "high": 2406.8840633663767,
+        "label": "Pullback zone (EMA20 area)",
+        "low": 2359.2229928046663
+      }
+    ]
+  },
   "families": {
     "dvol": {
-      "age_seconds": 60995.9,
+      "age_seconds": 62678.9,
       "available": true,
       "family": "dvol",
       "freshness": "RECENT",
@@ -323,10 +421,10 @@
       "valid": true
     },
     "funding": {
-      "age_seconds": 3395.9,
+      "age_seconds": 5078.9,
       "available": true,
       "family": "funding",
-      "freshness": "LIVE",
+      "freshness": "RECENT",
       "observed_at": "2026-09-07T16:00:00.003000+00:00",
       "points": 7009,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
@@ -335,7 +433,7 @@
       "valid": true
     },
     "ohlcv_daily": {
-      "age_seconds": 60995.9,
+      "age_seconds": 62678.9,
       "available": true,
       "family": "ohlcv_daily",
       "freshness": "LIVE",
@@ -347,7 +445,7 @@
       "valid": true
     },
     "open_interest": {
-      "age_seconds": 60995.9,
+      "age_seconds": 62678.9,
       "available": true,
       "family": "open_interest",
       "freshness": "RECENT",
@@ -359,11 +457,11 @@
       "valid": true
     },
     "price": {
-      "age_seconds": 0.5,
+      "age_seconds": 0.7,
       "available": true,
       "family": "price",
       "freshness": "LIVE",
-      "observed_at": "2026-09-07T16:56:35.408618+00:00",
+      "observed_at": "2026-09-07T17:24:38.183074+00:00",
       "points": 3,
       "reason": "pr\u00e9sente, valide et dans sa cadence",
       "source": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
@@ -397,77 +495,125 @@
     "state": "QUIET"
   },
   "market_data": {
-    "age_seconds": 0.000562,
-    "as_of": "2026-09-07T16:56:35.408618Z",
+    "age_seconds": 0.000437,
+    "as_of": "2026-09-07T17:24:38.183074Z",
     "asset": "ETH",
-    "change_24h_pct": -0.046,
-    "dispersion_pct": 0.0288,
-    "fetched_at": "2026-09-07T16:56:35.409180Z",
+    "change_24h_pct": -0.088,
+    "dispersion_pct": 0.0424,
+    "fetched_at": "2026-09-07T17:24:38.183511Z",
     "freshness": "LIVE",
-    "fx_rate": 0.86033786,
+    "fx_rate": 0.86024776,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T16:56:35.409062Z",
+    "fx_timestamp": "2026-09-07T17:24:38.183407Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 2134.395,
-    "price_usd": 2480.88,
+    "price_eur": 2140.89,
+    "price_usd": 2488.69,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": -0.046,
-        "fetched_at": "2026-09-07T16:56:35.407653Z",
+        "change_24h_pct": -0.088,
+        "fetched_at": "2026-09-07T17:24:38.182157Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2481.43,
+        "price": 2489.14,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:35.407631Z",
+        "timestamp": "2026-09-07T17:24:38.182133Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:35.408276Z",
+        "fetched_at": "2026-09-07T17:24:38.182744Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2480.715,
+        "price": 2488.085,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:35.408266Z",
+        "timestamp": "2026-09-07T17:24:38.182732Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:35.408628Z",
+        "fetched_at": "2026-09-07T17:24:38.183083Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2480.88,
+        "price": 2488.69,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:35.408618Z",
+        "timestamp": "2026-09-07T17:24:38.183074Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T16:56:35.409071Z",
+        "fetched_at": "2026-09-07T17:24:38.183415Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2134.395,
+        "price": 2140.89,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T16:56:35.409062Z",
+        "timestamp": "2026-09-07T17:24:38.183407Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T16:56:35.408618Z"
+    "timestamp": "2026-09-07T17:24:38.183074Z"
+  },
+  "market_pressure": {
+    "asset": "ETH",
+    "balance": 47.0,
+    "components": [
+      {
+        "available": true,
+        "detail": "+274 M$ sur 5 s\u00e9ances \u2014 achat net",
+        "label": "Institutions (ETF spot)",
+        "name": "institutions",
+        "reason": "derni\u00e8re publication 2026-09-03",
+        "score": 27.400000000000002,
+        "source": "farside, flux publi\u00e9s par \u00e9metteur"
+      },
+      {
+        "available": true,
+        "detail": "27e percentile \u2014 les shorts paient \u2014 pression vendeuse",
+        "label": "Levier (funding perp\u00e9tuel)",
+        "name": "levier",
+        "reason": "",
+        "score": -45.2,
+        "source": "funding.rate, percentile sur l'historique de l'actif"
+      },
+      {
+        "available": true,
+        "detail": "aucun mouvement de positionnement marqu\u00e9",
+        "label": "Positionnement (prix + open interest)",
+        "name": "positionnement",
+        "reason": "",
+        "score": 0.0,
+        "source": "bougies journali\u00e8res et open interest"
+      },
+      {
+        "available": false,
+        "detail": "",
+        "label": "Baleines (gros portefeuilles)",
+        "name": "baleines",
+        "reason": "aucun fournisseur on-chain n'est configur\u00e9. Suivre les gros portefeuilles demande un service payant; rien n'est estim\u00e9 \u00e0 la place.",
+        "score": null,
+        "source": "fournisseur on-chain"
+      }
+    ],
+    "components_measured": 3,
+    "components_missing": [
+      "Baleines (gros portefeuilles)"
+    ],
+    "label": "\u00c9QUILIBR\u00c9",
+    "note": "3 composante(s) mesur\u00e9e(s) sur 4. Une composante absente est retir\u00e9e du calcul, jamais compt\u00e9e comme neutre: ignorer n'est pas \u00e9quilibrer."
   },
   "overall_status": "LIVE",
   "overall_status_reason": "toutes les entr\u00e9es critiques sont dans leur cadence",
