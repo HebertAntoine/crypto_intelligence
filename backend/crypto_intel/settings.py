@@ -36,7 +36,10 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8100
     cors_origins: str = "http://localhost:5273,http://127.0.0.1:5273"
-    scheduler_enabled: bool = False
+    # Actif par defaut: sans lui, rien ne rafraichit les series et la page
+    # affiche des percentiles corrects calcules sur des observations vieilles
+    # d'un jour. Mettre SCHEDULER_ENABLED=false pour une commande ponctuelle.
+    scheduler_enabled: bool = True
 
     # --- llm --------------------------------------------------------------
     llm_provider: str = "none"

@@ -169,6 +169,50 @@ async def job_ohlcv_sync() -> None:
     _record("ohlcv_sync", not errors, "; ".join(errors))
 
 
+async def job_derivatives_sync() -> None:
+    """Keep funding, open interest and DVOL current.
+
+    These three had no job at all. The history was deep - 7006 funding points,
+    2223 open-interest points - and stopped moving, so the page showed a
+    perfectly valid percentile computed over a series whose last observation
+    was a day old. Depth is not freshness, and nothing was refreshing it.
+    """
+    from .history.backfill import backfill_funding, backfill_open_interest
+    from .providers.derivatives.multi_exchange import backfill_bybit_open_interest
+    from .providers.volatility.deribit import backfill_dvol
+
+    errors: list[str] = []
+    for asset in Asset.tradables():
+        try:
+            # Peu de requetes: on complete le recent, pas l'historique.
+            await backfill_funding(asset, max_requests=3, depth_days=3)
+        except Exception as exc:
+            errors.append(f"funding/{asset.value}: {exc}")
+        # Deux series d'open interest coexistent et ne sont jamais fusionnees:
+        # Binance publie une valeur notionnelle sur ~30 jours, Bybit un nombre
+        # de contrats sur plusieurs annees. Les moteurs lisent la plus longue,
+        # donc rafraichir uniquement la Binance laissait la serie consommee
+        # figee - c'est exactement ce qui se passait.
+        try:
+            await backfill_open_interest(asset)
+        except Exception as exc:
+            errors.append(f"oi_binance/{asset.value}: {exc}")
+        try:
+            await backfill_bybit_open_interest(asset, max_requests=1)
+        except Exception as exc:
+            errors.append(f"oi_bybit/{asset.value}: {exc}")
+
+    # Deribit publishes DVOL for BTC and ETH only; SOL has no series and none
+    # is invented for it.
+    for asset in (Asset.BTC, Asset.ETH):
+        try:
+            await backfill_dvol(asset, max_pages=1, window_days=7)
+        except Exception as exc:
+            errors.append(f"dvol/{asset.value}: {exc}")
+
+    _record("derivatives_sync", not errors, "; ".join(errors))
+
+
 async def job_etf_sync() -> None:
     """ETF flows publish once a day; check a few times, not continuously."""
     from .providers.base import FetchRequest
@@ -242,6 +286,7 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
         ("market", job_market_only, 5),
         ("analysis", job_analysis, 30),
         ("ohlcv_sync", job_ohlcv_sync, 60),
+        ("derivatives_sync", job_derivatives_sync, 60),
         ("etf_sync", job_etf_sync, 240),
         ("evaluate", job_evaluate, 60),
         ("purge", job_purge, 1440),
@@ -251,7 +296,8 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
     for job_id, func, minutes in jobs:
         # Stagger first runs so startup does not fire every job at once.
         offset = {"market": 1, "analysis": 2, "ohlcv_sync": 5,
-                  "etf_sync": 8, "evaluate": 11, "purge": 20}[job_id]
+                  "derivatives_sync": 6, "etf_sync": 8, "evaluate": 11,
+                  "purge": 20}[job_id]
         scheduler.add_job(
             func,
             IntervalTrigger(minutes=minutes),

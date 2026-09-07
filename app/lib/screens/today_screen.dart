@@ -25,22 +25,45 @@ class TodayScreen extends StatefulWidget {
   State<TodayScreen> createState() => _TodayScreenState();
 }
 
-class _TodayScreenState extends State<TodayScreen> {
+class _TodayScreenState extends State<TodayScreen>
+    with WidgetsBindingObserver {
   late Future<List<TodayRead>> _future;
   Timer? _refreshTimer;
+  DateTime _lastFetch = DateTime.fromMillisecondsSinceEpoch(0);
 
   static const _assets = ['BTC', 'ETH', 'SOL'];
+
+  /// En dessous, un retour au premier plan ne relance pas d'appel: revenir
+  /// dans l'app trois fois en dix secondes ne doit pas produire trois séries
+  /// de requêtes.
+  static const _minimumBetweenFetches = Duration(seconds: 10);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _future = _load();
     _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) {
       if (mounted) _reload();
     });
   }
 
-  Future<List<TodayRead>> _load() => widget.client.todayAll(_assets);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // L'analyse est refaite au retour au premier plan: rouvrir l'app doit
+    // donner l'état du moment, pas celui de la dernière fois qu'on l'a
+    // quittée.
+    if (state == AppLifecycleState.resumed && mounted) {
+      if (DateTime.now().difference(_lastFetch) >= _minimumBetweenFetches) {
+        _reload();
+      }
+    }
+  }
+
+  Future<List<TodayRead>> _load() {
+    _lastFetch = DateTime.now();
+    return widget.client.todayAll(_assets);
+  }
 
   void _reload() {
     setState(() => _future = _load());
@@ -59,6 +82,7 @@ class _TodayScreenState extends State<TodayScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     super.dispose();
   }
@@ -444,7 +468,9 @@ class _MarketCard extends StatelessWidget {
               label: 'Source',
               value: read.directionSource.isEmpty
                   ? 'Non précisée'
-                  : read.directionSource,
+                  : 'Régime de prix simplifié: tendance, position EMA, '
+                      'momentum, ADX. Ce n’est pas le moteur de régime '
+                      'multi-domaines complet, qui exige un cycle de pipeline.',
             ),
             _TodaySheetLine(
               label: 'Edge',
@@ -1129,139 +1155,62 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 620;
-        final leading = Row(
-          children: [
-            SizedBox(
-                width: 54, child: Icon(icon, color: AppColors.text, size: 30)),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 20),
-              ),
-            ),
-            if (compact)
-              IconButton(
-                tooltip: 'Détail',
-                icon: const Icon(Icons.info_outline_rounded,
-                    color: AppColors.text, size: 22),
-                onPressed: () => _showInfo(context),
-              ),
-          ],
-        );
-
-        final valueWidget = Align(
-          alignment: compact ? Alignment.centerLeft : Alignment.centerRight,
-          child: valuePill
-              ? _OutlinePill(label: value, color: valueColor, dense: true)
-              : Text(
-                  value,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: compact ? TextAlign.left : TextAlign.right,
-                  style: const TextStyle(
-                    color: AppColors.text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-        );
-
-        if (compact) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 9),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                leading,
-                Padding(
-                  padding: const EdgeInsets.only(left: 54),
-                  child: valueWidget,
-                ),
-                if (sideTitle != null || sideBody != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 54, top: 8),
-                    child: _SideNote(title: sideTitle, body: sideBody),
-                  ),
-              ],
-            ),
-          );
-        }
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          child: Row(
+    // Libelle a gauche, valeur a droite, sur une seule ligne. La version
+    // precedente empilait la valeur sous le libelle des que la largeur
+    // passait sous 620 px - c'est-a-dire toujours, depuis que la largeur de
+    // reference du design a ete reduite pour agrandir le texte. Le bouton (i)
+    // qui l'accompagnait ouvrait une boite reprenant les memes mots que la
+    // ligne; le detail complet vit dans « Pourquoi cette analyse ? ».
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                  width: 54,
-                  child: Icon(icon, color: AppColors.text, size: 30)),
-              SizedBox(
-                width: 220,
+                width: 44,
+                child: Icon(icon, color: AppColors.text, size: 26),
+              ),
+              Expanded(
                 child: Text(
                   label,
-                  style:
-                      const TextStyle(color: Color(0xFFB6C1D2), fontSize: 20),
+                  style: const TextStyle(color: Color(0xFFB6C1D2), fontSize: 20),
                 ),
               ),
-              Expanded(child: valueWidget),
-              if (sideTitle != null || sideBody != null) ...[
-                const SizedBox(width: 24),
-                SizedBox(
-                    width: 210,
-                    child: _SideNote(title: sideTitle, body: sideBody)),
-              ],
-              IconButton(
-                tooltip: 'Détail',
-                icon: const Icon(Icons.info_outline_rounded,
-                    color: AppColors.text, size: 22),
-                onPressed: () => _showInfo(context),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: valuePill
+                      ? _OutlinePill(
+                          label: value, color: valueColor, dense: true)
+                      : Text(
+                          value,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  void _showInfo(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text(label, style: const TextStyle(fontSize: 16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(value, style: const TextStyle(fontSize: 14)),
-            if (sideTitle != null || sideBody != null) ...[
-              const SizedBox(height: 12),
-              if (sideTitle != null)
-                Text(
-                  sideTitle!,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              if (sideBody != null) ...[
-                const SizedBox(height: 4),
-                Text(sideBody!,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, height: 1.35)),
-              ],
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Fermer'),
-          ),
+          if (sideTitle != null || sideBody != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 44, top: 6),
+              child: _SideNote(title: sideTitle, body: sideBody),
+            ),
         ],
       ),
     );
   }
+
 }
 
 class _SideNote extends StatelessWidget {
@@ -1789,8 +1738,15 @@ String _marketProvidersLabel(MarketPriceRead? market) {
         .map((provider) => '${provider.provider}: ${provider.status}')
         .join(', ');
   }
-  final fx = market.fxSource == null ? '' : ' · FX: ${market.fxSource}';
-  return '${ok.join(', ')}$fx';
+  // Un provider peut repondre sur deux paires (USD et EUR): le dedoublonner,
+  // sinon Coinbase apparaissait deux fois comme s'il y avait quatre sources.
+  final uniques = <String>{...ok}.toList();
+  // « FX » ne convient pas a une paire EUR directe: il n'y a pas de
+  // conversion. On dit d'ou vient le prix EUR, sans pretendre a un change.
+  final eur = market.priceEur != null && market.fxSource != null
+      ? ' · Paire EUR: ${market.fxSource}'
+      : '';
+  return '${uniques.join(' · ')}$eur';
 }
 
 String _marketPrimarySource(MarketPriceRead? market) {
@@ -2019,12 +1975,20 @@ String _crowdingDirectionTitle(String raw) {
   return 'Direction inconnue';
 }
 
+/// Tous les états de LeverageState, y compris ceux qui manquaient et
+/// s'affichaient bruts: QUIET apparaissait tel quel à l'écran.
 String _leverageLabel(String raw) => switch (raw.toUpperCase()) {
       'NEW_LONGS' => 'NOUVEAUX LONGS',
       'NEW_SHORTS' => 'NOUVEAUX SHORTS',
+      'SHORT_COVERING' => 'RACHAT DE SHORTS',
+      'LONG_LIQUIDATION' => 'LIQUIDATION DE LONGS',
+      'DELEVERAGING' => 'RÉDUCTION DU LEVIER',
       'CROWDED_LONGS' => 'LONGS SURCHARGÉS',
       'CROWDED_SHORTS' => 'SHORTS SURCHARGÉS',
-      'BALANCED' => 'ÉQUILIBRE',
+      'BALANCED' => 'ÉQUILIBRÉ',
+      'QUIET' => 'CALME',
+      'UNDETERMINED' || 'UNKNOWN' => 'INDÉTERMINÉ',
+      'INSUFFICIENT_DATA' => 'DONNÉES INSUFFISANTES',
       _ => raw.replaceAll('_', ' '),
     };
 
