@@ -9,6 +9,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
+import '../api/freshness.dart';
 import '../api/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -434,6 +435,26 @@ class _MarketCard extends StatelessWidget {
               value:
                   '${_uncertaintyLabel(read.uncertaintyLevel)} ${read.uncertaintyScore.toStringAsFixed(0)}/100',
             ),
+            if (read.inputFreshness.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              const Text(
+                'État des familles',
+                style: TextStyle(
+                  color: AppColors.text,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              // Chaque famille a sa propre cadence: un prix de 6 min est
+              // vieux, un flux ETF de 6 h est normal. Les états sont donc
+              // déclarés famille par famille, pas par un horodatage de page.
+              for (final entry in read.inputFreshness.entries)
+                _TodaySheetLine(
+                  label: _familyLabel(entry.key),
+                  value: _familyStateLabel(entry.value),
+                ),
+            ],
             if (read.uncertaintyDrivers.isNotEmpty) ...[
               const SizedBox(height: 14),
               const Text(
@@ -568,7 +589,11 @@ class _AssetHeader extends StatelessWidget {
             _ChangePill(
               label: _marketChangeLabel(read.marketData),
               positive: (read.marketData?.change24hPct ?? 0) >= 0,
-              available: read.marketData?.change24hPct != null,
+              // Une variation 24 h est aussi une donnée de marché: elle suit
+              // le sort de l'horodatage. Sinon la carte affiche « PÉRIMÉ »
+              // au-dessus d'un pourcentage qui, lui, a l'air actuel.
+              available: read.marketData?.change24hPct != null &&
+                  !(read.marketData?.derived().blocksAnalysis ?? true),
             ),
             const SizedBox(height: 6),
             Text(
@@ -593,6 +618,9 @@ class _VerdictPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final freshness = read.marketData?.derived();
+    final tone = _VerdictTone.of(read, freshness);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -600,13 +628,13 @@ class _VerdictPanel extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.measured.withValues(alpha: 0.25),
-            const Color(0xFF12291E).withValues(alpha: 0.84),
+            tone.accent.withValues(alpha: 0.25),
+            tone.backdrop.withValues(alpha: 0.84),
             const Color(0xFF122328).withValues(alpha: 0.88),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.measured, width: 1.5),
+        border: Border.all(color: tone.accent, width: 1.5),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,10 +644,9 @@ class _VerdictPanel extends StatelessWidget {
             height: 58,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.measured.withValues(alpha: 0.28),
+              color: tone.accent.withValues(alpha: 0.28),
             ),
-            child: const Icon(Icons.trending_up_rounded,
-                color: Color(0xFF5CFF9F), size: 34),
+            child: Icon(tone.icon, color: tone.bright, size: 34),
           ),
           const SizedBox(width: 22),
           Expanded(
@@ -627,9 +654,9 @@ class _VerdictPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _directionLabel(read.summary.marketDirection),
-                  style: const TextStyle(
-                    color: Color(0xFF61F29E),
+                  tone.heading,
+                  style: TextStyle(
+                    color: tone.bright,
                     fontSize: 25,
                     fontWeight: FontWeight.w800,
                     height: 1.05,
@@ -637,7 +664,7 @@ class _VerdictPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _verdictBody(read),
+                  _verdictBody(read, freshness: freshness),
                   style: const TextStyle(
                       color: AppColors.text, fontSize: 18, height: 1.36),
                 ),
@@ -646,6 +673,72 @@ class _VerdictPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Couleur, icône et titre du bandeau, dérivés de l'état.
+///
+/// Le bandeau était vert en dur — dégradé, bordure, icône « trending_up » et
+/// titre — quelle que soit la direction. Un marché fortement baissier
+/// s'affichait donc dans un panneau vert montant. Et le vert est, dans ce
+/// projet, réservé à l'edge mesuré : l'employer pour la seule direction
+/// effaçait précisément la séparation que le reste du système défend.
+class _VerdictTone {
+  final Color accent;
+  final Color bright;
+  final Color backdrop;
+  final IconData icon;
+  final String heading;
+
+  const _VerdictTone({
+    required this.accent,
+    required this.bright,
+    required this.backdrop,
+    required this.icon,
+    required this.heading,
+  });
+
+  static _VerdictTone of(TodayRead read, DerivedFreshness? freshness) {
+    if (freshness != null && freshness.blocksAnalysis) {
+      return const _VerdictTone(
+        accent: AppColors.warn,
+        bright: AppColors.warn,
+        backdrop: Color(0xFF2A2313),
+        icon: Icons.history_toggle_off,
+        heading: 'ANALYSE SUSPENDUE',
+      );
+    }
+
+    final direction = read.summary.marketDirection.toUpperCase();
+    final heading = _directionLabel(read.summary.marketDirection);
+
+    if (direction.contains('BEARISH')) {
+      return _VerdictTone(
+        accent: AppColors.bad,
+        bright: const Color(0xFFFF8A80),
+        backdrop: const Color(0xFF2A1618),
+        icon: Icons.trending_down_rounded,
+        heading: heading,
+      );
+    }
+    if (direction.contains('BULLISH')) {
+      // Le vert du bandeau reste celui du design actuel: c'est le cas
+      // haussier, celui qui était déjà affiché ainsi.
+      return _VerdictTone(
+        accent: AppColors.measured,
+        bright: const Color(0xFF61F29E),
+        backdrop: const Color(0xFF12291E),
+        icon: Icons.trending_up_rounded,
+        heading: heading,
+      );
+    }
+    return _VerdictTone(
+      accent: AppColors.accent,
+      bright: AppColors.accent,
+      backdrop: const Color(0xFF16202B),
+      icon: Icons.trending_flat_rounded,
+      heading: heading,
     );
   }
 }
@@ -1431,6 +1524,9 @@ String _marketPriceLabel(MarketPriceRead? market) {
   if (market == null || !market.available || market.displayPrice == null) {
     return 'INDISPONIBLE';
   }
+  // Un prix dont l'horodatage est expiré n'est plus un prix de marché. Il
+  // reste consultable dans la trace d'explicabilité, pas en gros sur la carte.
+  if (market.derived().blocksAnalysis) return 'PÉRIMÉ';
   final value = market.displayPrice!;
   final symbol = market.displayUnit == 'EUR' ? '€' : r'$';
   final digits = value >= 1000 ? 0 : 2;
@@ -1446,19 +1542,21 @@ String _marketChangeLabel(MarketPriceRead? market) {
 
 String _marketFreshnessShort(MarketPriceRead? market) {
   if (market == null) return 'marché indisponible';
-  final status = _dataStatusLabel(market.status);
+  // Recalculé, jamais lu dans le payload: un instantané embarqué y déclare
+  // « LIVE · 0 s » indéfiniment.
+  final derived = market.derived();
   final source = _marketPrimarySource(market);
-  return source.isEmpty ? status : '$status · $source';
+  return source.isEmpty
+      ? derived.description
+      : '${derived.description} · $source';
 }
 
 String _marketFreshnessLabel(MarketPriceRead? market) {
   if (market == null) return 'INDISPONIBLE';
-  final age = market.ageSeconds == null
-      ? ''
-      : ' · âge ${_ageLabel(market.ageSeconds!)}';
+  final derived = market.derived();
   final asOf =
       market.asOf == null ? '' : ' · as_of ${_dateTimeLabel(market.asOf!)}';
-  return '${_dataStatusLabel(market.status)}$age$asOf';
+  return '${derived.description}$asOf';
 }
 
 String _marketProvidersLabel(MarketPriceRead? market) {
@@ -1506,24 +1604,6 @@ String _providerSourceLabel(MarketProviderRead provider) {
   return raw;
 }
 
-String _dataStatusLabel(String raw) => switch (raw.toUpperCase()) {
-      'LIVE' => 'LIVE',
-      'DELAYED' => 'RETARDÉ',
-      'SNAPSHOT' => 'INSTANTANÉ',
-      'STALE' => 'PÉRIMÉ',
-      'ERROR' => 'ERREUR',
-      'UNAVAILABLE' => 'INDISPONIBLE',
-      _ => raw.replaceAll('_', ' '),
-    };
-
-String _ageLabel(double seconds) {
-  final value = seconds.round();
-  if (value < 60) return '${value}s';
-  if (value < 3600) return '${(value / 60).round()} min';
-  if (value < 86400) return '${(value / 3600).round()} h';
-  return '${(value / 86400).round()} j';
-}
-
 String _dateTimeLabel(String raw) {
   final parsed = DateTime.tryParse(raw);
   if (parsed == null) return raw;
@@ -1545,6 +1625,24 @@ String _numberFr(num value, {int digits = 2}) {
   return '${buffer.toString()},${parts.last}';
 }
 
+String _familyLabel(String key) => switch (key) {
+      'direction' => 'Direction',
+      'funding' => 'Funding',
+      'crowding' => 'Crowding',
+      'crowding_missing' => 'Crowding manquant',
+      'volatility' => 'Volatilité',
+      'positioning' => 'Positionnement',
+      _ => _sentenceCase(key.replaceAll('_', ' ')),
+    };
+
+String _familyStateLabel(String value) => switch (value.toUpperCase()) {
+      'OK' => 'Disponible',
+      'INSUFFICIENT_HISTORY' => 'Historique insuffisant',
+      'UNAVAILABLE' => 'Indisponible',
+      'STALE' => 'Périmé',
+      _ => value,
+    };
+
 String _directionLabel(String raw) {
   final value = raw.toUpperCase();
   if (value.contains('BULLISH')) {
@@ -1564,14 +1662,66 @@ Color _directionColor(String raw) {
   return AppColors.textMuted;
 }
 
-String _verdictBody(TodayRead read) {
+/// Le régime, en français, à partir de l'état structuré et non d'un test
+/// binaire. L'ancienne version faisait `contains('BEARISH') ? baissière :
+/// haussière`, ce qui décrivait un marché NEUTRE comme haussier.
+String? _regimePhrase(String rawDirection) =>
+    switch (rawDirection.toUpperCase()) {
+      'STRONGLY_BULLISH' => 'un régime fortement haussier',
+      'BULLISH' => 'un régime haussier',
+      'NEUTRAL' => 'un régime neutre',
+      'BEARISH' => 'un régime baissier',
+      'STRONGLY_BEARISH' => 'un régime fortement baissier',
+      _ => null,
+    };
+
+/// La phrase du bandeau, dérivée des états structurés.
+///
+/// L'ancienne version disait « nous n'avons pas encore d'indicateur
+/// directionnel robuste » alors que la direction était établie à 80 % de
+/// persistance. Elle confondait deux choses que le reste du système sépare
+/// soigneusement : avoir une lecture directionnelle, et avoir un edge
+/// statistiquement validé. On peut tenir la première sans la seconde — c'est
+/// même le cas le plus fréquent.
+String _verdictBody(TodayRead read, {DerivedFreshness? freshness}) {
   final ticker = read.asset;
-  final direction = read.summary.marketDirection.toUpperCase();
-  final trend = direction.contains('BEARISH') ? 'baissiere' : 'haussiere';
-  if (read.edgeState == EdgeState.positiveEdge) {
-    return 'Le $ticker est en tendance $trend et dispose actuellement d’un edge mesurable à surveiller.';
+
+  if (freshness != null && freshness.blocksAnalysis) {
+    return 'Les données disponibles pour le $ticker sont trop anciennes pour '
+        'établir une analyse. L’analyse est suspendue afin de ne pas produire '
+        'de signal à partir de données périmées.';
   }
-  return 'Le $ticker est en tendance $trend, mais nous n’avons pas encore d’indicateur directionnel robuste pour confirmer un point d’entrée optimal.';
+
+  final regime = _regimePhrase(read.summary.marketDirection);
+  if (regime == null) {
+    return 'Les données disponibles ne permettent pas d’établir une lecture '
+        'directionnelle fiable du $ticker.';
+  }
+
+  return switch (read.edgeState) {
+    EdgeState.positiveEdge =>
+      'Le $ticker évolue dans $regime, et un edge mesurable est actuellement '
+          'actif — à surveiller, pas à exécuter automatiquement.',
+    EdgeState.negativeEdge =>
+      'Le $ticker évolue dans $regime, mais la relation testée joue '
+          'défavorablement : aucun setup n’est retenu.',
+    EdgeState.insufficientData =>
+      'Le $ticker évolue dans $regime. L’historique disponible ne suffit pas à '
+          'conclure sur l’existence d’un edge, ce qui n’est pas la même chose '
+          'qu’une absence d’edge.',
+    EdgeState.notYetTested =>
+      'Le $ticker évolue dans $regime. Aucune recherche n’a encore été '
+          'exécutée pour ce cas.',
+    EdgeState.unstable =>
+      'Le $ticker évolue dans $regime, mais l’edge mesuré n’est pas stable '
+          'dans le temps : il n’est pas retenu.',
+    EdgeState.noMeasurableEdge =>
+      'Le $ticker évolue dans $regime, mais aucun setup statistiquement '
+          'validé n’est actuellement actif.',
+    EdgeState.unknown =>
+      'Le $ticker évolue dans $regime. L’état de l’edge n’a pas pu être '
+          'déterminé.',
+  };
 }
 
 String _edgeLabel(EdgeState state) => switch (state) {

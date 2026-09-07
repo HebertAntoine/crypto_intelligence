@@ -6,6 +6,8 @@
 /// recognised perfectly and still predict nothing.
 library;
 
+import 'freshness.dart';
+
 /// Whether a relationship has actually been shown to precede anything.
 enum EdgeState {
   positiveEdge,
@@ -186,6 +188,21 @@ class MarketPriceRead {
     required this.method,
   });
 
+  /// Fraîcheur recalculée contre l'horloge courante.
+  ///
+  /// Les champs `status`, `freshness` et `ageSeconds` du payload sont
+  /// conservés pour la traçabilité mais ne sont jamais affichés tels quels :
+  /// dans un instantané embarqué ils sont figés à « LIVE · 0 s » pour
+  /// toujours. Seul `asOf` (ou `timestamp` à défaut) est digne de confiance.
+  DerivedFreshness derived({DateTime? now}) =>
+      deriveFreshness(asOf ?? timestamp, family: DataFamily.price, now: now);
+
+  /// Le prix ne doit être présenté comme une donnée de marché que si son
+  /// horodatage le permet. `available` seul ne suffit pas : un instantané
+  /// vieux de six mois reste « available ».
+  bool trustworthyAt({DateTime? now}) =>
+      available && displayPrice != null && derived(now: now).isTrustworthy;
+
   factory MarketPriceRead.fromJson(Map<String, dynamic> json) =>
       MarketPriceRead(
         asset: json['asset'] as String? ?? '',
@@ -240,6 +257,10 @@ class TodayRead {
   final double? fundingPercentile;
   final String volatilityRegime;
 
+  /// État de chaque famille d'entrée, tel que le backend le déclare.
+  /// Vide quand le backend est plus ancien que ce champ.
+  final Map<String, String> inputFreshness;
+
   const TodayRead({
     required this.asset,
     required this.marketData,
@@ -259,6 +280,7 @@ class TodayRead {
     required this.fundingBand,
     required this.fundingPercentile,
     required this.volatilityRegime,
+    this.inputFreshness = const {},
   });
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
@@ -272,6 +294,8 @@ class TodayRead {
     final volatility = json['volatility'] as Map<String, dynamic>? ?? const {};
 
     return TodayRead(
+      inputFreshness: ((json['input_freshness'] as Map?) ?? const {})
+          .map((key, value) => MapEntry('$key', '$value')),
       asset: json['asset'] as String? ?? '',
       marketData: json['market_data'] == null
           ? null

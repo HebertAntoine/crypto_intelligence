@@ -113,6 +113,55 @@ def _reconstructed_regime(asset: Asset) -> _ReconstructedRegime:
     return _ReconstructedRegime(label, round(agreement, 1))
 
 
+def _input_freshness(
+    *,
+    crowding: Any,
+    funding: Any,
+    volatility: Any,
+    leverage_state: Any,
+    regime: Any,
+) -> dict[str, str]:
+    """Per-family input state, in the vocabulary the uncertainty engine reads.
+
+    This is deliberately about *sufficiency*, not only about age. A funding
+    series that is current but only sixty days deep cannot support a
+    percentile, and for the purposes of trusting today's read that is the same
+    problem as data being stale: the number on screen is not backed by what it
+    appears to be backed by.
+
+    Families are named individually rather than rolled into one page-level
+    timestamp, because they genuinely do not share a cadence - price moves in
+    seconds, open interest in minutes, ETF flows once a session.
+    """
+    state: dict[str, str] = {}
+
+    state["direction"] = (
+        "UNAVAILABLE" if getattr(regime, "regime", None) in (None, "UNDETERMINED")
+        else "OK"
+    )
+
+    state["funding"] = (
+        "OK" if getattr(funding, "sufficient_history", False)
+        else "UNAVAILABLE" if getattr(funding, "value", None) is None
+        else "INSUFFICIENT_HISTORY"
+    )
+
+    missing = list(getattr(crowding, "missing", []) or [])
+    state["crowding"] = "UNAVAILABLE" if missing else "OK"
+    if missing:
+        state["crowding_missing"] = ", ".join(str(m) for m in missing)
+
+    state["volatility"] = (
+        "OK" if getattr(volatility, "atr_percentile", None) is not None
+        else "INSUFFICIENT_HISTORY"
+    )
+
+    absent = list(getattr(leverage_state, "inputs_missing", []) or [])
+    state["positioning"] = "UNAVAILABLE" if absent else "OK"
+
+    return state
+
+
 @router.get("/today/{symbol}")
 async def today(symbol: str) -> dict[str, Any]:
     """The decision summary: direction, timing, edge, crowding, uncertainty.
@@ -131,16 +180,32 @@ async def today(symbol: str) -> dict[str, Any]:
         crowding = leverage_engine.crowding(asset)
         edge = EdgeEngine().assess(asset)
         vol = VolatilityRegimeEngine().assess(asset)
-        uncertainty = UncertaintyEngine().assess(asset, edge, crowding=crowding)
+        funding = leverage_engine.funding_context(asset)
+        leverage_state = leverage_engine.leverage_state(asset)
 
         # Direction from the causal reconstruction used in research, so this
         # endpoint stays independent of an LLM run. It uses trend, structure
         # and momentum only - the domains present over the whole history.
         regime = _reconstructed_regime(asset)
+
+        # The regime and the input freshness are both computed here, so both
+        # are handed to the uncertainty engine. Omitting them - which this
+        # endpoint used to do - made the page contradict itself: it charged a
+        # 20-point "regime undetermined" penalty while displaying a direction
+        # it had just established at 80% persistence, and its "stale or
+        # missing data" driver could never fire at all.
+        freshness = _input_freshness(
+            crowding=crowding, funding=funding, volatility=vol,
+            leverage_state=leverage_state, regime=regime,
+        )
+        uncertainty = UncertaintyEngine().assess(
+            asset, edge, regime=regime, crowding=crowding, freshness=freshness,
+        )
         summary = build_decision_summary(
             asset, edge, uncertainty, regime=regime, crowding=crowding, volatility=vol
         )
         return {
+            "input_freshness": freshness,
             "asset": asset.value,
             "decision_summary": summary.model_dump(mode="json"),
             "direction_source": (
@@ -150,8 +215,8 @@ async def today(symbol: str) -> dict[str, Any]:
             "edge": edge.model_dump(),
             "uncertainty": uncertainty.model_dump(),
             "crowding": crowding.model_dump(),
-            "leverage_state": leverage_engine.leverage_state(asset).model_dump(),
-            "funding": leverage_engine.funding_context(asset).model_dump(),
+            "leverage_state": leverage_state.model_dump(),
+            "funding": funding.model_dump(),
             "volatility": vol.model_dump(),
         }
 

@@ -27,10 +27,10 @@
     "direction_confidence": "75.0",
     "edge_state": "NO_MEASURABLE_EDGE",
     "entry_timing": "UNDETERMINED",
-    "generated_at": "2026-09-07T14:37:26.686421Z",
+    "generated_at": "2026-09-07T14:58:43.553737Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "SOL is strongly bullish, but we currently hold no robust directional edge.",
-    "uncertainty": 60.0,
+    "uncertainty": 40.0,
     "volatility_regime": "VERY_LOW"
   },
   "direction_source": "reconstructed from price structure (trend, EMA position, momentum, ADX); not the full multi-domain regime engine, which needs a pipeline run",
@@ -171,6 +171,13 @@
     "sufficient_history": true,
     "value": 8.084e-05
   },
+  "input_freshness": {
+    "crowding": "OK",
+    "direction": "OK",
+    "funding": "OK",
+    "positioning": "OK",
+    "volatility": "OK"
+  },
   "leverage_state": {
     "asset": "SOL",
     "confidence": "MEDIUM",
@@ -187,77 +194,77 @@
     "state": "LONG_LIQUIDATION"
   },
   "market_data": {
-    "age_seconds": 0.0001,
-    "as_of": "2026-09-07T14:37:26.757123Z",
+    "age_seconds": 9.3e-05,
+    "as_of": "2026-09-07T14:58:43.554154Z",
     "asset": "SOL",
-    "change_24h_pct": -1.492,
-    "dispersion_pct": 0.0144,
-    "fetched_at": "2026-09-07T14:37:26.757223Z",
+    "change_24h_pct": -1.059,
+    "dispersion_pct": 0.0191,
+    "fetched_at": "2026-09-07T14:58:43.554247Z",
     "freshness": "LIVE",
-    "fx_rate": 0.86011505,
+    "fx_rate": 0.85985862,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T14:37:26.757204Z",
+    "fx_timestamp": "2026-09-07T14:58:43.554229Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 89.71,
-    "price_usd": 104.3,
+    "price_eur": 90.01,
+    "price_usd": 104.68,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": -1.492,
-        "fetched_at": "2026-09-07T14:37:26.756927Z",
+        "change_24h_pct": -1.059,
+        "fetched_at": "2026-09-07T14:58:43.553968Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.3,
+        "price": 104.68,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:26.756920Z",
+        "timestamp": "2026-09-07T14:58:43.553963Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T14:37:26.757059Z",
+        "fetched_at": "2026-09-07T14:58:43.554093Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.315,
+        "price": 104.68,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:26.757056Z",
+        "timestamp": "2026-09-07T14:58:43.554091Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T14:37:26.757125Z",
+        "fetched_at": "2026-09-07T14:58:43.554155Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 104.3,
+        "price": 104.66,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:26.757123Z",
+        "timestamp": "2026-09-07T14:58:43.554154Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T14:37:26.757205Z",
+        "fetched_at": "2026-09-07T14:58:43.554230Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 89.71,
+        "price": 90.01,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:26.757204Z",
+        "timestamp": "2026-09-07T14:58:43.554229Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T14:37:26.757123Z"
+    "timestamp": "2026-09-07T14:58:43.554154Z"
   },
   "uncertainty": {
     "asset": "SOL",
@@ -266,16 +273,11 @@
         "contribution": 40,
         "detail": "no relationship survived the full filter chain",
         "driver": "no measured edge"
-      },
-      {
-        "contribution": 20,
-        "detail": "directional read is not established",
-        "driver": "regime undetermined"
       }
     ],
-    "level": "HIGH",
-    "score": 60.0,
-    "statement": "Uncertainty HIGH (60/100), driven by: no measured edge, regime undetermined."
+    "level": "MODERATE",
+    "score": 40.0,
+    "statement": "Uncertainty MODERATE (40/100), driven by: no measured edge."
   },
   "volatility": {
     "asset": "SOL",

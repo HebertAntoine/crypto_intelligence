@@ -27,10 +27,10 @@
     "direction_confidence": "85.0",
     "edge_state": "NO_MEASURABLE_EDGE",
     "entry_timing": "UNDETERMINED",
-    "generated_at": "2026-09-07T14:37:12.791519Z",
+    "generated_at": "2026-09-07T14:58:29.749699Z",
     "market_direction": "STRONGLY_BULLISH",
     "statement": "ETH is strongly bullish, but we currently hold no robust directional edge.",
-    "uncertainty": 60.0,
+    "uncertainty": 40.0,
     "volatility_regime": "LOW"
   },
   "direction_source": "reconstructed from price structure (trend, EMA position, momentum, ADX); not the full multi-domain regime engine, which needs a pipeline run",
@@ -243,6 +243,13 @@
     "sufficient_history": true,
     "value": 1.85e-05
   },
+  "input_freshness": {
+    "crowding": "OK",
+    "direction": "OK",
+    "funding": "OK",
+    "positioning": "OK",
+    "volatility": "OK"
+  },
   "leverage_state": {
     "asset": "ETH",
     "confidence": "MEDIUM",
@@ -259,77 +266,77 @@
     "state": "QUIET"
   },
   "market_data": {
-    "age_seconds": 0.000116,
-    "as_of": "2026-09-07T14:37:12.913498Z",
+    "age_seconds": 9.6e-05,
+    "as_of": "2026-09-07T14:58:29.750122Z",
     "asset": "ETH",
-    "change_24h_pct": 0.077,
-    "dispersion_pct": 0.0254,
-    "fetched_at": "2026-09-07T14:37:12.913614Z",
+    "change_24h_pct": 0.413,
+    "dispersion_pct": 0.0283,
+    "fetched_at": "2026-09-07T14:58:29.750218Z",
     "freshness": "LIVE",
-    "fx_rate": 0.86020076,
+    "fx_rate": 0.86018469,
     "fx_source": "Coinbase direct EUR spot pair",
-    "fx_timestamp": "2026-09-07T14:37:12.913593Z",
+    "fx_timestamp": "2026-09-07T14:58:29.750198Z",
     "method": "USD median across configured market.ticker providers; 24h change is the median of provider rolling-24h ticker changes when exposed.",
-    "price_eur": 2134.7,
-    "price_usd": 2481.63,
+    "price_eur": 2141.49,
+    "price_usd": 2489.57,
     "provider_count": 3,
     "providers": [
       {
-        "change_24h_pct": 0.077,
-        "fetched_at": "2026-09-07T14:37:12.913305Z",
+        "change_24h_pct": 0.413,
+        "fetched_at": "2026-09-07T14:58:29.749934Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2481.57,
+        "price": 2489.57,
         "provider": "binance_spot",
         "quality": "MEASURED",
         "source": "Binance",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:12.913298Z",
+        "timestamp": "2026-09-07T14:58:29.749927Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T14:37:12.913434Z",
+        "fetched_at": "2026-09-07T14:58:29.750062Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2482.2,
+        "price": 2490.175,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:12.913432Z",
+        "timestamp": "2026-09-07T14:58:29.750059Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T14:37:12.913499Z",
+        "fetched_at": "2026-09-07T14:58:29.750123Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2481.63,
+        "price": 2489.47,
         "provider": "kraken_spot",
         "quality": "MEASURED",
         "source": "Kraken",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:12.913498Z",
+        "timestamp": "2026-09-07T14:58:29.750122Z",
         "unit": "USD"
       },
       {
         "change_24h_pct": null,
-        "fetched_at": "2026-09-07T14:37:12.913594Z",
+        "fetched_at": "2026-09-07T14:58:29.750200Z",
         "freshness": "LIVE",
         "message": "",
-        "price": 2134.7,
+        "price": 2141.49,
         "provider": "coinbase_spot",
         "quality": "MEASURED",
         "source": "Coinbase",
         "status": "OK",
-        "timestamp": "2026-09-07T14:37:12.913593Z",
+        "timestamp": "2026-09-07T14:58:29.750198Z",
         "unit": "EUR"
       }
     ],
     "quality": "HIGH",
     "status": "LIVE",
-    "timestamp": "2026-09-07T14:37:12.913498Z"
+    "timestamp": "2026-09-07T14:58:29.750122Z"
   },
   "uncertainty": {
     "asset": "ETH",
@@ -338,16 +345,11 @@
         "contribution": 40,
         "detail": "no relationship survived the full filter chain",
         "driver": "no measured edge"
-      },
-      {
-        "contribution": 20,
-        "detail": "directional read is not established",
-        "driver": "regime undetermined"
       }
     ],
-    "level": "HIGH",
-    "score": 60.0,
-    "statement": "Uncertainty HIGH (60/100), driven by: no measured edge, regime undetermined."
+    "level": "MODERATE",
+    "score": 40.0,
+    "statement": "Uncertainty MODERATE (40/100), driven by: no measured edge."
   },
   "volatility": {
     "asset": "ETH",

@@ -32,3 +32,81 @@ def test_flutter_chart_does_not_draw_synthetic_market_candles():
     assert "_syntheticCandle" not in text
     assert "_chartValues" not in text
     assert "Bougies OHLCV indisponibles" in text
+
+
+def test_fixtures_cannot_reach_the_production_runtime_path():
+    """Fixtures may hold invented numbers; nothing must route to them by default.
+
+    The provider fixtures exist so tests can run without network. They become
+    dangerous the moment a runtime path can select them without the operator
+    asking, so the guard is that every entry point into them is gated on
+    MOCK_MODE and nothing else.
+    """
+    # The live Settings object is not consulted: the test session deliberately
+    # turns MOCK_MODE on, so reading it here would assert the wrong thing. What
+    # matters is the declared default that a deployment inherits.
+    settings_src = (
+        Path(__file__).resolve().parents[2]
+        / "backend" / "crypto_intel" / "settings.py"
+    ).read_text(encoding="utf-8")
+    declaration = next(
+        line for line in settings_src.splitlines() if "mock_mode" in line
+    )
+    assert "False" in declaration, (
+        f"MOCK_MODE does not default to False ({declaration.strip()!r}); "
+        "fixtures would serve a deployment that sets no environment"
+    )
+
+    fixtures = Path(__file__).resolve().parents[2] / "backend" / "crypto_intel" / "providers" / "fixtures.py"
+    callers = []
+    root = Path(__file__).resolve().parents[2] / "backend" / "crypto_intel"
+    for path in root.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        if "fixtures" in text and path != fixtures:
+            callers.append((path, text))
+
+    for path, text in callers:
+        assert "mock_mode" in text, (
+            f"{path.relative_to(root)} reaches the fixtures without checking "
+            "MOCK_MODE, so invented data could be served in production"
+        )
+
+
+def test_snapshot_freshness_is_never_rendered_verbatim():
+    """A bundled snapshot's own freshness claim is frozen at capture time.
+
+    The snapshots record `freshness: LIVE` and an age of milliseconds because
+    that was true the instant they were exported. Rendering those fields months
+    later labels stale numbers as real-time, which is the exact failure this
+    page must not have.
+    """
+    today_screen = APP_LIB / "screens" / "today_screen.dart"
+    text = today_screen.read_text(encoding="utf-8")
+    for frozen in ("market.status", "market.freshness", "market.ageSeconds"):
+        assert frozen not in text, f"{frozen} is displayed straight from the payload"
+
+    assert (APP_LIB / "api" / "freshness.dart").exists(), (
+        "the derived-freshness policy is missing"
+    )
+
+
+def test_bundled_snapshots_still_carry_an_observation_timestamp():
+    """Derived freshness needs `as_of`; without it the app must show nothing.
+
+    This guards the export rather than the app: a snapshot exported without
+    timestamps would leave the UI unable to tell fresh from ancient, and its
+    only correct response would be to render everything unavailable.
+    """
+    import json
+
+    snapshots = Path(__file__).resolve().parents[2] / "app" / "assets" / "static_api"
+    for asset in ("BTC", "ETH", "SOL"):
+        path = snapshots / f"today__{asset}.json"
+        if not path.exists():
+            continue
+        market = json.loads(path.read_text()).get("market_data") or {}
+        if market.get("price_usd") is None:
+            continue
+        assert market.get("as_of") or market.get("timestamp"), (
+            f"{path.name} carries a price with no observation timestamp"
+        )
