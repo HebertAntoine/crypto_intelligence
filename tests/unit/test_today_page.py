@@ -42,6 +42,12 @@ def _range(bottom: float, top: float, valid: bool = True) -> NS:
     )
 
 
+def _condition(title: str, detail: str):
+    from crypto_intel.engines.buy_opportunity import ChangeCondition
+
+    return ChangeCondition(title=title, detail=detail)
+
+
 def _empty_pressure():
     """Un moteur de pression sans aucune famille: l'état par défaut d'un test."""
     from crypto_intel.engines.market_pressure import MarketPressureExplanation
@@ -62,9 +68,18 @@ def _snapshot(**overrides):
             summary="Un facteur de risque justifie d'attendre.",
             score=12.0, guard_rails_applied=[], positives=[], waits=[],
             negatives=[], missing=[], factors=[],
-            improvement_conditions=["un retour du prix vers le bas du range"],
-            deterioration_conditions=["la perte confirmée du bas de range"],
-            structure_change_conditions=["une clôture 4H au-dessus du haut de range"],
+            improvement_conditions=[
+                _condition("Retour vers le support",
+                           "Meilleur emplacement si le support tient."),
+            ],
+            deterioration_conditions=[
+                _condition("Levier trop chargé",
+                           "Un encombrement extrême dégraderait le timing."),
+            ],
+            structure_change_conditions=[
+                _condition("Cassure du haut du range",
+                           "Une clôture 4H au-dessus changerait la structure."),
+            ],
         ),
         "location": NS(
             state=NS(value="NEAR_RANGE_TOP"), relative_position=0.91, price=100.0,
@@ -207,32 +222,59 @@ class TestCatalysts:
 
 
 class TestChangeConditions:
-    """Three categories, because a break has no sign."""
+    """Trois catégories, et un titre lisible avant l'explication."""
+
+    def _conditions(self):
+        opportunity = _snapshot().opportunity
+        return _snapshot(opportunity=opportunity)
 
     def test_a_bullish_break_is_a_structure_change_not_a_degradation(self):
-        block = tv.change_conditions(_snapshot())
-        degrade = " ".join(item["text"] for item in block["degrade"])
-        change = " ".join(item["text"] for item in block["structure_change"])
-        assert "au-dessus du haut de range" in change
-        assert "au-dessus du haut de range" not in degrade
+        block = tv.change_conditions(self._conditions())
+        degrade = " ".join(
+            item["title"] + item["detail"] for item in block["degrade"]
+        )
+        change = " ".join(
+            item["title"] + item["detail"] for item in block["structure_change"]
+        )
+        assert "Cassure du haut du range" in change
+        assert "Cassure du haut du range" not in degrade
+        assert block["structure_change_title"] == "CHANGEMENT À SURVEILLER"
 
-    def test_conditions_are_phrased_as_conditions(self):
-        block = tv.change_conditions(_snapshot())
+    def test_each_condition_is_a_short_title_and_one_line(self):
+        block = tv.change_conditions(self._conditions())
         for group in ("improve", "degrade", "structure_change"):
             for item in block[group]:
-                assert not item["text"].lower().startswith("btc va")
-                assert any(
-                    token in item["text"]
-                    for token in ("deviendrait", "serait", "changerait")
-                )
+                assert item["title"], "une condition sans titre ne se lit pas"
+                assert len(item["title"].split()) <= 6, item["title"]
+                assert item["detail"]
+                # Une ligne, pas un paragraphe.
+                assert item["detail"].count(".") <= 2
+
+    def test_conditions_never_predict_a_price(self):
+        block = tv.change_conditions(self._conditions())
+        for group in ("improve", "degrade", "structure_change"):
+            for item in block[group]:
+                text = (item["title"] + " " + item["detail"]).lower()
+                for forbidden in ("va monter", "va baisser", "objectif",
+                                  "devrait atteindre", "va devenir"):
+                    assert forbidden not in text
 
     def test_at_most_two_per_side(self):
         opportunity = _snapshot().opportunity
-        opportunity.improvement_conditions = ["a", "b", "c", "d"]
-        opportunity.deterioration_conditions = ["e", "f", "g"]
+        opportunity.improvement_conditions = [
+            _condition(f"Titre {i}", "Détail.") for i in range(4)
+        ]
+        opportunity.deterioration_conditions = [
+            _condition(f"Risque {i}", "Détail.") for i in range(3)
+        ]
         block = tv.change_conditions(_snapshot(opportunity=opportunity))
         assert len(block["improve"]) == 2
         assert len(block["degrade"]) == 2
+
+    def test_the_titles_name_the_reader_s_question(self):
+        block = tv.change_conditions(self._conditions())
+        assert block["improve_title"] == "CE QUI AMÉLIORERAIT LE TIMING"
+        assert block["degrade_title"] == "RISQUES"
 
 
 class TestTimeframes:
@@ -543,9 +585,26 @@ class TestCoverage:
 class TestDecisionText:
     def test_the_sentence_is_built_from_the_readings_it_shows(self):
         sentence = tv.decision_sentence(_snapshot())
-        assert "tendance de fond est nettement positive" in sentence
+        assert "Tendance nettement positive" in sentence
         assert "proche du haut de son range 4H" in sentence
-        assert "timing actuel n'est pas suffisamment favorable" in sentence
+        assert "moins intéressante à ce niveau" in sentence
+
+    def test_the_sentence_stays_short_enough_to_read_at_a_glance(self):
+        """Deux phrases, sous une trentaine de mots."""
+        for state, location in (
+            ("WAIT", "NEAR_RANGE_TOP"), ("OPPORTUNITY", "MID_RANGE"),
+            ("WATCH", "LOWER_THIRD"),
+        ):
+            opportunity = _snapshot().opportunity
+            opportunity.state = NS(value=state)
+            sentence = tv.decision_sentence(_snapshot(
+                opportunity=opportunity,
+                location=NS(state=NS(value=location), relative_position=.5,
+                            price=100.0, detected_range=_range(80.0, 120.0),
+                            range_summary="", invalidation="", explanation=[]),
+            ))
+            assert len(sentence.split()) <= 30, sentence
+            assert sentence.count(".") <= 2, sentence
 
     def test_the_sentence_never_predicts_a_price(self):
         for state, location in (
@@ -570,12 +629,20 @@ class TestDecisionText:
         sentence = tv.decision_sentence(_snapshot(opportunity=opportunity))
         assert "ne permettent pas" in sentence
 
-    def test_a_guard_rail_is_quoted_as_the_reason(self):
+    def test_the_guard_rail_leaves_the_card_but_not_the_payload(self):
+        """La carte principale reste courte; la raison reste consultable.
+
+        Le garde-fou était recopié dans la phrase, ce qui donnait trois
+        propositions sur la carte alors que « voir pourquoi » les porte déjà,
+        nommées et sourcées.
+        """
         opportunity = _snapshot().opportunity
         opportunity.guard_rails_applied = ["Incertitude 72/100: plafond « attendre »."]
-        sentence = tv.decision_sentence(_snapshot(opportunity=opportunity))
-        assert "Raison retenue" in sentence
-        assert "Incertitude 72/100" in sentence
+        snapshot = _snapshot(opportunity=opportunity)
+        assert "Raison retenue" not in tv.decision_sentence(snapshot)
+        assert tv.decision_block(snapshot)["guard_rails"] == [
+            "Incertitude 72/100: plafond « attendre »."
+        ]
 
 
 class TestVolatilityIsNotMixed:

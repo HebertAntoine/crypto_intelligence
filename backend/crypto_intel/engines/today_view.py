@@ -222,14 +222,15 @@ def nearest_levels(snapshot: Any, price: float | None = None) -> dict[str, Any]:
 # --- immediate context ----------------------------------------------------
 
 def immediate_context(snapshot: Any) -> list[dict[str, Any]]:
-    """Four readings at most: position, volatility, crowding, next event."""
+    """Trois lectures, et pas celles déjà affichées ailleurs.
+
+    La position figurait ici alors que la barre structurelle la donne juste
+    au-dessus, et l'échéance y figurait aussi alors que « à surveiller » la
+    répétait juste en dessous. Trois blocs disaient la même chose; celui-ci
+    garde ce qu'aucun autre ne porte, plus l'échéance sous une forme courte —
+    et le bloc « à surveiller » s'efface quand il n'ajoute rien.
+    """
     out: list[dict[str, Any]] = []
-    position = structural_position(snapshot)
-    out.append({
-        "label": "Position",
-        "value": position["headline"],
-        "detail": position.get("detail", ""),
-    })
     out.append({
         "label": "Volatilité",
         "value": _label(VOLATILITY_FR, getattr(snapshot.volatility, "regime", None), "Inconnue"),
@@ -245,7 +246,7 @@ def immediate_context(snapshot: Any) -> list[dict[str, Any]]:
         event = snapshot.macro_events[0]
         out.append({
             "label": "Prochain événement",
-            "value": f"{_event_name(event)} · {_countdown(event)}",
+            "value": f"{_short_event_name(event)} · {_short_countdown(event)}",
             "detail": "Date programmée et publiée à l'avance.",
         })
     return out[:4]
@@ -256,6 +257,20 @@ def immediate_context(snapshot: Any) -> list[dict[str, Any]]:
 def _event_name(event: dict[str, Any]) -> str:
     kind = str(event.get("kind") or "").upper()
     return EVENT_KIND_FR.get(kind, str(event.get("name") or kind or "Événement"))
+
+
+def _short_event_name(event: dict[str, Any]) -> str:
+    """« CPI US » plutôt que « Inflation US (CPI) » sur une ligne de contexte."""
+    kind = str(event.get("kind") or "").upper()
+    return {
+        "CPI": "CPI US", "FOMC": "FOMC", "NFP": "NFP US", "PPI": "PPI US",
+        "PCE": "PCE US", "GDP": "PIB US", "UNEMPLOYMENT": "Chômage US",
+    }.get(kind, _event_name(event))
+
+
+def _short_countdown(event: dict[str, Any]) -> str:
+    hours = float(event.get("hours_until") or 0)
+    return f"{hours:.0f} h" if hours < 24 else f"{hours / 24:.0f} j"
 
 
 def _countdown(event: dict[str, Any]) -> str:
@@ -328,6 +343,11 @@ def catalysts(snapshot: Any, limit: int = 3) -> dict[str, Any]:
     return {
         "items": items[:limit],
         "alert": alert,
+        # Un seul événement sans urgence est déjà porté par la ligne de
+        # contexte. Le répéter sous un titre à lui donnait deux blocs pour une
+        # information, ce qui la faisait paraître plus importante qu'elle
+        # n'est.
+        "adds_information": bool(alert) or len(items) > 1,
         "horizon_note": "Événements programmés des 7 prochains jours, 24-72 h en priorité.",
         "not_news": (
             "Cette liste ne contient que des échéances programmées et sourcées, "
@@ -342,24 +362,21 @@ def change_conditions(snapshot: Any, limit: int = 2) -> dict[str, Any]:
     """Conditions, phrased as conditions, in three separate categories."""
     opportunity = snapshot.opportunity
 
-    def sentences(items: list[str], prefix: str) -> list[dict[str, str]]:
-        return [{"text": f"{prefix} {item}"} for item in items[:limit]]
+    def conditions(items: list[Any]) -> list[dict[str, str]]:
+        return [
+            {"title": item.title, "detail": item.detail, "text": item.sentence}
+            for item in items[:limit]
+        ]
 
     return {
-        "improve": sentences(
-            opportunity.improvement_conditions, "Le timing deviendrait plus favorable avec"
-        ),
-        "degrade": sentences(
-            opportunity.deterioration_conditions, "La lecture serait dégradée par"
-        ),
+        "improve": conditions(opportunity.improvement_conditions),
+        "degrade": conditions(opportunity.deterioration_conditions),
         # Third category, and not a sign: a range break invalidates the range
         # without making the market worse. Filing it under "would degrade" is
         # what made a bullish break read as a deterioration.
-        "structure_change": sentences(
-            opportunity.structure_change_conditions, "La structure changerait avec"
-        ),
-        "improve_title": "POUR DEVENIR PLUS FAVORABLE",
-        "degrade_title": "POUR DEVENIR MOINS FAVORABLE",
+        "structure_change": conditions(opportunity.structure_change_conditions),
+        "improve_title": "CE QUI AMÉLIORERAIT LE TIMING",
+        "degrade_title": "RISQUES",
         "structure_change_title": "CHANGEMENT À SURVEILLER",
         "note": (
             "Ce sont des conditions, pas des prévisions. Aucune de ces phrases "
@@ -410,6 +427,13 @@ def timeframe_summary(snapshot: Any) -> dict[str, Any]:
         "rows": rows,
         "alignment": alignment,
         "alignment_label": label,
+        # Une phrase, et c'est tout: le reste appartient au détail.
+        "sentence": {
+            "ALIGNED": "Tous les horizons racontent la même chose.",
+            "PARTIAL": "Les horizons ne sont pas encore tous alignés.",
+            "DIVERGENT": "Les horizons ne sont pas encore alignés.",
+            "UNDETERMINED": "Trop peu d'horizons lisibles pour conclure.",
+        }[alignment],
         "note": (
             "L'alignement est descriptif. Des unités de temps qui concordent ne "
             "constituent pas un avantage démontré."
@@ -718,24 +742,24 @@ def decision_sentence(snapshot: Any) -> str:
     regime = _enum(getattr(snapshot.regime, "regime", None), "UNDETERMINED")
     clauses: list[str] = []
     if "STRONGLY_BULL" in regime:
-        clauses.append("La tendance de fond est nettement positive")
+        clauses.append("Tendance nettement positive")
     elif "BULL" in regime:
-        clauses.append("La tendance de fond reste positive")
+        clauses.append("Tendance positive")
     elif "STRONGLY_BEAR" in regime:
-        clauses.append("La tendance de fond est nettement négative")
+        clauses.append("Tendance nettement négative")
     elif "BEAR" in regime:
-        clauses.append("La tendance de fond reste négative")
+        clauses.append("Tendance négative")
     elif regime == "NEUTRAL":
-        clauses.append("La tendance de fond est sans direction nette")
+        clauses.append("Tendance sans direction nette")
 
     location_state = _enum(getattr(snapshot.location, "state", None), "NO_VALID_RANGE")
     location_clause = {
         "AT_RANGE_TOP": f"{asset} est sur le haut de son range 4H",
-        "NEAR_RANGE_TOP": f"{asset} évolue proche du haut de son range 4H",
-        "UPPER_THIRD": f"{asset} se situe dans le tiers haut de son range 4H",
-        "MID_RANGE": "le prix se situe au milieu de son range 4H",
-        "LOWER_THIRD": f"{asset} se situe dans le tiers bas de son range 4H",
-        "NEAR_RANGE_BOTTOM": f"{asset} évolue proche du bas de son range 4H",
+        "NEAR_RANGE_TOP": f"{asset} est proche du haut de son range 4H",
+        "UPPER_THIRD": f"{asset} est dans le tiers haut de son range 4H",
+        "MID_RANGE": "le prix est au milieu de son range 4H",
+        "LOWER_THIRD": f"{asset} est dans le tiers bas de son range 4H",
+        "NEAR_RANGE_BOTTOM": f"{asset} est proche du bas de son range 4H",
         "AT_RANGE_BOTTOM": f"{asset} est sur le bas de son range 4H",
         "ABOVE_RANGE": f"{asset} est sorti par le haut de son range 4H",
         "BELOW_RANGE": f"{asset} est sorti par le bas de son range 4H",
@@ -750,20 +774,19 @@ def decision_sentence(snapshot: Any) -> str:
         )
         clauses.append(f"{joiner} {location_clause}" if clauses else location_clause)
 
+    # Deux phrases courtes. La version longue ajoutait le garde-fou en toutes
+    # lettres, ce qui donnait trois propositions sur la carte principale alors
+    # que « voir pourquoi » les porte déjà, nommées et sourcées.
     conclusion = {
-        "STRONG_OPPORTUNITY": "Les facteurs majeurs concordent et l'emplacement n'est pas défavorable.",
-        "OPPORTUNITY": "Aucun facteur majeur ne justifie actuellement d'attendre.",
-        "WATCH": "La configuration mérite d'être suivie, sans justifier d'agir maintenant.",
-        "WAIT": "Le timing actuel n'est pas suffisamment favorable.",
+        "STRONG_OPPORTUNITY": "L'emplacement ne s'y oppose pas.",
+        "OPPORTUNITY": "Rien de majeur ne justifie d'attendre.",
+        "WATCH": "À suivre, sans justifier d'agir maintenant.",
+        "WAIT": "L'entrée est moins intéressante à ce niveau.",
         "UNFAVORABLE": "La configuration est moins favorable que la normale.",
     }.get(state, "")
 
-    guard = (getattr(opportunity, "guard_rails_applied", []) or [])[:1]
     first = ", ".join(clauses) if clauses else ""
-    sentence = (first + ". " if first else "") + conclusion
-    if guard and state in ("WAIT", "WATCH", "UNFAVORABLE"):
-        sentence += f" Raison retenue : {guard[0].rstrip('.')}."
-    return sentence.strip()
+    return ((first + ". " if first else "") + conclusion).strip()
 
 
 def decision_block(snapshot: Any) -> dict[str, Any]:

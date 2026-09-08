@@ -283,13 +283,22 @@ void main() {
   group('Ce qui ferait changer la décision', () {
     const conditions = ChangeConditions(
       improve: [
-        'Le timing deviendrait plus favorable avec un retour au bas '
-            'du range'
+        ChangeCondition(
+          title: 'Retour vers le support',
+          detail: 'Meilleur emplacement si le support tient.',
+        ),
       ],
-      degrade: ['La lecture serait dégradée par la perte du bas de range'],
+      degrade: [
+        ChangeCondition(
+          title: 'Levier trop chargé',
+          detail: 'Un encombrement extrême dégraderait le timing.',
+        ),
+      ],
       structureChange: [
-        'La structure changerait avec une clôture 4H au-dessus '
-            'du haut de range'
+        ChangeCondition(
+          title: 'Cassure du haut du range',
+          detail: 'Une clôture 4H au-dessus changerait la structure.',
+        ),
       ],
     );
 
@@ -297,23 +306,27 @@ void main() {
         (tester) async {
       await _pump(tester, const ChangeConditionsBlock(conditions: conditions));
 
-      expect(find.text('POUR DEVENIR PLUS FAVORABLE'), findsOneWidget);
-      expect(find.text('POUR DEVENIR MOINS FAVORABLE'), findsOneWidget);
+      expect(find.text('CE QUI AMÉLIORERAIT LE TIMING'), findsOneWidget);
+      expect(find.text('RISQUES'), findsOneWidget);
       expect(find.text('CHANGEMENT À SURVEILLER'), findsOneWidget);
-      // La phrase de cassure est rendue, et pas sous le titre des
-      // dégradations: c'était exactement le défaut corrigé.
-      expect(
-        find.textContaining('clôture 4H au-dessus du haut de range'),
-        findsOneWidget,
-      );
-      expect(
-        find.textContaining('dégradée par une clôture 4H au-dessus'),
-        findsNothing,
-      );
+      // La cassure est rendue, et pas sous le titre des risques: c'était
+      // exactement le défaut corrigé.
+      expect(find.text('Cassure du haut du range'), findsOneWidget);
+      expect(find.textContaining('dégradée par une clôture'), findsNothing);
     });
 
-    testWidgets('les phrases sont des conditions, pas des prévisions',
+    testWidgets('chaque condition est un titre court puis une ligne',
         (tester) async {
+      await _pump(tester, const ChangeConditionsBlock(conditions: conditions));
+      expect(find.text('Retour vers le support'), findsOneWidget);
+      expect(
+        find.text('Meilleur emplacement si le support tient.'),
+        findsOneWidget,
+      );
+      expect(find.text('Levier trop chargé'), findsOneWidget);
+    });
+
+    testWidgets('les conditions ne prédisent aucun prix', (tester) async {
       await _pump(tester, const ChangeConditionsBlock(conditions: conditions));
       for (final forbidden in ['va monter', 'va baisser', 'objectif']) {
         expect(find.textContaining(forbidden), findsNothing);
@@ -401,6 +414,28 @@ void main() {
   });
 
   group('Unités de temps', () {
+    const divergentRows = [
+      TimeframeRow(
+          timeframe: '1S',
+          state: 'BEARISH_STRUCTURE',
+          label: 'Baissière',
+          arrow: '↓'),
+      TimeframeRow(
+          timeframe: '1J',
+          state: 'RANGE_STRUCTURE',
+          label: 'En range',
+          arrow: '↔'),
+      TimeframeRow(
+          timeframe: '4H',
+          state: 'RANGE_STRUCTURE',
+          label: 'En range',
+          arrow: '↔'),
+      TimeframeRow(
+          timeframe: '1H',
+          state: 'BULLISH_STRUCTURE',
+          label: 'Haussière',
+          arrow: '↑'),
+    ];
     const divergent = TimeframeSummary(
       rows: [
         TimeframeRow(
@@ -451,6 +486,28 @@ void main() {
     testWidgets('sans contradiction, aucun badge', (tester) async {
       await _pump(tester, const TimeframeStrip(summary: divergent));
       expect(find.text('LECTURE MIXTE'), findsNothing);
+    });
+
+    testWidgets('une seule phrase accompagne les quatre horizons',
+        (tester) async {
+      await _pump(
+        tester,
+        const TimeframeStrip(
+          summary: TimeframeSummary(
+            rows: divergentRows,
+            alignment: 'DIVERGENT',
+            alignmentLabel: 'Divergent',
+            sentence: 'Les horizons ne sont pas encore alignés.',
+            note: 'L’alignement est descriptif.',
+          ),
+        ),
+      );
+      expect(
+        find.text('Les horizons ne sont pas encore alignés.'),
+        findsOneWidget,
+      );
+      // La note méthodologique n'est pas sur la carte: elle est au détail.
+      expect(find.text('L’alignement est descriptif.'), findsNothing);
     });
   });
 
@@ -508,6 +565,31 @@ void main() {
     testWidgets('sans échéance, le bloc disparaît', (tester) async {
       await _pump(tester, const CatalystsBlock(catalysts: Catalysts.empty));
       expect(find.text('À SURVEILLER'), findsNothing);
+    });
+
+    test('une échéance unique et lointaine n’a pas besoin de son propre bloc',
+        () {
+      // La ligne « prochain événement » du contexte la porte déjà; deux blocs
+      // pour une échéance la faisaient paraître plus importante qu'elle n'est.
+      final single = Catalysts.fromJson({
+        'items': [
+          {'kind': 'CPI', 'name': 'Inflation US (CPI)', 'when': 'dans 3 jours',
+           'importance': 'CRITICAL', 'hours_until': 72.0},
+        ],
+        'adds_information': false,
+      });
+      expect(single.addsInformation, isFalse);
+
+      final urgent = Catalysts.fromJson({
+        'items': [
+          {'kind': 'CPI', 'name': 'Inflation US (CPI)', 'when': 'dans 18 h',
+           'importance': 'CRITICAL', 'hours_until': 18.0},
+        ],
+        'alert': {'label': 'ÉVÉNEMENT IMPORTANT DANS 18 H', 'name': 'CPI',
+                  'hours_until': 18.0, 'note': 'Le sens n’est pas prédit.'},
+        'adds_information': true,
+      });
+      expect(urgent.addsInformation, isTrue);
     });
   });
 

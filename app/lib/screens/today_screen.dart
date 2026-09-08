@@ -388,8 +388,10 @@ class _MarketCard extends StatelessWidget {
                     positioning: page.positioning,
                     etf: page.etf,
                   ),
-                  if (page.catalysts.items.isNotEmpty ||
-                      page.catalysts.alert != null) ...[
+                  // La ligne « prochain événement » du contexte porte déjà
+                  // l'échéance unique. Ce bloc ne revient que lorsqu'il ajoute
+                  // quelque chose: une urgence, ou plusieurs échéances.
+                  if (page.catalysts.addsInformation) ...[
                     const SizedBox(height: 12),
                     CatalystsBlock(catalysts: page.catalysts),
                   ],
@@ -1030,99 +1032,121 @@ class _EntryAnswerPanel extends StatelessWidget {
         key: const ValueKey('opportunity-summary-card'),
         borderRadius: BorderRadius.circular(22),
         onTap: () => _showOpportunityDetails(context, read, tone),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 420),
-                  child: Image.asset(
-                    visual.asset,
-                    key: ValueKey(visual.asset),
-                    fit: BoxFit.cover,
-                    alignment: Alignment.centerRight,
-                    filterQuality: FilterQuality.high,
-                  ),
-                ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: visual.glow.withValues(alpha: .30),
+                blurRadius: 24,
+                spreadRadius: -7,
               ),
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      stops: const [0, .58, 1],
-                      colors: [
-                        const Color(0xFF061121).withValues(alpha: .96),
-                        const Color(0xFF071426).withValues(alpha: .82),
-                        visual.overlay.withValues(alpha: .24),
-                      ],
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 420),
+                    child: Image.asset(
+                      visual.asset,
+                      key: ValueKey(visual.asset),
+                      // Ces assets sont composés comme des fonds de carte
+                      // complets (cadre, lumière et sujet). Les recadrer en
+                      // `cover` coupait leur cadre et donnait l'impression
+                      // d'une image posée dans une seconde carte.
+                      fit: BoxFit.fill,
+                      filterQuality: FilterQuality.high,
                     ),
                   ),
                 ),
-              ),
-              Container(
-                constraints: const BoxConstraints(minHeight: 225),
-                padding: const EdgeInsets.fromLTRB(20, 20, 18, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _TodayIconTile(icon: icon, tone: visual.accent),
-                        const SizedBox(width: 13),
-                        const Expanded(
-                          child: Text(
-                            'EST-CE UNE BONNE OPPORTUNITÉ\nD’ACHAT MAINTENANT ?',
-                            style: TextStyle(
-                              color: Color(0xFFD8E8FF),
-                              fontSize: 14,
-                              height: 1.32,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: .75,
-                            ),
-                          ),
-                        ),
-                        Icon(Icons.chevron_right_rounded,
-                            color: visual.accent, size: 28),
-                      ],
-                    ),
-                    const SizedBox(height: 9),
-                    Text(
-                      _opportunityLabel(opportunity.state),
-                      style: TextStyle(
-                        color: visual.accent,
-                        fontSize: 31,
-                        fontWeight: FontWeight.w900,
-                        height: 1.02,
-                        shadows: [
-                          Shadow(
-                            color: visual.glow.withValues(alpha: .55),
-                            blurRadius: 14,
-                          ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        stops: const [0, .54, 1],
+                        colors: [
+                          const Color(0xFF061121).withValues(alpha: .93),
+                          const Color(0xFF071426).withValues(alpha: .56),
+                          visual.overlay.withValues(alpha: .10),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 335),
-                      child: Text(
-                        explanation,
-                        maxLines: 4,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFFF2F7FF),
-                          fontSize: 15.5,
-                          height: 1.35,
+                  ),
+                ),
+                Container(
+                  constraints: const BoxConstraints(minHeight: 225),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 18, 18),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: visual.accent.withValues(alpha: .82),
+                      width: 1.35,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _TodayIconTile(icon: icon, tone: visual.accent),
+                          const SizedBox(width: 13),
+                          const Expanded(
+                            child: Text(
+                              'EST-CE UNE BONNE OPPORTUNITÉ\nD’ACHAT MAINTENANT ?',
+                              style: TextStyle(
+                                color: Color(0xFFD8E8FF),
+                                fontSize: 14,
+                                height: 1.32,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: .75,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded,
+                              color: visual.accent, size: 28),
+                        ],
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        _opportunityLabel(opportunity.state),
+                        style: TextStyle(
+                          color: visual.accent,
+                          fontSize: 31,
+                          fontWeight: FontWeight.w900,
+                          height: 1.02,
+                          shadows: [
+                            Shadow(
+                              color: visual.glow.withValues(alpha: .55),
+                              blurRadius: 14,
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 335),
+                        child: Text(
+                          explanation,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFF2F7FF),
+                            fontSize: 15.5,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1728,142 +1752,150 @@ class _MarketPressureSummary extends StatelessWidget {
         onTap: () => breakdown == null
             ? _showPressureDetails(context, pressure)
             : _showPressureBreakdown(context, breakdown!),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/visuals/market_pressure.png',
-                  key: const ValueKey('market-pressure-background'),
-                  fit: BoxFit.cover,
-                  alignment: Alignment.bottomCenter,
-                  filterQuality: FilterQuality.high,
-                ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF25B7FF).withValues(alpha: .30),
+                blurRadius: 24,
+                spreadRadius: -7,
               ),
-              Positioned.fill(
-                child: DecoratedBox(
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/visuals/market_pressure.png',
+                    key: const ValueKey('market-pressure-background'),
+                    // Le taureau, l'ours et le graphique forment une seule
+                    // composition : on conserve donc l'image entière.
+                    fit: BoxFit.fill,
+                    filterQuality: FilterQuality.high,
+                  ),
+                ),
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        stops: const [0, .54, 1],
+                        colors: [
+                          const Color(0xFF061326).withValues(alpha: .93),
+                          const Color(0xFF06172D).withValues(alpha: .56),
+                          const Color(0xFF06172D).withValues(alpha: .10),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  constraints: const BoxConstraints(minHeight: 196),
+                  padding: const EdgeInsets.fromLTRB(18, 17, 18, 16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      stops: const [0, .58, 1],
-                      colors: [
-                        const Color(0xFF061326).withValues(alpha: .97),
-                        const Color(0xFF06172D).withValues(alpha: .84),
-                        const Color(0xFF06172D).withValues(alpha: .30),
-                      ],
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(
+                      color: const Color(0xFF48BFFF).withValues(alpha: .86),
+                      width: 1.35,
                     ),
                   ),
-                ),
-              ),
-              Container(
-                constraints: const BoxConstraints(minHeight: 196),
-                padding: const EdgeInsets.fromLTRB(18, 17, 18, 16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: const Color(0xFF48BFFF).withValues(alpha: .86),
-                    width: 1.35,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF25B7FF).withValues(alpha: .22),
-                      blurRadius: 26,
-                      spreadRadius: -8,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const _TodayIconTile(
-                          icon: Icons.groups_2_outlined,
-                          tone: Color(0xFF8BCBFF),
-                        ),
-                        const SizedBox(width: 13),
-                        const Expanded(
-                          child: Text(
-                            'QUI ACHÈTE, QUI VEND ?',
-                            style: TextStyle(
-                              color: Color(0xFFD8E8FF),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: .65,
-                            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const _TodayIconTile(
+                            icon: Icons.groups_2_outlined,
+                            tone: Color(0xFF8BCBFF),
                           ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            // Le titre verrouillé par la couverture vient de la
-                            // décomposition; l'ancien modèle ne connaît pas
-                            // cette contrainte et dirait « dominant » sur une
-                            // seule famille.
-                            breakdown?.label ?? pressure.label,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: tone,
-                              fontSize: 16,
-                              height: 1.15,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 3),
-                        const Icon(Icons.chevron_right_rounded,
-                            color: Color(0xFFAEDAFF), size: 26),
-                      ],
-                    ),
-                    if (balance != null) ...[
-                      const SizedBox(height: 16),
-                      _PressureBar(balance: balance),
-                    ],
-                    const SizedBox(height: 12),
-                    // Couverture et pression sont deux mesures, affichées
-                    // ensemble. Le résumé en phrase répétait mot pour mot le
-                    // titre au-dessus et le décompte en dessous.
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Text(
-                          breakdown != null && breakdown!.familiesLine.isNotEmpty
-                              ? breakdown!.familiesLine
-                              : '${pressure.measured} source(s) mesurée(s)',
-                          style: const TextStyle(
-                            color: Color(0xFF84C9FF),
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        if (breakdown != null &&
-                            breakdown!.coverageLabel.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: _coverageTone(breakdown!.coverageLevel)
-                                  .withValues(alpha: .16),
-                              borderRadius: BorderRadius.circular(7),
-                            ),
+                          const SizedBox(width: 13),
+                          const Expanded(
                             child: Text(
-                              breakdown!.coverageLabel,
+                              'QUI ACHÈTE, QUI VEND ?',
                               style: TextStyle(
-                                color: _coverageTone(breakdown!.coverageLevel),
-                                fontSize: 12,
+                                color: Color(0xFFD8E8FF),
+                                fontSize: 14,
                                 fontWeight: FontWeight.w800,
+                                letterSpacing: .65,
                               ),
                             ),
                           ),
+                          Flexible(
+                            child: Text(
+                              // Le titre verrouillé par la couverture vient de la
+                              // décomposition; l'ancien modèle ne connaît pas
+                              // cette contrainte et dirait « dominant » sur une
+                              // seule famille.
+                              breakdown?.label ?? pressure.label,
+                              textAlign: TextAlign.right,
+                              style: TextStyle(
+                                color: tone,
+                                fontSize: 16,
+                                height: 1.15,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          const Icon(Icons.chevron_right_rounded,
+                              color: Color(0xFFAEDAFF), size: 26),
+                        ],
+                      ),
+                      if (balance != null) ...[
+                        const SizedBox(height: 16),
+                        _PressureBar(balance: balance),
                       ],
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      // Couverture et pression sont deux mesures, affichées
+                      // ensemble. Le résumé en phrase répétait mot pour mot le
+                      // titre au-dessus et le décompte en dessous.
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            breakdown != null &&
+                                    breakdown!.familiesLine.isNotEmpty
+                                ? breakdown!.familiesLine
+                                : '${pressure.measured} source(s) mesurée(s)',
+                            style: const TextStyle(
+                              color: Color(0xFF84C9FF),
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (breakdown != null &&
+                              breakdown!.coverageLabel.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: _coverageTone(breakdown!.coverageLevel)
+                                    .withValues(alpha: .16),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Text(
+                                breakdown!.coverageLabel,
+                                style: TextStyle(
+                                  color:
+                                      _coverageTone(breakdown!.coverageLevel),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1878,7 +1910,6 @@ Color _coverageTone(String level) => switch (level) {
       'INDICATIVE' || 'NONE' => AppColors.bad,
       _ => mobileMuted,
     };
-
 
 void _showPressureDetails(BuildContext context, MarketPressure pressure) {
   showModalBottomSheet<void>(

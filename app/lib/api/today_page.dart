@@ -290,12 +290,18 @@ class CatalystAlert {
 class Catalysts {
   final List<Catalyst> items;
   final CatalystAlert? alert;
+
+  /// Faux quand la ligne « prochain événement » du contexte dit déjà tout.
+  /// Deux blocs pour une échéance la faisaient paraître plus importante
+  /// qu'elle n'est.
+  final bool addsInformation;
   final String horizonNote;
   final String notNews;
 
   const Catalysts({
     this.items = const [],
     this.alert,
+    this.addsInformation = false,
     this.horizonNote = '',
     this.notNews = '',
   });
@@ -314,6 +320,7 @@ class Catalysts {
               note: _string(rawAlert['note']),
             )
           : null,
+      addsInformation: json['adds_information'] as bool? ?? false,
       horizonNote: _string(json['horizon_note']),
       notNews: _string(json['not_news']),
     );
@@ -323,10 +330,24 @@ class Catalysts {
 /// Trois catégories, jamais deux. Une cassure du haut de range invalide le
 /// range sans dégrader la lecture: la ranger dans « ce qui dégraderait »
 /// faisait lire une cassure haussière comme une mauvaise nouvelle.
+/// Une condition: un titre qu'on lit d'un coup, puis la ligne qui dit
+/// pourquoi elle compterait.
+class ChangeCondition {
+  final String title;
+  final String detail;
+
+  const ChangeCondition({required this.title, this.detail = ''});
+
+  factory ChangeCondition.fromJson(Map<String, dynamic> json) => ChangeCondition(
+        title: _string(json['title']),
+        detail: _string(json['detail']),
+      );
+}
+
 class ChangeConditions {
-  final List<String> improve;
-  final List<String> degrade;
-  final List<String> structureChange;
+  final List<ChangeCondition> improve;
+  final List<ChangeCondition> degrade;
+  final List<ChangeCondition> structureChange;
   final String improveTitle;
   final String degradeTitle;
   final String structureChangeTitle;
@@ -336,8 +357,8 @@ class ChangeConditions {
     this.improve = const [],
     this.degrade = const [],
     this.structureChange = const [],
-    this.improveTitle = 'POUR DEVENIR PLUS FAVORABLE',
-    this.degradeTitle = 'POUR DEVENIR MOINS FAVORABLE',
+    this.improveTitle = 'CE QUI AMÉLIORERAIT LE TIMING',
+    this.degradeTitle = 'RISQUES',
     this.structureChangeTitle = 'CHANGEMENT À SURVEILLER',
     this.note = '',
   });
@@ -347,18 +368,17 @@ class ChangeConditions {
   bool get isEmpty =>
       improve.isEmpty && degrade.isEmpty && structureChange.isEmpty;
 
-  static List<String> _texts(dynamic value) =>
-      _list(value).map((item) => _string(item['text'])).toList();
+  static List<ChangeCondition> _items(dynamic value) =>
+      _list(value).map(ChangeCondition.fromJson).toList();
 
   factory ChangeConditions.fromJson(Map<String, dynamic> json) =>
       ChangeConditions(
-        improve: _texts(json['improve']),
-        degrade: _texts(json['degrade']),
-        structureChange: _texts(json['structure_change']),
+        improve: _items(json['improve']),
+        degrade: _items(json['degrade']),
+        structureChange: _items(json['structure_change']),
         improveTitle:
-            _string(json['improve_title'], 'POUR DEVENIR PLUS FAVORABLE'),
-        degradeTitle:
-            _string(json['degrade_title'], 'POUR DEVENIR MOINS FAVORABLE'),
+            _string(json['improve_title'], 'CE QUI AMÉLIORERAIT LE TIMING'),
+        degradeTitle: _string(json['degrade_title'], 'RISQUES'),
         structureChangeTitle:
             _string(json['structure_change_title'], 'CHANGEMENT À SURVEILLER'),
         note: _string(json['note']),
@@ -390,12 +410,16 @@ class TimeframeSummary {
   final List<TimeframeRow> rows;
   final String alignment;
   final String alignmentLabel;
+
+  /// Une phrase, et c'est tout. Le reste appartient au détail.
+  final String sentence;
   final String note;
 
   const TimeframeSummary({
     this.rows = const [],
     this.alignment = 'UNDETERMINED',
     this.alignmentLabel = 'Indéterminé',
+    this.sentence = '',
     this.note = '',
   });
 
@@ -406,6 +430,7 @@ class TimeframeSummary {
         rows: _list(json['rows']).map(TimeframeRow.fromJson).toList(),
         alignment: _string(json['alignment'], 'UNDETERMINED'),
         alignmentLabel: _string(json['alignment_label'], 'Indéterminé'),
+        sentence: _string(json['sentence']),
         note: _string(json['note']),
       );
 }

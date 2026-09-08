@@ -667,7 +667,7 @@ class ChangeConditionsBlock extends StatelessWidget {
           if (conditions.improve.isNotEmpty)
             _ConditionGroup(
               title: conditions.improveTitle,
-              lines: conditions.improve,
+              conditions: conditions.improve,
               tone: AppColors.measured,
               glyph: '✓',
             ),
@@ -676,7 +676,7 @@ class ChangeConditionsBlock extends StatelessWidget {
           if (conditions.degrade.isNotEmpty)
             _ConditionGroup(
               title: conditions.degradeTitle,
-              lines: conditions.degrade,
+              conditions: conditions.degrade,
               tone: AppColors.bad,
               glyph: '✕',
             ),
@@ -684,9 +684,9 @@ class ChangeConditionsBlock extends StatelessWidget {
             const SizedBox(height: 11),
             _ConditionGroup(
               title: conditions.structureChangeTitle,
-              lines: conditions.structureChange,
+              conditions: conditions.structureChange,
               tone: AppColors.accent,
-              glyph: '↕',
+              glyph: '↗',
             ),
           ],
         ],
@@ -697,13 +697,13 @@ class ChangeConditionsBlock extends StatelessWidget {
 
 class _ConditionGroup extends StatelessWidget {
   final String title;
-  final List<String> lines;
+  final List<ChangeCondition> conditions;
   final Color tone;
   final String glyph;
 
   const _ConditionGroup({
     required this.title,
-    required this.lines,
+    required this.conditions,
     required this.tone,
     required this.glyph,
   });
@@ -713,21 +713,40 @@ class _ConditionGroup extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _BlockTitle(title),
-          const SizedBox(height: 6),
-          for (final line in lines)
+          const SizedBox(height: 7),
+          for (final condition in conditions)
             Padding(
-              padding: const EdgeInsets.only(bottom: 4),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(glyph,
-                      style: TextStyle(color: tone, fontSize: 13, height: 1.3)),
+                  Text(
+                    glyph,
+                    style: TextStyle(color: tone, fontSize: 13, height: 1.35),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      line,
-                      style: const TextStyle(
-                          color: mobileMuted, fontSize: 13, height: 1.32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Le titre se lit avant qu'on ait fini de lire; le
+                        // détail répond ensuite à « pourquoi ça compterait ».
+                        Text(
+                          condition.title,
+                          style: const TextStyle(
+                            color: AppColors.text,
+                            fontSize: 13.5,
+                            height: 1.3,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (condition.detail.isNotEmpty)
+                          Text(
+                            condition.detail,
+                            style: const TextStyle(
+                                color: mobileMuted, fontSize: 12.5, height: 1.32),
+                          ),
+                      ],
                     ),
                   ),
                 ],
@@ -888,6 +907,14 @@ class TimeframeStrip extends StatelessWidget {
                     ),
                 ],
               ),
+              if (summary.sentence.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  summary.sentence,
+                  style: const TextStyle(
+                      color: mobileMuted, fontSize: 12.5, height: 1.3),
+                ),
+              ],
               if (contradictions.has) ...[
                 const SizedBox(height: 9),
                 Container(

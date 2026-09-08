@@ -377,7 +377,8 @@ Map<String, dynamic> _page(String asset) => {
             'observation_time': '2026-09-08T00:00:00.000Z',
             'freshness': 'LIVE',
             'data_quality': 'MEASURED',
-            'explanation': 'Les vendeurs traversent le spread un peu plus souvent.',
+            'explanation':
+                'Les vendeurs traversent le spread un peu plus souvent.',
             'reason': '',
           },
         ],
@@ -760,7 +761,20 @@ void main() {
         );
         expect(find.byKey(const ValueKey('today-background')), findsOneWidget);
         expect(find.byKey(ValueKey(item.$3)), findsWidgets);
+        expect(
+          tester.widget<Image>(find.byKey(ValueKey(item.$3)).first).fit,
+          BoxFit.fill,
+        );
       }
+
+      expect(
+        tester
+            .widget<Image>(
+              find.byKey(const ValueKey('market-pressure-background')).first,
+            )
+            .fit,
+        BoxFit.fill,
+      );
     });
 
     testWidgets('la carte fermée ne montre que les réponses principales',

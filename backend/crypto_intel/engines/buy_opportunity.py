@@ -175,13 +175,13 @@ class BuyOpportunityExplanation:
     waits: list[DecisionFactor] = field(default_factory=list)
     negatives: list[DecisionFactor] = field(default_factory=list)
     missing: list[DecisionFactor] = field(default_factory=list)
-    improvement_conditions: list[str] = field(default_factory=list)
-    deterioration_conditions: list[str] = field(default_factory=list)
+    improvement_conditions: list[ChangeCondition] = field(default_factory=list)
+    deterioration_conditions: list[ChangeCondition] = field(default_factory=list)
 
     # Troisième catégorie, distincte des deux autres: un changement de
     # structure n'a pas de signe. Une cassure du haut de range invalide le
     # range sans dégrader le marché.
-    structure_change_conditions: list[str] = field(default_factory=list)
+    structure_change_conditions: list[ChangeCondition] = field(default_factory=list)
     as_of: str = ""
     provenance: dict[str, Any] = field(default_factory=dict)
     score: float | None = None
@@ -213,11 +213,26 @@ class BuyOpportunityExplanation:
             "waits": [f.to_dict() for f in self.waits],
             "negatives": [f.to_dict() for f in self.negatives],
             "missing": [f.to_dict() for f in self.missing],
-            "improvement_conditions": self.improvement_conditions,
-            "deterioration_conditions": self.deterioration_conditions,
-            "what_would_improve": self.improvement_conditions,
-            "what_would_deteriorate": self.deterioration_conditions,
-            "what_would_change_structure": self.structure_change_conditions,
+            # Structuré pour la page, en phrases pour les clients plus
+            # anciens qui n'attendaient qu'une liste de textes.
+            "improvement_conditions": [
+                item.to_dict() for item in self.improvement_conditions
+            ],
+            "deterioration_conditions": [
+                item.to_dict() for item in self.deterioration_conditions
+            ],
+            "structure_change_conditions": [
+                item.to_dict() for item in self.structure_change_conditions
+            ],
+            "what_would_improve": [
+                item.sentence for item in self.improvement_conditions
+            ],
+            "what_would_deteriorate": [
+                item.sentence for item in self.deterioration_conditions
+            ],
+            "what_would_change_structure": [
+                item.sentence for item in self.structure_change_conditions
+            ],
             "guard_rails_applied": self.guard_rails_applied,
             "measured_edge_state": self.measured_edge_state,
             "score": self.score, "as_of": self.as_of,
@@ -659,6 +674,26 @@ def _location_for(entry: Any) -> Any:
         return None
 
 
+@dataclass(slots=True)
+class ChangeCondition:
+    """Un titre court, puis une ligne d'explication.
+
+    Une phrase de trente mots dit la même chose mais ne se lit pas: sur la
+    page, « Retour vers le support » se comprend avant qu'on ait fini de lire,
+    et le détail répond ensuite à « pourquoi ça compterait ».
+    """
+
+    title: str
+    detail: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"title": self.title, "detail": self.detail}
+
+    @property
+    def sentence(self) -> str:
+        return f"{self.title} — {self.detail}"
+
+
 def _changes(
     entry: Any,
     edge_state: str,
@@ -666,7 +701,7 @@ def _changes(
     macro_events: list[dict[str, Any]],
     crowding_level: str,
     location: Any = None,
-) -> tuple[list[str], list[str], list[str]]:
+) -> tuple[list[ChangeCondition], list[ChangeCondition], list[ChangeCondition]]:
     """Trois catégories, pas deux.
 
     « La structure actuelle n'est plus valide » n'est pas « la situation
@@ -675,34 +710,48 @@ def _changes(
     range - une cassure haussière - s'affichait comme une dégradation. Une
     cassure change la structure; elle peut l'améliorer après confirmation.
     """
-    improve: list[str] = []
-    degrade: list[str] = []
-    change: list[str] = []
+    improve: list[ChangeCondition] = []
+    degrade: list[ChangeCondition] = []
+    change: list[ChangeCondition] = []
 
     for raw in getattr(entry, "factors", []) or []:
         contribution = float(getattr(raw, "contribution", 0) or 0)
         name = str(getattr(raw, "name", "")).lower()
         if contribution < 0 and "location" in name:
-            improve.append(
-                "un retour du prix vers le bas du range, avec maintien du support"
-            )
+            improve.append(ChangeCondition(
+                "Retour vers le support",
+                "Meilleur emplacement si le support tient.",
+            ))
         if contribution > 0 and "structure" in name:
-            degrade.append("la perte de la structure haussière actuelle")
+            degrade.append(ChangeCondition(
+                "Perte de la structure",
+                "La structure haussière actuelle ne tiendrait plus.",
+            ))
 
     if edge_state != "POSITIVE_EDGE":
-        improve.append(
-            "une relation qui franchisse enfin l'ensemble des filtres statistiques"
-        )
+        improve.append(ChangeCondition(
+            "Avantage confirmé",
+            "Une configuration qui passe enfin les tests statistiques.",
+        ))
     if crowding_level in ("ELEVATED", "EXTREME"):
-        improve.append("un encombrement dérivé qui redescende vers la normale")
+        improve.append(ChangeCondition(
+            "Levier qui se dégonfle",
+            "Un encombrement dérivé revenu vers sa normale.",
+        ))
     else:
-        degrade.append("une montée franche de l'encombrement dérivé")
+        degrade.append(ChangeCondition(
+            "Levier trop chargé",
+            "Un encombrement dérivé extrême dégraderait le timing.",
+        ))
 
     if any(
         0 < float(event.get("hours_until") or 0) <= MACRO_RISK_HOURS
         for event in macro_events
     ):
-        improve.append("le passage de l'échéance macro sans rupture de structure")
+        improve.append(ChangeCondition(
+            "Échéance macro passée",
+            "L'échéance franchie sans rupture de structure.",
+        ))
 
     # L'invalidation du range est un changement de structure, et sa direction
     # décide de ce qu'elle vaut. Elle est lue depuis l'état structurel, jamais
@@ -711,33 +760,52 @@ def _changes(
                                  getattr(location, "state", "")) or "")
     if location_state:
         if "TOP" in location_state:
-            change.append(
-                "une clôture 4H au-dessus du haut de range : le range serait "
-                "invalidé, ce qui n'est pas une dégradation — c'est une "
-                "cassure haussière, à confirmer par un retest"
-            )
-            change.append(
-                "un retour vers le bas du range, qui rendrait la structure "
-                "actuelle plus lisible"
-            )
+            change.append(ChangeCondition(
+                "Cassure du haut du range",
+                "Une clôture 4H au-dessus changerait la structure. "
+                "À confirmer par un retest.",
+            ))
+            change.append(ChangeCondition(
+                "Retour vers le bas du range",
+                "La structure actuelle redeviendrait lisible.",
+            ))
         elif "BOTTOM" in location_state:
-            change.append(
-                "une clôture 4H sous le bas de range : le range serait invalidé "
-                "par le bas, ce qui dégraderait la lecture"
-            )
-            degrade.append("la perte confirmée du bas de range")
+            change.append(ChangeCondition(
+                "Cassure du bas du range",
+                "Une clôture 4H en dessous changerait la structure.",
+            ))
+            degrade.append(ChangeCondition(
+                "Perte du bas de range",
+                "Le support qui cède confirmerait une lecture plus faible.",
+            ))
         else:
-            change.append(
-                "une sortie confirmée du range, dans un sens ou dans l'autre"
-            )
+            change.append(ChangeCondition(
+                "Sortie du range",
+                "Une clôture confirmée hors du range, dans un sens ou l'autre.",
+            ))
 
     if state in (BuyOpportunityState.OPPORTUNITY,
                  BuyOpportunityState.STRONG_OPPORTUNITY):
-        degrade.append("une expansion de la volatilité à la baisse")
+        degrade.append(ChangeCondition(
+            "Volatilité en expansion",
+            "Des mouvements plus amples à la baisse.",
+        ))
     if not degrade:
-        degrade.append("un retournement du régime journalier")
+        degrade.append(ChangeCondition(
+            "Régime journalier retourné",
+            "La tendance de fond qui bascule.",
+        ))
 
-    def unique(items: list[str], limit: int = 4) -> list[str]:
-        return list(dict.fromkeys(items))[:limit]
+    def unique(
+        items: list[ChangeCondition], limit: int = 3
+    ) -> list[ChangeCondition]:
+        seen: set[str] = set()
+        out: list[ChangeCondition] = []
+        for item in items:
+            if item.title in seen:
+                continue
+            seen.add(item.title)
+            out.append(item)
+        return out[:limit]
 
     return unique(improve), unique(degrade), unique(change)
