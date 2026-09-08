@@ -86,6 +86,11 @@ class HistoricalPattern:
     resolution: Resolution = Resolution.UNRESOLVED
     resolved_at: datetime | None = None
     bars_to_resolution: int | None = None
+    #: Le verdict du contrôle géométrique indépendant (niveau 1).
+    #:
+    #: Rempli par le balayage, pas par le détecteur: un détecteur qui se
+    #: valide lui-même ne prouve rien.
+    validation: dict[str, Any] | None = None
 
     @property
     def name(self) -> str:
@@ -101,6 +106,8 @@ class HistoricalPattern:
             self.resolved_at.isoformat() if self.resolved_at else None
         )
         payload["bars_to_resolution"] = self.bars_to_resolution
+        payload["detector_version"] = self.pattern.detector_version
+        payload["validation"] = self.validation
         payload["resolution_note"] = (
             "Whether this one figure reached its trigger or its invalidation "
             "first. It describes this instance only and is not an edge."
@@ -246,6 +253,20 @@ def scan_history(
             )
 
     ordered = _drop_overlapping(sorted(found.values(), key=lambda item: item.first_seen_time))
+
+    from ..pattern_validation import validate_geometry
+
+    for item in ordered:
+        # Contrôle indépendant, sur les mêmes barres que celles disponibles à
+        # la détection: valider avec des bougies postérieures importerait du
+        # futur dans un verdict censé décrire l'instant de la détection.
+        visible = df.iloc[: item.first_seen_index + 1]
+        item.validation = validate_geometry(
+            item.name,
+            item.pattern.geometry,
+            visible,
+            float(atr.iloc[item.first_seen_index]),
+        ).to_dict()
     for item in ordered:
         resolution, resolved_at, bars = _resolve(
             item.pattern, item.first_seen_index, close
@@ -355,7 +376,12 @@ import pathlib  # noqa: E402
 
 #: Bump when any detector's behaviour changes, so old scans are discarded
 #: rather than silently mixed with new ones.
-SCAN_VERSION = "lot5-history-1"
+#:
+#: `-2`: the head-and-shoulders neckline now joins the two armpits, valleys are
+#: measured on lows instead of closes, and the flag is anchored to pivots. Not
+#: bumping would have served yesterday's figures from disk under today's rules,
+#: and nothing would have said so.
+SCAN_VERSION = "lot5-history-3"
 
 SCAN_DIR = pathlib.Path("data/cache/figures")
 

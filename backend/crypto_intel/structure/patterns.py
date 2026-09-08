@@ -93,6 +93,9 @@ class StructuralPattern:
     geometry: PatternGeometry = field(default_factory=PatternGeometry)
     #: Bars from the first defining pivot to the last, for the bar-count gates.
     bars_span: int = 0
+    #: Which version of which detector produced this. Filled by `detect_all`
+    #: rather than by each detector, so a new detector cannot forget it.
+    detector_version: str = "unversioned"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -114,6 +117,7 @@ class StructuralPattern:
             "notes": self.notes,
             "geometry": self.geometry.to_dict(),
             "bars_span": self.bars_span,
+            "detector_version": self.detector_version,
             "separation_note": (
                 "recognition_confidence describes how cleanly the shape matches its "
                 "definition. It is NOT a probability of any price outcome."
@@ -1104,6 +1108,48 @@ def _default_floor() -> float:
 
 DEFAULT_MIN_CONFIDENCE = _default_floor()
 
+# --- detector versions ----------------------------------------------------
+#
+# One version per detector, bumped whenever a RULE changes - not when a
+# comment or a refactor changes. A benchmark result is meaningless without
+# knowing which rules produced it, and "the detector improved" is only a claim
+# until two versions can be compared on the same dataset.
+#
+# History, so a stored observation can be read years later:
+#   v1  the original detectors
+#   v2  LOT 4 gates: pivot quality, bar-span bounds, confidence floors
+#   v3  definitions checked against the reference:
+#         double/triple  valleys measured on lows, not on closes
+#         head&shoulders neckline joins the two armpits and may slope
+#         flag           pole anchored to pivots, steepness and straightness
+DETECTOR_VERSIONS: dict[str, str] = {
+    "double_bottom": "double_v3",
+    "double_top": "double_v3",
+    "triple_bottom": "triple_v3",
+    "triple_top": "triple_v3",
+    "head_and_shoulders": "head_shoulders_v3",
+    "inverse_head_and_shoulders": "head_shoulders_v3",
+    "triangle": "triangle_v2",
+    "ascending_triangle": "triangle_v2",
+    "descending_triangle": "triangle_v2",
+    "symmetrical_triangle": "triangle_v2",
+    "wedge": "wedge_v2",
+    "rising_wedge": "wedge_v2",
+    "falling_wedge": "wedge_v2",
+    "flag": "flag_v3",
+    "bull_flag": "flag_v3",
+    "bear_flag": "flag_v3",
+}
+
+
+def detector_version(pattern_name: str) -> str:
+    """Which rules produced this figure.
+
+    Unknown rather than a guess: an unversioned detector must be visible as
+    such, not silently folded into whatever version happens to be current.
+    """
+    return DETECTOR_VERSIONS.get(pattern_name, "unversioned")
+
 # --- flag geometry ---------------------------------------------------------
 #
 # The reference bounds the consolidation at roughly fifteen candles - beyond
@@ -1135,6 +1181,7 @@ def detect_all(
             continue
         if pattern is None:
             continue
+        pattern.detector_version = detector_version(pattern.name)
         if pattern.recognition_confidence < min_confidence:
             log.debug(
                 "pattern_below_floor", detector=name,
