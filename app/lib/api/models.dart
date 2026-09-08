@@ -1245,6 +1245,16 @@ class ChartRead {
   final String asset;
   final String timeframe;
   final String period;
+  final String exchange;
+  final String symbol;
+  final String pair;
+  final String quote;
+  final String source;
+  final DateTime? generatedAt;
+  final DateTime? asOf;
+  final DateTime? lastCandleAt;
+  final String refreshStatus;
+  final String refreshError;
   final bool available;
   final String reason;
   final List<CandlePoint> candles;
@@ -1258,6 +1268,16 @@ class ChartRead {
     required this.asset,
     required this.timeframe,
     required this.period,
+    required this.exchange,
+    required this.symbol,
+    required this.pair,
+    required this.quote,
+    required this.source,
+    required this.generatedAt,
+    required this.asOf,
+    required this.lastCandleAt,
+    required this.refreshStatus,
+    required this.refreshError,
     required this.available,
     required this.reason,
     required this.candles,
@@ -1272,6 +1292,16 @@ class ChartRead {
         asset: json['asset'] as String? ?? '',
         timeframe: json['timeframe'] as String? ?? '',
         period: json['period'] as String? ?? '',
+        exchange: json['exchange'] as String? ?? '',
+        symbol: json['symbol'] as String? ?? '',
+        pair: json['pair'] as String? ?? '',
+        quote: json['quote'] as String? ?? 'USDT',
+        source: json['source'] as String? ?? '',
+        generatedAt: DateTime.tryParse('${json['generated_at'] ?? ''}'),
+        asOf: DateTime.tryParse('${json['as_of'] ?? ''}'),
+        lastCandleAt: DateTime.tryParse('${json['last_candle_at'] ?? ''}'),
+        refreshStatus: json['refresh_status'] as String? ?? '',
+        refreshError: json['refresh_error'] as String? ?? '',
         available: json['available'] as bool? ?? false,
         reason: json['reason'] as String? ?? '',
         candles: ((json['candles'] as List?) ?? const [])
@@ -1311,6 +1341,16 @@ class ChartRead {
     if (value is num) return value.toInt();
     return candles.length;
   }
+
+  bool get downsampled => summary['downsampled'] as bool? ?? false;
+
+  int? get downsampleFactor =>
+      (summary['downsample_factor'] as num?)?.toInt();
+
+  int? get effectiveIntervalMinutes =>
+      (summary['effective_interval_minutes'] as num?)?.toInt();
+
+  DateTime? get observedAt => lastCandleAt ?? asOf ?? generatedAt;
 
   static Map<String, List<double?>> _seriesMap(Map? raw) {
     if (raw == null) return const {};

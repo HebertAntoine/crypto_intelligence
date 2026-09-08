@@ -183,10 +183,17 @@ async def job_ohlcv_sync() -> None:
 
     errors: list[str] = []
     for asset in Asset.tradables():
-        for timeframe in (Timeframe.D1, Timeframe.H4, Timeframe.H1):
+        # Les cinq unités, pas trois. La profondeur était bonne — neuf ans en
+        # hebdomadaire, quatre mois en quinze minutes — mais rien ne les
+        # rafraîchissait: la bougie hebdomadaire accusait huit jours et la
+        # quinze minutes quarante-trois heures. Une unité qu'on affiche et
+        # qu'aucun travail ne met à jour vieillit en silence.
+        for timeframe in (
+            Timeframe.W1, Timeframe.D1, Timeframe.H4, Timeframe.H1, Timeframe.M15,
+        ):
             try:
-                # Small depth: this tops up recent bars rather than re-fetching
-                # years of history on every cycle.
+                # Faible profondeur: on complète les barres récentes plutôt que
+                # de refetcher des années à chaque cycle.
                 await backfill_ohlcv(asset, timeframe, depth_days=5, max_requests=2)
             except Exception as exc:
                 errors.append(f"{asset.value}/{timeframe.value}: {exc}")

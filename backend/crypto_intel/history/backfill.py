@@ -45,6 +45,117 @@ DEFAULT_DEPTH_DAYS: dict[Timeframe, int] = {
 }
 
 
+async def refresh_recent_ohlcv(
+    asset: Asset,
+    timeframe: Timeframe,
+    limit: int = 400,
+) -> dict[str, Any]:
+    """Refresh the newest Binance bars with one bounded public request.
+
+    This is intentionally distinct from the historical paginator below. API
+    navigation and scheduled top-ups need only the most recent bars, not a
+    multi-request backfill. The caller owns any wall-clock timeout so it can
+    degrade to already stored history without delaying a response.
+    """
+    symbol = str(asset_meta(asset.value)["binance_symbol"])
+    source = "binance"
+    if get_settings().mock_mode:
+        return {
+            "ok": False,
+            "status": "SKIPPED_MOCK",
+            "error": None,
+            "source": source,
+            "fetched": 0,
+            "new_rows": 0,
+        }
+
+    requested = max(2, min(int(limit), 1000))
+    res = await get_http().get_json(
+        f"{BINANCE_SPOT}/api/v3/klines",
+        provider="binance_chart_refresh",
+        params={
+            "symbol": symbol,
+            "interval": _INTERVAL[timeframe],
+            "limit": requested,
+        },
+        cache_ttl=0,
+        rate_limit_per_min=110,
+        retries=0,
+    )
+    if not res.ok:
+        return {
+            "ok": False,
+            "status": res.status.value,
+            "error": res.message or res.status.user_message,
+            "source": source,
+            "fetched": 0,
+            "new_rows": 0,
+        }
+    if not isinstance(res.data, list) or not res.data:
+        return {
+            "ok": False,
+            "status": "NO_DATA",
+            "error": "Binance returned no OHLCV rows.",
+            "source": source,
+            "fetched": 0,
+            "new_rows": 0,
+        }
+
+    candles: list[Candle] = []
+    parse_errors = 0
+    for row in res.data:
+        try:
+            candles.append(
+                Candle(
+                    timestamp=datetime.fromtimestamp(int(row[0]) / 1000, tz=UTC),
+                    open=float(row[1]),
+                    high=float(row[2]),
+                    low=float(row[3]),
+                    close=float(row[4]),
+                    volume=float(row[5]),
+                )
+            )
+        except (IndexError, TypeError, ValueError):
+            parse_errors += 1
+
+    if not candles:
+        return {
+            "ok": False,
+            "status": "PARSE_ERROR",
+            "error": "Binance returned no valid OHLCV rows.",
+            "source": source,
+            "fetched": 0,
+            "new_rows": 0,
+        }
+
+    candles.sort(key=lambda candle: candle.timestamp)
+    written = store.save_candles(asset, timeframe, candles, source=source)
+    coverage = store.candle_coverage(asset, timeframe)
+    store.record_backfill(
+        dataset="ohlcv",
+        asset=asset,
+        timeframe=timeframe,
+        earliest=coverage["start"],
+        latest=coverage["end"],
+        rows=coverage["rows"],
+        source=source,
+        complete=False,
+        note=(
+            f"recent refresh: {len(candles)} rows, {written} new"
+            + (f", {parse_errors} invalid ignored" if parse_errors else "")
+        ),
+    )
+    return {
+        "ok": True,
+        "status": "OK",
+        "error": None,
+        "source": source,
+        "fetched": len(candles),
+        "new_rows": written,
+        "last_candle_time": candles[-1].timestamp,
+    }
+
+
 async def backfill_ohlcv(
     asset: Asset,
     timeframe: Timeframe,

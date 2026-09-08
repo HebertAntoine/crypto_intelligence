@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
+from ..config_loader import asset_meta
 from ..core.enums import Asset, Timeframe
 from ..db import repo
 from ..engines.technical import indicators as ind
@@ -19,9 +20,13 @@ from ..logging_setup import get_logger
 from ..reports.daily import render_daily_report
 from ..research import calibration, etf_study, event_study
 from ..scheduler import scheduler_state
+from ..settings import get_settings
 
 log = get_logger("api.lot2")
 router = APIRouter()
+
+_CHART_REFRESH_TIMEOUT_SECONDS = 4.0
+_CHART_REFRESH_LIMIT = 400
 
 
 def _parse_asset(symbol: str) -> Asset:
@@ -33,6 +38,109 @@ def _parse_asset(symbol: str) -> Asset:
 
 # --- charts ---------------------------------------------------------------
 
+async def _refresh_chart_history(asset: Asset, timeframe: Timeframe) -> dict[str, Any]:
+    """Top up recent Binance candles without making chart availability depend on it."""
+    if get_settings().mock_mode:
+        return {
+            "attempted": False,
+            "status": "skipped_mock",
+            "error": None,
+            "source": None,
+            "fetched": 0,
+            "new_rows": 0,
+        }
+
+    try:
+        result = await asyncio.wait_for(
+            backfill_module.refresh_recent_ohlcv(
+                asset,
+                timeframe,
+                limit=_CHART_REFRESH_LIMIT,
+            ),
+            timeout=_CHART_REFRESH_TIMEOUT_SECONDS,
+        )
+    except TimeoutError:
+        error = f"Binance refresh exceeded {_CHART_REFRESH_TIMEOUT_SECONDS:g}s."
+        log.warning(
+            "chart_refresh_timeout",
+            asset=asset.value,
+            timeframe=timeframe.value,
+            timeout_seconds=_CHART_REFRESH_TIMEOUT_SECONDS,
+        )
+        return {
+            "attempted": True,
+            "status": "timeout",
+            "error": error,
+            "source": "binance",
+            "fetched": 0,
+            "new_rows": 0,
+        }
+    except Exception as exc:
+        # Navigation must still work from the last verified local history when
+        # Binance or storage is temporarily unavailable.
+        error = f"{type(exc).__name__}: {exc}"[:300]
+        log.warning(
+            "chart_refresh_failed",
+            asset=asset.value,
+            timeframe=timeframe.value,
+            error=error,
+        )
+        return {
+            "attempted": True,
+            "status": "failed",
+            "error": error,
+            "source": "binance",
+            "fetched": 0,
+            "new_rows": 0,
+        }
+
+    ok = bool(result.get("ok"))
+    provider_status = str(result.get("status") or "").upper()
+    status = "refreshed" if ok else ("no_data" if provider_status == "NO_DATA" else "failed")
+    return {
+        "attempted": True,
+        "status": status,
+        "error": None if ok else str(result.get("error") or "Binance refresh failed.")[:300],
+        "source": result.get("source") or "binance",
+        "fetched": int(result.get("fetched") or 0),
+        "new_rows": int(result.get("new_rows") or 0),
+    }
+
+
+def _chart_market_metadata(
+    asset: Asset,
+    timeframe: Timeframe,
+    refresh: dict[str, Any],
+) -> dict[str, Any]:
+    stored = store.candle_metadata(asset, timeframe)
+    binance_symbol = str(asset_meta(asset.value)["binance_symbol"])
+    quote = binance_symbol.removeprefix(asset.value) or "USDT"
+    last_candle = stored["end"]
+    last_candle_iso = last_candle.isoformat() if last_candle is not None else None
+    latest_source = stored["source"]
+    sources = list(stored["sources"])
+    if latest_source is None and refresh["status"] == "refreshed":
+        latest_source = refresh["source"]
+    if latest_source and latest_source not in sources:
+        sources.append(latest_source)
+
+    return {
+        "exchange": "BINANCE",
+        "symbol": binance_symbol,
+        "pair": f"{asset.value}/{quote}",
+        "quote": quote,
+        "source": latest_source,
+        "sources": sources,
+        "generated_at": datetime.now(UTC).isoformat(),
+        "as_of": last_candle_iso,
+        "last_candle_time": last_candle_iso,
+        "refresh_status": refresh["status"],
+        "refresh_error": refresh["error"],
+        "refresh_attempted": refresh["attempted"],
+        "refresh_fetched": refresh["fetched"],
+        "refresh_new_rows": refresh["new_rows"],
+    }
+
 @router.get("/chart/{symbol}")
 async def chart(
     symbol: str,
@@ -40,10 +148,11 @@ async def chart(
     period: str = Query("3m", description="7d, 30d, 3m, 1y or max"),
     indicators: str = Query("ema20,ema50,ema200,bb,rsi,macd"),
 ) -> dict[str, Any]:
-    """Candles plus overlays, served from the local history store.
+    """Candles plus overlays, refreshed from Binance then read from storage.
 
-    Reading from storage rather than re-fetching keeps chart navigation instant
-    and means the chart shows exactly the data the analysis used.
+    The production refresh is bounded and best-effort: when Binance is slow or
+    unavailable, the response still serves the last verified local history and
+    declares the refresh failure in metadata. MOCK_MODE never touches network.
 
     Indicators are computed on the FULL window and only then carried through the
     same aggregation as the candles. Computing them on already-aggregated bars
@@ -58,10 +167,13 @@ async def chart(
         known = ", ".join(window_module.PERIOD_DAYS)
         raise HTTPException(400, f"Unknown period '{period}'. Known: {known}")
 
+    refresh = await _refresh_chart_history(asset, tf)
+    metadata = _chart_market_metadata(asset, tf, refresh)
     full = store.load_candles(asset, tf)
     if full.empty:
         return {
             "asset": asset.value, "timeframe": tf.value, "period": period,
+            **metadata,
             "available": False,
             "reason": (
                 "UNAVAILABLE - no stored candles for this timeframe. "
@@ -176,6 +288,7 @@ async def chart(
 
     return {
         "asset": asset.value, "timeframe": tf.value, "period": period,
+        **metadata,
         "available": True,
         "summary": win.summary(),
         "candles": [

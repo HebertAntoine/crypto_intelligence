@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import distinct, func, select
 
 from ..core.enums import Asset, Timeframe
 from ..core.models import Candle
@@ -61,6 +61,11 @@ def save_candles(
                 if row is not None:
                     row.open, row.high, row.low = c.open, c.high, c.low
                     row.close, row.volume = c.close, c.volume
+                    if source:
+                        # Provenance follows the values. Keeping an old source
+                        # after replacing a forming candle would make the chart
+                        # metadata claim that another venue supplied it.
+                        row.source = source
                 continue
             s.add(
                 OHLCVRow(
@@ -122,6 +127,48 @@ def candle_coverage(asset: Asset, timeframe: Timeframe) -> dict[str, Any]:
     return {
         "rows": len(rows), "start": start, "end": end,
         "days": round((end - start).total_seconds() / 86400.0, 1),
+    }
+
+
+def candle_metadata(asset: Asset, timeframe: Timeframe) -> dict[str, Any]:
+    """Return cheap coverage and provenance metadata without loading candles.
+
+    ``source`` is the source attached to the newest stored bar, while
+    ``sources`` documents every source present in the selected series. The two
+    are deliberately separate: a historical import can contain older rows from
+    another provider even after the current bar has been refreshed by Binance.
+    """
+    with session_scope() as s:
+        count, start, end = s.execute(
+            select(
+                func.count(OHLCVRow.id),
+                func.min(OHLCVRow.timestamp),
+                func.max(OHLCVRow.timestamp),
+            ).where(
+                OHLCVRow.asset == asset.value,
+                OHLCVRow.timeframe == timeframe.value,
+            )
+        ).one()
+        latest_source = s.execute(
+            select(OHLCVRow.source).where(
+                OHLCVRow.asset == asset.value,
+                OHLCVRow.timeframe == timeframe.value,
+            ).order_by(OHLCVRow.timestamp.desc()).limit(1)
+        ).scalar_one_or_none()
+        sources = s.execute(
+            select(distinct(OHLCVRow.source)).where(
+                OHLCVRow.asset == asset.value,
+                OHLCVRow.timeframe == timeframe.value,
+                OHLCVRow.source != "",
+            ).order_by(OHLCVRow.source)
+        ).scalars().all()
+
+    return {
+        "rows": int(count or 0),
+        "start": _as_utc(start),
+        "end": _as_utc(end),
+        "source": latest_source or None,
+        "sources": list(sources),
     }
 
 
