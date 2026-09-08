@@ -1,32 +1,50 @@
 {
-  "as_of": "2026-09-07T20:33:44.774707+00:00",
+  "analysis_id": "an_b624970db5089aec",
+  "analysis_time": "2026-09-08T11:25:02.439262+00:00",
+  "as_of": "2026-09-08T11:25:08.042818+00:00",
   "asset": "SOL",
   "crowding": {
     "asset": "SOL",
     "components": {
-      "funding_stretch": 37.2,
-      "oi_percentile": 84.4,
+      "funding_stretch": 36.0,
+      "oi_percentile": 84.1,
       "oi_velocity": 0.0
     },
     "direction": "UNKNOWN",
-    "funding_percentile": 31.4,
+    "funding_percentile": 32.0,
     "interpretation": "crowding NORMAL (40/100) from funding_stretch, oi_percentile, oi_velocity. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
     "level": "NORMAL",
     "missing": [],
-    "oi_change_7d_pct": -9.3,
-    "oi_percentile": 84.4,
-    "score": 40.5
+    "oi_change_7d_pct": -8.58,
+    "oi_percentile": 84.1,
+    "score": 40.0
   },
   "funding": {
-    "annualised_pct": -1.2,
+    "annualised_pct": -0.7,
     "asset": "SOL",
     "band": "NEUTRAL",
-    "history_days": 2186,
-    "note": "funding -0.000011 sits at the 31th percentile of 2186 days of this asset's own history",
-    "percentile": 31.4,
+    "history_days": 2187,
+    "note": "funding -0.000006 sits at the 32th percentile of 2187 days of this asset's own history",
+    "percentile": 32.0,
     "sufficient_history": true,
-    "value": -1.093e-05
+    "value": -6.42e-06
   },
+  "leverage_state": {
+    "asset": "SOL",
+    "confidence": "MEDIUM",
+    "funding_band": "NEUTRAL",
+    "inputs_missing": [],
+    "inputs_used": [
+      "price",
+      "funding",
+      "open_interest"
+    ],
+    "interpretation": "price rose while open interest fell: the move looks like existing shorts closing, not fresh buying",
+    "oi_change_pct": -8.58,
+    "price_change_pct": 3.43,
+    "state": "SHORT_COVERING"
+  },
+  "price_at_analysis": 103.43,
   "state": {
     "asset": "SOL",
     "confidence": "MEDIUM",
@@ -37,9 +55,9 @@
       "funding",
       "open_interest"
     ],
-    "interpretation": "open interest falling without a decisive price move",
-    "oi_change_pct": -9.3,
-    "price_change_pct": 0.46,
-    "state": "DELEVERAGING"
+    "interpretation": "price rose while open interest fell: the move looks like existing shorts closing, not fresh buying",
+    "oi_change_pct": -8.58,
+    "price_change_pct": 3.43,
+    "state": "SHORT_COVERING"
   }
 }

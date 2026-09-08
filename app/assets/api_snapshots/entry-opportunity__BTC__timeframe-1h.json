@@ -1,48 +1,58 @@
 {
+  "analysis_id": null,
   "asset": "BTC",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
-      "contribution": -20.0,
-      "detail": "En 1h, le prix est sous son range (qualit\u00e9 de zone 58/100)",
+      "contribution": 35.0,
+      "detail": "En 1h, le prix est sur le bas de son range (qualit\u00e9 de zone 57/100)",
       "is_measured_edge": false,
       "name": "structural location",
       "source": "structure"
     },
     {
-      "contribution": 8.0,
-      "detail": "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways",
-      "is_measured_edge": false,
-      "name": "volatility compressed",
-      "source": "volatility"
-    },
-    {
-      "contribution": 4.0,
-      "detail": "funding sits below its median, at the 24th percentile",
-      "is_measured_edge": false,
-      "name": "funding leaning",
-      "source": "derivatives"
-    },
-    {
-      "contribution": 0.0,
-      "detail": "1d structure is a range (LH HH HL HL)",
+      "contribution": 30.0,
+      "detail": "Structure 1d haussi\u00e8re (HH HH HL HL)",
       "is_measured_edge": false,
       "name": "higher timeframe structure",
       "source": "structure"
+    },
+    {
+      "contribution": 12.0,
+      "detail": "Encombrement d\u00e9riv\u00e9 faible, 27.5/100",
+      "is_measured_edge": false,
+      "name": "crowding low",
+      "source": "derivatives"
+    },
+    {
+      "contribution": 8.0,
+      "detail": "Funding dans sa normale, au 45e centile de son historique",
+      "is_measured_edge": false,
+      "name": "funding normalised",
+      "source": "derivatives"
+    },
+    {
+      "contribution": 8.0,
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.4e centile : les mouvements sont petits, dans les deux sens",
+      "is_measured_edge": false,
+      "name": "volatility compressed",
+      "source": "volatility"
     }
   ],
-  "invalidation": "A 1h close back above 79595.77 would mean the breakdown failed and price has reintegrated the range.",
+  "from_analysis": false,
+  "invalidation": "Une cl\u00f4ture 1h sous 78588.59 casserait la zone basse du range et invaliderait cette lecture.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [],
-  "score": -2.0,
-  "state": "NEUTRAL",
-  "statement": "BTC 1h configuration is NEUTRAL (-2). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "score": 18.6,
+  "state": "FAVORABLE",
+  "statement": "BTC 1h configuration is FAVORABLE (+19). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "1h",
   "why_now": [
-    "En 1h, le prix est sous son range (qualit\u00e9 de zone 58/100)",
-    "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways",
-    "funding sits below its median, at the 24th percentile",
-    "1d structure is a range (LH HH HL HL)"
+    "En 1h, le prix est sur le bas de son range (qualit\u00e9 de zone 57/100)",
+    "Structure 1d haussi\u00e8re (HH HH HL HL)",
+    "Encombrement d\u00e9riv\u00e9 faible, 27.5/100",
+    "Funding dans sa normale, au 45e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.4e centile : les mouvements sont petits, dans les deux sens"
   ]
 }

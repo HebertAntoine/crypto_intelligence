@@ -1,4 +1,5 @@
 {
+  "analysis_id": null,
   "asset": "ETH",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
@@ -11,32 +12,33 @@
     },
     {
       "contribution": 8.0,
-      "detail": "funding is mid-range at the 27th percentile",
-      "is_measured_edge": false,
-      "name": "funding normalised",
-      "source": "derivatives"
-    },
-    {
-      "contribution": 8.0,
-      "detail": "volatility LOW at the 10.8th percentile - moves are small, which cuts both ways",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 9.0e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
+    },
+    {
+      "contribution": 4.0,
+      "detail": "Funding sous sa m\u00e9diane, au 20e centile",
+      "is_measured_edge": false,
+      "name": "funding leaning",
+      "source": "derivatives"
     }
   ],
-  "invalidation": "A 1d close above 2579.94 would break the range top zone and invalidate the current range reading.",
+  "from_analysis": false,
+  "invalidation": "Une cl\u00f4ture 1d au-dessus de 2579.08 casserait la zone haute du range et invaliderait cette lecture.",
   "measured_edge_note": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict f",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [
     "structure 1w ind\u00e9termin\u00e9e (\u00e9tat inconnu)"
   ],
-  "score": -3.0,
+  "score": -4.3,
   "state": "NEUTRAL",
-  "statement": "ETH 1d configuration is NEUTRAL (-3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: structure 1w ind\u00e9termin\u00e9e (\u00e9tat inconnu).",
+  "statement": "ETH 1d configuration is NEUTRAL (-4). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: structure 1w ind\u00e9termin\u00e9e (\u00e9tat inconnu).",
   "timeframe": "1d",
   "why_now": [
     "En 1d, le prix est proche du haut de son range (qualit\u00e9 de zone 63/100)",
-    "funding is mid-range at the 27th percentile",
-    "volatility LOW at the 10.8th percentile - moves are small, which cuts both ways"
+    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 9.0e centile : les mouvements sont petits, dans les deux sens",
+    "Funding sous sa m\u00e9diane, au 20e centile"
   ]
 }

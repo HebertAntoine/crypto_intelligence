@@ -1,48 +1,50 @@
 {
+  "analysis_id": null,
   "asset": "SOL",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
+      "contribution": 25.0,
+      "detail": "En 1h, le prix est proche du bas de son range (qualit\u00e9 de zone 50/100)",
+      "is_measured_edge": false,
+      "name": "structural location",
+      "source": "structure"
+    },
+    {
       "contribution": 8.0,
-      "detail": "funding is mid-range at the 31th percentile",
+      "detail": "Funding dans sa normale, au 32e centile de son historique",
       "is_measured_edge": false,
       "name": "funding normalised",
       "source": "derivatives"
     },
     {
       "contribution": 8.0,
-      "detail": "volatility VERY_LOW at the 6.3th percentile - moves are small, which cuts both ways",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.5e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
     },
     {
       "contribution": 0.0,
-      "detail": "1d structure is a range (LH HH HL HL)",
+      "detail": "Structure 1d en range (LH HH HL HL)",
       "is_measured_edge": false,
       "name": "higher timeframe structure",
       "source": "structure"
-    },
-    {
-      "contribution": 0.0,
-      "detail": "En 1h, le prix est au milieu de son range (qualit\u00e9 de zone 72/100)",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
     }
   ],
-  "invalidation": "A 1h close outside 98.20-107.39 would invalidate the current range reading.",
+  "from_analysis": false,
+  "invalidation": "Une cl\u00f4ture 1h sous 102.74 casserait la zone basse du range et invaliderait cette lecture.",
   "measured_edge_note": "9 candidate relationships were tested for SOL and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [],
-  "score": 4.0,
-  "state": "NEUTRAL",
-  "statement": "SOL 1h configuration is NEUTRAL (+4). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "score": 10.2,
+  "state": "FAVORABLE",
+  "statement": "SOL 1h configuration is FAVORABLE (+10). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "1h",
   "why_now": [
-    "funding is mid-range at the 31th percentile",
-    "volatility VERY_LOW at the 6.3th percentile - moves are small, which cuts both ways",
-    "1d structure is a range (LH HH HL HL)",
-    "En 1h, le prix est au milieu de son range (qualit\u00e9 de zone 72/100)"
+    "En 1h, le prix est proche du bas de son range (qualit\u00e9 de zone 50/100)",
+    "Funding dans sa normale, au 32e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.5e centile : les mouvements sont petits, dans les deux sens",
+    "Structure 1d en range (LH HH HL HL)"
   ]
 }

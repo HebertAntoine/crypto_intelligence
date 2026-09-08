@@ -738,7 +738,7 @@ void main() {
         ('FAVORABLE', false, 'assets/visuals/opportunity_favorable.png'),
         ('WATCH', false, 'assets/visuals/opportunity_insufficient.png'),
         ('WAIT', false, 'assets/visuals/opportunity_wait.png'),
-        ('WAIT', true, 'assets/visuals/opportunity_risk.png'),
+        ('WAIT', true, 'assets/visuals/opportunity_wait.png'),
         ('UNFAVORABLE', false, 'assets/visuals/opportunity_unfavorable.png'),
         (
           'INSUFFICIENT_DATA',

@@ -105,6 +105,36 @@ def _fetch_json(base_url: str, path: str, query: dict[str, str] | None) -> objec
     return json.loads(body)
 
 
+def _in_process_fetcher():
+    """Appeler l'API dans ce processus, sans passer par le réseau.
+
+    Le planificateur et l'API partagent une boucle d'événements: pendant le
+    travail d'analyse, qui interroge des flux distants, une requête HTTP peut
+    attendre plusieurs minutes et l'export échouait par expiration. Ici
+    l'export n'entre en concurrence avec rien, et il n'exige plus qu'un serveur
+    tourne.
+    """
+    import sys
+
+    sys.path.insert(0, str(PROJECT_ROOT / "backend"))
+    from fastapi.testclient import TestClient
+
+    from crypto_intel.main import app
+
+    client = TestClient(app)
+
+    def fetch(_base_url: str, path: str, query: dict[str, str] | None) -> dict:
+        response = client.get(f"/api{path}", params=query or {})
+        if response.status_code != 200:
+            raise RuntimeError(
+                f"/api{path} returned HTTP {response.status_code}: "
+                f"{response.text[:500]}"
+            )
+        return response.json()
+
+    return fetch
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base-url", default="http://127.0.0.1:8100")
@@ -113,7 +143,14 @@ def main() -> None:
         action="store_true",
         help="Refresh only the three first-page payloads.",
     )
+    parser.add_argument(
+        "--in-process",
+        action="store_true",
+        help="Build the payloads in this process instead of over HTTP.",
+    )
     args = parser.parse_args()
+
+    fetch = _in_process_fetcher() if args.in_process else _fetch_json
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     written: list[str] = []
@@ -123,7 +160,7 @@ def main() -> None:
         endpoints = [item for item in endpoints if item[0].startswith("/today/")]
 
     for path, query in endpoints:
-        data = _fetch_json(args.base_url, path, query)
+        data = fetch(args.base_url, path, query)
         target = OUT_DIR / _snapshot_name(path, query)
         target.write_text(
             json.dumps(data, ensure_ascii=True, indent=2, sort_keys=True) + "\n",

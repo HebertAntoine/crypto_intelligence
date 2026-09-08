@@ -1,42 +1,58 @@
 {
+  "analysis_id": null,
   "asset": "BTC",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
       "contribution": -30.0,
-      "detail": "1w structure is bearish (LH LH LL LL)",
+      "detail": "Structure 1w baissi\u00e8re (LH LH LL LL)",
       "is_measured_edge": false,
       "name": "higher timeframe structure",
       "source": "structure"
     },
     {
+      "contribution": -12.0,
+      "detail": "En 1d, le prix est dans le tiers haut de son range (qualit\u00e9 de zone 61/100)",
+      "is_measured_edge": false,
+      "name": "structural location",
+      "source": "structure"
+    },
+    {
+      "contribution": 12.0,
+      "detail": "Encombrement d\u00e9riv\u00e9 faible, 27.5/100",
+      "is_measured_edge": false,
+      "name": "crowding low",
+      "source": "derivatives"
+    },
+    {
       "contribution": 8.0,
-      "detail": "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways",
+      "detail": "Funding dans sa normale, au 45e centile de son historique",
+      "is_measured_edge": false,
+      "name": "funding normalised",
+      "source": "derivatives"
+    },
+    {
+      "contribution": 8.0,
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.4e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
-    },
-    {
-      "contribution": 4.0,
-      "detail": "funding sits below its median, at the 24th percentile",
-      "is_measured_edge": false,
-      "name": "funding leaning",
-      "source": "derivatives"
     }
   ],
-  "invalidation": "no validated range, so no objective structural invalidation can be stated",
+  "from_analysis": false,
+  "invalidation": "Une cl\u00f4ture 1d au-dessus de 82850.00 casserait la zone haute du range et invaliderait cette lecture.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
-  "missing": [
-    "no validated range on this timeframe"
-  ],
-  "score": -6.0,
+  "missing": [],
+  "score": -2.8,
   "state": "NEUTRAL",
-  "statement": "BTC 1d configuration is NEUTRAL (-6). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: no validated range on this timeframe.",
+  "statement": "BTC 1d configuration is NEUTRAL (-3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "1d",
   "why_now": [
-    "1w structure is bearish (LH LH LL LL)",
-    "volatility LOW at the 14.4th percentile - moves are small, which cuts both ways",
-    "funding sits below its median, at the 24th percentile"
+    "Structure 1w baissi\u00e8re (LH LH LL LL)",
+    "En 1d, le prix est dans le tiers haut de son range (qualit\u00e9 de zone 61/100)",
+    "Encombrement d\u00e9riv\u00e9 faible, 27.5/100",
+    "Funding dans sa normale, au 45e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.4e centile : les mouvements sont petits, dans les deux sens"
   ]
 }
