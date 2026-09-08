@@ -10,7 +10,7 @@
   "sources": [
     "binance"
   ],
-  "generated_at": "2026-09-08T17:47:46.306725+00:00",
+  "generated_at": "2026-09-08T20:54:22.535120+00:00",
   "as_of": "2026-09-08T00:00:00+00:00",
   "last_candle_time": "2026-09-08T00:00:00+00:00",
   "refresh_status": "refreshed",
@@ -21,9 +21,9 @@
   "available": true,
   "summary": {
     "available": true,
-    "last_price": 103.8,
+    "last_price": 103.24,
     "first_price": 63.19,
-    "change_pct": 64.26649786358601,
+    "change_pct": 63.38028169014084,
     "period_high": 110.6,
     "period_low": 62.34,
     "high_time": "2026-08-27T00:00:00+00:00",
@@ -763,8 +763,8 @@
       "open": 103.81,
       "high": 104.83,
       "low": 101.72,
-      "close": 103.8,
-      "volume": 1593539.521
+      "close": 103.24,
+      "volume": 1825447.151
     }
   ],
   "overlays": {
@@ -859,7 +859,7 @@
       96.85499051,
       97.77832475,
       98.35181763,
-      98.87069214
+      98.81735881
     ],
     "ema50": [
       80.21511576,
@@ -952,7 +952,7 @@
       88.16840627,
       88.88925308,
       89.47398826,
-      90.03579264
+      90.01383185
     ],
     "ema200": [
       105.67019459,
@@ -1045,7 +1045,7 @@
       91.86475949,
       92.01088129,
       92.12818595,
-      92.2443234
+      92.23875126
     ],
     "bb_upper": [
       93.28373126,
@@ -1138,7 +1138,7 @@
       114.75416039,
       113.89446187,
       111.79763465,
-      110.79550969
+      110.73666922
     ],
     "bb_middle": [
       75.9635,
@@ -1231,7 +1231,7 @@
       96.9955,
       98.522,
       99.8595,
-      100.7805
+      100.7525
     ],
     "bb_lower": [
       58.64326874,
@@ -1324,7 +1324,7 @@
       79.23683961,
       83.14953813,
       87.92136535,
-      90.76549031
+      90.76833078
     ]
   },
   "panels": {
@@ -1419,7 +1419,7 @@
       64.67961756,
       68.12684303,
       62.74522979,
-      62.74522979
+      61.67677563
     ],
     "macd": [
       -5.95842363,
@@ -1512,7 +1512,7 @@
       6.0997185,
       6.13044215,
       5.86527757,
-      5.59068678
+      5.54601442
     ],
     "macd_signal": [
       -4.64971775,
@@ -1605,7 +1605,7 @@
       6.43330787,
       6.37273473,
       6.2712433,
-      6.13513199
+      6.12619752
     ],
     "macd_hist": [
       -1.30870588,
@@ -1698,7 +1698,7 @@
       -0.33358937,
       -0.24229258,
       -0.40596572,
-      -0.54444521
+      -0.5801831
     ]
   },
   "levels": {
@@ -1708,37 +1708,3889 @@
   "patterns": [],
   "structural_patterns": [
     {
-      "name": "bull_flag",
-      "pattern_class": "EXPERIMENTAL",
-      "state": "CANDIDATE",
-      "recognition_confidence": 100.0,
-      "detected_at": "2026-09-08T00:00:00+00:00",
-      "confirmation_time": null,
+      "name": "inverse_head_and_shoulders",
+      "pattern_class": "HEURISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 68.2,
+      "detected_at": "2020-11-17T00:00:00+00:00",
+      "confirmation_time": "2020-11-17T00:00:00+00:00",
       "direction_if_textbook": "BULLISH",
       "key_levels": {
-        "pole_start": 75.99,
-        "pole_end": 109.14
+        "left_shoulder": 2.0123,
+        "head": 1.2733,
+        "right_shoulder": 1.825,
+        "neckline": 2.5836
       },
-      "invalidation_level": null,
-      "invalidation_rule": "a close beyond the start of the pole invalidates the continuation reading",
+      "invalidation_level": 1.2733,
+      "invalidation_rule": "a 1d close beyond the head at 1.27 invalidates the pattern",
       "components": {
-        "pole_atr": 7.0,
-        "flag_atr": -0.07
+        "head_prominence": 84.1,
+        "shoulder_symmetry": 52.4,
+        "prominence_atr": 2.103,
+        "shoulder_difference_atr": 0.714
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "head stands 2.10 ATR beyond shoulders that agree within 0.71 ATR",
+      "geometry": {
+        "points": [
+          {
+            "time": "2020-10-08T00:00:00+00:00",
+            "price": 2.0123,
+            "role": "left_shoulder",
+            "kind": "pivot"
+          },
+          {
+            "time": "2020-11-04T00:00:00+00:00",
+            "price": 1.2733,
+            "role": "head",
+            "kind": "pivot"
+          },
+          {
+            "time": "2020-11-12T00:00:00+00:00",
+            "price": 1.825,
+            "role": "right_shoulder",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2020-10-08T00:00:00+00:00",
+              "price": 2.5836,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2020-11-17T00:00:00+00:00",
+              "price": 2.5836,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2020-10-08T00:00:00+00:00",
+            "end_time": "2020-11-17T00:00:00+00:00",
+            "low": 1.2733,
+            "high": 2.5836,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2020-10-08T00:00:00+00:00",
+            "price": 2.5836,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2020-11-17T00:00:00+00:00",
+            "price": 2.5836,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2020-10-08T00:00:00+00:00",
+          "end_time": "2020-11-17T00:00:00+00:00",
+          "low": 1.2733,
+          "high": 2.5836,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 35,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2020-11-17T00:00:00+00:00",
+      "span_start": "2020-10-08T00:00:00+00:00",
+      "span_end": "2020-11-17T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2020-12-23T00:00:00+00:00",
+      "bars_to_resolution": 36,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 67.7,
+      "detected_at": "2020-12-22T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 2.2786,
+        "pole_end": 1.5683
+      },
+      "invalidation_level": 2.2786,
+      "invalidation_rule": "a close beyond the start of the pole at 2.28 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -4.06,
+        "flag_atr": 0.29
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
       "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
       "geometry": {
-        "points": [],
-        "trend_lines": [],
-        "zones": [],
+        "points": [
+          {
+            "time": "2020-11-23T00:00:00+00:00",
+            "price": 2.2786,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2020-12-10T00:00:00+00:00",
+            "price": 1.5683,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2020-11-23T00:00:00+00:00",
+              "price": 2.2786,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2020-12-10T00:00:00+00:00",
+              "price": 1.5683,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2020-12-11T00:00:00+00:00",
+            "end_time": "2020-12-22T00:00:00+00:00",
+            "low": 1.4328,
+            "high": 1.8064,
+            "role": "consolidation"
+          }
+        ],
         "neckline": null,
         "breakout_area": null
       },
-      "bars_span": 0,
-      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome."
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2020-12-22T00:00:00+00:00",
+      "span_start": "2020-11-23T00:00:00+00:00",
+      "span_end": "2020-12-22T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2021-01-04T00:00:00+00:00",
+      "bars_to_resolution": 13,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "triple_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 59.2,
+      "detected_at": "2021-04-17T00:00:00+00:00",
+      "confirmation_time": "2021-03-31T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "extremes": 12.4123,
+        "neckline": 16.031
+      },
+      "invalidation_level": 11.9,
+      "invalidation_rule": "a 1d close beyond 11.90 invalidates the triple bottom",
+      "components": {
+        "extreme_agreement": 54.5,
+        "pivot_quality": 98.1,
+        "time_separation": 25.0,
+        "spread_atr": 0.455
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "three bottoms within 0.45 ATR across 20 bars",
+      "geometry": {
+        "points": [
+          {
+            "time": "2021-03-06T00:00:00+00:00",
+            "price": 11.9,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2021-03-17T00:00:00+00:00",
+            "price": 13.0326,
+            "role": "second_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2021-03-26T00:00:00+00:00",
+            "price": 12.3043,
+            "role": "third_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2021-03-06T00:00:00+00:00",
+              "price": 16.031,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2021-04-17T00:00:00+00:00",
+              "price": 16.031,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2021-03-06T00:00:00+00:00",
+            "end_time": "2021-04-17T00:00:00+00:00",
+            "low": 11.9,
+            "high": 16.031,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2021-03-06T00:00:00+00:00",
+            "price": 16.031,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2021-04-17T00:00:00+00:00",
+            "price": 16.031,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2021-03-06T00:00:00+00:00",
+          "end_time": "2021-04-17T00:00:00+00:00",
+          "low": 11.9,
+          "high": 16.031,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 20,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2021-04-17T00:00:00+00:00",
+      "span_start": "2021-03-06T00:00:00+00:00",
+      "span_end": "2021-04-17T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2021-04-18T00:00:00+00:00",
+      "bars_to_resolution": 1,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 59.0,
+      "detected_at": "2021-04-17T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 14.1552,
+        "pole_end": 22.9717
+      },
+      "invalidation_level": 14.1552,
+      "invalidation_rule": "a close beyond the start of the pole at 14.16 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 3.54,
+        "flag_atr": -0.08
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2021-03-19T00:00:00+00:00",
+            "price": 14.1552,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2021-04-05T00:00:00+00:00",
+            "price": 22.9717,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2021-03-19T00:00:00+00:00",
+              "price": 14.1552,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2021-04-05T00:00:00+00:00",
+              "price": 22.9717,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2021-04-06T00:00:00+00:00",
+            "end_time": "2021-04-17T00:00:00+00:00",
+            "low": 21.7554,
+            "high": 29.9295,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2021-04-17T00:00:00+00:00",
+      "span_start": "2021-03-19T00:00:00+00:00",
+      "span_end": "2021-04-17T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2022-11-09T00:00:00+00:00",
+      "bars_to_resolution": 571,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 71.4,
+      "detected_at": "2021-05-07T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 26.9384,
+        "pole_end": 47.405
+      },
+      "invalidation_level": 26.9384,
+      "invalidation_rule": "a close beyond the start of the pole at 26.94 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 4.29,
+        "flag_atr": -0.15
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2021-04-08T00:00:00+00:00",
+            "price": 26.9384,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2021-04-25T00:00:00+00:00",
+            "price": 47.405,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2021-04-08T00:00:00+00:00",
+              "price": 26.9384,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2021-04-25T00:00:00+00:00",
+              "price": 47.405,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2021-04-26T00:00:00+00:00",
+            "end_time": "2021-05-07T00:00:00+00:00",
+            "low": 40.516,
+            "high": 49.99,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2021-05-07T00:00:00+00:00",
+      "span_start": "2021-04-08T00:00:00+00:00",
+      "span_end": "2021-05-07T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2021-05-23T00:00:00+00:00",
+      "bars_to_resolution": 16,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 63.7,
+      "detected_at": "2021-07-25T00:00:00+00:00",
+      "confirmation_time": "2021-07-25T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 20.187,
+        "second_extreme": 22.1,
+        "neckline": 36.673
+      },
+      "invalidation_level": 20.187,
+      "invalidation_rule": "a 1d close below 20.19 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 37.1,
+        "reaction_depth": 100.0,
+        "time_separation": 46.7,
+        "pivot_quality": 70.9,
+        "difference_atr": 0.629,
+        "reaction_atr": 4.794,
+        "bars_between": 28
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.63 ATR of each other, separated by 28 bars, with a 4.79 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2021-06-22T00:00:00+00:00",
+            "price": 20.187,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2021-07-20T00:00:00+00:00",
+            "price": 22.1,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2021-06-22T00:00:00+00:00",
+              "price": 36.673,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2021-07-25T00:00:00+00:00",
+              "price": 36.673,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2021-06-22T00:00:00+00:00",
+            "end_time": "2021-07-25T00:00:00+00:00",
+            "low": 20.187,
+            "high": 36.673,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2021-06-22T00:00:00+00:00",
+            "price": 36.673,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2021-07-25T00:00:00+00:00",
+            "price": 36.673,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2021-06-22T00:00:00+00:00",
+          "end_time": "2021-07-25T00:00:00+00:00",
+          "low": 20.187,
+          "high": 36.673,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 28,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2021-07-25T00:00:00+00:00",
+      "span_start": "2021-06-22T00:00:00+00:00",
+      "span_end": "2021-07-25T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2021-07-31T00:00:00+00:00",
+      "bars_to_resolution": 6,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 80.2,
+      "detected_at": "2021-11-15T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 160.12,
+        "pole_end": 243.37
+      },
+      "invalidation_level": 160.12,
+      "invalidation_rule": "a close beyond the start of the pole at 160.12 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 4.81,
+        "flag_atr": -0.51
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2021-10-17T00:00:00+00:00",
+            "price": 160.12,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2021-11-03T00:00:00+00:00",
+            "price": 243.37,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2021-10-17T00:00:00+00:00",
+              "price": 160.12,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2021-11-03T00:00:00+00:00",
+              "price": 243.37,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2021-11-04T00:00:00+00:00",
+            "end_time": "2021-11-15T00:00:00+00:00",
+            "low": 217.5,
+            "high": 259.9,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2021-11-15T00:00:00+00:00",
+      "span_start": "2021-10-17T00:00:00+00:00",
+      "span_end": "2021-11-15T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2021-12-13T00:00:00+00:00",
+      "bars_to_resolution": 28,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 59.6,
+      "detected_at": "2022-03-01T00:00:00+00:00",
+      "confirmation_time": "2022-03-01T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 80.83,
+        "second_extreme": 75.35,
+        "neckline": 117.55
+      },
+      "invalidation_level": 75.35,
+      "invalidation_rule": "a 1d close below 75.35 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 45.5,
+        "reaction_depth": 100.0,
+        "time_separation": 51.7,
+        "pivot_quality": 41.1,
+        "difference_atr": 0.545,
+        "reaction_atr": 3.651,
+        "bars_between": 31
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.54 ATR of each other, separated by 31 bars, with a 3.65 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2022-01-24T00:00:00+00:00",
+            "price": 80.83,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-02-24T00:00:00+00:00",
+            "price": 75.35,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2022-01-24T00:00:00+00:00",
+              "price": 117.55,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2022-03-01T00:00:00+00:00",
+              "price": 117.55,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-01-24T00:00:00+00:00",
+            "end_time": "2022-03-01T00:00:00+00:00",
+            "low": 75.35,
+            "high": 117.55,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2022-01-24T00:00:00+00:00",
+            "price": 117.55,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2022-03-01T00:00:00+00:00",
+            "price": 117.55,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2022-01-24T00:00:00+00:00",
+          "end_time": "2022-03-01T00:00:00+00:00",
+          "low": 75.35,
+          "high": 117.55,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 31,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2022-03-01T00:00:00+00:00",
+      "span_start": "2022-01-24T00:00:00+00:00",
+      "span_end": "2022-03-01T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2022-03-30T00:00:00+00:00",
+      "bars_to_resolution": 29,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "head_and_shoulders",
+      "pattern_class": "HEURISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 80.5,
+      "detected_at": "2022-04-25T00:00:00+00:00",
+      "confirmation_time": "2022-04-25T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "left_shoulder": 106.43,
+        "head": 143.51,
+        "right_shoulder": 110.9,
+        "neckline": 78.73
+      },
+      "invalidation_level": 143.51,
+      "invalidation_rule": "a 1d close beyond the head at 143.51 invalidates the pattern",
+      "components": {
+        "head_prominence": 100.0,
+        "shoulder_symmetry": 61.0,
+        "prominence_atr": 4.268,
+        "shoulder_difference_atr": 0.585
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "head stands 4.27 ATR beyond shoulders that agree within 0.59 ATR",
+      "geometry": {
+        "points": [
+          {
+            "time": "2022-03-02T00:00:00+00:00",
+            "price": 106.43,
+            "role": "left_shoulder",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-04-02T00:00:00+00:00",
+            "price": 143.51,
+            "role": "head",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-04-20T00:00:00+00:00",
+            "price": 110.9,
+            "role": "right_shoulder",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2022-03-02T00:00:00+00:00",
+              "price": 78.73,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2022-04-25T00:00:00+00:00",
+              "price": 78.73,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-03-02T00:00:00+00:00",
+            "end_time": "2022-04-25T00:00:00+00:00",
+            "low": 78.73,
+            "high": 143.51,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2022-03-02T00:00:00+00:00",
+            "price": 78.73,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2022-04-25T00:00:00+00:00",
+            "price": 78.73,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2022-03-02T00:00:00+00:00",
+          "end_time": "2022-04-25T00:00:00+00:00",
+          "low": 78.73,
+          "high": 143.51,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 49,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2022-04-25T00:00:00+00:00",
+      "span_start": "2022-03-02T00:00:00+00:00",
+      "span_end": "2022-04-25T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2022-05-08T00:00:00+00:00",
+      "bars_to_resolution": 13,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 63.6,
+      "detected_at": "2022-06-09T00:00:00+00:00",
+      "confirmation_time": "2022-06-09T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 37.37,
+        "second_extreme": 35.71,
+        "neckline": 58.83
+      },
+      "invalidation_level": 35.71,
+      "invalidation_rule": "a 1d close below 35.71 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 68.7,
+        "reaction_depth": 100.0,
+        "time_separation": 38.3,
+        "pivot_quality": 47.3,
+        "difference_atr": 0.313,
+        "reaction_atr": 4.045,
+        "bars_between": 23
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.31 ATR of each other, separated by 23 bars, with a 4.04 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2022-05-12T00:00:00+00:00",
+            "price": 37.37,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-06-04T00:00:00+00:00",
+            "price": 35.71,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2022-05-12T00:00:00+00:00",
+              "price": 58.83,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2022-06-09T00:00:00+00:00",
+              "price": 58.83,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-05-12T00:00:00+00:00",
+            "end_time": "2022-06-09T00:00:00+00:00",
+            "low": 35.71,
+            "high": 58.83,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2022-05-12T00:00:00+00:00",
+            "price": 58.83,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2022-06-09T00:00:00+00:00",
+            "price": 58.83,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2022-05-12T00:00:00+00:00",
+          "end_time": "2022-06-09T00:00:00+00:00",
+          "low": 35.71,
+          "high": 58.83,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 23,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2022-06-09T00:00:00+00:00",
+      "span_start": "2022-05-12T00:00:00+00:00",
+      "span_end": "2022-06-09T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2022-06-11T00:00:00+00:00",
+      "bars_to_resolution": 2,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 59.3,
+      "detected_at": "2022-08-18T00:00:00+00:00",
+      "confirmation_time": "2022-08-18T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 46.65,
+        "second_extreme": 48.38,
+        "neckline": 38.54
+      },
+      "invalidation_level": 48.38,
+      "invalidation_rule": "a 1d close above 48.38 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 47.1,
+        "reaction_depth": 82.7,
+        "time_separation": 23.3,
+        "pivot_quality": 83.9,
+        "difference_atr": 0.529,
+        "reaction_atr": 2.48,
+        "bars_between": 14
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.53 ATR of each other, separated by 14 bars, with a 2.48 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2022-07-30T00:00:00+00:00",
+            "price": 46.65,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-08-13T00:00:00+00:00",
+            "price": 48.38,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2022-07-30T00:00:00+00:00",
+              "price": 38.54,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2022-08-18T00:00:00+00:00",
+              "price": 38.54,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-07-30T00:00:00+00:00",
+            "end_time": "2022-08-18T00:00:00+00:00",
+            "low": 38.54,
+            "high": 48.38,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2022-07-30T00:00:00+00:00",
+            "price": 38.54,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2022-08-18T00:00:00+00:00",
+            "price": 38.54,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2022-07-30T00:00:00+00:00",
+          "end_time": "2022-08-18T00:00:00+00:00",
+          "low": 38.54,
+          "high": 48.38,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 14,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2022-08-18T00:00:00+00:00",
+      "span_start": "2022-07-30T00:00:00+00:00",
+      "span_end": "2022-08-18T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2022-08-19T00:00:00+00:00",
+      "bars_to_resolution": 1,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 69.2,
+      "detected_at": "2022-09-26T00:00:00+00:00",
+      "confirmation_time": "2022-09-26T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 30.31,
+        "second_extreme": 30.01,
+        "neckline": 37.44
+      },
+      "invalidation_level": 30.01,
+      "invalidation_rule": "a 1d close below 30.01 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 87.5,
+        "reaction_depth": 98.8,
+        "time_separation": 23.3,
+        "pivot_quality": 67.4,
+        "difference_atr": 0.125,
+        "reaction_atr": 2.965,
+        "bars_between": 14
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.12 ATR of each other, separated by 14 bars, with a 2.97 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2022-09-07T00:00:00+00:00",
+            "price": 30.31,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-09-21T00:00:00+00:00",
+            "price": 30.01,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2022-09-07T00:00:00+00:00",
+              "price": 37.44,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2022-09-26T00:00:00+00:00",
+              "price": 37.44,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-09-07T00:00:00+00:00",
+            "end_time": "2022-09-26T00:00:00+00:00",
+            "low": 30.01,
+            "high": 37.44,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2022-09-07T00:00:00+00:00",
+            "price": 37.44,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2022-09-26T00:00:00+00:00",
+            "price": 37.44,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2022-09-07T00:00:00+00:00",
+          "end_time": "2022-09-26T00:00:00+00:00",
+          "low": 30.01,
+          "high": 37.44,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 14,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2022-09-26T00:00:00+00:00",
+      "span_start": "2022-09-07T00:00:00+00:00",
+      "span_end": "2022-09-26T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2022-10-14T00:00:00+00:00",
+      "bars_to_resolution": 18,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 100.0,
+      "detected_at": "2022-12-01T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 30.8,
+        "pole_end": 12.84
+      },
+      "invalidation_level": 30.8,
+      "invalidation_rule": "a close beyond the start of the pole at 30.80 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -10.02,
+        "flag_atr": 0.69
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2022-11-02T00:00:00+00:00",
+            "price": 30.8,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2022-11-19T00:00:00+00:00",
+            "price": 12.84,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2022-11-02T00:00:00+00:00",
+              "price": 30.8,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2022-11-19T00:00:00+00:00",
+              "price": 12.84,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-11-20T00:00:00+00:00",
+            "end_time": "2022-12-01T00:00:00+00:00",
+            "low": 10.94,
+            "high": 14.98,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2022-12-01T00:00:00+00:00",
+      "span_start": "2022-11-02T00:00:00+00:00",
+      "span_end": "2022-12-01T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2023-10-23T00:00:00+00:00",
+      "bars_to_resolution": 326,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 71.3,
+      "detected_at": "2023-02-25T00:00:00+00:00",
+      "confirmation_time": "2023-02-25T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 26.8,
+        "second_extreme": 27.12,
+        "neckline": 20.11
+      },
+      "invalidation_level": 27.12,
+      "invalidation_rule": "a 1d close above 27.12 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 83.0,
+        "reaction_depth": 100.0,
+        "time_separation": 36.7,
+        "pivot_quality": 65.6,
+        "difference_atr": 0.17,
+        "reaction_atr": 3.548,
+        "bars_between": 22
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.17 ATR of each other, separated by 22 bars, with a 3.55 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-01-29T00:00:00+00:00",
+            "price": 26.8,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-02-20T00:00:00+00:00",
+            "price": 27.12,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-01-29T00:00:00+00:00",
+              "price": 20.11,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2023-02-25T00:00:00+00:00",
+              "price": 20.11,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-01-29T00:00:00+00:00",
+            "end_time": "2023-02-25T00:00:00+00:00",
+            "low": 20.11,
+            "high": 27.12,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2023-01-29T00:00:00+00:00",
+            "price": 20.11,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2023-02-25T00:00:00+00:00",
+            "price": 20.11,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2023-01-29T00:00:00+00:00",
+          "end_time": "2023-02-25T00:00:00+00:00",
+          "low": 20.11,
+          "high": 27.12,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 22,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2023-02-25T00:00:00+00:00",
+      "span_start": "2023-01-29T00:00:00+00:00",
+      "span_end": "2023-02-25T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2023-03-08T00:00:00+00:00",
+      "bars_to_resolution": 11,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "triple_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 58.0,
+      "detected_at": "2023-02-25T00:00:00+00:00",
+      "confirmation_time": "2023-02-25T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "extremes": 26.84,
+        "neckline": 20.11
+      },
+      "invalidation_level": 27.12,
+      "invalidation_rule": "a 1d close beyond 27.12 invalidates the triple top",
+      "components": {
+        "extreme_agreement": 72.4,
+        "pivot_quality": 64.2,
+        "time_separation": 37.5,
+        "spread_atr": 0.276
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "three tops within 0.28 ATR across 30 bars",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-01-21T00:00:00+00:00",
+            "price": 26.6,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-01-29T00:00:00+00:00",
+            "price": 26.8,
+            "role": "second_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-02-20T00:00:00+00:00",
+            "price": 27.12,
+            "role": "third_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-01-21T00:00:00+00:00",
+              "price": 20.11,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2023-02-25T00:00:00+00:00",
+              "price": 20.11,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-01-21T00:00:00+00:00",
+            "end_time": "2023-02-25T00:00:00+00:00",
+            "low": 20.11,
+            "high": 27.12,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2023-01-21T00:00:00+00:00",
+            "price": 20.11,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2023-02-25T00:00:00+00:00",
+            "price": 20.11,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2023-01-21T00:00:00+00:00",
+          "end_time": "2023-02-25T00:00:00+00:00",
+          "low": 20.11,
+          "high": 27.12,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2023-02-25T00:00:00+00:00",
+      "span_start": "2023-01-21T00:00:00+00:00",
+      "span_end": "2023-02-25T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2023-03-08T00:00:00+00:00",
+      "bars_to_resolution": 11,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 66.8,
+      "detected_at": "2023-05-01T00:00:00+00:00",
+      "confirmation_time": "2023-05-01T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 19.85,
+        "second_extreme": 20.36,
+        "neckline": 25.34
+      },
+      "invalidation_level": 19.85,
+      "invalidation_rule": "a 1d close below 19.85 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 64.8,
+        "reaction_depth": 100.0,
+        "time_separation": 30.0,
+        "pivot_quality": 72.2,
+        "difference_atr": 0.352,
+        "reaction_atr": 3.437,
+        "bars_between": 18
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.35 ATR of each other, separated by 18 bars, with a 3.44 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-04-08T00:00:00+00:00",
+            "price": 19.85,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-04-26T00:00:00+00:00",
+            "price": 20.36,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-04-08T00:00:00+00:00",
+              "price": 25.34,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2023-05-01T00:00:00+00:00",
+              "price": 25.34,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-04-08T00:00:00+00:00",
+            "end_time": "2023-05-01T00:00:00+00:00",
+            "low": 19.85,
+            "high": 25.34,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2023-04-08T00:00:00+00:00",
+            "price": 25.34,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2023-05-01T00:00:00+00:00",
+            "price": 25.34,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2023-04-08T00:00:00+00:00",
+          "end_time": "2023-05-01T00:00:00+00:00",
+          "low": 19.85,
+          "high": 25.34,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 18,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2023-05-01T00:00:00+00:00",
+      "span_start": "2023-04-08T00:00:00+00:00",
+      "span_end": "2023-05-01T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2023-05-21T00:00:00+00:00",
+      "bars_to_resolution": 20,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 84.6,
+      "detected_at": "2023-06-27T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 20.57,
+        "pole_end": 14.77
+      },
+      "invalidation_level": 20.57,
+      "invalidation_rule": "a close beyond the start of the pole at 20.57 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -5.08,
+        "flag_atr": 1.16
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-05-29T00:00:00+00:00",
+            "price": 20.57,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2023-06-15T00:00:00+00:00",
+            "price": 14.77,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-05-29T00:00:00+00:00",
+              "price": 20.57,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2023-06-15T00:00:00+00:00",
+              "price": 14.77,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-06-16T00:00:00+00:00",
+            "end_time": "2023-06-27T00:00:00+00:00",
+            "low": 14.38,
+            "high": 17.75,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2023-06-27T00:00:00+00:00",
+      "span_start": "2023-05-29T00:00:00+00:00",
+      "span_end": "2023-06-27T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2023-07-07T00:00:00+00:00",
+      "bars_to_resolution": 10,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 66.0,
+      "detected_at": "2023-07-30T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 18.7,
+        "pole_end": 25.54
+      },
+      "invalidation_level": 18.7,
+      "invalidation_rule": "a close beyond the start of the pole at 18.70 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 3.96,
+        "flag_atr": -1.19
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-07-01T00:00:00+00:00",
+            "price": 18.7,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2023-07-18T00:00:00+00:00",
+            "price": 25.54,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-07-01T00:00:00+00:00",
+              "price": 18.7,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2023-07-18T00:00:00+00:00",
+              "price": 25.54,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-07-19T00:00:00+00:00",
+            "end_time": "2023-07-30T00:00:00+00:00",
+            "low": 22.73,
+            "high": 27.38,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2023-07-30T00:00:00+00:00",
+      "span_start": "2023-07-01T00:00:00+00:00",
+      "span_end": "2023-07-30T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2023-09-10T00:00:00+00:00",
+      "bars_to_resolution": 42,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "inverse_head_and_shoulders",
+      "pattern_class": "HEURISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 66.0,
+      "detected_at": "2023-10-02T00:00:00+00:00",
+      "confirmation_time": "2023-10-02T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "left_shoulder": 19.02,
+        "head": 17.33,
+        "right_shoulder": 18.73,
+        "neckline": 20.29
+      },
+      "invalidation_level": 17.33,
+      "invalidation_rule": "a 1d close beyond the head at 17.33 invalidates the pattern",
+      "components": {
+        "head_prominence": 49.0,
+        "shoulder_symmetry": 83.1,
+        "prominence_atr": 1.224,
+        "shoulder_difference_atr": 0.254
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "head stands 1.22 ATR beyond shoulders that agree within 0.25 ATR",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-09-01T00:00:00+00:00",
+            "price": 19.02,
+            "role": "left_shoulder",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-09-11T00:00:00+00:00",
+            "price": 17.33,
+            "role": "head",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-09-27T00:00:00+00:00",
+            "price": 18.73,
+            "role": "right_shoulder",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-09-01T00:00:00+00:00",
+              "price": 20.29,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2023-10-02T00:00:00+00:00",
+              "price": 20.29,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-09-01T00:00:00+00:00",
+            "end_time": "2023-10-02T00:00:00+00:00",
+            "low": 17.33,
+            "high": 20.29,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2023-09-01T00:00:00+00:00",
+            "price": 20.29,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2023-10-02T00:00:00+00:00",
+            "price": 20.29,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2023-09-01T00:00:00+00:00",
+          "end_time": "2023-10-02T00:00:00+00:00",
+          "low": 17.33,
+          "high": 20.29,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 26,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2023-10-02T00:00:00+00:00",
+      "span_start": "2023-09-01T00:00:00+00:00",
+      "span_end": "2023-10-02T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2023-10-03T00:00:00+00:00",
+      "bars_to_resolution": 1,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 79.9,
+      "detected_at": "2023-11-26T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 31.63,
+        "pole_end": 56.81
+      },
+      "invalidation_level": 31.63,
+      "invalidation_rule": "a close beyond the start of the pole at 31.63 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 4.79,
+        "flag_atr": -1.5
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-10-28T00:00:00+00:00",
+            "price": 31.63,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2023-11-14T00:00:00+00:00",
+            "price": 56.81,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-10-28T00:00:00+00:00",
+              "price": 31.63,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2023-11-14T00:00:00+00:00",
+              "price": 56.81,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-11-15T00:00:00+00:00",
+            "end_time": "2023-11-26T00:00:00+00:00",
+            "low": 51.23,
+            "high": 68.2,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2023-11-26T00:00:00+00:00",
+      "span_start": "2023-10-28T00:00:00+00:00",
+      "span_end": "2023-11-26T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "symmetrical_triangle",
+      "pattern_class": "HEURISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 73.3,
+      "detected_at": "2024-01-23T00:00:00+00:00",
+      "confirmation_time": "2024-01-23T00:00:00+00:00",
+      "direction_if_textbook": "NEUTRAL",
+      "key_levels": {
+        "upper": 97.352973,
+        "lower": 97.857001
+      },
+      "invalidation_level": 97.352973,
+      "invalidation_rule": "a 1d close beyond the opposite boundary at 97.35 resolves the triangle against this reading",
+      "components": {
+        "convergence_quality": 100.0,
+        "geometry_score": 76.4,
+        "pivot_quality": 67.4,
+        "volume_confirmation": 49.4,
+        "convergence": 0.954,
+        "upper_slope_atr_per_bar": -0.11098,
+        "lower_slope_atr_per_bar": 0.08622,
+        "upper_r2": 0.981,
+        "lower_r2": 0.992,
+        "bars_span": 98
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "boundaries converged 95% over 98 bars; upper slope -0.1110 ATR/bar, lower +0.0862 ATR/bar",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-12-25T00:00:00+00:00",
+            "price": 126.36,
+            "role": "upper_pivot",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-01-02T00:00:00+00:00",
+            "price": 116.95,
+            "role": "upper_pivot",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-01-11T00:00:00+00:00",
+            "price": 107.32,
+            "role": "upper_pivot",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-01-18T00:00:00+00:00",
+            "price": 103.59,
+            "role": "upper_pivot",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-10-12T00:00:00+00:00",
+            "price": 20.93,
+            "role": "lower_pivot",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-11-21T00:00:00+00:00",
+            "price": 51.23,
+            "role": "lower_pivot",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-12-13T00:00:00+00:00",
+            "price": 63.67,
+            "role": "lower_pivot",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-01-03T00:00:00+00:00",
+            "price": 85.0,
+            "role": "lower_pivot",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-10-12T00:00:00+00:00",
+              "price": 196.983346,
+              "role": "upper",
+              "kind": "projected"
+            },
+            "end": {
+              "time": "2024-01-18T00:00:00+00:00",
+              "price": 102.189399,
+              "role": "upper",
+              "kind": "projected"
+            },
+            "role": "upper",
+            "extend": false
+          },
+          {
+            "start": {
+              "time": "2023-10-12T00:00:00+00:00",
+              "price": 20.449096,
+              "role": "lower",
+              "kind": "projected"
+            },
+            "end": {
+              "time": "2024-01-18T00:00:00+00:00",
+              "price": 94.099336,
+              "role": "lower",
+              "kind": "projected"
+            },
+            "role": "lower",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-01-18T00:00:00+00:00",
+            "end_time": "2024-01-23T00:00:00+00:00",
+            "low": 97.352973,
+            "high": 97.857001,
+            "role": "breakout"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": {
+          "start_time": "2024-01-18T00:00:00+00:00",
+          "end_time": "2024-01-23T00:00:00+00:00",
+          "low": 97.352973,
+          "high": 97.857001,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 98,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-01-23T00:00:00+00:00",
+      "span_start": "2023-10-12T00:00:00+00:00",
+      "span_end": "2024-01-23T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2024-01-24T00:00:00+00:00",
+      "bars_to_resolution": 1,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 63.0,
+      "detected_at": "2024-02-04T00:00:00+00:00",
+      "confirmation_time": "2024-02-04T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 103.59,
+        "second_extreme": 106.49,
+        "neckline": 83.84
+      },
+      "invalidation_level": 106.49,
+      "invalidation_rule": "a 1d close above 106.49 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 57.0,
+        "reaction_depth": 97.6,
+        "time_separation": 20.0,
+        "pivot_quality": 77.3,
+        "difference_atr": 0.43,
+        "reaction_atr": 2.927,
+        "bars_between": 12
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.43 ATR of each other, separated by 12 bars, with a 2.93 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-01-18T00:00:00+00:00",
+            "price": 103.59,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-01-30T00:00:00+00:00",
+            "price": 106.49,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-01-18T00:00:00+00:00",
+              "price": 83.84,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2024-02-04T00:00:00+00:00",
+              "price": 83.84,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-01-18T00:00:00+00:00",
+            "end_time": "2024-02-04T00:00:00+00:00",
+            "low": 83.84,
+            "high": 106.49,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2024-01-18T00:00:00+00:00",
+            "price": 83.84,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2024-02-04T00:00:00+00:00",
+            "price": 83.84,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2024-01-18T00:00:00+00:00",
+          "end_time": "2024-02-04T00:00:00+00:00",
+          "low": 83.84,
+          "high": 106.49,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 12,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-02-04T00:00:00+00:00",
+      "span_start": "2024-01-18T00:00:00+00:00",
+      "span_end": "2024-02-04T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2024-02-09T00:00:00+00:00",
+      "bars_to_resolution": 5,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 65.1,
+      "detected_at": "2024-04-06T00:00:00+00:00",
+      "confirmation_time": "2024-04-06T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 210.18,
+        "second_extreme": 204.46,
+        "neckline": 169.82
+      },
+      "invalidation_level": 210.18,
+      "invalidation_rule": "a 1d close above 210.18 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 58.4,
+        "reaction_depth": 84.0,
+        "time_separation": 23.3,
+        "pivot_quality": 94.7,
+        "difference_atr": 0.416,
+        "reaction_atr": 2.521,
+        "bars_between": 14
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.42 ATR of each other, separated by 14 bars, with a 2.52 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-03-18T00:00:00+00:00",
+            "price": 210.18,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-04-01T00:00:00+00:00",
+            "price": 204.46,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-03-18T00:00:00+00:00",
+              "price": 169.82,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2024-04-06T00:00:00+00:00",
+              "price": 169.82,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-03-18T00:00:00+00:00",
+            "end_time": "2024-04-06T00:00:00+00:00",
+            "low": 169.82,
+            "high": 210.18,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2024-03-18T00:00:00+00:00",
+            "price": 169.82,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2024-04-06T00:00:00+00:00",
+            "price": 169.82,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2024-03-18T00:00:00+00:00",
+          "end_time": "2024-04-06T00:00:00+00:00",
+          "low": 169.82,
+          "high": 210.18,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 14,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-04-06T00:00:00+00:00",
+      "span_start": "2024-03-18T00:00:00+00:00",
+      "span_end": "2024-04-06T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2024-04-12T00:00:00+00:00",
+      "bars_to_resolution": 6,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 73.7,
+      "detected_at": "2024-04-28T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 194.2,
+        "pole_end": 136.22
+      },
+      "invalidation_level": 194.2,
+      "invalidation_rule": "a close beyond the start of the pole at 194.20 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -4.42,
+        "flag_atr": 0.47
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-03-30T00:00:00+00:00",
+            "price": 194.2,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2024-04-16T00:00:00+00:00",
+            "price": 136.22,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-03-30T00:00:00+00:00",
+              "price": 194.2,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2024-04-16T00:00:00+00:00",
+              "price": 136.22,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-04-17T00:00:00+00:00",
+            "end_time": "2024-04-28T00:00:00+00:00",
+            "low": 126.87,
+            "high": 160.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-04-28T00:00:00+00:00",
+      "span_start": "2024-03-30T00:00:00+00:00",
+      "span_end": "2024-04-28T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2024-11-07T00:00:00+00:00",
+      "bars_to_resolution": 193,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 65.4,
+      "detected_at": "2024-05-06T00:00:00+00:00",
+      "confirmation_time": "2024-05-06T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 116.0,
+        "second_extreme": 118.47,
+        "neckline": 156.95
+      },
+      "invalidation_level": 116.0,
+      "invalidation_rule": "a 1d close below 116.00 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 79.4,
+        "reaction_depth": 100.0,
+        "time_separation": 30.0,
+        "pivot_quality": 52.2,
+        "difference_atr": 0.206,
+        "reaction_atr": 3.217,
+        "bars_between": 18
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.21 ATR of each other, separated by 18 bars, with a 3.22 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-04-13T00:00:00+00:00",
+            "price": 116.0,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-05-01T00:00:00+00:00",
+            "price": 118.47,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-04-13T00:00:00+00:00",
+              "price": 156.95,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2024-05-06T00:00:00+00:00",
+              "price": 156.95,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-04-13T00:00:00+00:00",
+            "end_time": "2024-05-06T00:00:00+00:00",
+            "low": 116.0,
+            "high": 156.95,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2024-04-13T00:00:00+00:00",
+            "price": 156.95,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2024-05-06T00:00:00+00:00",
+            "price": 156.95,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2024-04-13T00:00:00+00:00",
+          "end_time": "2024-05-06T00:00:00+00:00",
+          "low": 116.0,
+          "high": 156.95,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 18,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-05-06T00:00:00+00:00",
+      "span_start": "2024-04-13T00:00:00+00:00",
+      "span_end": "2024-05-06T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2024-05-15T00:00:00+00:00",
+      "bars_to_resolution": 9,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 70.3,
+      "detected_at": "2024-05-12T00:00:00+00:00",
+      "confirmation_time": "2024-05-12T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 160.0,
+        "second_extreme": 159.19,
+        "neckline": 126.77
+      },
+      "invalidation_level": 160.0,
+      "invalidation_rule": "a 1d close above 160.00 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 92.6,
+        "reaction_depth": 98.5,
+        "time_separation": 23.3,
+        "pivot_quality": 67.0,
+        "difference_atr": 0.074,
+        "reaction_atr": 2.954,
+        "bars_between": 14
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.07 ATR of each other, separated by 14 bars, with a 2.95 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-04-23T00:00:00+00:00",
+            "price": 160.0,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-05-07T00:00:00+00:00",
+            "price": 159.19,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-04-23T00:00:00+00:00",
+              "price": 126.77,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2024-05-12T00:00:00+00:00",
+              "price": 126.77,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-04-23T00:00:00+00:00",
+            "end_time": "2024-05-12T00:00:00+00:00",
+            "low": 126.77,
+            "high": 160.0,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2024-04-23T00:00:00+00:00",
+            "price": 126.77,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2024-05-12T00:00:00+00:00",
+            "price": 126.77,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2024-04-23T00:00:00+00:00",
+          "end_time": "2024-05-12T00:00:00+00:00",
+          "low": 126.77,
+          "high": 160.0,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 14,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-05-12T00:00:00+00:00",
+      "span_start": "2024-04-23T00:00:00+00:00",
+      "span_end": "2024-05-12T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2024-05-17T00:00:00+00:00",
+      "bars_to_resolution": 5,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 59.4,
+      "detected_at": "2024-08-29T00:00:00+00:00",
+      "confirmation_time": "2024-08-29T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 163.7,
+        "second_extreme": 162.3,
+        "neckline": 139.04
+      },
+      "invalidation_level": 163.7,
+      "invalidation_rule": "a 1d close above 163.70 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 85.8,
+        "reaction_depth": 78.8,
+        "time_separation": 26.7,
+        "pivot_quality": 46.5,
+        "difference_atr": 0.142,
+        "reaction_atr": 2.363,
+        "bars_between": 16
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.14 ATR of each other, separated by 16 bars, with a 2.36 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-08-08T00:00:00+00:00",
+            "price": 163.7,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2024-08-24T00:00:00+00:00",
+            "price": 162.3,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-08-08T00:00:00+00:00",
+              "price": 139.04,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2024-08-29T00:00:00+00:00",
+              "price": 139.04,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-08-08T00:00:00+00:00",
+            "end_time": "2024-08-29T00:00:00+00:00",
+            "low": 139.04,
+            "high": 163.7,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2024-08-08T00:00:00+00:00",
+            "price": 139.04,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2024-08-29T00:00:00+00:00",
+            "price": 139.04,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2024-08-08T00:00:00+00:00",
+          "end_time": "2024-08-29T00:00:00+00:00",
+          "low": 139.04,
+          "high": 163.7,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 16,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-08-29T00:00:00+00:00",
+      "span_start": "2024-08-08T00:00:00+00:00",
+      "span_end": "2024-08-29T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2024-08-30T00:00:00+00:00",
+      "bars_to_resolution": 1,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 56.0,
+      "detected_at": "2024-09-23T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 158.92,
+        "pole_end": 132.42
+      },
+      "invalidation_level": 158.92,
+      "invalidation_rule": "a close beyond the start of the pole at 158.92 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -3.36,
+        "flag_atr": 1.11
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-08-25T00:00:00+00:00",
+            "price": 158.92,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2024-09-11T00:00:00+00:00",
+            "price": 132.42,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-08-25T00:00:00+00:00",
+              "price": 158.92,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2024-09-11T00:00:00+00:00",
+              "price": 132.42,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-09-12T00:00:00+00:00",
+            "end_time": "2024-09-23T00:00:00+00:00",
+            "low": 127.07,
+            "high": 152.5,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2024-09-23T00:00:00+00:00",
+      "span_start": "2024-08-25T00:00:00+00:00",
+      "span_end": "2024-09-23T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2024-10-19T00:00:00+00:00",
+      "bars_to_resolution": 26,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 60.7,
+      "detected_at": "2025-01-18T00:00:00+00:00",
+      "confirmation_time": "2025-01-18T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 175.26,
+        "second_extreme": 168.88,
+        "neckline": 218.22
+      },
+      "invalidation_level": 168.88,
+      "invalidation_rule": "a 1d close below 168.88 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 61.1,
+        "reaction_depth": 87.2,
+        "time_separation": 40.0,
+        "pivot_quality": 54.3,
+        "difference_atr": 0.389,
+        "reaction_atr": 2.617,
+        "bars_between": 24
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.39 ATR of each other, separated by 24 bars, with a 2.62 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2024-12-20T00:00:00+00:00",
+            "price": 175.26,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2025-01-13T00:00:00+00:00",
+            "price": 168.88,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2024-12-20T00:00:00+00:00",
+              "price": 218.22,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2025-01-18T00:00:00+00:00",
+              "price": 218.22,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2024-12-20T00:00:00+00:00",
+            "end_time": "2025-01-18T00:00:00+00:00",
+            "low": 168.88,
+            "high": 218.22,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2024-12-20T00:00:00+00:00",
+            "price": 218.22,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2025-01-18T00:00:00+00:00",
+            "price": 218.22,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2024-12-20T00:00:00+00:00",
+          "end_time": "2025-01-18T00:00:00+00:00",
+          "low": 168.88,
+          "high": 218.22,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 24,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2025-01-18T00:00:00+00:00",
+      "span_start": "2024-12-20T00:00:00+00:00",
+      "span_end": "2025-01-18T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2025-01-19T00:00:00+00:00",
+      "bars_to_resolution": 1,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 63.0,
+      "detected_at": "2025-02-08T00:00:00+00:00",
+      "confirmation_time": "2025-02-08T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 168.88,
+        "second_extreme": 175.89,
+        "neckline": 261.97
+      },
+      "invalidation_level": 168.88,
+      "invalidation_rule": "a 1d close below 168.88 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 64.9,
+        "reaction_depth": 100.0,
+        "time_separation": 35.0,
+        "pivot_quality": 51.9,
+        "difference_atr": 0.351,
+        "reaction_atr": 4.316,
+        "bars_between": 21
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.35 ATR of each other, separated by 21 bars, with a 4.32 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-01-13T00:00:00+00:00",
+            "price": 168.88,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2025-02-03T00:00:00+00:00",
+            "price": 175.89,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-01-13T00:00:00+00:00",
+              "price": 261.97,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2025-02-08T00:00:00+00:00",
+              "price": 261.97,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-01-13T00:00:00+00:00",
+            "end_time": "2025-02-08T00:00:00+00:00",
+            "low": 168.88,
+            "high": 261.97,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2025-01-13T00:00:00+00:00",
+            "price": 261.97,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2025-02-08T00:00:00+00:00",
+            "price": 261.97,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2025-01-13T00:00:00+00:00",
+          "end_time": "2025-02-08T00:00:00+00:00",
+          "low": 168.88,
+          "high": 261.97,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 21,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2025-02-08T00:00:00+00:00",
+      "span_start": "2025-01-13T00:00:00+00:00",
+      "span_end": "2025-02-08T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2025-02-23T00:00:00+00:00",
+      "bars_to_resolution": 15,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 68.3,
+      "detected_at": "2025-03-21T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 176.0,
+        "pole_end": 126.51
+      },
+      "invalidation_level": 176.0,
+      "invalidation_rule": "a close beyond the start of the pole at 176.00 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -4.1,
+        "flag_atr": 0.84
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-02-20T00:00:00+00:00",
+            "price": 176.0,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2025-03-09T00:00:00+00:00",
+            "price": 126.51,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-02-20T00:00:00+00:00",
+              "price": 176.0,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2025-03-09T00:00:00+00:00",
+              "price": 126.51,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-03-10T00:00:00+00:00",
+            "end_time": "2025-03-21T00:00:00+00:00",
+            "low": 112.0,
+            "high": 136.71,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2025-03-21T00:00:00+00:00",
+      "span_start": "2025-02-20T00:00:00+00:00",
+      "span_end": "2025-03-21T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2025-05-10T00:00:00+00:00",
+      "bars_to_resolution": 50,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 100.0,
+      "detected_at": "2025-05-05T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 105.91,
+        "pole_end": 151.1
+      },
+      "invalidation_level": 105.91,
+      "invalidation_rule": "a close beyond the start of the pole at 105.91 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 6.09,
+        "flag_atr": -0.79
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-04-06T00:00:00+00:00",
+            "price": 105.91,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2025-04-23T00:00:00+00:00",
+            "price": 151.1,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-04-06T00:00:00+00:00",
+              "price": 105.91,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2025-04-23T00:00:00+00:00",
+              "price": 151.1,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-04-24T00:00:00+00:00",
+            "end_time": "2025-05-05T00:00:00+00:00",
+            "low": 140.32,
+            "high": 157.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2025-05-05T00:00:00+00:00",
+      "span_start": "2025-04-06T00:00:00+00:00",
+      "span_end": "2025-05-05T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2026-01-31T00:00:00+00:00",
+      "bars_to_resolution": 271,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 71.9,
+      "detected_at": "2025-08-19T00:00:00+00:00",
+      "confirmation_time": "2025-08-19T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 206.3,
+        "second_extreme": 209.86,
+        "neckline": 158.48
+      },
+      "invalidation_level": 209.86,
+      "invalidation_rule": "a 1d close above 209.86 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 67.6,
+        "reaction_depth": 100.0,
+        "time_separation": 38.3,
+        "pivot_quality": 81.9,
+        "difference_atr": 0.324,
+        "reaction_atr": 4.347,
+        "bars_between": 23
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.32 ATR of each other, separated by 23 bars, with a 4.35 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-07-22T00:00:00+00:00",
+            "price": 206.3,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2025-08-14T00:00:00+00:00",
+            "price": 209.86,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-07-22T00:00:00+00:00",
+              "price": 158.48,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2025-08-19T00:00:00+00:00",
+              "price": 158.48,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-07-22T00:00:00+00:00",
+            "end_time": "2025-08-19T00:00:00+00:00",
+            "low": 158.48,
+            "high": 209.86,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2025-07-22T00:00:00+00:00",
+            "price": 158.48,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2025-08-19T00:00:00+00:00",
+            "price": 158.48,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2025-07-22T00:00:00+00:00",
+          "end_time": "2025-08-19T00:00:00+00:00",
+          "low": 158.48,
+          "high": 209.86,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 23,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2025-08-19T00:00:00+00:00",
+      "span_start": "2025-07-22T00:00:00+00:00",
+      "span_end": "2025-08-19T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2025-08-28T00:00:00+00:00",
+      "bars_to_resolution": 9,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 59.0,
+      "detected_at": "2025-11-01T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 232.84,
+        "pole_end": 189.71
+      },
+      "invalidation_level": 232.84,
+      "invalidation_rule": "a close beyond the start of the pole at 232.84 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -3.54,
+        "flag_atr": 0.06
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-10-03T00:00:00+00:00",
+            "price": 232.84,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2025-10-20T00:00:00+00:00",
+            "price": 189.71,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-10-03T00:00:00+00:00",
+              "price": 232.84,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2025-10-20T00:00:00+00:00",
+              "price": 189.71,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-10-21T00:00:00+00:00",
+            "end_time": "2025-11-01T00:00:00+00:00",
+            "low": 177.04,
+            "high": 205.33,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2025-11-01T00:00:00+00:00",
+      "span_start": "2025-10-03T00:00:00+00:00",
+      "span_end": "2025-11-01T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 80.2,
+      "detected_at": "2025-11-25T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 198.7,
+        "pole_end": 144.73
+      },
+      "invalidation_level": 198.7,
+      "invalidation_rule": "a close beyond the start of the pole at 198.70 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -4.81,
+        "flag_atr": 0.0
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-10-27T00:00:00+00:00",
+            "price": 198.7,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2025-11-13T00:00:00+00:00",
+            "price": 144.73,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-10-27T00:00:00+00:00",
+              "price": 198.7,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2025-11-13T00:00:00+00:00",
+              "price": 144.73,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-11-14T00:00:00+00:00",
+            "end_time": "2025-11-25T00:00:00+00:00",
+            "low": 121.66,
+            "high": 145.68,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2025-11-25T00:00:00+00:00",
+      "span_start": "2025-10-27T00:00:00+00:00",
+      "span_end": "2025-11-25T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 62.7,
+      "detected_at": "2026-01-11T00:00:00+00:00",
+      "confirmation_time": "2026-01-11T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 146.91,
+        "second_extreme": 143.48,
+        "neckline": 119.6
+      },
+      "invalidation_level": 146.91,
+      "invalidation_rule": "a 1d close above 146.91 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 42.8,
+        "reaction_depth": 100.0,
+        "time_separation": 55.0,
+        "pivot_quality": 52.9,
+        "difference_atr": 0.572,
+        "reaction_atr": 3.98,
+        "bars_between": 33
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.57 ATR of each other, separated by 33 bars, with a 3.98 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-12-04T00:00:00+00:00",
+            "price": 146.91,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-01-06T00:00:00+00:00",
+            "price": 143.48,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-12-04T00:00:00+00:00",
+              "price": 119.6,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2026-01-11T00:00:00+00:00",
+              "price": 119.6,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-12-04T00:00:00+00:00",
+            "end_time": "2026-01-11T00:00:00+00:00",
+            "low": 119.6,
+            "high": 146.91,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2025-12-04T00:00:00+00:00",
+            "price": 119.6,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2026-01-11T00:00:00+00:00",
+            "price": 119.6,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2025-12-04T00:00:00+00:00",
+          "end_time": "2026-01-11T00:00:00+00:00",
+          "low": 119.6,
+          "high": 146.91,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 33,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2026-01-11T00:00:00+00:00",
+      "span_start": "2025-12-04T00:00:00+00:00",
+      "span_end": "2026-01-11T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2026-01-25T00:00:00+00:00",
+      "bars_to_resolution": 14,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_bottom",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 62.6,
+      "detected_at": "2026-03-01T00:00:00+00:00",
+      "confirmation_time": "2026-03-01T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "first_extreme": 76.6,
+        "second_extreme": 75.63,
+        "neckline": 88.06
+      },
+      "invalidation_level": 75.63,
+      "invalidation_rule": "a 1d close below 75.63 would break both lows and invalidate the double bottom",
+      "components": {
+        "extreme_agreement": 85.4,
+        "reaction_depth": 57.4,
+        "time_separation": 20.0,
+        "pivot_quality": 87.5,
+        "difference_atr": 0.146,
+        "reaction_atr": 1.721,
+        "bars_between": 12
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two bottoms within 0.15 ATR of each other, separated by 12 bars, with a 1.72 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2026-02-12T00:00:00+00:00",
+            "price": 76.6,
+            "role": "first_bottom",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-02-24T00:00:00+00:00",
+            "price": 75.63,
+            "role": "second_bottom",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2026-02-12T00:00:00+00:00",
+              "price": 88.06,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2026-03-01T00:00:00+00:00",
+              "price": 88.06,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2026-02-12T00:00:00+00:00",
+            "end_time": "2026-03-01T00:00:00+00:00",
+            "low": 75.63,
+            "high": 88.06,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2026-02-12T00:00:00+00:00",
+            "price": 88.06,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2026-03-01T00:00:00+00:00",
+            "price": 88.06,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2026-02-12T00:00:00+00:00",
+          "end_time": "2026-03-01T00:00:00+00:00",
+          "low": 75.63,
+          "high": 88.06,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 12,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2026-03-01T00:00:00+00:00",
+      "span_start": "2026-02-12T00:00:00+00:00",
+      "span_end": "2026-03-01T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2026-03-04T00:00:00+00:00",
+      "bars_to_resolution": 3,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "inverse_head_and_shoulders",
+      "pattern_class": "HEURISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 61.2,
+      "detected_at": "2026-05-04T00:00:00+00:00",
+      "confirmation_time": "2026-05-04T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "left_shoulder": 80.26,
+        "head": 76.7,
+        "right_shoulder": 81.4,
+        "neckline": 96.2
+      },
+      "invalidation_level": 76.7,
+      "invalidation_rule": "a 1d close beyond the head at 76.70 invalidates the pattern",
+      "components": {
+        "head_prominence": 47.9,
+        "shoulder_symmetry": 74.4,
+        "prominence_atr": 1.197,
+        "shoulder_difference_atr": 0.383
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "head stands 1.20 ATR beyond shoulders that agree within 0.38 ATR",
+      "geometry": {
+        "points": [
+          {
+            "time": "2026-03-08T00:00:00+00:00",
+            "price": 80.26,
+            "role": "left_shoulder",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-04-02T00:00:00+00:00",
+            "price": 76.7,
+            "role": "head",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-04-29T00:00:00+00:00",
+            "price": 81.4,
+            "role": "right_shoulder",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2026-03-08T00:00:00+00:00",
+              "price": 96.2,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2026-05-04T00:00:00+00:00",
+              "price": 96.2,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2026-03-08T00:00:00+00:00",
+            "end_time": "2026-05-04T00:00:00+00:00",
+            "low": 76.7,
+            "high": 96.2,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2026-03-08T00:00:00+00:00",
+            "price": 96.2,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2026-05-04T00:00:00+00:00",
+            "price": 96.2,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2026-03-08T00:00:00+00:00",
+          "end_time": "2026-05-04T00:00:00+00:00",
+          "low": 76.7,
+          "high": 96.2,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 52,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2026-05-04T00:00:00+00:00",
+      "span_start": "2026-03-08T00:00:00+00:00",
+      "span_end": "2026-05-04T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2026-05-10T00:00:00+00:00",
+      "bars_to_resolution": 6,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "FAILED",
+      "recognition_confidence": 58.2,
+      "detected_at": "2026-08-14T00:00:00+00:00",
+      "confirmation_time": "2026-08-14T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "first_extreme": 78.88,
+        "second_extreme": 77.84,
+        "neckline": 71.95
+      },
+      "invalidation_level": 78.88,
+      "invalidation_rule": "a 1d close above 78.88 would break both highs and invalidate the double top",
+      "components": {
+        "extreme_agreement": 53.4,
+        "reaction_depth": 88.0,
+        "time_separation": 31.7,
+        "pivot_quality": 59.7,
+        "difference_atr": 0.466,
+        "reaction_atr": 2.641,
+        "bars_between": 19
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "two tops within 0.47 ATR of each other, separated by 19 bars, with a 2.64 ATR reaction between them",
+      "geometry": {
+        "points": [
+          {
+            "time": "2026-07-21T00:00:00+00:00",
+            "price": 78.88,
+            "role": "first_top",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-08-09T00:00:00+00:00",
+            "price": 77.84,
+            "role": "second_top",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2026-07-21T00:00:00+00:00",
+              "price": 71.95,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2026-08-14T00:00:00+00:00",
+              "price": 71.95,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2026-07-21T00:00:00+00:00",
+            "end_time": "2026-08-14T00:00:00+00:00",
+            "low": 71.95,
+            "high": 78.88,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2026-07-21T00:00:00+00:00",
+            "price": 71.95,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2026-08-14T00:00:00+00:00",
+            "price": 71.95,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2026-07-21T00:00:00+00:00",
+          "end_time": "2026-08-14T00:00:00+00:00",
+          "low": 71.95,
+          "high": 78.88,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 19,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2026-08-14T00:00:00+00:00",
+      "span_start": "2026-07-21T00:00:00+00:00",
+      "span_end": "2026-08-14T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2026-08-19T00:00:00+00:00",
+      "bars_to_resolution": 5,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "inverse_head_and_shoulders",
+      "pattern_class": "HEURISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 60.5,
+      "detected_at": "2026-08-21T00:00:00+00:00",
+      "confirmation_time": "2026-08-21T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "left_shoulder": 73.39,
+        "head": 70.58,
+        "right_shoulder": 74.1,
+        "neckline": 78.12
+      },
+      "invalidation_level": 70.58,
+      "invalidation_rule": "a 1d close beyond the head at 70.58 invalidates the pattern",
+      "components": {
+        "head_prominence": 36.1,
+        "shoulder_symmetry": 84.8,
+        "prominence_atr": 0.903,
+        "shoulder_difference_atr": 0.228
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "head stands 0.90 ATR beyond shoulders that agree within 0.23 ATR",
+      "geometry": {
+        "points": [
+          {
+            "time": "2026-07-17T00:00:00+00:00",
+            "price": 73.39,
+            "role": "left_shoulder",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-08-01T00:00:00+00:00",
+            "price": 70.58,
+            "role": "head",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-08-16T00:00:00+00:00",
+            "price": 74.1,
+            "role": "right_shoulder",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2026-07-17T00:00:00+00:00",
+              "price": 78.12,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2026-08-21T00:00:00+00:00",
+              "price": 78.12,
+              "role": "neckline",
+              "kind": "pivot"
+            },
+            "role": "neckline",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2026-07-17T00:00:00+00:00",
+            "end_time": "2026-08-21T00:00:00+00:00",
+            "low": 70.58,
+            "high": 78.12,
+            "role": "breakout"
+          }
+        ],
+        "neckline": {
+          "start": {
+            "time": "2026-07-17T00:00:00+00:00",
+            "price": 78.12,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2026-08-21T00:00:00+00:00",
+            "price": 78.12,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2026-07-17T00:00:00+00:00",
+          "end_time": "2026-08-21T00:00:00+00:00",
+          "low": 70.58,
+          "high": 78.12,
+          "role": "breakout"
+        }
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2026-08-21T00:00:00+00:00",
+      "span_start": "2026-07-17T00:00:00+00:00",
+      "span_end": "2026-08-21T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2026-08-22T00:00:00+00:00",
+      "bars_to_resolution": 1,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 88.4,
+      "detected_at": "2026-09-07T00:00:00+00:00",
+      "confirmation_time": null,
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 76.27,
+        "pole_end": 102.07
+      },
+      "invalidation_level": 76.27,
+      "invalidation_rule": "a close beyond the start of the pole at 76.27 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 5.31,
+        "flag_atr": -1.1
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "geometry": {
+        "points": [
+          {
+            "time": "2026-08-09T00:00:00+00:00",
+            "price": 76.27,
+            "role": "pole_start",
+            "kind": "close"
+          },
+          {
+            "time": "2026-08-26T00:00:00+00:00",
+            "price": 102.07,
+            "role": "pole_end",
+            "kind": "close"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2026-08-09T00:00:00+00:00",
+              "price": 76.27,
+              "role": "pole",
+              "kind": "close"
+            },
+            "end": {
+              "time": "2026-08-26T00:00:00+00:00",
+              "price": 102.07,
+              "role": "pole",
+              "kind": "close"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2026-08-27T00:00:00+00:00",
+            "end_time": "2026-09-07T00:00:00+00:00",
+            "low": 97.38,
+            "high": 110.6,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 30,
+      "separation_note": "recognition_confidence describes how cleanly the shape matches its definition. It is NOT a probability of any price outcome.",
+      "first_seen_at": "2026-09-07T00:00:00+00:00",
+      "span_start": "2026-08-09T00:00:00+00:00",
+      "span_end": "2026-09-07T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "resolution_note": "Whether this one figure reached its trigger or its invalidation first. It describes this instance only and is not an edge."
     }
   ],
+  "figures_in_history": 41,
+  "figures_window_bars": 3400,
   "markers": [
     {
       "time": "2026-09-05T12:30:00+00:00",

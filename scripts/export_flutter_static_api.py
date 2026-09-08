@@ -21,10 +21,20 @@ TIMEFRAMES = ("15m", "1h", "4h", "1d", "1w")
 
 
 def _chart_period(timeframe: str) -> str:
+    """How much candle history each offline snapshot carries.
+
+    Weekly ships everything: the whole series is 474 bars, and the figure scan
+    finds shapes back to 2018 - a one-year snapshot showed none of them, and
+    the offline chart looked like a market without figures.
+
+    The finer timeframes stay bounded on purpose. Shipping nine years of 15m
+    bars would add megabytes to the bundle to serve a mode that exists for
+    when the backend is unreachable.
+    """
+    if timeframe == "1w":
+        return "max"
     if timeframe == "1d":
         return "3m"
-    if timeframe == "1w":
-        return "1y"
     return "7d"
 
 

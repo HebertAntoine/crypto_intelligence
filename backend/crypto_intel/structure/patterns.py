@@ -430,6 +430,31 @@ def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPatter
         "time_separation": round(float(np.clip(span / 80.0, 0.0, 1.0)) * 100.0, 1),
     })
     confidence = report.confidence()
+
+    # Geometry, so the chart can draw what was decided here. The neckline is
+    # the level this detector actually used to judge confirmation - drawing a
+    # textbook sloping neckline instead would show the reader a line the
+    # analysis never applied.
+    geometry = PatternGeometry(
+        points=[
+            _point(ctx, first, f"first_{kind}"),
+            _point(ctx, second, f"second_{kind}"),
+            _point(ctx, third, f"third_{kind}"),
+        ],
+        neckline=_horizontal(ctx, neckline, first.pivot_index, "neckline"),
+        zones=[
+            GeometryZone(
+                start_time=ctx.close.index[first.pivot_index],
+                end_time=ctx.now,
+                low=round(min(invalidation, neckline), 6),
+                high=round(max(invalidation, neckline), 6),
+                role="breakout",
+            )
+        ],
+    )
+    geometry.trend_lines = [geometry.neckline]
+    geometry.breakout_area = geometry.zones[0]
+
     return StructuralPattern(
         name=f"triple_{kind}",
         pattern_class=PatternClass.DETERMINISTIC,
@@ -448,6 +473,7 @@ def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPatter
             f"triple {kind}"
         ),
         components={**report.components, "spread_atr": round(spread_atr, 3)},
+        geometry=geometry,
         bars_span=span,
         notes=f"three {kind}s within {spread_atr:.2f} ATR across {span} bars",
     )
@@ -495,6 +521,29 @@ def detect_head_and_shoulders(
             float(np.clip((1.5 - shoulder_difference_atr) / 1.5 * 100, 0, 100)), 1
         ),
     }
+    # The three defining pivots, the neckline this detector judged against, and
+    # the band between the head and that neckline - the area a break has to
+    # travel through.
+    geometry = PatternGeometry(
+        points=[
+            _point(ctx, left, "left_shoulder"),
+            _point(ctx, head, "head"),
+            _point(ctx, right, "right_shoulder"),
+        ],
+        neckline=_horizontal(ctx, neckline, left.pivot_index, "neckline"),
+        zones=[
+            GeometryZone(
+                start_time=ctx.close.index[left.pivot_index],
+                end_time=ctx.now,
+                low=round(min(head.price, neckline), 6),
+                high=round(max(head.price, neckline), 6),
+                role="breakout",
+            )
+        ],
+    )
+    geometry.trend_lines = [geometry.neckline]
+    geometry.breakout_area = geometry.zones[0]
+
     return StructuralPattern(
         name="inverse_head_and_shoulders" if inverse else "head_and_shoulders",
         pattern_class=PatternClass.HEURISTIC,
@@ -517,6 +566,8 @@ def detect_head_and_shoulders(
             "prominence_atr": round(prominence_atr, 3),
             "shoulder_difference_atr": round(shoulder_difference_atr, 3),
         },
+        geometry=geometry,
+        bars_span=right.pivot_index - left.pivot_index,
         notes=(
             f"head stands {prominence_atr:.2f} ATR beyond shoulders that agree within "
             f"{shoulder_difference_atr:.2f} ATR"
@@ -820,6 +871,47 @@ def detect_flag(ctx: PatternContext) -> StructuralPattern | None:
         return None
 
     bullish = pole_move > 0
+    pole_start_price = float(pole.iloc[0])
+    pole_end_price = float(pole.iloc[-1])
+
+    # The pole as a segment, the consolidation as an area. `extend` is off on
+    # the pole: it is a move that happened, not a boundary that keeps holding.
+    flag_high = float(ctx.high.iloc[-12:].max())
+    flag_low = float(ctx.low.iloc[-12:].min())
+    geometry = PatternGeometry(
+        points=[
+            GeometryPoint(
+                time=pole.index[0], price=round(pole_start_price, 6),
+                role="pole_start", kind="close",
+            ),
+            GeometryPoint(
+                time=pole.index[-1], price=round(pole_end_price, 6),
+                role="pole_end", kind="close",
+            ),
+        ],
+        trend_lines=[
+            TrendLine(
+                start=GeometryPoint(
+                    time=pole.index[0], price=round(pole_start_price, 6),
+                    role="pole", kind="close",
+                ),
+                end=GeometryPoint(
+                    time=pole.index[-1], price=round(pole_end_price, 6),
+                    role="pole", kind="close",
+                ),
+                role="pole",
+                extend=False,
+            )
+        ],
+        zones=[
+            GeometryZone(
+                start_time=flag.index[0], end_time=ctx.now,
+                low=round(flag_low, 6), high=round(flag_high, 6),
+                role="consolidation",
+            )
+        ],
+    )
+
     return StructuralPattern(
         name="bull_flag" if bullish else "bear_flag",
         pattern_class=PatternClass.EXPERIMENTAL,
@@ -833,13 +925,19 @@ def detect_flag(ctx: PatternContext) -> StructuralPattern | None:
             "pole_start": round(float(pole.iloc[0]), 6),
             "pole_end": round(float(pole.iloc[-1]), 6),
         },
+        # The rule already named this level; leaving the field empty meant
+        # nothing downstream could check whether the figure had failed.
+        invalidation_level=round(pole_start_price, 6),
         invalidation_rule=(
-            "a close beyond the start of the pole invalidates the continuation reading"
+            f"a close beyond the start of the pole at {pole_start_price:.2f} "
+            "invalidates the continuation reading"
         ),
         components={
             "pole_atr": round(float(pole_move), 2),
             "flag_atr": round(float(flag_move), 2),
         },
+        geometry=geometry,
+        bars_span=len(pole) + len(flag),
         notes="classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
     )
 

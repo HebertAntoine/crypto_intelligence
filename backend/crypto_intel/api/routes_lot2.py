@@ -141,12 +141,37 @@ def _chart_market_metadata(
         "refresh_new_rows": refresh["new_rows"],
     }
 
+#: How many bars the app loads for each timeframe, and therefore how far back
+#: figures must be returned.
+#:
+#: Mirrored by `kCandleDepth` in `app/lib/chart/live_candles.dart`. The two are
+#: compared by a test against the exported snapshots: if they drift, the chart
+#: shows candles for years it has no figures for, and the empty stretch looks
+#: like an absence of figures rather than a mismatch.
+CHART_CANDLE_DEPTH: dict[str, int] = {
+    "1w": 600,
+    "1d": 3400,
+    "4h": 3000,
+    "1h": 2000,
+    "15m": 1500,
+}
+
+
 @router.get("/chart/{symbol}")
 async def chart(
     symbol: str,
     timeframe: str = Query("1d"),
     period: str = Query("3m", description="7d, 30d, 3m, 1y or max"),
     indicators: str = Query("ema20,ema50,ema200,bb,rsi,macd"),
+    figures_bars: int | None = Query(
+        None, ge=50, le=20000,
+        description=(
+            "How far back to return figures, in bars. Independent of `period`: "
+            "the chart draws its own candle window, and figures must cover what "
+            "it draws rather than what this endpoint happens to slice. Defaults "
+            "to the depth the app loads for that timeframe."
+        ),
+    ),
 ) -> dict[str, Any]:
     """Candles plus overlays, refreshed from Binance then read from storage.
 
@@ -159,6 +184,7 @@ async def chart(
     would produce an EMA200 that is not the EMA200 the analysis used.
     """
     asset = _parse_asset(symbol)
+    figures_bars = figures_bars or CHART_CANDLE_DEPTH.get(timeframe, 1000)
     try:
         tf = Timeframe(timeframe)
     except ValueError:
@@ -231,6 +257,7 @@ async def chart(
     levels: dict[str, Any] = {"support": [], "resistance": []}
     patterns: list[dict[str, Any]] = []
     structural: list[dict[str, Any]] = []
+    figures_total = 0
     try:
         from ..core.models import Candle, OHLCVSeries, Provenance
         from ..engines.technical.engine import TechnicalAnalysisEngine
@@ -269,20 +296,34 @@ async def chart(
             for p in snapshot.patterns
         ]
 
-        # Les figures structurelles portent leur géométrie: points nommés,
-        # droites, neckline, zone de cassure. `PatternGeometry` existe depuis
-        # le début et dit dans sa propre docstring qu'un frontend qui la
-        # détient peut redessiner exactement ce que le détecteur a vu — mais
-        # cet endpoint ne la sérialisait pas, alors le graphique ne pouvait
-        # rien tracer d'autre que des bougies. Elle est calculée sur `source`,
-        # les vraies barres de l'unité demandée, jamais sur des barres
-        # agrégées pour l'affichage.
-        from ..structure.patterns import build_context, detect_all
+        # Les figures viennent d'un balayage de TOUT l'historique conservé,
+        # pas de la seule fenêtre affichée.
+        #
+        # Les détecteurs lisent `swings[-1]` et `swings[-2]`: interrogés une
+        # fois, au présent, ils renvoient au plus une figure chacun. Neuf ans
+        # de bougies quotidiennes donnaient donc le même petit lot que les
+        # quinze derniers jours, et le graphique restait vide quel que soit le
+        # recul. Le balayage rejoue les mêmes détecteurs à chaque pivot
+        # confirmé — même code, même seuils, simplement posé à tous les
+        # moments où la réponse pouvait changer.
+        #
+        # Calculé sur `full`, la série complète de l'unité demandée: jamais
+        # sur les barres agrégées pour l'affichage, et jamais tronqué à la
+        # période, sinon on retomberait sur le problème d'origine.
+        from ..structure import history_scan
 
-        context = build_context(source, tf)
-        structural = [
-            item.to_dict() for item in (detect_all(context) if context is not None else [])
-        ]
+        all_figures = history_scan.scan_cached(asset.value, tf, full)
+        # The window for figures is NOT `period`. The app fetches its own
+        # candles - a thousand bars, whatever the period - so filtering on the
+        # period slice left it showing 166 days of 4h candles with figures on
+        # the last seven, and the rest of the chart looked empty.
+        figure_window = full.index[-figures_bars:]
+        structural = history_scan.within_window(
+            all_figures,
+            figure_window[0].to_pydatetime(),
+            figure_window[-1].to_pydatetime(),
+        )
+        figures_total = len(all_figures)
     except Exception as exc:
         log.debug("chart_overlay_failed", error=str(exc))
 
@@ -304,8 +345,13 @@ async def chart(
         "panels": panels,
         "levels": levels,
         "patterns": patterns,
-        # Les figures dessinables, avec leur géométrie en temps/prix.
+        # Les figures dessinables de la fenêtre, avec leur géométrie.
         "structural_patterns": structural,
+        # Combien l'historique complet en contient, pour que l'écran puisse
+        # dire « 3 ici, 70 en tout » plutôt que laisser croire qu'il n'y en a
+        # que trois.
+        "figures_in_history": figures_total,
+        "figures_window_bars": figures_bars,
         "markers": _chart_markers(asset, df.index.min(), df.index.max()),
     }
 

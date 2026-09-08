@@ -1280,6 +1280,19 @@ class ChartRead {
   /// porte que des index de barres. Ici, chaque point a un horodatage: c'est
   /// ce qui permet de le placer sur des bougies venues d'ailleurs.
   final List<StructuralPatternRead> structuralPatterns;
+
+  /// Combien de figures l'historique complet contient, toutes époques.
+  ///
+  /// Le graphique n'en montre qu'une partie: dire « 26 ici, 358 en tout »
+  /// évite de laisser croire que le moteur n'en a trouvé que vingt-six.
+  final int figuresInHistory;
+
+  /// Sur combien de barres le backend a cherché des figures.
+  ///
+  /// Doit correspondre à ce que l'app charge de bougies : si les deux
+  /// divergent, le graphique affiche des années sans figure et la zone vide
+  /// se lit comme une absence de figures, pas comme un décalage.
+  final int figuresWindowBars;
   final Map<String, dynamic> summary;
 
   const ChartRead({
@@ -1304,6 +1317,8 @@ class ChartRead {
     required this.levels,
     required this.patterns,
     required this.structuralPatterns,
+    required this.figuresInHistory,
+    required this.figuresWindowBars,
     required this.summary,
   });
 
@@ -1341,6 +1356,9 @@ class ChartRead {
             .map((item) =>
                 StructuralPatternRead.fromJson(item.cast<String, dynamic>()))
             .toList(),
+        figuresInHistory: (json['figures_in_history'] as num?)?.toInt() ?? 0,
+        figuresWindowBars:
+            (json['figures_window_bars'] as num?)?.toInt() ?? 0,
         summary: (json['summary'] as Map?)?.cast<String, dynamic>() ?? const {},
       );
 

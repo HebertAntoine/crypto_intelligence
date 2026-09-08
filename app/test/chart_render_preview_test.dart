@@ -66,6 +66,7 @@ void main() {
     'eth-1h': ('ETH', '1h', 'chart__ETH__period-7d__timeframe-1h.json'),
     'sol-1d': ('SOL', '1d', 'chart__SOL__period-3m__timeframe-1d.json'),
     'btc-1d': ('BTC', '1d', 'chart__BTC__period-3m__timeframe-1d.json'),
+    'btc-1w': ('BTC', '1w', 'chart__BTC__period-max__timeframe-1w.json'),
   }.entries) {
     testWidgets('aperçu ${entry.key}', (tester) async {
       await _loadRealFont();

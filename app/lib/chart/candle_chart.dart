@@ -30,6 +30,9 @@ const double _priceAxisWidth = 62;
 const double _timeAxisHeight = 34;
 const double _volumeFraction = 0.18;
 
+/// Combien de figures portent leur nom à l'écran, au plus.
+const int _maxNamedPatterns = 4;
+
 class CandleChart extends StatefulWidget {
   final List<CandlePoint> candles;
   final ChartLayerSet layers;
@@ -602,12 +605,30 @@ class CandleChartPainter extends CustomPainter {
   /// convertir en pixels. C'est ce qui garde le tracé collé aux bougies quand
   /// la fenêtre bouge, et ce qui interdit au graphique de « voir » une figure
   /// que l'analyse n'a pas vue.
+  /// Les figures qui croisent l'intervalle affiché, les plus récentes en
+  /// dernier.
+  ///
+  /// Le backend renvoie l'historique — jusqu'à trente-cinq figures sur une
+  /// vue. Toutes les tracer quel que soit le zoom donnerait une bouillie de
+  /// rectangles ; filtrer sur la fenêtre est gratuit, puisqu'elle connaît ses
+  /// propres bornes de temps, et c'est ce que le lecteur attend : en zoomant,
+  /// il ne reste que ce qu'il regarde.
+  List<StructuralPatternRead> get _visiblePatterns {
+    if (patterns.isEmpty || viewport.isEmpty) return const [];
+    final first = viewport.candles[viewport.startIndex].time;
+    final last = viewport.candles[viewport.endIndex - 1].time;
+    if (first == null || last == null) return patterns;
+    return patterns
+        .where((pattern) => pattern.isDrawable && pattern.overlaps(first, last))
+        .toList();
+  }
+
   void _paintPatterns(Canvas canvas) {
-    if (patterns.isEmpty) return;
+    final visible = _visiblePatterns;
+    if (visible.isEmpty) return;
     canvas.save();
     canvas.clipRect(_plot);
-    for (final pattern in patterns) {
-      if (!pattern.isDrawable) continue;
+    for (final pattern in visible) {
       final colour = _patternColour(pattern);
       // Aires d'abord, droites ensuite, points en dernier: un point posé sur
       // une droite doit rester visible.
@@ -717,6 +738,15 @@ class CandleChartPainter extends CustomPainter {
   /// Sur le calque des étiquettes, comme les zones — on doit pouvoir garder
   /// les tracés et enlever le texte quand le graphique se charge.
   void _paintPatternLabels(Canvas canvas) {
+    // Nommer trente figures rendrait le graphique illisible, et `_freeSlot`
+    // finirait par toutes les refuser sans dire lesquelles. On nomme les plus
+    // récentes — celles qui décrivent le prix d'aujourd'hui — et le compte
+    // total est affiché sous le graphique.
+    final visible = _visiblePatterns;
+    final named = visible.length <= _maxNamedPatterns
+        ? visible
+        : visible.sublist(visible.length - _maxNamedPatterns);
+
     for (final pattern in patterns) {
       final colour = _patternColour(pattern);
       if (!pattern.isDrawable) {
@@ -731,6 +761,7 @@ class CandleChartPainter extends CustomPainter {
         );
         continue;
       }
+      if (!named.contains(pattern)) continue;
       _tag(
         canvas,
         Offset(_plot.right - 6, _plot.top + 4),

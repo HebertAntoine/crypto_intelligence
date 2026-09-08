@@ -26,8 +26,17 @@ import 'package:flutter/painting.dart';
 import '../api/models.dart';
 
 /// Bornes du zoom, en nombre de bougies visibles.
+///
+/// Le plafond est le jeu lui-même : on doit pouvoir reculer jusqu'à voir
+/// toute l'histoire chargée. Le borner à trois cents rendait invisibles les
+/// figures de 2018 en hebdomadaire — elles étaient trouvées, servies, mais on
+/// ne pouvait pas dézoomer assez pour les atteindre.
+///
+/// `kMaxVisibleCandles` reste une borne dure, très au-dessus de ce que
+/// n'importe quelle unité charge, pour qu'un jeu aberrant ne fasse pas
+/// dessiner des centaines de milliers de bougies.
 const int kMinVisibleCandles = 15;
-const int kMaxVisibleCandles = 300;
+const int kMaxVisibleCandles = 6000;
 
 /// Vue par défaut à l'ouverture et après un double tap.
 const int kDefaultVisibleCandles = 80;

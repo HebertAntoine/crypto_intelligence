@@ -7,6 +7,8 @@
 /// n'avait ni fenêtre, ni échelle locale, ni rien à déplacer.
 library;
 
+import 'dart:math' as math;
+
 import 'package:crypto_intelligence_app/api/models.dart';
 import 'package:crypto_intelligence_app/chart/chart_viewport.dart';
 import 'package:flutter/painting.dart';
@@ -50,7 +52,20 @@ void main() {
 
     test('la fenêtre reste dans les bornes de zoom', () {
       expect(_viewport(visible: 5).visibleCount, kMinVisibleCandles);
-      expect(_viewport(visible: 9999).visibleCount, kMaxVisibleCandles);
+      // Le plafond, c'est le jeu: reculer doit permettre de voir toute
+      // l'histoire chargée, pas s'arrêter à une constante.
+      expect(_viewport(visible: 99999).visibleCount, _candles(500).length);
+    });
+
+    test('on peut reculer jusqu’à voir neuf ans de bougies', () {
+      // C'est ce qui manquait: les figures de 2018 étaient servies mais le
+      // zoom s'arrêtait à trois cents bougies, donc on ne pouvait pas les
+      // atteindre en hebdomadaire.
+      final vp = ChartViewport.initial(
+        candles: _candles(3400), plot: _plot, desired: 99999,
+      );
+      expect(vp.visibleCount, 3400);
+      expect(vp.startIndex, 0);
     });
 
     test('un jeu plus court que la fenêtre demandée ne déborde pas', () {
@@ -155,7 +170,7 @@ void main() {
       for (var i = 0; i < 30; i++) {
         vp = vp.zoomedBy(0.5, _plot.center.dx);
       }
-      expect(vp.visibleCount, kMaxVisibleCandles);
+      expect(vp.visibleCount, math.min(kMaxVisibleCandles, vp.candles.length));
     });
 
     test('le point sous le doigt reste sous le doigt', () {

@@ -6,6 +6,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:crypto_intelligence_app/chart/live_candles.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -126,10 +127,41 @@ void main() {
       await service.fetch('BTC', '1w');
       expect(seen.queryParameters['symbol'], 'BTCUSDT');
       expect(seen.queryParameters['interval'], '1w');
-      // La fenêtre en affiche 80: en charger mille est ce qui donne de la
-      // matière au déplacement vers l'historique.
-      expect(int.parse(seen.queryParameters['limit']!), kLiveCandleLimit);
-      expect(kLiveCandleLimit, greaterThan(500));
+      // La profondeur voulue, bornée par ce que la source sert en un appel;
+      // les barres plus anciennes viennent des pages suivantes.
+      expect(int.parse(seen.queryParameters['limit']!),
+          math.min(candleDepthFor('1w'), kBinanceKlineLimit));
+    });
+
+    test('la profondeur visée dépasse ce qu’un seul appel peut servir', () {
+      // C'est le point de la pagination: en hebdomadaire, mille barres
+      // couvraient un an alors que le moteur trouve des figures depuis 2018.
+      for (final tf in ['1d', '4h']) {
+        expect(candleDepthFor(tf), greaterThan(kBinanceKlineLimit), reason: tf);
+      }
+      expect(candleDepthFor('1d'), greaterThanOrEqualTo(3300),
+          reason: 'neuf ans de bougies quotidiennes');
+      expect(candleDepthFor('2h'), kLiveCandleLimit,
+          reason: 'une unité inconnue retombe sur la valeur par défaut');
+    });
+
+    test('la pagination remonte le temps et ne répète pas une page', () async {
+      // Une source qui renvoie toujours la même page ferait sinon grossir la
+      // série de copies, et le graphique dessinerait douze fois les mêmes
+      // bougies.
+      var calls = 0;
+      final service = LiveCandleService(
+        client: MockClient((request) async {
+          calls++;
+          return http.Response(
+            jsonEncode([_kline(1757000000000, 100), _kline(1757003600000, 110)]),
+            200,
+          );
+        }),
+      );
+      final result = await service.fetch('BTC', '1d');
+      expect(result.candles, hasLength(2));
+      expect(calls, 2, reason: 'un appel, une page vide de nouveauté, on arrête');
     });
   });
 

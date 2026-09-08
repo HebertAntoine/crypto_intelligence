@@ -19,15 +19,41 @@
 library;
 
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:http/http.dart' as http;
 
 import '../api/models.dart';
 
-/// Combien de bougies demander. Binance en sert mille au maximum par appel,
-/// et c'est bien plus que ce que la fenêtre affiche — c'est justement ce qui
-/// donne de la matière au déplacement.
+/// Le maximum que Binance sert en un appel. Au-delà, il faut paginer.
+const int kBinanceKlineLimit = 1000;
+
+/// Combien de bougies charger, par unité de temps.
+///
+/// Un millier de bougies suffisait à déplacer la vue, pas à voir l'histoire :
+/// en hebdomadaire cela couvrait un an, alors que le moteur trouve des
+/// figures jusqu'en 2018. Les cibles ci-dessous couvrent tout ce que Binance
+/// conserve pour les grandes unités, et restent bornées sur les petites où
+/// la profondeur n'apporterait que du poids.
+///
+///   1 sem. — 474 barres, soit l'intégralité depuis août 2017
+///   1 j    — 3 400 barres, soit neuf ans
+///   4 h    — 3 000 barres, soit un an et demi
+///   1 h    — 2 000 barres, soit trois mois
+///   15 min — 1 500 barres, soit seize jours
+const Map<String, int> kCandleDepth = {
+  '1w': 600,
+  '1d': 3400,
+  '4h': 3000,
+  '1h': 2000,
+  '15m': 1500,
+};
+
+/// Combien de bougies demander par défaut quand l'unité est inconnue.
 const int kLiveCandleLimit = 1000;
+
+int candleDepthFor(String timeframe) =>
+    kCandleDepth[timeframe] ?? kLiveCandleLimit;
 
 /// Ce que le graphique a reçu, et d'où.
 class LiveCandles {
@@ -79,6 +105,20 @@ class LiveCandleService {
         'limit': '$limit',
       });
 
+  /// Le même appel, borné dans le passé — c'est ce qui permet de paginer.
+  static Uri _binanceKlinesBefore(
+    String symbol,
+    String interval,
+    int limit,
+    int endMillis,
+  ) =>
+      Uri.https('api.binance.com', '/api/v3/klines', {
+        'symbol': symbol,
+        'interval': interval,
+        'limit': '$limit',
+        'endTime': '$endMillis',
+      });
+
   /// La paire cotée pour un actif. Le graphique affiche « BTC / USDT » : le
   /// libellé doit correspondre à ce qui a réellement été appelé.
   static String symbolFor(String asset) => switch (asset.toUpperCase()) {
@@ -101,18 +141,66 @@ class LiveCandleService {
   Future<LiveCandles> fetch(
     String asset,
     String timeframe, {
-    int limit = kLiveCandleLimit,
+    int? limit,
   }) async {
     final interval = intervalFor(timeframe);
     if (interval == null) {
       throw LiveCandlesUnavailable('Unité « $timeframe » non gérée en direct.');
     }
     final symbol = symbolFor(asset);
+    final wanted = limit ?? candleDepthFor(timeframe);
+
+    // Première page: les bougies les plus récentes.
+    var candles = parseKlines(await _get(_endpoint(
+      symbol, interval, math.min(wanted, kBinanceKlineLimit),
+    )));
+    if (candles.isEmpty) {
+      return LiveCandles(
+        candles: candles, source: 'Binance', symbol: symbol,
+        fetchedAt: DateTime.now().toUtc(),
+      );
+    }
+
+    // Puis on remonte, page par page, jusqu'à la profondeur voulue.
+    //
+    // `endTime` est inclusif chez Binance: on demande la barre juste avant la
+    // plus ancienne obtenue, sinon chaque page rechargerait la précédente.
+    // La boucle est bornée pour ne jamais tourner indéfiniment si la source
+    // renvoie autre chose que ce qu'on attend.
+    var guard = 0;
+    while (candles.length < wanted && guard < 12) {
+      guard++;
+      final oldest = candles.first.time;
+      if (oldest == null) break;
+      final page = parseKlines(await _get(_binanceKlinesBefore(
+        symbol,
+        interval,
+        math.min(wanted - candles.length, kBinanceKlineLimit),
+        oldest.millisecondsSinceEpoch - 1,
+      )));
+      // Uniquement ce qui est réellement plus ancien. Une source qui renvoie
+      // la même page indéfiniment ferait sinon grossir la série de copies,
+      // et le graphique dessinerait douze fois les mêmes bougies.
+      final older = page
+          .where((candle) =>
+              candle.time != null && candle.time!.isBefore(oldest))
+          .toList();
+      if (older.isEmpty) break;
+      candles = [...older, ...candles];
+    }
+
+    return LiveCandles(
+      candles: candles,
+      source: 'Binance',
+      symbol: symbol,
+      fetchedAt: DateTime.now().toUtc(),
+    );
+  }
+
+  Future<String> _get(Uri url) async {
     final http.Response response;
     try {
-      response = await _client
-          .get(_endpoint(symbol, interval, limit))
-          .timeout(const Duration(seconds: 12));
+      response = await _client.get(url).timeout(const Duration(seconds: 12));
     } catch (error) {
       throw LiveCandlesUnavailable('Source de bougies injoignable ($error).');
     }
@@ -121,12 +209,7 @@ class LiveCandleService {
         'Source de bougies indisponible (HTTP ${response.statusCode}).',
       );
     }
-    return LiveCandles(
-      candles: parseKlines(response.body),
-      source: 'Binance',
-      symbol: symbol,
-      fetchedAt: DateTime.now().toUtc(),
-    );
+    return response.body;
   }
 
   /// Une kline Binance est un tableau positionnel :

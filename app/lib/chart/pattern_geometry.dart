@@ -60,6 +60,8 @@ class GeometryPoint {
         'right_shoulder' => 'ÉPAULE D.',
         'valley' => 'VALLÉE',
         'peak' => 'SOMMET',
+        'pole_start' => 'DÉPART DU MÂT',
+        'pole_end' => 'FIN DU MÂT',
         _ => '',
       };
 }
@@ -149,6 +151,7 @@ class GeometryZone {
         'breakout' => 'ZONE DE CASSURE',
         'invalidation' => 'INVALIDATION',
         'target' => 'OBJECTIF',
+        'consolidation' => 'CONSOLIDATION',
         _ => '',
       };
 
@@ -238,6 +241,21 @@ class StructuralPatternRead {
   final double? invalidationLevel;
   final DateTime? detectedAt;
   final DateTime? confirmationTime;
+
+  /// Le moment où la figure est devenue reconnaissable, et l'intervalle
+  /// qu'elle occupe sur le graphique.
+  ///
+  /// Une figure de 2019 a été reconnaissable en 2019 : le balayage
+  /// historique rejoue les détecteurs à chaque pivot, sans jamais leur
+  /// montrer une barre postérieure à leur propre date.
+  final DateTime? firstSeenAt;
+  final DateTime? spanStart;
+  final DateTime? spanEnd;
+
+  /// Ce que le prix a fait ensuite — un **fait** sur cette instance, jamais
+  /// un avantage. `edgeState` reste la seule réponse à « cette forme
+  /// prédit-elle quelque chose ».
+  final String resolution;
   final PatternGeometry geometry;
 
   const StructuralPatternRead({
@@ -250,6 +268,10 @@ class StructuralPatternRead {
     required this.invalidationLevel,
     required this.detectedAt,
     required this.confirmationTime,
+    required this.firstSeenAt,
+    required this.spanStart,
+    required this.spanEnd,
+    required this.resolution,
     required this.geometry,
   });
 
@@ -307,6 +329,37 @@ class StructuralPatternRead {
         _ => edgeState,
       };
 
+  /// Ce que le prix a fait après, en clair.
+  String get resolutionLabel => switch (resolution) {
+        'REACHED_TRIGGER' => 'déclencheur atteint',
+        'REACHED_INVALIDATION' => 'invalidée ensuite',
+        'STILL_OPEN' => 'en cours',
+        'UNRESOLVED' => 'ni l’un ni l’autre',
+        _ => resolution.toLowerCase(),
+      };
+
+  /// Vrai si la figure croise l'intervalle affiché.
+  ///
+  /// Recouvrement, pas inclusion : une figure à moitié dans la fenêtre reste
+  /// visible et mérite d'être tracée. Une figure entièrement en dehors n'a
+  /// rien à faire à l'écran — ses points tomberaient hors du cadre.
+  bool overlaps(DateTime start, DateTime end) {
+    final from = spanStart ?? _earliestPoint;
+    final to = spanEnd ?? detectedAt ?? from;
+    if (from == null || to == null) return true;
+    return !to.isBefore(start) && !from.isAfter(end);
+  }
+
+  DateTime? get _earliestPoint {
+    final times = [
+      ...geometry.points.map((point) => point.time),
+      ...geometry.lines.map((line) => line.start.time),
+      ...geometry.zones.map((zone) => zone.startTime),
+    ];
+    if (times.isEmpty) return null;
+    return times.reduce((a, b) => a.isBefore(b) ? a : b);
+  }
+
   factory StructuralPatternRead.fromJson(Map<String, dynamic> json) =>
       StructuralPatternRead(
         name: _string(json['name']),
@@ -319,6 +372,10 @@ class StructuralPatternRead {
         detectedAt: DateTime.tryParse('${json['detected_at'] ?? ''}')?.toUtc(),
         confirmationTime:
             DateTime.tryParse('${json['confirmation_time'] ?? ''}')?.toUtc(),
+        firstSeenAt: DateTime.tryParse('${json['first_seen_at'] ?? ''}')?.toUtc(),
+        spanStart: DateTime.tryParse('${json['span_start'] ?? ''}')?.toUtc(),
+        spanEnd: DateTime.tryParse('${json['span_end'] ?? ''}')?.toUtc(),
+        resolution: _string(json['resolution'], 'UNRESOLVED'),
         geometry: PatternGeometry.fromJson(
           ((json['geometry'] as Map?) ?? const {}).cast<String, dynamic>(),
         ),

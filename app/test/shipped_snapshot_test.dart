@@ -15,6 +15,7 @@ import 'dart:io';
 
 import 'package:crypto_intelligence_app/api/client.dart';
 import 'package:crypto_intelligence_app/api/models.dart';
+import 'package:crypto_intelligence_app/chart/live_candles.dart';
 import 'package:crypto_intelligence_app/screens/today_screen.dart';
 import 'package:crypto_intelligence_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -204,31 +205,66 @@ void main() {
             reason: '$name a été exporté par un backend trop ancien');
       });
 
-      test('$name : toute figure traçable tombe dans la fenêtre', () {
-        final read =
-            ChartRead.fromJson(jsonDecode(file.readAsStringSync()) as Map<String, dynamic>);
-        if (read.candles.isEmpty) return;
+      test('$name : chaque figure est traçable et bien formée', () {
+        final read = ChartRead.fromJson(
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>);
+        for (final pattern in read.structuralPatterns) {
+          // Plus aucun détecteur n'est muet: une figure sans géométrie
+          // signifierait qu'un détecteur a régressé.
+          expect(pattern.isDrawable, isTrue,
+              reason: '${pattern.name} est annoncée sans géométrie');
+          expect(pattern.spanStart, isNotNull);
+          expect(pattern.spanEnd, isNotNull);
+          expect(pattern.spanEnd!.isBefore(pattern.spanStart!), isFalse,
+              reason: '${pattern.name} finit avant de commencer');
+          for (final point in pattern.geometry.points) {
+            expect(point.price.isFinite && point.price > 0, isTrue,
+                reason: '${pattern.name}: prix invalide sur ${point.role}');
+          }
+        }
+      });
+
+      test('$name : le vide hors ligne reste explicable', () {
+        // Les figures couvrent des milliers de barres, les bougies livrées
+        // beaucoup moins: c'est voulu, l'app charge les siennes et le bundle
+        // n'a pas à porter neuf ans de bougies de quinze minutes.
+        //
+        // Ce qui n'est pas acceptable, c'est un graphique vide sans
+        // explication. Il faut donc soit qu'une figure croise les bougies
+        // livrées, soit que le compte de l'historique permette à l'écran de
+        // dire « aucune ici, N en tout ».
+        final read = ChartRead.fromJson(
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>);
+        if (read.candles.isEmpty || read.structuralPatterns.isEmpty) return;
         final times = read.candles
             .map((candle) => candle.time)
             .whereType<DateTime>()
             .map((time) => time.toUtc())
             .toList();
-        final first = times.first, last = times.last;
-
-        for (final pattern in read.structuralPatterns) {
-          if (!pattern.isDrawable) continue;
-          for (final point in pattern.geometry.points) {
-            expect(point.price.isFinite && point.price > 0, isTrue,
-                reason: '${pattern.name}: prix invalide sur ${point.role}');
-            // Une marge d'une barre suffit: `extend` prolonge volontairement
-            // certaines droites au-delà de la dernière bougie, mais un point
-            // nommé hors fenêtre serait dessiné dans le vide.
-            expect(point.time.isBefore(first), isFalse,
-                reason: '${pattern.name}: ${point.role} précède la fenêtre');
-            expect(point.time.isAfter(last), isFalse,
-                reason: '${pattern.name}: ${point.role} dépasse la fenêtre');
-          }
+        final crossing = read.structuralPatterns
+            .where((pattern) => pattern.overlaps(times.first, times.last))
+            .length;
+        if (crossing == 0) {
+          expect(read.figuresInHistory, greaterThan(0),
+              reason: 'aucune figure visible et aucun compte à afficher: '
+                  'le graphique serait vide sans explication');
         }
+        expect(read.figuresInHistory,
+            greaterThanOrEqualTo(read.structuralPatterns.length),
+            reason: 'la fenêtre annonce plus de figures que l’historique');
+      });
+      test('$name : la fenêtre des figures suit ce que l’app charge', () {
+        // Le backend et l'app tiennent chacun une table de profondeur. Si
+        // elles divergent, le graphique dessine des bougies pour des années
+        // où aucune figure n'a été cherchée — et la zone vide se lit comme un
+        // marché sans figures.
+        final read = ChartRead.fromJson(
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>);
+        expect(read.figuresWindowBars, greaterThan(0),
+            reason: '$name ne déclare pas sa fenêtre de figures');
+        expect(read.figuresWindowBars, candleDepthFor(read.timeframe),
+            reason: 'le backend cherche sur ${read.figuresWindowBars} barres, '
+                'l’app en charge ${candleDepthFor(read.timeframe)}');
       });
     }
   });

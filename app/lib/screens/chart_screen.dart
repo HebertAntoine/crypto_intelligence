@@ -522,6 +522,11 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
             fallbackCount: fallback.length,
             onRetry: _loadLive,
           ),
+          const SizedBox(height: 6),
+          _FigureCountLine(
+            drawn: widget.data.drawnPatterns.length,
+            inHistory: widget.data.chart?.figuresInHistory ?? 0,
+          ),
           const SizedBox(height: 8),
           _LayerBar(
             layers: _layers,
@@ -532,6 +537,33 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
           _IndicatorStrip(data: widget.data),
         ],
       ),
+    );
+  }
+}
+
+/// Combien de figures, ici et dans tout l'historique.
+///
+/// Le graphique ne montre que celles qui croisent la fenêtre. Sans ce compte,
+/// une vue zoomée à trois figures laisserait croire que le moteur n'en trouve
+/// que trois sur neuf ans.
+class _FigureCountLine extends StatelessWidget {
+  final int drawn;
+  final int inHistory;
+
+  const _FigureCountLine({required this.drawn, required this.inHistory});
+
+  @override
+  Widget build(BuildContext context) {
+    if (inHistory == 0 && drawn == 0) {
+      return const Text(
+        'Aucune figure sur cette unité de temps.',
+        style: TextStyle(color: AppColors.textMuted, fontSize: 16),
+      );
+    }
+    final here = drawn <= 1 ? '$drawn figure sur cette vue' : '$drawn figures sur cette vue';
+    return Text(
+      '$here · $inHistory dans tout l’historique conservé',
+      style: const TextStyle(color: AppColors.textMuted, fontSize: 16),
     );
   }
 }
@@ -861,29 +893,37 @@ class _PatternDetectedPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: directionColor.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: directionColor, width: 1.4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(_directionIcon(direction),
-                        color: directionColor, size: 23),
-                    const SizedBox(width: 8),
-                    Text(
-                      _directionShortLabel(direction),
-                      style: TextStyle(
-                        color: directionColor,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+              // `Flexible`: le nom français d'une figure peut être long
+              // (« Épaule-tête-épaule »), et la pastille débordait alors du
+              // cadre de 23 px sur les largeurs étroites.
+              Flexible(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: directionColor.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: directionColor, width: 1.4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_directionIcon(direction),
+                          color: directionColor, size: 23),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          _directionShortLabel(direction),
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: directionColor,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -1501,7 +1541,10 @@ String _timeframeLabel(String timeframe) => switch (timeframe) {
 /// étaient là, sous un autre nom.
 String _periodForTimeframe(String value) => switch (value) {
       '1d' => '3m',
-      '1w' => '1y',
+      // Tout l'historique en hebdomadaire: 474 barres seulement, et le
+      // moteur y trouve des figures jusqu'en 2018 qu'une fenêtre d'un an ne
+      // montrait pas.
+      '1w' => 'max',
       _ => '7d',
     };
 
