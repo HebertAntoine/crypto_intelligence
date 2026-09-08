@@ -720,10 +720,22 @@ void main() {
       expect(find.text('DIRECTION'), findsWidgets);
       expect(find.text('TIMING'), findsWidgets);
       expect(find.text('AVANTAGE'), findsWidgets);
-      expect(find.text('ACHETER'), findsWidgets);
+      expect(find.text('OPPORTUNITÉ'), findsWidgets);
       expect(find.text('QUI ACHÈTE, QUI VEND ?'), findsWidgets);
       expect(find.text('Voir pourquoi'), findsWidgets);
       expect(find.text('Voir les sources'), findsWidgets);
+      expect(
+        find.textContaining('La tendance de fond reste positive'),
+        findsWidgets,
+      );
+      expect(find.text('Nouveaux longs'), findsOneWidget);
+      expect(find.text('Dans sa normale'), findsOneWidget);
+      expect(find.text('Flux récents positifs'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('POSITION 4H').first).dy,
+        lessThan(
+            tester.getTopLeft(find.text('QUI ACHÈTE, QUI VEND ?').first).dy),
+      );
       // Les détails de structure restent fermés au premier regard.
       expect(find.textContaining('prix près du bas du range'), findsNothing);
       expect(find.text('STRONGLY_BULLISH'), findsNothing);
@@ -737,7 +749,7 @@ void main() {
       await tester.tap(find.text('Voir pourquoi').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('POURQUOI ACHETER ?'), findsOneWidget);
+      expect(find.text('POURQUOI OPPORTUNITÉ ?'), findsOneWidget);
       expect(find.text('CE QUI AIDE'), findsOneWidget);
       expect(find.text('CE QUI FAIT ATTENDRE'), findsOneWidget);
       expect(find.textContaining('MarketStructureEngine'), findsOneWidget);

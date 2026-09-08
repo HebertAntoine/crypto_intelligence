@@ -192,8 +192,12 @@ class TestCatalysts:
     def test_every_catalyst_names_its_scope_importance_and_source(self):
         snapshot = _snapshot(macro_events=[self._event("CPI", 18, "CRITICAL")])
         item = tv.catalysts(snapshot)["items"][0]
-        for key in ("importance", "scheduled_at", "asset_scope", "source", "relevance"):
+        for key in (
+            "importance", "scheduled_at", "asset_scope", "source",
+            "relevance_score", "time_to_event", "freshness",
+        ):
             assert item[key] is not None
+        assert item["freshness"] == "SCHEDULED"
 
 
 class TestChangeConditions:

@@ -439,6 +439,133 @@ class ImmediateContextBlock extends StatelessWidget {
   }
 }
 
+/// Positionnement dérivé en mots, sans exposer les valeurs brutes.
+///
+/// Ces lectures sont déjà produites par le backend. Le widget ne les fusionne
+/// ni avec la pression ni avec l'edge; il les range simplement dans le cockpit.
+class PositioningEtfBlock extends StatelessWidget {
+  final PositioningReading positioning;
+  final EtfReading etf;
+
+  const PositioningEtfBlock({
+    super.key,
+    required this.positioning,
+    required this.etf,
+  });
+
+  @override
+  Widget build(BuildContext context) => TodayPanel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _BlockTitle('POSITIONNEMENT'),
+            const SizedBox(height: 9),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _CompactReading(
+                    label: 'POSITIONS',
+                    value: positioning.positioning,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _CompactReading(
+                    label: 'FUNDING',
+                    value: positioning.funding,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _CompactReading(
+                    label: 'CROWDING',
+                    value: positioning.crowding,
+                  ),
+                ),
+              ],
+            ),
+            if (etf.available) ...[
+              const SizedBox(height: 10),
+              Container(height: 1, color: _panelBorder),
+              const SizedBox(height: 9),
+              Row(
+                children: [
+                  const Text(
+                    'ETF SPOT',
+                    style: TextStyle(
+                      color: mobileMuted,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: .4,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      etf.headline,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (etf.caveat.isNotEmpty) ...[
+                const SizedBox(height: 5),
+                Text(
+                  etf.caveat,
+                  style: const TextStyle(
+                    color: mobileMuted,
+                    fontSize: 11.5,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      );
+}
+
+class _CompactReading extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CompactReading({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: mobileMuted,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: .35,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 13,
+              height: 1.18,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      );
+}
+
 /// Les échéances programmées à surveiller. Jamais un flux d'actualité: chaque
 /// ligne a une date publiée à l'avance, une importance et une source.
 class CatalystsBlock extends StatelessWidget {

@@ -359,15 +359,6 @@ class _MarketCard extends StatelessWidget {
               const SizedBox(height: 12),
               _EntryAnswerPanel(read: read),
 
-              // Les trois réponses du cockpit restent dans le premier écran:
-              // direction/timing, opportunité, puis pression acheteurs-
-              // vendeurs. La position structurelle vient ensuite au détail.
-              const SizedBox(height: 12),
-              _MarketPressureSummary(
-                pressure: read.pressure,
-                breakdown: page.isEmpty ? null : page.pressure,
-              ),
-
               if (!page.isEmpty) ...[
                 const SizedBox(height: 12),
                 StructuralPositionBar(
@@ -380,12 +371,23 @@ class _MarketCard extends StatelessWidget {
                 ],
               ],
 
+              const SizedBox(height: 12),
+              _MarketPressureSummary(
+                pressure: read.pressure,
+                breakdown: page.isEmpty ? null : page.pressure,
+              ),
+
               if (!page.isEmpty) ...[
                 if (expanded) ...[
                   if (page.immediateContext.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     ImmediateContextBlock(items: page.immediateContext),
                   ],
+                  const SizedBox(height: 12),
+                  PositioningEtfBlock(
+                    positioning: page.positioning,
+                    etf: page.etf,
+                  ),
                   if (page.catalysts.items.isNotEmpty ||
                       page.catalysts.alert != null) ...[
                     const SizedBox(height: 12),
@@ -1015,6 +1017,12 @@ class _EntryAnswerPanel extends StatelessWidget {
     final tone = _opportunityColour(opportunity.state);
     final icon = _opportunityIcon(opportunity.state);
     final visual = _opportunityVisual(opportunity);
+    final decisionSentence = read.page.decision.sentence.trim();
+    final explanation = decisionSentence.isNotEmpty
+        ? decisionSentence
+        : opportunity.summary.isEmpty
+            ? 'Les données ne permettent pas encore une explication structurée.'
+            : opportunity.summary;
 
     return Material(
       color: Colors.transparent,
@@ -1100,10 +1108,8 @@ class _EntryAnswerPanel extends StatelessWidget {
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 335),
                       child: Text(
-                        opportunity.summary.isEmpty
-                            ? 'Les données ne permettent pas encore une explication structurée.'
-                            : opportunity.summary,
-                        maxLines: 3,
+                        explanation,
+                        maxLines: 4,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFFF2F7FF),
@@ -1340,12 +1346,12 @@ class _EntryAnswerPanel extends StatelessWidget {
 }
 
 String _opportunityLabel(String state) => switch (state.toUpperCase()) {
-      'VERY_FAVORABLE' || 'STRONG_OPPORTUNITY' => 'ACHETER',
-      'FAVORABLE' || 'OPPORTUNITY' => 'ACHETER',
+      'VERY_FAVORABLE' || 'STRONG_OPPORTUNITY' => 'OPPORTUNITÉ FORTE',
+      'FAVORABLE' || 'OPPORTUNITY' => 'OPPORTUNITÉ',
       'WATCH' => 'À SURVEILLER',
       'WAIT' => 'ATTENDRE',
-      'UNFAVORABLE' => 'VENDRE',
-      _ => 'ATTENDRE',
+      'UNFAVORABLE' => 'DÉFAVORABLE',
+      _ => 'DONNÉES INSUFFISANTES',
     };
 
 class _OpportunityVisual {

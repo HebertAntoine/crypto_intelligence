@@ -98,7 +98,8 @@ void main() {
       await _pump(
         tester,
         DirectionTimingEdgeRow(
-          readings: _readings(timing: 'OPPORTUNITÉ', timingState: 'OPPORTUNITY'),
+          readings:
+              _readings(timing: 'OPPORTUNITÉ', timingState: 'OPPORTUNITY'),
         ),
       );
       final opportunity =
@@ -281,11 +282,15 @@ void main() {
 
   group('Ce qui ferait changer la décision', () {
     const conditions = ChangeConditions(
-      improve: ['Le timing deviendrait plus favorable avec un retour au bas '
-          'du range'],
+      improve: [
+        'Le timing deviendrait plus favorable avec un retour au bas '
+            'du range'
+      ],
       degrade: ['La lecture serait dégradée par la perte du bas de range'],
-      structureChange: ['La structure changerait avec une clôture 4H au-dessus '
-          'du haut de range'],
+      structureChange: [
+        'La structure changerait avec une clôture 4H au-dessus '
+            'du haut de range'
+      ],
     );
 
     testWidgets('la cassure haussière est un changement, pas une dégradation',
@@ -450,6 +455,27 @@ void main() {
   });
 
   group('Catalyseurs', () {
+    test('les métadonnées de pertinence et de fraîcheur sont conservées', () {
+      final item = Catalyst.fromJson({
+        'type': 'MACRO',
+        'kind': 'CPI',
+        'name': 'Inflation US (CPI)',
+        'when': 'dans 18 h',
+        'scheduled_at': '2026-09-09T14:30:00Z',
+        'hours_until': 18,
+        'relevance_score': 33,
+        'importance': 'CRITICAL',
+        'asset_scope': ['BTC', 'ETH', 'SOL'],
+        'source': 'config/macro_calendar.yaml',
+        'freshness': 'SCHEDULED',
+      });
+      expect(item.type, 'MACRO');
+      expect(item.scheduledAt, '2026-09-09T14:30:00Z');
+      expect(item.relevanceScore, 33);
+      expect(item.freshness, 'SCHEDULED');
+      expect(item.assetScope, ['BTC', 'ETH', 'SOL']);
+    });
+
     testWidgets('une échéance majeure sous 24 h porte un bandeau',
         (tester) async {
       await _pump(
@@ -482,6 +508,45 @@ void main() {
     testWidgets('sans échéance, le bloc disparaît', (tester) async {
       await _pump(tester, const CatalystsBlock(catalysts: Catalysts.empty));
       expect(find.text('À SURVEILLER'), findsNothing);
+    });
+  });
+
+  group('Positionnement lisible sans métriques brutes', () {
+    testWidgets('positionnement, funding, crowding et ETF restent en mots',
+        (tester) async {
+      await _pump(
+        tester,
+        const PositioningEtfBlock(
+          positioning: PositioningReading(
+            positioning: 'Nouveaux longs',
+            funding: 'Plutôt faible',
+            crowding: 'Normal',
+          ),
+          etf: EtfReading(
+            available: true,
+            headline: 'Flux récents positifs',
+            caveat: 'Flux observés ≠ avantage prédictif démontré.',
+          ),
+        ),
+      );
+      expect(find.text('Nouveaux longs'), findsOneWidget);
+      expect(find.text('Plutôt faible'), findsOneWidget);
+      expect(find.text('Normal'), findsOneWidget);
+      expect(find.text('Flux récents positifs'), findsOneWidget);
+      expect(find.textContaining('avantage prédictif'), findsOneWidget);
+      expect(find.textContaining('%'), findsNothing);
+    });
+
+    testWidgets('SOL sans ETF n’affiche pas une fausse lecture ETF',
+        (tester) async {
+      await _pump(
+        tester,
+        const PositioningEtfBlock(
+          positioning: PositioningReading(),
+          etf: EtfReading.unavailable,
+        ),
+      );
+      expect(find.text('ETF SPOT'), findsNothing);
     });
   });
 
@@ -525,7 +590,10 @@ void main() {
     }) =>
         {
           'asset': 'BTC',
-          'analysis': {'analysis_id': stampId, 'computed_at': '2026-09-07T20:19:00Z'},
+          'analysis': {
+            'analysis_id': stampId,
+            'computed_at': '2026-09-07T20:19:00Z'
+          },
           'page': {'analysis_id': pageId},
         };
 

@@ -13,14 +13,28 @@ qu'est-ce qui est réellement démontré.
 
 ## 1. Audit avant modification
 
-| Élément affiché | Moteur | Rôle réel dans la décision |
-| --- | --- | --- |
-| Prix | `market_price_snapshot`, puis Kraken WebSocket dans l'app | aucun : contexte |
-| Ligne « analyse calculée à » | `analysis` de `/today` | cadre la fraîcheur |
-| Ligne « RÉGIME » | `reconstruct_regime` sur bougies 1J | direction |
-| Panneau opportunité | `BuyOpportunityDecisionEngine` | la décision |
-| Qui achète, qui vend | `assess_pressure` | contexte, jamais un signal |
-| Familles | `core/usability` | ce que la page a le droit d'affirmer |
+Tous les blocs analytiques héritent du `page.analysis_id` produit par
+`AnalysisContextSnapshot`. Ils portent le même `analysis_time`; le prix live
+est volontairement une couche séparée et ne modifie pas cet identifiant.
+
+| Élément affiché | Source backend / engine | Identité et timestamp | Provenance | Disponibilité | Rôle réel dans la décision |
+| --- | --- | --- | --- | --- | --- |
+| Actif et prix | `market_price_snapshot`, puis WebSocket Kraken EUR direct dans l'app | timestamp propre au tick, hors `analysis_id` | fournisseur, paire, statut et cadence live | `market_data.status` puis état de connexion du socket | contexte uniquement ; ne recalcule pas la décision |
+| Heure d'analyse et dérive | `live_layer(snapshot, market)` | `analysis_id`, `analysis_time`, `price_at_analysis`; prix courant joint explicitement | seuil de dérive backend et sévérité `NONE/NOTABLE/SEVERE` | suspendu si le prix indispensable est absent | indique si la lecture doit être actualisée, sans réécrire son heure |
+| Direction | `reconstruct_regime` à partir des bougies stockées | `analysis_id` et `analysis_time` de la page | `direction_source`, fingerprint OHLCV, `llm_used=false` | famille OHLCV et engine régime utilisables | direction descriptive, distincte du timing et de l'edge |
+| Timing | `BuyOpportunityDecisionEngine` avec `EntryTimingEngine` | même snapshot | facteurs sourcés, fraîcheur et garde-fous dans `buy_opportunity_explanation` | dépend des familles critiques réellement utilisables | répond « intéressant maintenant ? » ; c'est la décision de timing |
+| Edge | `EdgeEngine` et analogues historiques | même snapshot | études admises/rejetées, puis détails dans Preuves/Recherche | état explicite, y compris aucune étude ou preuve insuffisante | dit ce qui est démontré ; `NO_MEASURABLE_EDGE` n'est jamais baissier |
+| Décision et phrase courte | `BuyOpportunityDecisionEngine`, projeté par `today_view.decision_block` | même snapshot | facteurs dominants et garde-fou appliqué | `INSUFFICIENT_DATA` si les entrées majeures manquent | seul verdict d'opportunité ; la phrase Flutter vient désormais de ce bloc |
+| Position structurelle | `StructuralLocationEngine` + `RangeIntelligenceEngine` | même snapshot | bornes, position brute, invalidation et unité 4H | barre uniquement si `detected_range.valid` | localisation descriptive ; contribue comme facteur uniquement côté moteur |
+| Support / résistance | clusters de swings du `TechnicalAnalysisEngine` | niveaux du snapshot ; `reference_price` explicite pour la distance | touches, force, dernier contact et source 4H | bloc absent si aucun niveau qualifié | contexte d'emplacement, jamais niveau inventé |
+| Contexte immédiat | projection de position, volatilité, crowding et prochain événement | même snapshot | chaque lecture conserve la source de sa famille dans le snapshot | quatre lignes au maximum, uniquement si disponibles | résumé descriptif |
+| Positionnement / funding / ETF | `LeverageCrowdingEngine`, funding stocké et observations ETF | même snapshot | sources et valeurs brutes réservées à Preuves | ETF omis quand non applicable, notamment pour SOL | contexte ; un flux ETF observé n'est pas un avantage prédictif |
+| Qui achète / qui vend | `assess_pressure` | même snapshot | source, timestamp, fraîcheur, poids, confiance et apport par famille | familles absentes exclues du dénominateur | pression relative, jamais probabilité ni edge |
+| Catalyseurs | calendrier maintenu lu par `analysis_context._upcoming_macro` | même snapshot ; `scheduled_at` propre à l'événement | type, importance, scope, source, fraîcheur, `relevance_score` | 7 jours maximum, trois événements maximum | contexte de risque ; seul le moteur applique le garde-fou ≤24 h |
+| Conditions de changement | trois listes du `BuyOpportunityDecisionEngine` | même snapshot | facteurs exacts ayant formé la décision | deux éléments maximum par sens | conditions, pas prédictions ; changement de structure sans signe |
+| Timeframes / contradictions | `MarketStructureEngine` 1W/1D/4H/1H | même snapshot | états, labels accessibles, conflit du moteur et pression | indéterminé si trop peu d'unités lisibles | description de cohérence, jamais fusionnée en edge |
+| Couverture | `core/usability` puis `DataCoverage` | même snapshot | famille, source, observation, points, raison et fraîcheur | quatre classes explicites, adaptées à l'actif | ce que l'analyse a pu observer, distinct de l'incertitude |
+| Dernier changement | snapshots immuables de `history/decisions` | timestamp du changement enregistré et identités historiques | raison enregistrée au moment du changement | bloc absent si moins de deux lectures | explique l'évolution passée ; rien n'est reconstruit après coup |
 
 Constat : le régime, l'incertitude et la décision étaient là ; la **localisation
 structurelle** ne l'était pas, alors que `StructuralLocationEngine` la calculait
@@ -87,9 +101,10 @@ Quatre lectures au plus : position, volatilité, encombrement, prochaine
 
 ## 7-9. Catalyseurs
 
-Trois échéances au plus, triées par importance publiée puis par proximité, sur
-sept jours avec priorité 24-72 h. Chaque entrée porte son type, son importance,
-sa date programmée, les actifs concernés et sa source
+Trois échéances au plus, triées par `relevance_score` transparent — importance
+publiée puis proximité — sur sept jours avec priorité 24-72 h. Chaque entrée
+porte son type, son importance, `time_to_event`, sa date programmée, les actifs
+concernés, sa source et la fraîcheur `SCHEDULED`
 (`config/macro_calendar.yaml`).
 
 Ce n'est pas un flux d'actualité : seules des échéances programmées et sourcées
@@ -162,8 +177,9 @@ décomposition complète, chaque famille avec son score normalisé, son poids, s
 apport reproductible au total, sa source, son horodatage, et pour une source
 absente la raison de son absence — jamais un zéro.
 
-ETF, funding, open interest et encombrement s'affichent en mots ; les valeurs
-brutes restent dans Preuves.
+ETF, funding, open interest et encombrement s'affichent en mots dans un bloc
+compact de la carte développée ; les valeurs brutes restent dans Preuves. Le
+bloc ETF disparaît pour les actifs auxquels il ne s'applique pas.
 
 ## 29-30. Décision et phrase
 
@@ -176,8 +192,8 @@ peut dire que ce que l'instantané contient.
 
 Ordre : actif et prix, heure d'analyse et dérive, direction/timing/avantage,
 décision, position structurelle et niveaux, pression. Puis, dépliable :
-contexte immédiat, catalyseurs, conditions de changement, unités de temps,
-couverture, dernier changement.
+contexte immédiat, positionnement/funding/ETF, catalyseurs, conditions de
+changement, unités de temps, couverture, dernier changement.
 
 Une carte développée à la fois. Trois actifs entièrement déroulés donnaient une
 page de plusieurs écrans où la comparaison BTC/ETH/SOL — la raison d'être de
@@ -203,15 +219,22 @@ son canal rapide.
 
 ## Tests
 
-Côté backend, `test_today_page.py` (47) et `test_analysis_identity.py` (34)
-couvrent les cas demandés au §43 et les non-régressions du §44. Côté client,
-`app/test/today_page_test.dart` rend réellement chaque bloc.
+Côté backend, `test_today_page.py`, `test_analysis_identity.py` et
+`test_screen_qa.py` couvrent les cas demandés au §43 et les non-régressions du
+§44. Côté client, `app/test/today_page_test.dart` rend réellement chaque bloc
+et `app/test/today_layout_test.dart` vérifie notamment les largeurs 360, 393 et
+430 px, la hiérarchie structure avant pression, la phrase décisionnelle et les
+variantes d'illustration.
 
-## Ce que je n'ai pas validé
+## QA et build
 
-Je ne peux pas voir l'application tourner et je ne prétends pas l'avoir validée
-visuellement. La revue faite est statique et par widget ; le rendu sur téléphone
-reste à vérifier.
+La QA automatisée couvre l'analyse statique Flutter, les widgets, le backend et
+le build Web de production. Les contrôles finaux passent avec 196 tests backend
+et 132 tests Flutter. Des captures Chromium headless au format 430 × 932 ont
+également été inspectées après compilation : fond Bitcoin, hiérarchie, phrase
+décisionnelle complète, texte sur les illustrations et contenu développé sont
+lisibles. Cela ne remplace pas la validation finale sur un téléphone physique,
+qui reste à effectuer par le propriétaire de l'application.
 
 ## Limites
 

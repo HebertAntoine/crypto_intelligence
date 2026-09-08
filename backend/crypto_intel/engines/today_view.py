@@ -286,23 +286,29 @@ def catalysts(snapshot: Any, limit: int = 3) -> dict[str, Any]:
         importance = str(event.get("importance") or "MEDIUM").upper()
         # Sooner and more important ranks higher; both halves are visible.
         horizon_score = 3 if hours <= 24 else 2 if hours <= 72 else 1
+        countdown = _countdown(event)
+        relevance_score = importance_rank.get(importance, 1) * 10 + horizon_score
         items.append({
             "type": "MACRO",
             "kind": event.get("kind"),
             "name": _event_name(event),
-            "when": _countdown(event),
+            "when": countdown,
             "scheduled_at": event.get("scheduled_at"),
             "hours_until": hours,
+            "time_to_event": countdown,
             "importance": importance,
             "importance_label": {
                 "CRITICAL": "Majeur", "HIGH": "Important",
                 "MEDIUM": "Modéré", "LOW": "Mineur",
             }.get(importance, "Modéré"),
             "asset_scope": event.get("assets") or ["BTC", "ETH", "SOL"],
-            "relevance": importance_rank.get(importance, 1) * 10 + horizon_score,
+            "relevance_score": relevance_score,
             "source": event.get("source"),
+            # Une échéance publiée dans le calendrier n'est ni une donnée
+            # live ni une news. SCHEDULED décrit honnêtement sa fraîcheur.
+            "freshness": event.get("freshness") or "SCHEDULED",
         })
-    items.sort(key=lambda item: (-item["relevance"], item["hours_until"]))
+    items.sort(key=lambda item: (-item["relevance_score"], item["hours_until"]))
     imminent = [
         item for item in items
         if item["importance"] == "CRITICAL" and item["hours_until"] <= MACRO_ALERT_HOURS

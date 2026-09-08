@@ -225,39 +225,51 @@ class ContextItem {
 
 /// Une échéance programmée et sourcée, pas une actualité.
 class Catalyst {
+  final String type;
   final String kind;
   final String name;
   final String when;
+  final String scheduledAt;
   final String importance;
   final String importanceLabel;
   final double hoursUntil;
+  final double relevanceScore;
   final List<String> assetScope;
   final String source;
+  final String freshness;
 
   const Catalyst({
     required this.name,
     required this.when,
+    this.type = '',
     this.kind = '',
+    this.scheduledAt = '',
     this.importance = 'MEDIUM',
     this.importanceLabel = 'Modéré',
     this.hoursUntil = 0,
+    this.relevanceScore = 0,
     this.assetScope = const [],
     this.source = '',
+    this.freshness = 'UNAVAILABLE',
   });
 
   bool get isMajor => importance == 'CRITICAL';
 
   factory Catalyst.fromJson(Map<String, dynamic> json) => Catalyst(
+        type: _string(json['type']),
         kind: _string(json['kind']),
         name: _string(json['name']),
         when: _string(json['when']),
+        scheduledAt: _string(json['scheduled_at']),
         importance: _string(json['importance'], 'MEDIUM'),
         importanceLabel: _string(json['importance_label'], 'Modéré'),
         hoursUntil: _double(json['hours_until']) ?? 0,
+        relevanceScore: _double(json['relevance_score']) ?? 0,
         assetScope: ((json['asset_scope'] as List?) ?? const [])
             .map((item) => '$item')
             .toList(),
         source: _string(json['source']),
+        freshness: _string(json['freshness'], 'UNAVAILABLE'),
       );
 }
 
