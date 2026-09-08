@@ -246,6 +246,117 @@ void main() {
     });
   });
 
+  group('LOT 3 — zones, range et position', () {
+    /// Une lecture structurelle telle que le backend la publie.
+    StructuralLocation location({bool valid = true, double position = 0.85}) =>
+        StructuralLocation.fromJson({
+          'state': 'UPPER_THIRD',
+          'price': 250.0,
+          'relative_position': position,
+          'range': {
+            'range_type': 'BROAD_RANGE',
+            'valid': valid,
+            'top_zone': {
+              'low': 268.0, 'high': 272.0, 'midpoint': 270.0,
+              'kind': 'resistance',
+              'quality': {'touches': 3, 'score': 80.0},
+            },
+            'bottom_zone': {
+              'low': 118.0, 'high': 122.0, 'midpoint': 120.0,
+              'kind': 'support',
+              'quality': {'touches': 4, 'score': 85.0},
+            },
+          },
+        });
+
+    Future<void> pumpWithLocation(
+      WidgetTester tester, {
+      StructuralLocation? location,
+      ChartLayerSet? layers,
+    }) async {
+      tester.view.physicalSize = const Size(390, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 520,
+            child: CandleChart(
+              candles: _candles(500),
+              timeframe: '4h',
+              layers: layers ?? ChartLayerSet.initial(),
+              location: location,
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('les zones se dessinent sans exception', (tester) async {
+      await pumpWithLocation(tester, location: location());
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('un range invalide ne dessine aucune zone', (tester) async {
+      // Rien n'est fabriqué pour remplir le graphique.
+      await pumpWithLocation(tester, location: location(valid: false));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sans lecture structurelle, le graphique reste propre',
+        (tester) async {
+      await pumpWithLocation(tester, location: null);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('masquer Zones et Range ne casse rien', (tester) async {
+      await pumpWithLocation(
+        tester,
+        location: location(),
+        layers: ChartLayerSet.initial()
+            .toggled(ChartLayer.levels)
+            .toggled(ChartLayer.range),
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    test('TEST J — un prix de zone garde son ordonnée après zoom et pan', () {
+      // Le cœur du lot: une zone est ancrée à un prix, pas à un pixel.
+      final candles = _candles(500);
+      const plot = Rect.fromLTWH(0, 0, 600, 400);
+      final vp = ChartViewport.initial(candles: candles, plot: plot);
+
+      const zoneHigh = 272.0;
+      double priceAt(ChartViewport v, double y) => v.yToPrice(y);
+
+      // Après zoom: le prix relu à l'ordonnée de la zone est le même prix.
+      final zoomed = vp.zoomedBy(2.0, plot.center.dx);
+      expect(priceAt(zoomed, zoomed.priceToY(zoneHigh)),
+          closeTo(zoneHigh, 0.001));
+
+      // Après déplacement: idem.
+      final moved = vp.pannedByPixels(150);
+      expect(priceAt(moved, moved.priceToY(zoneHigh)),
+          closeTo(zoneHigh, 0.001));
+
+      // Et après redimensionnement.
+      final resized = vp.withPlot(const Rect.fromLTWH(0, 0, 900, 520));
+      expect(priceAt(resized, resized.priceToY(zoneHigh)),
+          closeTo(zoneHigh, 0.001));
+    });
+
+    test('une zone hors de la fenêtre verticale n’est pas forcée dedans', () {
+      final candles = _candles(500);
+      const plot = Rect.fromLTWH(0, 0, 600, 400);
+      final vp = ChartViewport.initial(candles: candles, plot: plot);
+      // Un support très en dessous du visible tombe sous le cadre.
+      expect(vp.priceToY(10), greaterThan(plot.bottom));
+      // Et une résistance très au-dessus, au-dessus.
+      expect(vp.priceToY(10000), lessThan(plot.top));
+    });
+  });
+
   group('Calques', () {
     testWidgets('masquer le volume ne casse pas la mise en page',
         (tester) async {

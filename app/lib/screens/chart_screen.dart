@@ -454,6 +454,9 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
                     // l'en-tête ne prétend pas venir du direct.
                     pair: live?.symbol,
                     source: live?.source,
+                    // Zones, range et position viennent du backend. Le
+                    // graphique les place; il ne les recalcule jamais.
+                    location: widget.data.structure.location,
                   ),
                 ),
               );

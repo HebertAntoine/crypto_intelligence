@@ -42,6 +42,13 @@ class CandleChart extends StatefulWidget {
   final String? pair;
   final String? source;
 
+  /// La lecture structurelle du backend: zones, range, position.
+  ///
+  /// Le graphique ne détecte rien. Il reçoit des prix calculés ailleurs et les
+  /// place dans son repère — c'est ce qui garantit que le dessin et l'analyse
+  /// ne peuvent pas diverger.
+  final StructuralLocation? location;
+
   const CandleChart({
     super.key,
     required this.candles,
@@ -49,6 +56,7 @@ class CandleChart extends StatefulWidget {
     required this.layers,
     this.pair,
     this.source,
+    this.location,
   });
 
   @override
@@ -150,6 +158,7 @@ class _CandleChartState extends State<CandleChart> {
               timeframe: widget.timeframe,
               pair: widget.pair,
               source: widget.source,
+              location: widget.location,
             ),
           ),
         );
@@ -166,6 +175,7 @@ class _CandleChartPainter extends CustomPainter {
   final String timeframe;
   final String? pair;
   final String? source;
+  final StructuralLocation? location;
 
   _CandleChartPainter({
     required this.viewport,
@@ -175,6 +185,7 @@ class _CandleChartPainter extends CustomPainter {
     required this.timeframe,
     this.pair,
     this.source,
+    this.location,
   });
 
   Rect get _plot => viewport.plot;
@@ -191,12 +202,18 @@ class _CandleChartPainter extends CustomPainter {
     // seule.
     if (layers.isVisible(ChartLayer.grid)) _paintGrid(canvas);
     if (layers.isVisible(ChartLayer.volume)) _paintVolume(canvas);
+    // Les zones passent sous les bougies: elles décrivent un contexte, elles
+    // ne doivent pas masquer le prix.
+    if (layers.isVisible(ChartLayer.range)) _paintRange(canvas);
+    if (layers.isVisible(ChartLayer.levels)) _paintZones(canvas);
     if (layers.isVisible(ChartLayer.candles)) _paintCandles(canvas);
     if (layers.isVisible(ChartLayer.currentPrice)) _paintCurrentPrice(canvas);
     if (layers.isVisible(ChartLayer.labels)) {
       _paintPriceAxis(canvas, size);
       _paintTimeAxis(canvas, size);
       _paintHeader(canvas);
+      if (layers.isVisible(ChartLayer.range)) _paintRangeLabels(canvas);
+      if (layers.isVisible(ChartLayer.levels)) _paintZoneLabels(canvas);
     }
     if (crosshair != null) _paintCrosshair(canvas, size);
   }
@@ -360,6 +377,143 @@ class _CandleChartPainter extends CustomPainter {
               .withValues(alpha: 0.75),
       );
     }
+  }
+
+  // --- calques 5 et 6 : zones et range -------------------------------------
+  //
+  // Rien n'est inventé ici. Une zone porte ses bornes basse et haute telles
+  // que le moteur les a calculées; dessiner une bande d'épaisseur arbitraire
+  // autour d'un prix unique aurait été une précision fabriquée.
+
+  DetectedRange? get _range {
+    final detected = location?.range;
+    return (detected != null && detected.valid) ? detected : null;
+  }
+
+  /// Le range: une bande légère entre ses deux zones, et son milieu.
+  void _paintRange(Canvas canvas) {
+    final range = _range;
+    final top = range?.topZone, bottom = range?.bottomZone;
+    if (top == null || bottom == null) return;
+
+    final upper = viewport.priceToY(top.midpoint);
+    final lower = viewport.priceToY(bottom.midpoint);
+    final band = Rect.fromLTRB(
+      _plot.left, math.min(upper, lower), _plot.right, math.max(upper, lower),
+    );
+    final clipped = band.intersect(_plot);
+    if (clipped.height <= 0) return;
+    canvas.drawRect(
+      clipped,
+      Paint()..color = const Color(0xFF6B79FF).withValues(alpha: 0.05),
+    );
+    for (final y in [upper, lower]) {
+      if (y < _plot.top || y > _plot.bottom) continue;
+      canvas.drawLine(
+        Offset(_plot.left, y), Offset(_plot.right, y),
+        Paint()
+          ..color = const Color(0xFF6B79FF).withValues(alpha: 0.5)
+          ..strokeWidth = 1.2,
+      );
+    }
+    // Le milieu, en pointillés: c'est un repère, pas une borne.
+    final middle = viewport.priceToY((top.midpoint + bottom.midpoint) / 2);
+    if (middle >= _plot.top && middle <= _plot.bottom) {
+      final paint = Paint()
+        ..color = const Color(0xFF6FAEFF).withValues(alpha: 0.45)
+        ..strokeWidth = 1;
+      for (var x = _plot.left; x < _plot.right; x += 10) {
+        canvas.drawLine(
+            Offset(x, middle), Offset(math.min(x + 5, _plot.right), middle), paint);
+      }
+    }
+  }
+
+  /// Support et résistance: des bandes réelles, `low` à `high`.
+  void _paintZones(Canvas canvas) {
+    final range = _range;
+    for (final zone in [range?.bottomZone, range?.topZone]) {
+      if (zone == null) continue;
+      final support = zone.kind == 'support';
+      final colour = support ? const Color(0xFF25D98F) : const Color(0xFFFF5964);
+      final top = viewport.priceToY(zone.high);
+      final bottom = viewport.priceToY(zone.low);
+      final band = Rect.fromLTRB(
+        _plot.left, math.min(top, bottom), _plot.right, math.max(top, bottom),
+      ).intersect(_plot);
+      if (band.height <= 0 || band.width <= 0) continue;
+      canvas.drawRect(band, Paint()..color = colour.withValues(alpha: 0.13));
+      canvas.drawRect(
+        band,
+        Paint()
+          ..color = colour.withValues(alpha: 0.75)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+    }
+  }
+
+  void _paintRangeLabels(Canvas canvas) {
+    final range = _range;
+    final top = range?.topZone, bottom = range?.bottomZone;
+    if (top == null || bottom == null) return;
+    final middle = viewport.priceToY((top.midpoint + bottom.midpoint) / 2);
+    if (middle < _plot.top + 8 || middle > _plot.bottom - 8) return;
+    _tag(canvas, Offset(_plot.left + 8, middle - 7), 'MILIEU DU RANGE',
+        const Color(0xFF6FAEFF));
+  }
+
+  /// L'étiquette porte le prix médian de la zone, pas une borne choisie.
+  void _paintZoneLabels(Canvas canvas) {
+    final range = _range;
+    for (final zone in [range?.bottomZone, range?.topZone]) {
+      if (zone == null) continue;
+      final support = zone.kind == 'support';
+      final y = viewport.priceToY(zone.midpoint);
+      if (y < _plot.top + 8 || y > _plot.bottom - 8) continue;
+      _tag(
+        canvas,
+        Offset(_plot.right - 6, y - 7),
+        '${support ? 'SUPPORT' : 'RÉSISTANCE'} ${_price(zone.midpoint)}',
+        support ? const Color(0xFF25D98F) : const Color(0xFFFF5964),
+        rightAligned: true,
+      );
+    }
+    _paintPositionTag(canvas);
+  }
+
+  /// « 85 % du range », posé près du prix courant.
+  void _paintPositionTag(Canvas canvas) {
+    final position = location?.relativePosition;
+    if (position == null || _range == null) return;
+    final last = viewport.candles[viewport.endIndex - 1];
+    final y = viewport.priceToY(last.close);
+    if (y < _plot.top + 22 || y > _plot.bottom - 8) return;
+    _tag(
+      canvas,
+      Offset(_plot.right - 6, y - 22),
+      '${(position.clamp(0.0, 1.0) * 100).round()} % DU RANGE',
+      const Color(0xFF8DCAFF),
+      rightAligned: true,
+    );
+  }
+
+  /// Une étiquette compacte sur fond opaque: sans fond, elle se perd dans les
+  /// bougies dès que la zone en croise une.
+  void _tag(Canvas canvas, Offset at, String label, Color colour,
+      {bool rightAligned = false}) {
+    final painter = _painter(
+      label,
+      TextStyle(color: colour, fontSize: 9.5, fontWeight: FontWeight.w800),
+    );
+    final left = rightAligned ? at.dx - painter.width - 8 : at.dx;
+    final rect = Rect.fromLTWH(left, at.dy, painter.width + 8, painter.height + 3);
+    if (rect.left < _plot.left || rect.right > _plot.right) return;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(3)),
+      Paint()..color = const Color(0xFF071827).withValues(alpha: 0.82),
+    );
+    painter.paint(canvas, Offset(rect.left + 4, rect.top + 1.5));
   }
 
   // --- calque 9 : prix courant --------------------------------------------
@@ -571,7 +725,8 @@ class _CandleChartPainter extends CustomPainter {
       old.layers != layers ||
       old.body != body ||
       old.pair != pair ||
-      old.source != source;
+      old.source != source ||
+      old.location != location;
 }
 
 enum _Anchor { topLeft, topRight, topCenter, centerLeft, center }

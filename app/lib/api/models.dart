@@ -931,17 +931,27 @@ class Zone {
   final String kind;
   final ZoneQuality quality;
 
+  /// Le prix médian de la zone, tel que le moteur l'a publié.
+  ///
+  /// Le repli sur (low + high) / 2 vaut pour un backend plus ancien: c'est
+  /// la même définition, pas une approximation choisie ici.
+  final double? _midpoint;
+
+  double get midpoint => _midpoint ?? (low + high) / 2;
+
   const Zone({
     required this.low,
     required this.high,
     required this.kind,
     required this.quality,
-  });
+    double? midpoint,
+  }) : _midpoint = midpoint;
 
   factory Zone.fromJson(Map<String, dynamic> json) => Zone(
         low: (json['low'] as num?)?.toDouble() ?? 0,
         high: (json['high'] as num?)?.toDouble() ?? 0,
         kind: json['kind'] as String? ?? '',
+        midpoint: (json['midpoint'] as num?)?.toDouble(),
         quality: ZoneQuality.fromJson(
           json['quality'] as Map<String, dynamic>? ?? const {},
         ),
