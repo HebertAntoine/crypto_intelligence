@@ -13,11 +13,7 @@ import 'api/client.dart';
 import 'config.dart';
 import 'live_prices/live_price_service.dart';
 import 'screens/chart_screen.dart';
-import 'screens/evidence_screen.dart';
-import 'screens/knowledge_screen.dart';
 import 'screens/markets_screen.dart';
-import 'screens/report_screen.dart';
-import 'screens/research_screen.dart';
 import 'screens/today_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/mobile_kit.dart';
@@ -82,10 +78,6 @@ class _HomeShellState extends State<HomeShell> {
       TodayScreen(client: widget.client, livePrices: widget.livePrices),
       MarketsScreen(client: widget.client, livePrices: widget.livePrices),
       ChartScreen(client: widget.client),
-      ReportScreen(client: widget.client),
-      EvidenceScreen(client: widget.client),
-      ResearchScreen(client: widget.client),
-      KnowledgeScreen(client: widget.client),
     ];
 
     return Scaffold(
@@ -99,12 +91,6 @@ class _HomeShellState extends State<HomeShell> {
           MobileNavDestination(icon: Icons.bar_chart_rounded, label: 'Marchés'),
           MobileNavDestination(
               icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
-          MobileNavDestination(icon: Icons.article_outlined, label: 'Rapport'),
-          MobileNavDestination(icon: Icons.rule_rounded, label: 'Preuves'),
-          MobileNavDestination(
-              icon: Icons.science_outlined, label: 'Recherche'),
-          MobileNavDestination(
-              icon: Icons.menu_book_outlined, label: 'Connaissances'),
         ],
       ),
     );
