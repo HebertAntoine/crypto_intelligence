@@ -653,8 +653,9 @@ class DataCoverage {
       .where((item) => item.coverage == 'EXPECTED_AND_AVAILABLE')
       .toList();
 
-  List<CoverageFamily> get missingFamilies =>
-      families.where((item) => item.coverage == 'EXPECTED_BUT_MISSING').toList();
+  List<CoverageFamily> get missingFamilies => families
+      .where((item) => item.coverage == 'EXPECTED_BUT_MISSING')
+      .toList();
 
   List<CoverageFamily> get notApplicableFamilies =>
       families.where((item) => item.coverage == 'NOT_APPLICABLE').toList();
@@ -677,8 +678,8 @@ class DataCoverage {
         uncertaintyScore: _double(json['uncertainty_score']),
         uncertaintyNote: _string(json['uncertainty_note']),
         note: _string(json['note']),
-        titles: _map(json['titles'])
-            .map((key, value) => MapEntry(key, '$value')),
+        titles:
+            _map(json['titles']).map((key, value) => MapEntry(key, '$value')),
       );
 }
 
@@ -769,7 +770,8 @@ class PositioningReading {
 
   factory PositioningReading.fromJson(Map<String, dynamic> json) =>
       PositioningReading(
-        positioning: _string(_map(json['positioning'])['value'], 'Indisponible'),
+        positioning:
+            _string(_map(json['positioning'])['value'], 'Indisponible'),
         funding: _string(_map(json['funding'])['value'], 'Indisponible'),
         crowding: _string(_map(json['crowding'])['value'], 'Inconnu'),
         note: _string(json['note']),
@@ -855,9 +857,11 @@ class TodayPage {
         analysisId: _string(json['analysis_id']),
         analysisTime: _string(json['analysis_time']),
         priceAtAnalysis: _double(json['price_at_analysis']),
-        readings: DirectionTimingEdge.fromJson(_map(json['direction_timing_edge'])),
+        readings:
+            DirectionTimingEdge.fromJson(_map(json['direction_timing_edge'])),
         decision: DecisionText.fromJson(_map(json['decision'])),
-        position: StructuralPosition.fromJson(_map(json['structural_position'])),
+        position:
+            StructuralPosition.fromJson(_map(json['structural_position'])),
         levels: NearestLevels.fromJson(_map(json['levels'])),
         immediateContext:
             _list(json['immediate_context']).map(ContextItem.fromJson).toList(),

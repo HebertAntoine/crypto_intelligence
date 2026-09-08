@@ -18,7 +18,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-Map<String, dynamic> _today(String asset, {bool withMarket = true}) => {
+Map<String, dynamic> _today(
+  String asset, {
+  bool withMarket = true,
+  String opportunityState = 'FAVORABLE',
+  bool opportunityHasNegative = false,
+}) =>
+    {
       'asset': asset,
       'decision_summary': {
         'asset': asset,
@@ -59,10 +65,10 @@ Map<String, dynamic> _today(String asset, {bool withMarket = true}) => {
       'leverage_state': {'state': 'NEW_LONGS'},
       'funding': {'band': 'NEUTRAL', 'percentile': 25.4},
       'volatility': {'regime': 'LOW'},
-      'buy_opportunity': 'FAVORABLE',
+      'buy_opportunity': opportunityState,
       'buy_opportunity_explanation': {
-        'state': 'FAVORABLE',
-        'headline': 'FAVORABLE',
+        'state': opportunityState,
+        'headline': opportunityState,
         'summary':
             'La structure est favorable, mais aucun avantage statistique ne garantit la suite.',
         'positives': [
@@ -105,7 +111,24 @@ Map<String, dynamic> _today(String asset, {bool withMarket = true}) => {
             'available': true,
           },
         ],
-        'negatives': [],
+        'negatives': opportunityHasNegative
+            ? [
+                {
+                  'id': 'risk.high',
+                  'category': 'RISK',
+                  'title': 'Risque élevé',
+                  'short_text': 'La structure demeure fragile.',
+                  'polarity': 'NEGATIVE',
+                  'importance': 85,
+                  'confidence': .9,
+                  'evidence_level': 'COMPUTATION',
+                  'timeframe': '4H',
+                  'source': 'RiskEngine',
+                  'freshness': 'RECENT',
+                  'available': true,
+                },
+              ]
+            : [],
         'missing': [
           {
             'id': 'pressure.baleines',
@@ -392,17 +415,23 @@ Map<String, dynamic> _page(String asset) => {
       },
       'change_conditions': {
         'improve': [
-          {'text': 'Le timing deviendrait plus favorable avec un retour du '
-              'prix vers le bas du range'},
+          {
+            'text': 'Le timing deviendrait plus favorable avec un retour du '
+                'prix vers le bas du range'
+          },
         ],
         'degrade': [
-          {'text': 'La lecture serait dégradée par la perte confirmée du bas '
-              'de range'},
+          {
+            'text': 'La lecture serait dégradée par la perte confirmée du bas '
+                'de range'
+          },
         ],
         'structure_change': [
-          {'text': 'La structure changerait avec une clôture 4H au-dessus du '
-              'haut de range : le range serait invalidé, ce qui n’est pas une '
-              'dégradation'},
+          {
+            'text': 'La structure changerait avec une clôture 4H au-dessus du '
+                'haut de range : le range serait invalidé, ce qui n’est pas une '
+                'dégradation'
+          },
         ],
         'improve_title': 'POUR DEVENIR PLUS FAVORABLE',
         'degrade_title': 'POUR DEVENIR MOINS FAVORABLE',
@@ -411,14 +440,34 @@ Map<String, dynamic> _page(String asset) => {
       },
       'timeframes': {
         'rows': [
-          {'timeframe': '1S', 'key': '1w', 'state': 'BEARISH_STRUCTURE',
-           'label': 'Baissière', 'arrow': '↓'},
-          {'timeframe': '1J', 'key': '1d', 'state': 'RANGE_STRUCTURE',
-           'label': 'En range', 'arrow': '↔'},
-          {'timeframe': '4H', 'key': '4h', 'state': 'RANGE_STRUCTURE',
-           'label': 'En range', 'arrow': '↔'},
-          {'timeframe': '1H', 'key': '1h', 'state': 'BULLISH_STRUCTURE',
-           'label': 'Haussière', 'arrow': '↑'},
+          {
+            'timeframe': '1S',
+            'key': '1w',
+            'state': 'BEARISH_STRUCTURE',
+            'label': 'Baissière',
+            'arrow': '↓'
+          },
+          {
+            'timeframe': '1J',
+            'key': '1d',
+            'state': 'RANGE_STRUCTURE',
+            'label': 'En range',
+            'arrow': '↔'
+          },
+          {
+            'timeframe': '4H',
+            'key': '4h',
+            'state': 'RANGE_STRUCTURE',
+            'label': 'En range',
+            'arrow': '↔'
+          },
+          {
+            'timeframe': '1H',
+            'key': '1h',
+            'state': 'BULLISH_STRUCTURE',
+            'label': 'Haussière',
+            'arrow': '↑'
+          },
         ],
         'alignment': 'DIVERGENT',
         'alignment_label': 'Divergent',
@@ -487,21 +536,42 @@ Map<String, dynamic> _page(String asset) => {
           'by_design': 'NON COLLECTÉ PAR CONCEPTION',
         },
         'families': [
-          {'family': 'price', 'label': 'Prix',
-           'coverage': 'EXPECTED_AND_AVAILABLE', 'available': true,
-           'fresh': true, 'stale': false, 'reason': ''},
-          {'family': 'onchain', 'label': 'On-chain',
-           'coverage': 'EXPECTED_BUT_MISSING', 'available': false,
-           'fresh': false, 'stale': false,
-           'reason': 'aucune observation stockée'},
-          {'family': 'dvol', 'label': 'Volatilité implicite (DVOL)',
-           'coverage': 'NOT_APPLICABLE', 'available': false,
-           'fresh': false, 'stale': false,
-           'reason': 'Deribit ne publie pas d’indice DVOL pour cet actif'},
-          {'family': 'whales', 'label': 'Baleines',
-           'coverage': 'UNAVAILABLE_BY_DESIGN', 'available': false,
-           'fresh': false, 'stale': false,
-           'reason': 'aucun fournisseur baleines fiable n’est configuré'},
+          {
+            'family': 'price',
+            'label': 'Prix',
+            'coverage': 'EXPECTED_AND_AVAILABLE',
+            'available': true,
+            'fresh': true,
+            'stale': false,
+            'reason': ''
+          },
+          {
+            'family': 'onchain',
+            'label': 'On-chain',
+            'coverage': 'EXPECTED_BUT_MISSING',
+            'available': false,
+            'fresh': false,
+            'stale': false,
+            'reason': 'aucune observation stockée'
+          },
+          {
+            'family': 'dvol',
+            'label': 'Volatilité implicite (DVOL)',
+            'coverage': 'NOT_APPLICABLE',
+            'available': false,
+            'fresh': false,
+            'stale': false,
+            'reason': 'Deribit ne publie pas d’indice DVOL pour cet actif'
+          },
+          {
+            'family': 'whales',
+            'label': 'Baleines',
+            'coverage': 'UNAVAILABLE_BY_DESIGN',
+            'available': false,
+            'fresh': false,
+            'stale': false,
+            'reason': 'aucun fournisseur baleines fiable n’est configuré'
+          },
         ],
       },
       'last_change': {
@@ -509,17 +579,32 @@ Map<String, dynamic> _page(String asset) => {
         'reason': 'Pas encore assez de lectures enregistrées.',
       },
       'reading_order': [
-        'direction_timing_edge', 'decision', 'structural_position',
-        'immediate_context', 'pressure', 'catalysts', 'change_conditions',
+        'direction_timing_edge',
+        'decision',
+        'structural_position',
+        'immediate_context',
+        'pressure',
+        'catalysts',
+        'change_conditions',
         'coverage',
       ],
     };
 
-ApiClient _client({bool withMarket = true}) => ApiClient(
+ApiClient _client({
+  bool withMarket = true,
+  String opportunityState = 'FAVORABLE',
+  bool opportunityHasNegative = false,
+}) =>
+    ApiClient(
       client: MockClient((request) async {
         final asset = request.url.path.split('/').last;
         return http.Response(
-          jsonEncode(_today(asset, withMarket: withMarket)),
+          jsonEncode(_today(
+            asset,
+            withMarket: withMarket,
+            opportunityState: opportunityState,
+            opportunityHasNegative: opportunityHasNegative,
+          )),
           200,
           headers: {'content-type': 'application/json'},
         );
@@ -588,6 +673,43 @@ void main() {
   });
 
   group('Surface décisionnelle compacte', () {
+    testWidgets('le fond Bitcoin et les illustrations suivent la décision',
+        (tester) async {
+      const cases = <(String, bool, String)>[
+        (
+          'VERY_FAVORABLE',
+          false,
+          'assets/visuals/opportunity_very_favorable.png'
+        ),
+        ('FAVORABLE', false, 'assets/visuals/opportunity_favorable.png'),
+        ('WATCH', false, 'assets/visuals/opportunity_insufficient.png'),
+        ('WAIT', false, 'assets/visuals/opportunity_wait.png'),
+        ('WAIT', true, 'assets/visuals/opportunity_risk.png'),
+        ('UNFAVORABLE', false, 'assets/visuals/opportunity_unfavorable.png'),
+        (
+          'INSUFFICIENT_DATA',
+          false,
+          'assets/visuals/opportunity_insufficient.png'
+        ),
+      ];
+
+      for (final item in cases) {
+        await _pumpAt(
+          tester,
+          const Size(430, 932),
+          TodayScreen(
+            key: ValueKey('${item.$1}-${item.$2}'),
+            client: _client(
+              opportunityState: item.$1,
+              opportunityHasNegative: item.$2,
+            ),
+          ),
+        );
+        expect(find.byKey(const ValueKey('today-background')), findsOneWidget);
+        expect(find.byKey(ValueKey(item.$3)), findsWidgets);
+      }
+    });
+
     testWidgets('la carte fermée ne montre que les réponses principales',
         (tester) async {
       await _pumpAt(
@@ -598,10 +720,10 @@ void main() {
       expect(find.text('DIRECTION'), findsWidgets);
       expect(find.text('TIMING'), findsWidgets);
       expect(find.text('AVANTAGE'), findsWidgets);
-      expect(find.text('FAVORABLE'), findsWidgets);
+      expect(find.text('ACHETER'), findsWidgets);
       expect(find.text('QUI ACHÈTE, QUI VEND ?'), findsWidgets);
       expect(find.text('Voir pourquoi'), findsWidgets);
-      expect(find.text('Voir le détail'), findsWidgets);
+      expect(find.text('Voir les sources'), findsWidgets);
       // Les détails de structure restent fermés au premier regard.
       expect(find.textContaining('prix près du bas du range'), findsNothing);
       expect(find.text('STRONGLY_BULLISH'), findsNothing);
@@ -615,7 +737,7 @@ void main() {
       await tester.tap(find.text('Voir pourquoi').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('POURQUOI FAVORABLE ?'), findsOneWidget);
+      expect(find.text('POURQUOI ACHETER ?'), findsOneWidget);
       expect(find.text('CE QUI AIDE'), findsOneWidget);
       expect(find.text('CE QUI FAIT ATTENDRE'), findsOneWidget);
       expect(find.textContaining('MarketStructureEngine'), findsOneWidget);
@@ -627,7 +749,7 @@ void main() {
         (tester) async {
       await _pumpAt(
           tester, const Size(430, 932), TodayScreen(client: _client()));
-      final trigger = find.text('Voir le détail').first;
+      final trigger = find.text('Voir les sources').first;
       await tester.ensureVisible(trigger);
       await tester.tap(trigger);
       await tester.pumpAndSettle();

@@ -99,7 +99,11 @@ class DirectionTimingEdgeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final columns = <(String, ReadingLine, Color)>[
-      ('DIRECTION', readings.direction, _directionTone(readings.direction.state)),
+      (
+        'DIRECTION',
+        readings.direction,
+        _directionTone(readings.direction.state)
+      ),
       ('TIMING', readings.timing, _timingTone(readings.timing.state)),
       ('AVANTAGE', readings.edge, mobileMuted),
     ];
@@ -244,8 +248,7 @@ class StructuralPositionBar extends StatelessWidget {
                   builder: (context, constraints) {
                     final width = constraints.maxWidth;
                     const marker = 11.0;
-                    final x =
-                        (width - marker) * position.fraction;
+                    final x = (width - marker) * position.fraction;
                     return SizedBox(
                       height: marker,
                       child: Stack(
@@ -324,8 +327,7 @@ class NearestLevelsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!levels.available) return const SizedBox.shrink();
-    String distance(PriceLevel level) =>
-        '${level.distancePct >= 0 ? '+' : ''}'
+    String distance(PriceLevel level) => '${level.distancePct >= 0 ? '+' : ''}'
         '${level.distancePct.toStringAsFixed(1)} %';
 
     return Row(
@@ -458,13 +460,12 @@ class CatalystsBlock extends StatelessWidget {
             const SizedBox(height: 9),
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.warn.withValues(alpha: .12),
                 borderRadius: BorderRadius.circular(9),
-                border: Border.all(
-                    color: AppColors.warn.withValues(alpha: .45)),
+                border:
+                    Border.all(color: AppColors.warn.withValues(alpha: .45)),
               ),
               child: Text(
                 catalysts.alert!.label,
@@ -851,8 +852,8 @@ class AnalysisMismatchBanner extends StatelessWidget {
               child: Text(
                 'Analyse en cours d’actualisation. Les blocs reçus ne '
                 'décrivent pas le même instant et ne sont pas combinés.',
-                style: TextStyle(
-                    color: AppColors.warn, fontSize: 13, height: 1.3),
+                style:
+                    TextStyle(color: AppColors.warn, fontSize: 13, height: 1.3),
               ),
             ),
           ],

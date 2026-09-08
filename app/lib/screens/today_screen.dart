@@ -101,7 +101,7 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return MobileGradientFrame(
+    return _TodayVisualFrame(
       child: RefreshIndicator(
         onRefresh: _refresh,
         child: FutureBuilder<List<TodayRead>>(
@@ -139,7 +139,8 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                     livePrices: widget.livePrices,
                     expanded: read.asset == _expanded,
                     onToggle: () => setState(
-                      () => _expanded = read.asset == _expanded ? '' : read.asset,
+                      () =>
+                          _expanded = read.asset == _expanded ? '' : read.asset,
                     ),
                   ),
                   // Sans encadrement, c'est l'espace qui separe les trois
@@ -153,6 +154,56 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+/// Fond propre à la première page.
+///
+/// L'illustration reste fixe pendant le défilement pour conserver la montagne
+/// Bitcoin comme décor général. Les voiles bleus assurent le contraste des
+/// données sans masquer la lumière de l'image fournie.
+class _TodayVisualFrame extends StatelessWidget {
+  final Widget child;
+
+  const _TodayVisualFrame({required this.child});
+
+  @override
+  Widget build(BuildContext context) => Stack(
+        fit: StackFit.expand,
+        children: [
+          const ColoredBox(color: Color(0xFF020C1C)),
+          Image.asset(
+            'assets/visuals/today_background.png',
+            key: const ValueKey('today-background'),
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            filterQuality: FilterQuality.high,
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0, .28, .68, 1],
+                colors: [
+                  Color(0x16000A18),
+                  Color(0x4800183B),
+                  Color(0xB8041026),
+                  Color(0xF0020B19),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: child,
+              ),
+            ),
+          ),
+        ],
+      );
 }
 
 class _TodayHeader extends StatelessWidget {
@@ -308,6 +359,15 @@ class _MarketCard extends StatelessWidget {
               const SizedBox(height: 12),
               _EntryAnswerPanel(read: read),
 
+              // Les trois réponses du cockpit restent dans le premier écran:
+              // direction/timing, opportunité, puis pression acheteurs-
+              // vendeurs. La position structurelle vient ensuite au détail.
+              const SizedBox(height: 12),
+              _MarketPressureSummary(
+                pressure: read.pressure,
+                breakdown: page.isEmpty ? null : page.pressure,
+              ),
+
               if (!page.isEmpty) ...[
                 const SizedBox(height: 12),
                 StructuralPositionBar(
@@ -319,12 +379,6 @@ class _MarketCard extends StatelessWidget {
                   NearestLevelsRow(levels: page.levels),
                 ],
               ],
-
-              const SizedBox(height: 12),
-              _MarketPressureSummary(
-                pressure: read.pressure,
-                breakdown: page.isEmpty ? null : page.pressure,
-              ),
 
               if (!page.isEmpty) ...[
                 if (expanded) ...[
@@ -960,81 +1014,111 @@ class _EntryAnswerPanel extends StatelessWidget {
     final opportunity = read.opportunity;
     final tone = _opportunityColour(opportunity.state);
     final icon = _opportunityIcon(opportunity.state);
+    final visual = _opportunityVisual(opportunity);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         onTap: () => _showOpportunityDetails(context, read, tone),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: tone.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: tone.withValues(alpha: 0.55), width: 1.4),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  Icon(icon, color: tone, size: 30),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'EST-CE UNE BONNE OPPORTUNITÉ D’ACHAT MAINTENANT ?',
-                          style: const TextStyle(
-                            color: Color(0xFFB6C1D2),
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _opportunityLabel(opportunity.state),
-                          style: TextStyle(
-                            color: tone,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            height: 1.05,
-                          ),
-                        ),
+              Positioned.fill(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 420),
+                  child: Image.asset(
+                    visual.asset,
+                    key: ValueKey(visual.asset),
+                    fit: BoxFit.cover,
+                    alignment: Alignment.centerRight,
+                    filterQuality: FilterQuality.high,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: const [0, .58, 1],
+                      colors: [
+                        const Color(0xFF061121).withValues(alpha: .96),
+                        const Color(0xFF071426).withValues(alpha: .82),
+                        visual.overlay.withValues(alpha: .24),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                opportunity.summary.isEmpty
-                    ? 'Les données ne permettent pas encore une explication structurée.'
-                    : opportunity.summary,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.text,
-                  fontSize: 17,
-                  height: 1.38,
                 ),
               ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Text(
-                    'Voir pourquoi',
-                    style: TextStyle(
-                      color: tone,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+              Container(
+                constraints: const BoxConstraints(minHeight: 225),
+                padding: const EdgeInsets.fromLTRB(20, 20, 18, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _TodayIconTile(icon: icon, tone: visual.accent),
+                        const SizedBox(width: 13),
+                        const Expanded(
+                          child: Text(
+                            'EST-CE UNE BONNE OPPORTUNITÉ\nD’ACHAT MAINTENANT ?',
+                            style: TextStyle(
+                              color: Color(0xFFD8E8FF),
+                              fontSize: 14,
+                              height: 1.32,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: .75,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.chevron_right_rounded,
+                            color: visual.accent, size: 28),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.chevron_right_rounded, color: tone, size: 20),
-                ],
+                    const SizedBox(height: 9),
+                    Text(
+                      _opportunityLabel(opportunity.state),
+                      style: TextStyle(
+                        color: visual.accent,
+                        fontSize: 31,
+                        fontWeight: FontWeight.w900,
+                        height: 1.02,
+                        shadows: [
+                          Shadow(
+                            color: visual.glow.withValues(alpha: .55),
+                            blurRadius: 14,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 335),
+                      child: Text(
+                        opportunity.summary.isEmpty
+                            ? 'Les données ne permettent pas encore une explication structurée.'
+                            : opportunity.summary,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFF2F7FF),
+                          fontSize: 15.5,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _TodayOutlineAction(
+                      label: 'Voir pourquoi',
+                      tone: visual.accent,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -1256,13 +1340,144 @@ class _EntryAnswerPanel extends StatelessWidget {
 }
 
 String _opportunityLabel(String state) => switch (state.toUpperCase()) {
-      'VERY_FAVORABLE' || 'STRONG_OPPORTUNITY' => 'TRÈS FAVORABLE',
-      'FAVORABLE' || 'OPPORTUNITY' => 'FAVORABLE',
+      'VERY_FAVORABLE' || 'STRONG_OPPORTUNITY' => 'ACHETER',
+      'FAVORABLE' || 'OPPORTUNITY' => 'ACHETER',
       'WATCH' => 'À SURVEILLER',
       'WAIT' => 'ATTENDRE',
-      'UNFAVORABLE' => 'DÉFAVORABLE',
-      _ => 'DONNÉES INSUFFISANTES',
+      'UNFAVORABLE' => 'VENDRE',
+      _ => 'ATTENDRE',
     };
+
+class _OpportunityVisual {
+  final String asset;
+  final Color accent;
+  final Color glow;
+  final Color overlay;
+
+  const _OpportunityVisual({
+    required this.asset,
+    required this.accent,
+    required this.glow,
+    required this.overlay,
+  });
+}
+
+/// Association déterministe entre la décision du backend et l'illustration.
+///
+/// L'écran ne recalcule jamais le verdict. La seule nuance locale concerne
+/// WAIT: la falaise orange illustre un risque déjà mesuré; le sablier jaune
+/// illustre une temporisation sans signal franchement défavorable.
+_OpportunityVisual _opportunityVisual(BuyOpportunity opportunity) {
+  final state = opportunity.state.toUpperCase();
+  if (state == 'VERY_FAVORABLE' || state == 'STRONG_OPPORTUNITY') {
+    return const _OpportunityVisual(
+      asset: 'assets/visuals/opportunity_very_favorable.png',
+      accent: Color(0xFF40FFA6),
+      glow: Color(0xFF16E98A),
+      overlay: Color(0xFF08794F),
+    );
+  }
+  if (state == 'FAVORABLE' || state == 'OPPORTUNITY') {
+    return const _OpportunityVisual(
+      asset: 'assets/visuals/opportunity_favorable.png',
+      accent: Color(0xFF66F38E),
+      glow: Color(0xFF14D86E),
+      overlay: Color(0xFF087546),
+    );
+  }
+  if (state == 'WATCH') {
+    return const _OpportunityVisual(
+      asset: 'assets/visuals/opportunity_insufficient.png',
+      accent: Color(0xFF72C8FF),
+      glow: Color(0xFF168EFF),
+      overlay: Color(0xFF0759A5),
+    );
+  }
+  if (state == 'WAIT' && opportunity.negatives.isNotEmpty) {
+    return const _OpportunityVisual(
+      asset: 'assets/visuals/opportunity_risk.png',
+      accent: Color(0xFFFFA24B),
+      glow: Color(0xFFFF6A16),
+      overlay: Color(0xFFA53B07),
+    );
+  }
+  if (state == 'WAIT') {
+    return const _OpportunityVisual(
+      asset: 'assets/visuals/opportunity_wait.png',
+      accent: Color(0xFFFFD35C),
+      glow: Color(0xFFFFB72E),
+      overlay: Color(0xFF8F6512),
+    );
+  }
+  if (state == 'UNFAVORABLE') {
+    return const _OpportunityVisual(
+      asset: 'assets/visuals/opportunity_unfavorable.png',
+      accent: Color(0xFFFF6472),
+      glow: Color(0xFFFF2E43),
+      overlay: Color(0xFF8E0D22),
+    );
+  }
+  return const _OpportunityVisual(
+    asset: 'assets/visuals/opportunity_insufficient.png',
+    accent: Color(0xFF72C8FF),
+    glow: Color(0xFF168EFF),
+    overlay: Color(0xFF0759A5),
+  );
+}
+
+class _TodayIconTile extends StatelessWidget {
+  final IconData icon;
+  final Color tone;
+
+  const _TodayIconTile({required this.icon, required this.tone});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 47,
+        height: 47,
+        decoration: BoxDecoration(
+          color: tone.withValues(alpha: .13),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: tone.withValues(alpha: .62)),
+          boxShadow: [
+            BoxShadow(color: tone.withValues(alpha: .18), blurRadius: 16),
+          ],
+        ),
+        child: Icon(icon, color: tone, size: 27),
+      );
+}
+
+class _TodayOutlineAction extends StatelessWidget {
+  final String label;
+  final Color tone;
+
+  const _TodayOutlineAction({required this.label, required this.tone});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 9),
+        decoration: BoxDecoration(
+          color: const Color(0xFF071426).withValues(alpha: .68),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: tone, width: 1.2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: tone,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(width: 5),
+            Icon(Icons.chevron_right_rounded, color: tone, size: 20),
+          ],
+        ),
+      );
+}
 
 Color _opportunityColour(String state) => switch (state.toUpperCase()) {
       'VERY_FAVORABLE' ||
@@ -1534,76 +1749,131 @@ class _MarketPressureSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final balance = pressure.balance;
+    final tone = _PressurePanel._balanceColour(balance);
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(22),
         onTap: () => breakdown == null
             ? _showPressureDetails(context, pressure)
             : _showPressureBreakdown(context, breakdown!),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF101927).withValues(alpha: .55),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF23364C)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
             children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'QUI ACHÈTE, QUI VEND ?',
-                      style: TextStyle(
-                        color: Color(0xFFB6C1D2),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: .4,
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/visuals/market_pressure.png',
+                  key: const ValueKey('market-pressure-background'),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.bottomCenter,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: const [0, .58, 1],
+                      colors: [
+                        const Color(0xFF061326).withValues(alpha: .97),
+                        const Color(0xFF06172D).withValues(alpha: .84),
+                        const Color(0xFF06172D).withValues(alpha: .30),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                constraints: const BoxConstraints(minHeight: 196),
+                padding: const EdgeInsets.fromLTRB(18, 17, 18, 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: const Color(0xFF48BFFF).withValues(alpha: .86),
+                    width: 1.35,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF25B7FF).withValues(alpha: .22),
+                      blurRadius: 26,
+                      spreadRadius: -8,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const _TodayIconTile(
+                          icon: Icons.groups_2_outlined,
+                          tone: Color(0xFF8BCBFF),
+                        ),
+                        const SizedBox(width: 13),
+                        const Expanded(
+                          child: Text(
+                            'QUI ACHÈTE, QUI VEND ?',
+                            style: TextStyle(
+                              color: Color(0xFFD8E8FF),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: .65,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          pressure.label,
+                          style: TextStyle(
+                            color: tone,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(width: 3),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: Color(0xFFAEDAFF), size: 26),
+                      ],
+                    ),
+                    if (balance != null) ...[
+                      const SizedBox(height: 16),
+                      _PressureBar(balance: balance),
+                    ],
+                    const SizedBox(height: 11),
+                    ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 330),
+                        child: Text(
+                          pressure.summary.isEmpty
+                              ? '${pressure.measured} source(s) mesurée(s).'
+                              : pressure.summary,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFEAF4FF),
+                            fontSize: 14.5,
+                            height: 1.3,
+                          ),
+                        )),
+                    const SizedBox(height: 8),
+                    Text(
+                      breakdown != null && breakdown!.familiesLine.isNotEmpty
+                          ? breakdown!.familiesLine
+                          : '${pressure.measured} source(s) mesurée(s)',
+                      style: const TextStyle(
+                        color: Color(0xFF84C9FF),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ),
-                  Text(
-                    pressure.label,
-                    style: TextStyle(
-                      color: _PressurePanel._balanceColour(balance),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                    const SizedBox(height: 12),
+                    const _TodayOutlineAction(
+                      label: 'Voir les sources',
+                      tone: Color(0xFF72C8FF),
                     ),
-                  ),
-                ],
-              ),
-              if (balance != null) ...[
-                const SizedBox(height: 12),
-                _PressureBar(balance: balance),
-              ],
-              const SizedBox(height: 9),
-              Text(
-                // « 3/5 familles disponibles » dit ce sur quoi le score
-                // repose. Une source absente n'y compte pas comme neutre:
-                // elle est retirée du calcul et listée au détail.
-                breakdown != null && breakdown!.familiesLine.isNotEmpty
-                    ? breakdown!.familiesLine
-                    : pressure.summary.isEmpty
-                        ? '${pressure.measured} source(s) mesurée(s).'
-                        : pressure.summary,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: mobileMuted, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              const Row(
-                children: [
-                  Text('Voir le détail',
-                      style: TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      )),
-                  Icon(Icons.chevron_right_rounded,
-                      color: AppColors.accent, size: 19),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -2617,9 +2887,7 @@ String _subtitleForLayers(DataProvenance provenance, List<TodayRead> reads) {
       .whereType<DateTime>()
       .fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
 
-  final quand = analysisAt == null
-      ? null
-      : _clockLabel(analysisAt.toLocal());
+  final quand = analysisAt == null ? null : _clockLabel(analysisAt.toLocal());
 
   if (priceFresh && provenance.isSnapshot) {
     return quand == null
@@ -3302,7 +3570,8 @@ void _showPositionDetail(BuildContext context, TodayPage page) {
           title: 'BORNES DU RANGE',
           children: [
             _TodaySheetLine(
-                label: position.bottomLabel, value: money(position.rangeBottom)),
+                label: position.bottomLabel,
+                value: money(position.rangeBottom)),
             _TodaySheetLine(
                 label: 'Milieu', value: money(position.rangeMidpoint)),
             _TodaySheetLine(
@@ -3420,8 +3689,7 @@ void _showCoverageDetail(BuildContext context, TodayPage page) {
                     if (family.stale)
                       const Text(
                         'périmée',
-                        style:
-                            TextStyle(color: AppColors.warn, fontSize: 12.5),
+                        style: TextStyle(color: AppColors.warn, fontSize: 12.5),
                       ),
                   ],
                 ),
@@ -3458,8 +3726,7 @@ void _showCoverageDetail(BuildContext context, TodayPage page) {
           if (coverage.uncertaintyScore != null)
             _TodaySheetLine(
               label: 'Incertitude',
-              value:
-                  '${coverage.uncertaintyScore!.toStringAsFixed(0)}/100',
+              value: '${coverage.uncertaintyScore!.toStringAsFixed(0)}/100',
             ),
         ],
       ),
@@ -3565,7 +3832,8 @@ void _showPressureBreakdown(BuildContext context, PressureBreakdown breakdown) {
         style: const TextStyle(color: mobileMuted, fontSize: 14),
       ),
       const SizedBox(height: 18),
-      contributions(breakdown.buyersTitle, breakdown.buyers, AppColors.measured),
+      contributions(
+          breakdown.buyersTitle, breakdown.buyers, AppColors.measured),
       contributions(breakdown.sellersTitle, breakdown.sellers, AppColors.bad),
       contributions('SANS DIRECTION NETTE', breakdown.neutral, mobileMuted),
       contributions(
