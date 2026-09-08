@@ -107,6 +107,36 @@ void main() {
         }
       });
 
+      test('$asset : aucun objet brut ne traverse jusqu’au texte', () {
+        // « {detail: ..., title: ...} » s'affichait littéralement: le backend
+        // avait structuré les conditions et le lecteur les interpolait encore
+        // comme des chaînes. Interpoler un objet est toujours un défaut
+        // d'affichage, jamais un texte.
+        final read = TodayRead.fromJson(_shipped(asset));
+        final texts = <String>[
+          read.opportunity.summary,
+          read.opportunity.headline,
+          ...read.opportunity.whatWouldImprove,
+          ...read.opportunity.whatWouldDeteriorate,
+          ...read.opportunity.whatWouldChangeStructure,
+          ...read.page.changeConditions.improve.map((c) => c.title + c.detail),
+          ...read.page.changeConditions.degrade.map((c) => c.title + c.detail),
+          ...read.page.changeConditions.structureChange
+              .map((c) => c.title + c.detail),
+          ...read.page.immediateContext.map((i) => '${i.label} ${i.value}'),
+          ...read.page.pressure.applicableFamilies.map((f) => f.sentence),
+        ];
+        for (final text in texts) {
+          expect(text, isNot(startsWith('{')), reason: text);
+          expect(text.contains('title:'), isFalse, reason: text);
+          expect(text.contains('detail:'), isFalse, reason: text);
+          expect(text.contains('Instance of'), isFalse, reason: text);
+        }
+        // Et la forme structurée est bien lue, pas seulement contournée.
+        expect(read.opportunity.whatWouldImprove, isNotEmpty);
+        expect(read.opportunity.whatWouldImprove.first, contains('—'));
+      });
+
       test('$asset : aucun chiffre de recherche sur la lecture principale', () {
         final page = TodayRead.fromJson(_shipped(asset)).page;
         final surface = [

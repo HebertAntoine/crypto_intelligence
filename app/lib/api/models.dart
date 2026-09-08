@@ -571,8 +571,23 @@ class BuyOpportunity {
               OpportunityFactor.fromJson((item as Map).cast<String, dynamic>()))
           .toList();
 
+  /// Accepte les deux formes qu'un backend peut envoyer: une phrase, ou un
+  /// objet `{title, detail}`.
+  ///
+  /// La forme structurée est arrivée sans que ce lecteur change, et
+  /// `'$item'` sur une Map rendait littéralement « {detail: ..., title: ...} »
+  /// à l'écran. Interpoler un objet est toujours un défaut d'affichage: la
+  /// seule protection fiable est que ce lecteur sache ce qu'il lit.
   static List<String> _strings(dynamic raw) =>
-      ((raw as List?) ?? const []).map((item) => '$item').toList();
+      ((raw as List?) ?? const []).map((item) {
+        if (item is Map) {
+          final title = '${item['title'] ?? ''}'.trim();
+          final detail = '${item['detail'] ?? ''}'.trim();
+          if (title.isEmpty) return detail;
+          return detail.isEmpty ? title : '$title — $detail';
+        }
+        return '$item';
+      }).where((text) => text.isNotEmpty).toList();
 
   factory BuyOpportunity.fromJson(Map<String, dynamic> json) => BuyOpportunity(
         state: json['state'] as String? ?? 'INSUFFICIENT_DATA',
