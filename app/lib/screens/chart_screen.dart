@@ -14,6 +14,7 @@ import '../api/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../chart/candle_chart.dart';
+import '../chart/live_candles.dart';
 import '../chart/chart_layers.dart';
 import '../widgets/mobile_kit.dart';
 
@@ -369,10 +370,60 @@ class _VisualChartPanel extends StatefulWidget {
 
 class _VisualChartPanelState extends State<_VisualChartPanel> {
   ChartLayerSet _layers = ChartLayerSet.initial();
+  final _live = LiveCandleService();
+  LiveCandles? _liveCandles;
+  String? _liveError;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLive();
+  }
+
+  @override
+  void didUpdateWidget(_VisualChartPanel old) {
+    super.didUpdateWidget(old);
+    if (old.asset != widget.asset || old.timeframe != widget.timeframe) {
+      _liveCandles = null;
+      _liveError = null;
+      _loadLive();
+    }
+  }
+
+  @override
+  void dispose() {
+    _live.dispose();
+    super.dispose();
+  }
+
+  /// Les bougies viennent de la source publique, en direct. Si l'appel
+  /// échoue, on retombe sur celles du backend en le disant — jamais en
+  /// laissant croire que l'affichage est à jour.
+  Future<void> _loadLive() async {
+    setState(() => _loading = true);
+    try {
+      final fetched = await _live.fetch(widget.asset, widget.timeframe);
+      if (!mounted) return;
+      setState(() {
+        _liveCandles = fetched.isEmpty ? null : fetched;
+        _liveError = fetched.isEmpty ? 'Aucune bougie renvoyée par la source.' : null;
+        _loading = false;
+      });
+    } on LiveCandlesUnavailable catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _liveError = error.reason;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final candles = widget.data.chart?.candles ?? const <CandlePoint>[];
+    final live = _liveCandles;
+    final fallback = widget.data.chart?.candles ?? const <CandlePoint>[];
+    final candles = live?.candles ?? fallback;
     return GlassPanel(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
       child: Column(
@@ -404,7 +455,15 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
               );
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+          _CandleSourceLine(
+            live: live,
+            loading: _loading,
+            error: _liveError,
+            fallbackCount: fallback.length,
+            onRetry: _loadLive,
+          ),
+          const SizedBox(height: 8),
           _LayerBar(
             layers: _layers,
             onToggle: (layer) =>
@@ -415,6 +474,91 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
         ],
       ),
     );
+  }
+}
+
+/// D'où viennent les bougies dessinées, et de quand.
+///
+/// Le graphique montre des bougies en direct pendant que les cartes en dessous
+/// racontent une analyse datée. Ce sont deux horloges: les confondre ferait
+/// passer une lecture d'il y a trois heures pour une lecture du moment.
+class _CandleSourceLine extends StatelessWidget {
+  final LiveCandles? live;
+  final bool loading;
+  final String? error;
+  final int fallbackCount;
+  final VoidCallback onRetry;
+
+  const _CandleSourceLine({
+    required this.live,
+    required this.loading,
+    required this.error,
+    required this.fallbackCount,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && live == null) {
+      return const Text(
+        'Chargement des bougies…',
+        style: TextStyle(color: Color(0xFF7790A8), fontSize: 12),
+      );
+    }
+    final current = live;
+    if (current != null) {
+      final age = current.lastCandleAge;
+      return Row(
+        children: [
+          const Icon(Icons.podcasts_rounded,
+              size: 13, color: Color(0xFF32DF98)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '${current.candles.length} bougies · ${current.symbol} · '
+              '${current.source}'
+              '${age == null ? '' : ' · dernière ${_ageLabel(age)}'}',
+              style: const TextStyle(color: Color(0xFF7790A8), fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
+    }
+    // Repli: on dit ce qu'on affiche et pourquoi ce n'est pas du direct.
+    return Row(
+      children: [
+        const Icon(Icons.cloud_off_rounded, size: 13, color: Color(0xFFF5C84B)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            fallbackCount > 0
+                ? 'Bougies de l’instantané ($fallbackCount) · '
+                    '${error ?? 'direct indisponible'}'
+                : error ?? 'Aucune bougie disponible.',
+            style: const TextStyle(color: Color(0xFFF5C84B), fontSize: 12),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        TextButton(
+          onPressed: onRetry,
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: const Text('Réessayer',
+              style: TextStyle(fontSize: 12, color: Color(0xFF54AAFF))),
+        ),
+      ],
+    );
+  }
+
+  static String _ageLabel(Duration age) {
+    if (age.inMinutes < 1) return 'à l’instant';
+    if (age.inMinutes < 60) return 'il y a ${age.inMinutes} min';
+    if (age.inHours < 48) return 'il y a ${age.inHours} h';
+    return 'il y a ${age.inDays} j';
   }
 }
 
@@ -1205,15 +1349,16 @@ String _timeframeLabel(String timeframe) => switch (timeframe) {
 
 /// La profondeur demandée à l'API pour une unité donnée.
 ///
-/// Une vue hebdomadaire sur sept jours ne montrerait qu'une bougie: la période
-/// suit l'unité plutôt qu'une constante unique.
-String _periodForTimeframe(String timeframe) => switch (timeframe) {
-      '15m' => '7d',
-      '1h' => '30d',
-      '4h' => '3m',
-      '1d' => '1y',
-      '1w' => 'max',
-      _ => '3m',
+/// Ces valeurs doivent correspondre exactement à celles que
+/// `scripts/export_flutter_static_api.py` exporte: hors ligne, l'app lit un
+/// fichier nommé d'après le couple période/unité, et une période inventée ne
+/// correspond à aucun fichier. En avoir choisi d'autres a vidé quatre vues
+/// sur cinq — le graphique affichait « aucune bougie » alors que les données
+/// étaient là, sous un autre nom.
+String _periodForTimeframe(String value) => switch (value) {
+      '1d' => '3m',
+      '1w' => '1y',
+      _ => '7d',
     };
 
 List<_IndicatorState> _indicatorSignals(_ChartData data) {

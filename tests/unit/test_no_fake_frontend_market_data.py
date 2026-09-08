@@ -409,3 +409,43 @@ def test_only_one_widget_renders_an_asset_logo():
         assert holders in ([], ["widgets/mobile_kit.dart"]), (
             f"{name} défini ailleurs que dans le kit partagé: {holders}"
         )
+
+
+def test_the_app_asks_for_periods_the_exporter_actually_writes():
+    """Le couple période/unité est un nom de fichier, pas une préférence.
+
+    Hors ligne l'app lit `chart__BTC__period-3m__timeframe-1d.json`. Une
+    période choisie côté client sans correspondance dans l'export ne trouve
+    aucun fichier, et le graphique annonce « aucune bougie » alors que les
+    données sont là, sous un autre nom. C'est arrivé sur quatre vues sur cinq.
+    """
+    import re
+
+    screen = (APP_LIB / "screens" / "chart_screen.dart").read_text(
+        encoding="utf-8"
+    )
+    block = screen[screen.index("String _periodForTimeframe("):]
+    block = block[: block.index("};")]
+    client = dict(re.findall(r"'([^']+)' => '([^']+)'", block))
+    fallback = re.search(r"_ => '([^']+)'", block)
+    assert fallback, "aucune période par défaut déclarée"
+
+    snapshots = APP_LIB.parent / "assets" / "api_snapshots"
+    exported = set(
+        re.findall(
+            r"period-([0-9a-z]+)__timeframe",
+            "\n".join(path.name for path in snapshots.iterdir()),
+        )
+    )
+    assert exported, "aucun instantané de graphique exporté"
+
+    for timeframe in ("15m", "1h", "4h", "1d", "1w"):
+        period = client.get(timeframe, fallback.group(1))
+        target = (
+            APP_LIB.parent / "assets" / "api_snapshots"
+            / f"chart__BTC__period-{period}__timeframe-{timeframe}.json"
+        )
+        assert target.exists(), (
+            f"{timeframe} demande la période '{period}', "
+            f"qui n'est exportée pour aucun actif"
+        )
