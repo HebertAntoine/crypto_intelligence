@@ -94,40 +94,41 @@ class _ChartScreenState extends State<ChartScreen> {
           future: _future,
           builder: (context, snapshot) {
             return MobileScrollView(
-              padding: const EdgeInsets.fromLTRB(30, 30, 30, 260),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 220),
               children: [
-                MobileHeader(
-                  title: 'Intelligence graphique',
-                  subtitle: 'Lecture visuelle des marchés',
+                _CompactChartHeader(
                   onInfo: () => _showInfo(context),
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 14),
                 _AssetSelector(
                   assets: _assets,
                   selected: _asset,
                   onSelected: _selectAsset,
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 9),
                 _TimeframeSelector(
                   timeframes: _timeframes,
                   selected: _timeframe,
                   onSelected: _selectTimeframe,
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 12),
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const SizedBox(
-                      height: 560,
+                      height: 430,
                       child: LoadingView(what: 'lecture graphique'))
                 else if (snapshot.hasError)
                   SizedBox(
-                    height: 560,
+                    height: 430,
                     child: ErrorView(error: snapshot.error!, onRetry: _reload),
                   )
                 else ...[
-                  _VisualChartPanel(
-                    asset: _asset,
-                    timeframe: _timeframe,
-                    data: snapshot.data!,
+                  _HorizontalBleed(
+                    amount: 9,
+                    child: _VisualChartPanel(
+                      asset: _asset,
+                      timeframe: _timeframe,
+                      data: snapshot.data!,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _PatternDetectedPanel(
@@ -241,6 +242,96 @@ class _ChartData {
   }
 }
 
+/// En-tête volontairement plus compact que celui des écrans éditoriaux.
+///
+/// Le titre doit rester sur une seule ligne pour que les deux rangées de
+/// sélecteurs et le graphique soient visibles dès l'ouverture, comme sur la
+/// maquette de référence.
+class _CompactChartHeader extends StatelessWidget {
+  final VoidCallback onInfo;
+
+  const _CompactChartHeader({required this.onInfo});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Intelligence graphique',
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: AppColors.text,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    height: 1.02,
+                  ),
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Lecture visuelle des marchés',
+                maxLines: 1,
+                style: TextStyle(
+                  color: mobileMuted,
+                  fontSize: 18,
+                  height: 1.15,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          key: const Key('chart-information'),
+          tooltip: 'Information',
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.all(4),
+          constraints: const BoxConstraints.tightFor(width: 42, height: 42),
+          icon: const Icon(
+            Icons.info_outline_rounded,
+            color: Color(0xFFC7D5F2),
+            size: 32,
+          ),
+          onPressed: onInfo,
+        ),
+      ],
+    );
+  }
+}
+
+/// Autorise uniquement le graphique à gagner quelques pixels sur les marges
+/// du contenu. Les titres et boutons gardent leur respiration, tandis que la
+/// zone de prix approche les bords de l'écran comme sur la référence.
+class _HorizontalBleed extends StatelessWidget {
+  final double amount;
+  final Widget child;
+
+  const _HorizontalBleed({required this.amount, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => OverflowBox(
+        alignment: Alignment.center,
+        minWidth: constraints.maxWidth + amount * 2,
+        maxWidth: constraints.maxWidth + amount * 2,
+        child: SizedBox(
+          width: constraints.maxWidth + amount * 2,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 class _AssetSelector extends StatelessWidget {
   final List<String> assets;
   final String selected;
@@ -254,23 +345,20 @@ class _AssetSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = ((constraints.maxWidth - 36) / 3).clamp(178.0, 220.0);
-        return Wrap(
-          spacing: 18,
-          runSpacing: 14,
-          children: [
-            for (final asset in assets)
-              _AssetChoice(
-                asset: asset,
-                selected: selected == asset,
-                width: width,
-                onTap: () => onSelected(asset),
-              ),
-          ],
-        );
-      },
+    return Row(
+      key: const Key('chart-assets-row'),
+      children: [
+        for (var index = 0; index < assets.length; index++) ...[
+          if (index > 0) const SizedBox(width: 7),
+          Expanded(
+            child: _AssetChoice(
+              asset: assets[index],
+              selected: selected == assets[index],
+              onTap: () => onSelected(assets[index]),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -278,21 +366,19 @@ class _AssetSelector extends StatelessWidget {
 class _AssetChoice extends StatelessWidget {
   final String asset;
   final bool selected;
-  final double width;
   final VoidCallback onTap;
 
   const _AssetChoice({
     required this.asset,
     required this.selected,
-    required this.width,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: width,
-      height: 76,
+      key: Key('chart-asset-$asset'),
+      height: 52,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -314,13 +400,13 @@ class _AssetChoice extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CryptoLogo(asset: asset, size: 52),
-                const SizedBox(width: 16),
+                CryptoLogo(asset: asset, size: 34),
+                const SizedBox(width: 9),
                 Text(
                   asset,
                   style: const TextStyle(
                     color: AppColors.text,
-                    fontSize: 26,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -346,44 +432,44 @@ class _TimeframeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = ((constraints.maxWidth - 64) / 5).clamp(112.0, 170.0);
-        return Wrap(
-          spacing: 16,
-          runSpacing: 12,
-          children: [
-            for (final timeframe in timeframes)
-              SizedBox(
-                width: width,
-                height: 66,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(13),
-                    onTap: () => onSelected(timeframe),
-                    child: Ink(
-                      decoration: BoxDecoration(
-                        color: selected == timeframe
-                            ? const Color(0xFF164B82).withValues(alpha: 0.88)
-                            : mobilePanel.withValues(alpha: 0.74),
-                        borderRadius: BorderRadius.circular(13),
-                        border: Border.all(
-                          color: selected == timeframe
-                              ? const Color(0xFF208DFF)
-                              : const Color(0xFF334B66),
-                          width: selected == timeframe ? 1.6 : 1.25,
-                        ),
+    return Row(
+      key: const Key('chart-timeframes-row'),
+      children: [
+        for (var index = 0; index < timeframes.length; index++) ...[
+          if (index > 0) const SizedBox(width: 7),
+          Expanded(
+            child: SizedBox(
+              key: Key('chart-timeframe-${timeframes[index]}'),
+              height: 42,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(13),
+                  onTap: () => onSelected(timeframes[index]),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      color: selected == timeframes[index]
+                          ? const Color(0xFF164B82).withValues(alpha: 0.88)
+                          : mobilePanel.withValues(alpha: 0.74),
+                      borderRadius: BorderRadius.circular(13),
+                      border: Border.all(
+                        color: selected == timeframes[index]
+                            ? const Color(0xFF208DFF)
+                            : const Color(0xFF334B66),
+                        width: selected == timeframes[index] ? 1.6 : 1.25,
                       ),
-                      child: Center(
+                    ),
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
                         child: Text(
-                          _timeframeLabel(timeframe),
+                          _timeframeLabel(timeframes[index]),
                           style: TextStyle(
-                            color: selected == timeframe
+                            color: selected == timeframes[index]
                                 ? const Color(0xFF9FCFFF)
                                 : const Color(0xFFD3D9EF),
-                            fontSize: 24,
-                            fontWeight: selected == timeframe
+                            fontSize: 16,
+                            fontWeight: selected == timeframes[index]
                                 ? FontWeight.w800
                                 : FontWeight.w500,
                           ),
@@ -393,9 +479,10 @@ class _TimeframeSelector extends StatelessWidget {
                   ),
                 ),
               ),
-          ],
-        );
-      },
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -454,7 +541,8 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
       if (!mounted) return;
       setState(() {
         _liveCandles = fetched.isEmpty ? null : fetched;
-        _liveError = fetched.isEmpty ? 'Aucune bougie renvoyée par la source.' : null;
+        _liveError =
+            fetched.isEmpty ? 'Aucune bougie renvoyée par la source.' : null;
         _loading = false;
       });
     } on LiveCandlesUnavailable catch (error) {
@@ -507,8 +595,7 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
                     // Les figures viennent du même appel que l'analyse, avec
                     // leurs points horodatés. Elles se posent donc sur les
                     // bougies en direct sans être redétectées ici.
-                    patterns:
-                        widget.data.chart?.structuralPatterns ?? const [],
+                    patterns: widget.data.chart?.structuralPatterns ?? const [],
                   ),
                 ),
               );
@@ -560,7 +647,9 @@ class _FigureCountLine extends StatelessWidget {
         style: TextStyle(color: AppColors.textMuted, fontSize: 16),
       );
     }
-    final here = drawn <= 1 ? '$drawn figure sur cette vue' : '$drawn figures sur cette vue';
+    final here = drawn <= 1
+        ? '$drawn figure sur cette vue'
+        : '$drawn figures sur cette vue';
     return Text(
       '$here · $inHistory dans tout l’historique conservé',
       style: const TextStyle(color: AppColors.textMuted, fontSize: 16),
@@ -703,17 +792,15 @@ class _LayerChip extends StatelessWidget {
               color: active ? const Color(0xFF11477B) : const Color(0xFF091B2B),
               borderRadius: BorderRadius.circular(9),
               border: Border.all(
-                color: active
-                    ? const Color(0xFF199CFF)
-                    : const Color(0xFF284A68),
+                color:
+                    active ? const Color(0xFF199CFF) : const Color(0xFF284A68),
               ),
             ),
             child: Text(
               label,
               style: TextStyle(
-                color: active
-                    ? const Color(0xFF8DCAFF)
-                    : const Color(0xFFC2CEE0),
+                color:
+                    active ? const Color(0xFF8DCAFF) : const Color(0xFFC2CEE0),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
               ),
@@ -809,7 +896,9 @@ class _SignalChip extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: const TextStyle(
-                color: AppColors.text, fontSize: 12, fontWeight: FontWeight.w600),
+                color: AppColors.text,
+                fontSize: 12,
+                fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 3),
           Flexible(
@@ -945,6 +1034,13 @@ class _PatternDetectedPanel extends StatelessWidget {
             const SizedBox(height: 12),
             _OutsideWindowNote(names: data.patternsOutsideWindow),
           ],
+          if (_noiseNote != null) ...[
+            const SizedBox(height: 12),
+            _PatternFootnote(
+              icon: Icons.casino_outlined,
+              text: _noiseNote!,
+            ),
+          ],
           if (_undrawable.isNotEmpty) ...[
             const SizedBox(height: 12),
             _NoGeometryNote(names: _undrawable),
@@ -952,6 +1048,31 @@ class _PatternDetectedPanel extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Ce que vaut la forme mise en avant face au hasard.
+  ///
+  /// Mesuré en rejouant les détecteurs sur des marches aléatoires de même
+  /// volatilité. Une forme aussi fréquente sur du hasard que sur le marché ne
+  /// décrit pas le marché — et le taire serait la présenter comme une
+  /// découverte.
+  String? get _noiseNote {
+    final drawn = data.drawnPatterns;
+    if (drawn.isEmpty) return null;
+    final pattern = drawn.last;
+    if (pattern.noiseLabel.isEmpty) return null;
+    final ratio = pattern.noiseRatio;
+    final measured = ratio == null
+        ? ''
+        : ' (${ratio.toStringAsFixed(2).replaceAll('.', ',')} fois le hasard)';
+    if (pattern.isNoDifferentFromNoise) {
+      return '${pattern.label} : cette forme est ${pattern.noiseLabel}'
+          '$measured. Le tracé est exact ; c\u2019est la forme qui ne dit rien '
+          'de particulier sur le marché.';
+    }
+    return '${pattern.label} : cette forme est ${pattern.noiseLabel}$measured. '
+        'Cela ne dit pas qu\u2019elle prédit quoi que ce soit — cette '
+        'question-là n\u2019a pas été testée.';
   }
 
   /// Les figures de la fenêtre dont le détecteur n'a pas fourni la géométrie.

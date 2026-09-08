@@ -1,0 +1,83 @@
+{
+  "available": true,
+  "measured_at": "2026-09-08T21:36:38.849983+00:00",
+  "seed": 20260909,
+  "timeframe": "1d",
+  "assets": [
+    "BTC",
+    "ETH",
+    "SOL"
+  ],
+  "real_bars": 8840,
+  "noise_bars": 29460,
+  "noise_sigma": 0.046957,
+  "detectors": {
+    "bear_flag": {
+      "per_1000_real": 9.615,
+      "per_1000_noise": 17.413,
+      "ratio": 0.55,
+      "verdict": "LESS_THAN_NOISE"
+    },
+    "bull_flag": {
+      "per_1000_real": 6.335,
+      "per_1000_noise": 14.392,
+      "ratio": 0.44,
+      "verdict": "LESS_THAN_NOISE"
+    },
+    "double_bottom": {
+      "per_1000_real": 4.751,
+      "per_1000_noise": 4.718,
+      "ratio": 1.01,
+      "verdict": "INDISTINGUISHABLE_FROM_NOISE"
+    },
+    "double_top": {
+      "per_1000_real": 4.525,
+      "per_1000_noise": 4.209,
+      "ratio": 1.08,
+      "verdict": "INDISTINGUISHABLE_FROM_NOISE"
+    },
+    "falling_wedge": {
+      "per_1000_real": 0.0,
+      "per_1000_noise": 0.068,
+      "ratio": 0.0,
+      "verdict": "LESS_THAN_NOISE"
+    },
+    "head_and_shoulders": {
+      "per_1000_real": 1.584,
+      "per_1000_noise": 1.799,
+      "ratio": 0.88,
+      "verdict": "INDISTINGUISHABLE_FROM_NOISE"
+    },
+    "inverse_head_and_shoulders": {
+      "per_1000_real": 1.697,
+      "per_1000_noise": 1.901,
+      "ratio": 0.89,
+      "verdict": "INDISTINGUISHABLE_FROM_NOISE"
+    },
+    "rising_wedge": {
+      "per_1000_real": 0.113,
+      "per_1000_noise": 0.034,
+      "ratio": 3.32,
+      "verdict": "MORE_THAN_NOISE"
+    },
+    "symmetrical_triangle": {
+      "per_1000_real": 0.226,
+      "per_1000_noise": 0.034,
+      "ratio": 6.65,
+      "verdict": "MORE_THAN_NOISE"
+    },
+    "triple_bottom": {
+      "per_1000_real": 0.792,
+      "per_1000_noise": 1.324,
+      "ratio": 0.6,
+      "verdict": "LESS_THAN_NOISE"
+    },
+    "triple_top": {
+      "per_1000_real": 0.566,
+      "per_1000_noise": 0.984,
+      "ratio": 0.58,
+      "verdict": "LESS_THAN_NOISE"
+    }
+  },
+  "note": "How often each shape appears on real prices versus on random walks matched to the same volatility. A ratio near 1 means the shape is what randomness produces anyway. This is NOT an edge measurement - it is the prior question of whether the shape is a property of the market at all."
+}

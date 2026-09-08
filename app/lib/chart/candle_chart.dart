@@ -762,11 +762,15 @@ class CandleChartPainter extends CustomPainter {
         continue;
       }
       if (!named.contains(pattern)) continue;
+      // Le nom, l'état, et ce que vaut la forme face au hasard. Afficher
+      // « DOUBLE SOMMET » seul le ferait lire comme une découverte alors que
+      // la mesure dit qu'une marche aléatoire en produit autant.
+      final noise = pattern.isNoDifferentFromNoise ? ' · = HASARD' : '';
       _tag(
         canvas,
         Offset(_plot.right - 6, _plot.top + 4),
-        '${pattern.label.toUpperCase()} · ${pattern.stateLabel}',
-        colour,
+        '${pattern.label.toUpperCase()} · ${pattern.stateLabel}$noise',
+        pattern.isNoDifferentFromNoise ? const Color(0xFF8FA3BC) : colour,
         rightAligned: true,
       );
       for (final point in pattern.geometry.points) {

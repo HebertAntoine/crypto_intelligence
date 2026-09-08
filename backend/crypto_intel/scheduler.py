@@ -32,6 +32,17 @@ log = get_logger("scheduler")
 # concurrent readers, but concurrent writers on the same tables deserve a lock.
 _ANALYSIS_LOCK = asyncio.Lock()
 
+# Every timeframe exposed by ``/api/chart`` must have a scheduled top-up.
+# Keeping the tuple public makes that contract directly testable instead of
+# relying on a source-code-string assertion.
+OHLCV_SYNC_TIMEFRAMES: tuple[Timeframe, ...] = (
+    Timeframe.M15,
+    Timeframe.H1,
+    Timeframe.H4,
+    Timeframe.D1,
+    Timeframe.W1,
+)
+
 _STATE: dict[str, Any] = {
     "started_at": None,
     "runs": {},
@@ -179,7 +190,7 @@ async def job_market_only() -> None:
 
 async def job_ohlcv_sync() -> None:
     """Keep the local candle store current, so research never runs on stale bars."""
-    from .history.backfill import backfill_ohlcv
+    from .history.backfill import refresh_recent_ohlcv
 
     errors: list[str] = []
     for asset in Asset.tradables():
@@ -188,13 +199,15 @@ async def job_ohlcv_sync() -> None:
         # rafraîchissait: la bougie hebdomadaire accusait huit jours et la
         # quinze minutes quarante-trois heures. Une unité qu'on affiche et
         # qu'aucun travail ne met à jour vieillit en silence.
-        for timeframe in (
-            Timeframe.W1, Timeframe.D1, Timeframe.H4, Timeframe.H1, Timeframe.M15,
-        ):
+        for timeframe in OHLCV_SYNC_TIMEFRAMES:
             try:
-                # Faible profondeur: on complète les barres récentes plutôt que
-                # de refetcher des années à chaque cycle.
-                await backfill_ohlcv(asset, timeframe, depth_days=5, max_requests=2)
+                # One request is enough for a top-up. Historical depth remains
+                # the explicit backfill command's responsibility.
+                result = await refresh_recent_ohlcv(asset, timeframe, limit=400)
+                status = str(result.get("status") or "UNKNOWN")
+                if not result.get("ok") and status != "SKIPPED_MOCK":
+                    detail = str(result.get("error") or status)[:120]
+                    errors.append(f"{asset.value}/{timeframe.value}: {detail}")
             except Exception as exc:
                 errors.append(f"{asset.value}/{timeframe.value}: {exc}")
     _record("ohlcv_sync", not errors, "; ".join(errors))

@@ -230,6 +230,27 @@ def _point(ctx: PatternContext, swing: CausalSwing, role: str) -> GeometryPoint:
     )
 
 
+def _armpit(
+    ctx: PatternContext, left_index: int, right_index: int, inverse: bool
+) -> CausalSwing | None:
+    """The pivot in the trough between two peaks - the figure's armpit.
+
+    Bulkowski draws the neckline of a head-and-shoulders through the two
+    armpits, and it may slope. The version before this used a horizontal line
+    at the lowest close between the shoulders, which is neither of the two
+    points a reader would join and made confirmation fire at the wrong level.
+    """
+    candidates = [
+        swing for swing in (ctx.swings.highs if inverse else ctx.swings.lows)
+        if left_index < swing.pivot_index < right_index
+    ]
+    if not candidates:
+        return None
+    return max(candidates, key=lambda s: s.price) if inverse else min(
+        candidates, key=lambda s: s.price
+    )
+
+
 def _horizontal(ctx: PatternContext, price: float, start_index: int, role: str) -> TrendLine:
     """A flat line from a bar to the last one - a neckline or a range boundary."""
     start = GeometryPoint(time=ctx.close.index[start_index], price=round(price, 6), role=role)
@@ -288,7 +309,14 @@ def _detect_double(ctx: PatternContext, kind: str) -> StructuralPattern | None:
     if difference_atr > criteria.extreme_tolerance_atr:
         return None
 
-    between = ctx.close.iloc[first.pivot_index:second.pivot_index + 1]
+    # La vallée entre deux sommets est un plus BAS, pas une plus basse
+    # clôture. La référence confirme sur « une clôture sous la vallée »: en
+    # prenant la plus basse clôture on plaçait la ligne trop haut et la figure
+    # se confirmait trop tôt.
+    if kind == "bottom":
+        between = ctx.high.iloc[first.pivot_index:second.pivot_index + 1]
+    else:
+        between = ctx.low.iloc[first.pivot_index:second.pivot_index + 1]
     if between.empty:
         return None
     if kind == "bottom":
@@ -417,8 +445,13 @@ def detect_triple(ctx: PatternContext, kind: str = "bottom") -> StructuralPatter
     if quality < CRITERIA["double"].min_pivot_quality:
         return None
 
-    between = ctx.close.iloc[first.pivot_index:third.pivot_index + 1]
-    neckline = float(between.max()) if kind == "bottom" else float(between.min())
+    # « La plus basse vallée de la figure » — un plus bas, pas une clôture.
+    if kind == "bottom":
+        between = ctx.high.iloc[first.pivot_index:third.pivot_index + 1]
+        neckline = float(between.max())
+    else:
+        between = ctx.low.iloc[first.pivot_index:third.pivot_index + 1]
+        neckline = float(between.min())
     last = ctx.last_close
     confirmed = last > neckline if kind == "bottom" else last < neckline
     invalidation = min(prices) if kind == "bottom" else max(prices)
@@ -510,8 +543,31 @@ def detect_head_and_shoulders(
     if shoulder_difference_atr > 1.5:
         return None
 
-    between = ctx.close.iloc[left.pivot_index:right.pivot_index + 1]
-    neckline = float(between.max()) if inverse else float(between.min())
+    # Les deux aisselles: sans elles il n'y a pas de figure, seulement trois
+    # sommets dont celui du milieu est plus haut.
+    left_armpit = _armpit(ctx, left.pivot_index, head.pivot_index, inverse)
+    right_armpit = _armpit(ctx, head.pivot_index, right.pivot_index, inverse)
+    if left_armpit is None or right_armpit is None:
+        return None
+
+    # La neckline joint les aisselles et peut pencher. Le niveau à franchir
+    # est celui de la droite au dernier chandelier, prolongée: c'est ce que
+    # lit un opérateur, et c'est ce que la référence décrit.
+    span_bars = right_armpit.pivot_index - left_armpit.pivot_index
+    slope = (
+        (right_armpit.price - left_armpit.price) / span_bars if span_bars else 0.0
+    )
+    neckline_now = right_armpit.price + slope * (
+        len(ctx.close) - 1 - right_armpit.pivot_index
+    )
+    # Neckline descendante sur un ETE haussier: la référence confirme alors
+    # sous l'aisselle droite plutôt que sous la droite prolongée, qui
+    # s'éloignerait indéfiniment du prix.
+    if inverse:
+        trigger = min(neckline_now, right_armpit.price) if slope < 0 else neckline_now
+    else:
+        trigger = max(neckline_now, right_armpit.price) if slope > 0 else neckline_now
+    neckline = float(trigger)
     last = ctx.last_close
     confirmed = last > neckline if inverse else last < neckline
 
@@ -527,10 +583,17 @@ def detect_head_and_shoulders(
     geometry = PatternGeometry(
         points=[
             _point(ctx, left, "left_shoulder"),
+            _point(ctx, left_armpit, "left_armpit"),
             _point(ctx, head, "head"),
+            _point(ctx, right_armpit, "right_armpit"),
             _point(ctx, right, "right_shoulder"),
         ],
-        neckline=_horizontal(ctx, neckline, left.pivot_index, "neckline"),
+        neckline=TrendLine(
+            start=_point(ctx, left_armpit, "neckline"),
+            end=_point(ctx, right_armpit, "neckline"),
+            role="neckline",
+            extend=True,
+        ),
         zones=[
             GeometryZone(
                 start_time=ctx.close.index[left.pivot_index],
@@ -848,64 +911,98 @@ def detect_wedge(ctx: PatternContext) -> StructuralPattern | None:
 
 
 def detect_flag(ctx: PatternContext) -> StructuralPattern | None:
-    """A sharp move followed by a shallow counter-drift.
+    """A sharp move, then a shallow drift against it.
 
-    EXPERIMENTAL for the same reason as wedges - "sharp" and "shallow" are
-    judgements, and the pattern is easy to see after the fact.
+    The pole and the flag are located from PIVOTS, not from fixed offsets.
+    The version before this took the pole to be bars -30 to -12 and the flag
+    the last twelve, always: it could not see a pole of forty bars or a flag
+    of five, and it re-found a slightly shifted copy of the same rally at
+    every pivot. Flags were 38 % of everything the scan produced.
+
+    Still EXPERIMENTAL: "sharp" and "shallow" remain thresholds someone chose,
+    and the reference itself gives no number for them.
     """
     atr = ctx.current_atr
     if atr <= 0 or len(ctx.close) < 40:
         return None
 
-    pole = ctx.close.iloc[-30:-12]
-    flag = ctx.close.iloc[-12:]
-    if len(pole) < 10 or len(flag) < 8:
+    # Le mât se termine au dernier pivot; le drapeau est ce qui suit.
+    swings = ctx.swings.all_swings
+    if len(swings) < 2:
+        return None
+    pole_end = swings[-1]
+    flag_bars = len(ctx.close) - 1 - pole_end.pivot_index
+    # La référence borne la consolidation à une quinzaine de chandeliers:
+    # au-delà, la figure est un rectangle ou un canal, avec ses propres
+    # statistiques et ses propres règles.
+    if not (MIN_FLAG_BARS <= flag_bars <= MAX_FLAG_BARS):
         return None
 
-    pole_move = (pole.iloc[-1] - pole.iloc[0]) / atr
-    flag_move = (flag.iloc[-1] - flag.iloc[0]) / atr
-    if abs(pole_move) < 3.0:
+    # Le mât part du pivot opposé qui l'a lancé.
+    opposite = [
+        swing for swing in swings[:-1]
+        if swing.kind != pole_end.kind and swing.pivot_index < pole_end.pivot_index
+    ]
+    if not opposite:
         return None
-    # The consolidation must be shallow and against the pole.
-    if abs(flag_move) > abs(pole_move) * 0.4 or np.sign(flag_move) == np.sign(pole_move):
+    pole_start = opposite[-1]
+    pole_bars = pole_end.pivot_index - pole_start.pivot_index
+    if not (MIN_POLE_BARS <= pole_bars <= MAX_POLE_BARS):
+        return None
+
+    pole_move = (pole_end.price - pole_start.price) / atr
+    if abs(pole_move) < MIN_POLE_ATR:
+        return None
+
+    # « Quasi vertical », « en ligne droite », « sans pause »: la référence ne
+    # donne pas de nombre, mais elle décrit deux choses mesurables, et
+    # l'amplitude seule n'en capture aucune. Sans elles, ancrer le mât sur des
+    # pivots au lieu d'une fenêtre fixe faisait passer une marche aléatoire
+    # sur deux pour un drapeau.
+    #
+    # Raideur: le mât doit monter vite, pas seulement loin.
+    if abs(pole_move) / pole_bars < MIN_POLE_ATR_PER_BAR:
+        return None
+    # Rectitude: la part du chemin parcouru qui sert réellement au
+    # déplacement. Une ligne droite vaut 1; une marche aléatoire de n pas vaut
+    # environ 1/racine(n), soit 0,2 à 0,3 sur la longueur d'un mât.
+    pole_path = ctx.close.iloc[pole_start.pivot_index:pole_end.pivot_index + 1]
+    travelled = float(pole_path.diff().abs().sum())
+    if travelled <= 0:
+        return None
+    straightness = abs(float(pole_path.iloc[-1] - pole_path.iloc[0])) / travelled
+    if straightness < MIN_POLE_STRAIGHTNESS:
+        return None
+
+    flag = ctx.close.iloc[pole_end.pivot_index:]
+    flag_move = (flag.iloc[-1] - flag.iloc[0]) / atr
+    # La consolidation doit être faible ET orientée contre le mât.
+    if abs(flag_move) > abs(pole_move) * MAX_FLAG_SHARE:
+        return None
+    if flag_move == 0 or np.sign(flag_move) == np.sign(pole_move):
         return None
 
     bullish = pole_move > 0
-    pole_start_price = float(pole.iloc[0])
-    pole_end_price = float(pole.iloc[-1])
+    flag_high = float(ctx.high.iloc[pole_end.pivot_index:].max())
+    flag_low = float(ctx.low.iloc[pole_end.pivot_index:].min())
 
-    # The pole as a segment, the consolidation as an area. `extend` is off on
-    # the pole: it is a move that happened, not a boundary that keeps holding.
-    flag_high = float(ctx.high.iloc[-12:].max())
-    flag_low = float(ctx.low.iloc[-12:].min())
     geometry = PatternGeometry(
         points=[
-            GeometryPoint(
-                time=pole.index[0], price=round(pole_start_price, 6),
-                role="pole_start", kind="close",
-            ),
-            GeometryPoint(
-                time=pole.index[-1], price=round(pole_end_price, 6),
-                role="pole_end", kind="close",
-            ),
+            _point(ctx, pole_start, "pole_start"),
+            _point(ctx, pole_end, "pole_end"),
         ],
         trend_lines=[
             TrendLine(
-                start=GeometryPoint(
-                    time=pole.index[0], price=round(pole_start_price, 6),
-                    role="pole", kind="close",
-                ),
-                end=GeometryPoint(
-                    time=pole.index[-1], price=round(pole_end_price, 6),
-                    role="pole", kind="close",
-                ),
+                start=_point(ctx, pole_start, "pole"),
+                end=_point(ctx, pole_end, "pole"),
                 role="pole",
                 extend=False,
             )
         ],
         zones=[
             GeometryZone(
-                start_time=flag.index[0], end_time=ctx.now,
+                start_time=ctx.close.index[pole_end.pivot_index],
+                end_time=ctx.now,
                 low=round(flag_low, 6), high=round(flag_high, 6),
                 role="consolidation",
             )
@@ -920,25 +1017,30 @@ def detect_flag(ctx: PatternContext) -> StructuralPattern | None:
             float(np.clip(abs(pole_move) / 6 * 100, 0, 100)), 1
         ),
         detected_at=ctx.now,
+        confirmation_time=pole_end.confirmation_time,
         direction_if_textbook="BULLISH" if bullish else "BEARISH",
         key_levels={
-            "pole_start": round(float(pole.iloc[0]), 6),
-            "pole_end": round(float(pole.iloc[-1]), 6),
+            "pole_start": round(float(pole_start.price), 6),
+            "pole_end": round(float(pole_end.price), 6),
         },
-        # The rule already named this level; leaving the field empty meant
-        # nothing downstream could check whether the figure had failed.
-        invalidation_level=round(pole_start_price, 6),
+        invalidation_level=round(float(pole_start.price), 6),
         invalidation_rule=(
-            f"a close beyond the start of the pole at {pole_start_price:.2f} "
+            f"a close beyond the start of the pole at {pole_start.price:.2f} "
             "invalidates the continuation reading"
         ),
         components={
             "pole_atr": round(float(pole_move), 2),
             "flag_atr": round(float(flag_move), 2),
+            "pole_bars": pole_bars,
+            "flag_bars": flag_bars,
+            "pole_straightness": round(straightness, 3),
         },
         geometry=geometry,
-        bars_span=len(pole) + len(flag),
-        notes="classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+        bars_span=pole_bars + flag_bars,
+        notes=(
+            f"a {abs(pole_move):.1f} ATR move over {pole_bars} bars, then "
+            f"{flag_bars} bars drifting the other way"
+        ),
     )
 
 
@@ -1001,6 +1103,23 @@ def _default_floor() -> float:
 
 
 DEFAULT_MIN_CONFIDENCE = _default_floor()
+
+# --- flag geometry ---------------------------------------------------------
+#
+# The reference bounds the consolidation at roughly fifteen candles - beyond
+# that the shape is a rectangle or a channel, which carry their own rules.
+# The pole bounds are ours: a "sharp" move has no number in the literature,
+# and these are declared here rather than buried in the detector.
+MIN_FLAG_BARS = 3
+MAX_FLAG_BARS = 15
+MIN_POLE_BARS = 3
+MAX_POLE_BARS = 25
+MIN_POLE_ATR = 3.0
+#: Raideur et rectitude du mât. Ce sont nos nombres: la référence dit « quasi
+#: vertical » et « en ligne droite » sans les chiffrer.
+MIN_POLE_ATR_PER_BAR = 0.45
+MIN_POLE_STRAIGHTNESS = 0.55
+MAX_FLAG_SHARE = 0.4
 
 
 def detect_all(

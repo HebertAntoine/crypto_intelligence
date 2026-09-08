@@ -9,7 +9,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from ..config_loader import asset_meta
-from ..core.enums import Asset, Timeframe
+from ..core.enums import Asset, Freshness, Timeframe
+from ..core.freshness import compute_freshness
 from ..db import repo
 from ..engines.technical import indicators as ind
 from ..engines.technical import window as window_module
@@ -112,6 +113,14 @@ def _chart_market_metadata(
     timeframe: Timeframe,
     refresh: dict[str, Any],
 ) -> dict[str, Any]:
+    """Describe the candles that will actually be served from local storage.
+
+    A successful Binance request is not, by itself, proof that the returned
+    chart is current: the store may still contain an older last bar, and a
+    failed request may legitimately fall back to rows imported from another
+    venue.  Source and freshness therefore come from the stored rows after the
+    refresh attempt, while the attempt keeps its own separate metadata.
+    """
     stored = store.candle_metadata(asset, timeframe)
     binance_symbol = str(asset_meta(asset.value)["binance_symbol"])
     quote = binance_symbol.removeprefix(asset.value) or "USDT"
@@ -124,16 +133,74 @@ def _chart_market_metadata(
     if latest_source and latest_source not in sources:
         sources.append(latest_source)
 
+    now = datetime.now(UTC)
+    freshness = compute_freshness(
+        last_candle,
+        "ohlcv",
+        now=now,
+        interval_minutes=timeframe.minutes,
+    )
+    age_seconds = (
+        max(0.0, (now - last_candle).total_seconds())
+        if last_candle is not None
+        else None
+    )
+    expected_close = (
+        last_candle + timedelta(minutes=timeframe.minutes)
+        if last_candle is not None
+        else None
+    )
+
+    source_key = str(latest_source or "").lower()
+    exchange = next(
+        (
+            name
+            for marker, name in (
+                ("binance", "BINANCE"),
+                ("kraken", "KRAKEN"),
+                ("coinbase", "COINBASE"),
+            )
+            if marker in source_key
+        ),
+        None,
+    )
+    rows = int(stored.get("rows") or 0)
+    fallback_used = bool(
+        rows
+        and refresh["attempted"]
+        and refresh["status"] != "refreshed"
+    )
+
     return {
-        "exchange": "BINANCE",
+        # ``exchange`` identifies the rows being served.  Binance remains the
+        # requested refresh venue below, even when fallback rows came from a
+        # different/unknown source.
+        "exchange": exchange,
         "symbol": binance_symbol,
         "pair": f"{asset.value}/{quote}",
         "quote": quote,
         "source": latest_source,
         "sources": sources,
-        "generated_at": datetime.now(UTC).isoformat(),
+        "storage_origin": "local_database" if rows else None,
+        "stored_rows": rows,
+        "generated_at": now.isoformat(),
         "as_of": last_candle_iso,
         "last_candle_time": last_candle_iso,
+        # Backwards-compatible alias used by typed clients.
+        "last_candle_at": last_candle_iso,
+        "last_candle_expected_close": (
+            expected_close.isoformat() if expected_close is not None else None
+        ),
+        "last_candle_closed": (
+            now >= expected_close if expected_close is not None else None
+        ),
+        "age_seconds": round(age_seconds, 3) if age_seconds is not None else None,
+        "freshness": freshness.value,
+        "is_stale": freshness in (Freshness.STALE, Freshness.UNAVAILABLE),
+        "interval_seconds": timeframe.minutes * 60,
+        "fallback_used": fallback_used,
+        "refresh_exchange": "BINANCE",
+        "refresh_source": refresh["source"],
         "refresh_status": refresh["status"],
         "refresh_error": refresh["error"],
         "refresh_attempted": refresh["attempted"],
@@ -329,9 +396,18 @@ async def chart(
         # texte identique. Elles sont dites une fois pour la réponse — la
         # discipline qu'elles portent tient à `edge_state`, qui reste sur
         # chaque figure.
+        # Chaque figure porte ce que vaut sa forme face au hasard. Sans cela,
+        # « double sommet » se lit comme une découverte alors que la mesure
+        # dit qu'une marche aléatoire en produit autant.
+        from ..structure import noise_benchmark
+
         for figure in structural:
             figure.pop("separation_note", None)
             figure.pop("resolution_note", None)
+            measured = noise_benchmark.ratio_for(figure.get("name", ""))
+            if measured is not None:
+                figure["noise_ratio"] = measured.get("ratio")
+                figure["noise_verdict"] = measured.get("verdict")
     except Exception as exc:
         log.debug("chart_overlay_failed", error=str(exc))
 
@@ -360,6 +436,9 @@ async def chart(
         # que trois.
         "figures_in_history": figures_total,
         "figures_window_bars": figures_bars,
+        # Le repère lui-même, une fois, pour que l'écran puisse expliquer d'où
+        # vient le verdict porté par chaque figure.
+        "noise_benchmark": _noise_benchmark_summary(),
         "figures_note": (
             "recognition_confidence describes how cleanly a shape matches its "
             "definition - never a probability of any price outcome; read "
@@ -368,6 +447,24 @@ async def chart(
             "about that instance, not an edge."
         ),
         "markers": _chart_markers(asset, df.index.min(), df.index.max()),
+    }
+
+
+def _noise_benchmark_summary() -> dict[str, Any]:
+    """Comment le repère au hasard a été mesuré, sans le détail par figure."""
+    from ..structure import noise_benchmark
+
+    stored = noise_benchmark.load()
+    if not stored.get("available"):
+        return stored
+    return {
+        "available": True,
+        "measured_at": stored.get("measured_at"),
+        "timeframe": stored.get("timeframe"),
+        "real_bars": stored.get("real_bars"),
+        "noise_bars": stored.get("noise_bars"),
+        "noise_sigma": stored.get("noise_sigma"),
+        "note": stored.get("note"),
     }
 
 

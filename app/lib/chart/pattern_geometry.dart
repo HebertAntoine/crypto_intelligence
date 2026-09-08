@@ -256,6 +256,17 @@ class StructuralPatternRead {
   /// un avantage. `edgeState` reste la seule réponse à « cette forme
   /// prédit-elle quelque chose ».
   final String resolution;
+
+  /// Ce que vaut cette **forme** face au hasard, mesuré.
+  ///
+  /// Combien de fois plus souvent elle apparaît sur les vrais prix que sur des
+  /// marches aléatoires de même volatilité. 1,0 signifie « exactement autant
+  /// que le hasard » : la forme ne décrit alors pas le marché, elle décrit ce
+  /// que fait n'importe quelle série. C'est une question antérieure à celle de
+  /// l'avantage, et distincte — `edgeState` reste la seule réponse à
+  /// « est-ce que ça prédit quelque chose ».
+  final double? noiseRatio;
+  final String noiseVerdict;
   final PatternGeometry geometry;
 
   const StructuralPatternRead({
@@ -272,6 +283,8 @@ class StructuralPatternRead {
     required this.spanStart,
     required this.spanEnd,
     required this.resolution,
+    required this.noiseRatio,
+    required this.noiseVerdict,
     required this.geometry,
   });
 
@@ -360,6 +373,26 @@ class StructuralPatternRead {
     return times.reduce((a, b) => a.isBefore(b) ? a : b);
   }
 
+  /// Le verdict du repère au hasard, en clair.
+  ///
+  /// Vide quand rien n'a été mesuré : mieux vaut ne rien dire que laisser
+  /// croire à une vérification qui n'a pas eu lieu.
+  String get noiseLabel => switch (noiseVerdict) {
+        'MORE_THAN_NOISE' => 'plus fréquente que le hasard',
+        'INDISTINGUISHABLE_FROM_NOISE' => 'aussi fréquente que le hasard',
+        'LESS_THAN_NOISE' => 'moins fréquente que le hasard',
+        'ABSENT_FROM_NOISE' => 'absente du hasard',
+        _ => '',
+      };
+
+  /// Vrai quand la forme n'apparaît pas plus souvent que sur du bruit.
+  ///
+  /// Ce n'est pas « la figure est fausse » : le tracé est exact. C'est « cette
+  /// forme-là n'est pas une propriété du marché ».
+  bool get isNoDifferentFromNoise =>
+      noiseVerdict == 'INDISTINGUISHABLE_FROM_NOISE' ||
+      noiseVerdict == 'LESS_THAN_NOISE';
+
   factory StructuralPatternRead.fromJson(Map<String, dynamic> json) =>
       StructuralPatternRead(
         name: _string(json['name']),
@@ -376,6 +409,8 @@ class StructuralPatternRead {
         spanStart: DateTime.tryParse('${json['span_start'] ?? ''}')?.toUtc(),
         spanEnd: DateTime.tryParse('${json['span_end'] ?? ''}')?.toUtc(),
         resolution: _string(json['resolution'], 'UNRESOLVED'),
+        noiseRatio: _double(json['noise_ratio']),
+        noiseVerdict: _string(json['noise_verdict']),
         geometry: PatternGeometry.fromJson(
           ((json['geometry'] as Map?) ?? const {}).cast<String, dynamic>(),
         ),

@@ -261,14 +261,23 @@ class TestChartMarketMetadata:
         assert body["quote"] == "USDT"
         assert "binance" in body["source"].lower()
         assert any("binance" in source.lower() for source in body["sources"])
+        assert body["storage_origin"] == "local_database"
+        assert body["stored_rows"] == len(chart_history)
+        assert body["refresh_exchange"] == "BINANCE"
+        assert body["freshness"] == "LIVE"
+        assert body["is_stale"] is False
+        assert body["fallback_used"] is False
+        assert body["interval_seconds"] == 15 * 60
 
         generated_at = datetime.fromisoformat(body["generated_at"])
         as_of = datetime.fromisoformat(body["as_of"])
         last_candle = datetime.fromisoformat(body["last_candle_time"])
+        last_candle_alias = datetime.fromisoformat(body["last_candle_at"])
         assert generated_at.tzinfo is not None
         assert as_of.tzinfo is not None
         assert last_candle.tzinfo is not None
-        assert as_of == last_candle == chart_history.index[-1].to_pydatetime()
+        assert as_of == last_candle == last_candle_alias
+        assert as_of == chart_history.index[-1].to_pydatetime()
 
 
 class TestChartPublishesDrawableGeometry:
