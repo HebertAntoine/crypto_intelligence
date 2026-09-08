@@ -28,11 +28,62 @@ def test_flutter_production_code_has_no_hardcoded_market_prices():
 
 
 def test_flutter_chart_does_not_draw_synthetic_market_candles():
-    chart_screen = APP_LIB / "screens" / "chart_screen.dart"
-    text = chart_screen.read_text(encoding="utf-8")
-    assert "_syntheticCandle" not in text
-    assert "_chartValues" not in text
-    assert "Bougies OHLCV indisponibles" in text
+    """Sans bougies, le graphique le dit; il n'en fabrique pas.
+
+    Le message d'état vide a suivi le moteur de rendu quand il a quitté
+    l'écran pour `chart/candle_chart.dart`. La propriété est la même — un jeu
+    vide produit une phrase, jamais une courbe — mais elle se vérifie
+    désormais là où le dessin a lieu.
+    """
+    sources = {
+        name: (APP_LIB / name).read_text(encoding="utf-8")
+        for name in (
+            "screens/chart_screen.dart",
+            "chart/candle_chart.dart",
+            "chart/chart_viewport.dart",
+        )
+    }
+    for name, text in sources.items():
+        assert "_syntheticCandle" not in text, name
+        assert "_chartValues" not in text, name
+
+    painter = sources["chart/candle_chart.dart"]
+    assert "Aucune bougie disponible" in painter, (
+        "le peintre ne dit pas explicitement qu'il n'a rien à dessiner"
+    )
+    # Et il sort avant de peindre quoi que ce soit.
+    assert "if (viewport.isEmpty)" in painter
+
+    viewport = sources["chart/chart_viewport.dart"]
+    # Une fenêtre vide ne fabrique aucune bougie de remplacement.
+    assert "isEmpty ? const [] :" in viewport
+
+
+def test_the_chart_scale_is_computed_on_the_visible_window_only():
+    """L'échelle verticale ne doit plus venir de tout le jeu de données.
+
+    L'ancien peintre prenait le minimum et le maximum de **toutes** les
+    bougies: un pic vieux de plusieurs années écrasait soixante bougies
+    récentes contre le bas du cadre, et il n'existait aucune fenêtre à
+    déplacer.
+    """
+    viewport = _source_or_none("chart/chart_viewport.dart")
+    assert viewport is not None, "le repère temps/prix est absent"
+    # Les extrêmes se lisent sur `visible`, pas sur `candles`.
+    assert "visible.map((c) => c.low)" in viewport
+    assert "candles.map((c) => c.low)" not in viewport
+
+    screen = (APP_LIB / "screens" / "chart_screen.dart").read_text(
+        encoding="utf-8"
+    )
+    assert "reduce(math.min)" not in screen, (
+        "l'écran calcule encore une échelle sur l'ensemble des bougies"
+    )
+
+
+def _source_or_none(relative: str) -> str | None:
+    path = APP_LIB / relative
+    return path.read_text(encoding="utf-8") if path.exists() else None
 
 
 def test_fixtures_cannot_reach_the_production_runtime_path():

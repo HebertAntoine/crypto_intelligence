@@ -13,6 +13,8 @@ import '../api/client.dart';
 import '../api/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../chart/candle_chart.dart';
+import '../chart/chart_layers.dart';
 import '../widgets/mobile_kit.dart';
 
 class ChartScreen extends StatefulWidget {
@@ -350,7 +352,7 @@ class _TimeframeSelector extends StatelessWidget {
   }
 }
 
-class _VisualChartPanel extends StatelessWidget {
+class _VisualChartPanel extends StatefulWidget {
   final String asset;
   final String timeframe;
   final _ChartData data;
@@ -362,28 +364,128 @@ class _VisualChartPanel extends StatelessWidget {
   });
 
   @override
+  State<_VisualChartPanel> createState() => _VisualChartPanelState();
+}
+
+class _VisualChartPanelState extends State<_VisualChartPanel> {
+  ChartLayerSet _layers = ChartLayerSet.initial();
+
+  @override
   Widget build(BuildContext context) {
+    final candles = widget.data.chart?.candles ?? const <CandlePoint>[];
     return GlassPanel(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 320,
-            child: CustomPaint(
-              painter: _CandleChartPainter(
-                asset: asset,
-                timeframe: timeframe,
-                data: data,
-              ),
-              child: const SizedBox.expand(),
-            ),
+          // §5: le graphique est la priorité visuelle. Il occupait 320 px
+          // fixes; il prend maintenant une hauteur proportionnée à l'écran,
+          // bornée pour rester utilisable en paysage.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final height = math.max(
+                360.0,
+                math.min(MediaQuery.sizeOf(context).height * 0.58, 640.0),
+              );
+              return SizedBox(
+                height: height,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CandleChart(
+                    // La clé force une fenêtre neuve au changement d'actif ou
+                    // d'unité: garder la précédente montrerait un intervalle
+                    // qui n'existe pas dans le nouveau jeu.
+                    key: ValueKey('${widget.asset}-${widget.timeframe}'),
+                    candles: candles,
+                    timeframe: widget.timeframe,
+                    layers: _layers,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _LayerBar(
+            layers: _layers,
+            onToggle: (layer) =>
+                setState(() => _layers = _layers.toggled(layer)),
           ),
           const SizedBox(height: 11),
-          _IndicatorStrip(data: data),
+          _IndicatorStrip(data: widget.data),
         ],
       ),
     );
   }
+}
+
+/// La barre de calques. Chaque bouton est un interrupteur, rien de plus:
+/// aucun d'eux ne modifie les données, seulement ce qui est peint.
+class _LayerBar extends StatelessWidget {
+  final ChartLayerSet layers;
+  final void Function(ChartLayer) onToggle;
+
+  const _LayerBar({required this.layers, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final layer in ChartLayerSet.toggleable)
+              Padding(
+                padding: const EdgeInsets.only(right: 7),
+                child: _LayerChip(
+                  label: layer.label,
+                  active: layers.isVisible(layer),
+                  onTap: () => onToggle(layer),
+                ),
+              ),
+          ],
+        ),
+      );
+}
+
+class _LayerChip extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _LayerChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(9),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: active ? const Color(0xFF11477B) : const Color(0xFF091B2B),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: active
+                    ? const Color(0xFF199CFF)
+                    : const Color(0xFF284A68),
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: active
+                    ? const Color(0xFF8DCAFF)
+                    : const Color(0xFFC2CEE0),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 class _IndicatorStrip extends StatelessWidget {
@@ -1091,354 +1193,28 @@ class _IndicatorState {
   });
 }
 
-class _CandleChartPainter extends CustomPainter {
-  final String asset;
-  final String timeframe;
-  final _ChartData data;
-
-  _CandleChartPainter({
-    required this.asset,
-    required this.timeframe,
-    required this.data,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final chart = Rect.fromLTWH(4, 26, size.width - 94, size.height - 64);
-    final volumeTop = chart.bottom - 36;
-    final priceRect =
-        Rect.fromLTRB(chart.left, chart.top, chart.right, volumeTop);
-    final gridPaint = Paint()
-      ..color = const Color(0xFF20364F).withValues(alpha: 0.78)
-      ..strokeWidth = 1;
-
-    final borderPaint = Paint()
-      ..color = const Color(0xFF5F789A)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    for (var i = 0; i <= 5; i += 1) {
-      final y = chart.top + chart.height * i / 5;
-      canvas.drawLine(Offset(chart.left, y), Offset(chart.right, y), gridPaint);
-    }
-    for (var i = 0; i <= 6; i += 1) {
-      final x = chart.left + chart.width * i / 6;
-      canvas.drawLine(Offset(x, chart.top), Offset(x, chart.bottom), gridPaint);
-    }
-    canvas.drawRect(chart, borderPaint);
-
-    final candles = _drawableCandles(data);
-    if (candles.isEmpty) {
-      _drawCenteredText(
-        canvas,
-        'Bougies OHLCV indisponibles\n${data.chart?.reason ?? 'Aucune série réelle disponible pour cette vue.'}',
-        chart.center,
-        const TextStyle(
-          color: Color(0xFFB5C2DC),
-          fontSize: 17,
-          height: 1.35,
-          fontWeight: FontWeight.w600,
-        ),
-        maxWidth: chart.width * 0.78,
-      );
-      return;
-    }
-    final rawLow = candles.map((candle) => candle.low).reduce(math.min);
-    final rawHigh = candles.map((candle) => candle.high).reduce(math.max);
-    final padding = math.max((rawHigh - rawLow) * 0.08, rawHigh * 0.002);
-    final min = rawLow - padding;
-    final max = rawHigh + padding;
-    double yFor(num value) {
-      final ratio = ((value - min) / (max - min)).clamp(0.0, 1.0);
-      return priceRect.bottom - priceRect.height * ratio;
-    }
-
-    final maxVolume = candles.map((candle) => candle.volume).reduce(math.max);
-    final candleWidth = math.max(5.0, chart.width / candles.length * 0.54);
-    final xStep = chart.width / candles.length;
-    for (var i = 0; i < candles.length; i += 1) {
-      final candle = candles[i];
-      final x = chart.left + xStep * i + xStep / 2;
-      final bullish = candle.close >= candle.open;
-      final color = bullish ? const Color(0xFF20D184) : const Color(0xFFFF5361);
-      final paint = Paint()..color = color;
-
-      paint.strokeWidth = 1.5;
-      canvas.drawLine(
-        Offset(x, yFor(candle.high)),
-        Offset(x, yFor(candle.low)),
-        paint,
-      );
-      final bodyTop = math.min(yFor(candle.open), yFor(candle.close));
-      final bodyBottom = math.max(yFor(candle.open), yFor(candle.close));
-      final body = RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(x, (bodyTop + bodyBottom) / 2),
-          width: candleWidth,
-          height: math.max(4, bodyBottom - bodyTop),
-        ),
-        const Radius.circular(1.2),
-      );
-      canvas.drawRRect(body, paint);
-
-      final volumeRatio = maxVolume <= 0 ? 0.35 : candle.volume / maxVolume;
-      final volumeHeight = 8 + volumeRatio.clamp(0.05, 1.0) * 34;
-      final volumeRect = Rect.fromLTWH(
-        x - candleWidth / 2,
-        chart.bottom - volumeHeight,
-        candleWidth,
-        volumeHeight,
-      );
-      canvas.drawRect(
-          volumeRect, Paint()..color = color.withValues(alpha: 0.45));
-    }
-
-    final linePaint = Paint()
-      ..color = const Color(0xFF79BDFF)
-      ..strokeWidth = 2.6
-      ..style = PaintingStyle.stroke;
-    for (final zone in [
-      data.structure.location.range?.topZone,
-      data.structure.location.range?.bottomZone,
-    ]) {
-      if (zone == null) continue;
-      final yLow = yFor(zone.low);
-      final yHigh = yFor(zone.high);
-      canvas.drawRect(
-        Rect.fromLTRB(chart.left, yHigh, chart.right, yLow),
-        Paint()
-          ..color = (zone.kind == 'support'
-                  ? const Color(0xFF3BE28B)
-                  : const Color(0xFF79BDFF))
-              .withValues(alpha: 0.10),
-      );
-      canvas.drawLine(
-        Offset(chart.left + chart.width * 0.24, (yLow + yHigh) / 2),
-        Offset(chart.right - chart.width * 0.10, (yLow + yHigh) / 2),
-        linePaint,
-      );
-    }
-
-    if (candles.length > 12) {
-      final first = candles[(candles.length * 0.35).floor()];
-      final last = candles.last;
-      canvas.drawLine(
-        Offset(chart.left + chart.width * 0.34, yFor(first.low)),
-        Offset(chart.right - chart.width * 0.12, yFor(last.close)),
-        linePaint,
-      );
-    }
-
-    final price = data.price ?? candles.last.close;
-    final priceY = yFor(price);
-    _drawDottedLine(
-      canvas,
-      Offset(chart.left + chart.width * 0.28, priceY),
-      Offset(chart.right + 6, priceY),
-      Paint()
-        ..color = const Color(0xFF54F2A1)
-        ..strokeWidth = 1.1,
-    );
-    final pricePill = RRect.fromRectAndRadius(
-      Rect.fromLTWH(chart.right + 6, priceY - 17, 82, 34),
-      const Radius.circular(7),
-    );
-    canvas.drawRRect(pricePill, Paint()..color = const Color(0xFF49E99B));
-    _drawText(
-      canvas,
-      _priceFr(price, digits: price >= 1000 ? 0 : 2),
-      Offset(chart.right + 15, priceY - 11),
-      const TextStyle(
-          color: Color(0xFF021B14), fontSize: 15, fontWeight: FontWeight.w900),
-    );
-
-    _drawText(
-      canvas,
-      '$asset · ${_timeframeLabel(timeframe)}',
-      Offset(chart.left + 5, chart.top + 6),
-      const TextStyle(
-          color: Color(0xFFC5D4EC), fontSize: 18, fontWeight: FontWeight.w500),
-    );
-    _drawText(
-      canvas,
-      '${signedFr(data.changePct, digits: 1, suffix: ' %')} (${data.chart?.period ?? 'structure'})',
-      Offset(chart.left + 5, chart.top + 34),
-      const TextStyle(
-          color: Color(0xFF54F2A1), fontSize: 18, fontWeight: FontWeight.w700),
-    );
-
-    final labels = _axisLabels(min, max, price >= 1000 ? 0 : 2);
-    for (var i = 0; i < labels.length; i += 1) {
-      final y = priceRect.top + i * priceRect.height / (labels.length - 1);
-      _drawText(
-        canvas,
-        labels[i],
-        Offset(chart.right + 18, y - 9),
-        const TextStyle(color: Color(0xFFB5C2DC), fontSize: 16),
-      );
-    }
-
-    final dates = _dateLabels(candles, timeframe);
-    for (var i = 0; i < dates.length; i += 1) {
-      final x = chart.left + chart.width * (i + 0.8) / (dates.length + 0.8);
-      _drawText(
-        canvas,
-        dates[i],
-        Offset(x, chart.bottom + 12),
-        const TextStyle(color: Color(0xFFB5C2DC), fontSize: 15),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CandleChartPainter oldDelegate) =>
-      oldDelegate.asset != asset ||
-      oldDelegate.timeframe != timeframe ||
-      oldDelegate.data != data;
-}
-
-void _drawText(Canvas canvas, String text, Offset offset, TextStyle style) {
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textDirection: TextDirection.ltr,
-  )..layout();
-  painter.paint(canvas, offset);
-}
-
-void _drawCenteredText(
-  Canvas canvas,
-  String text,
-  Offset center,
-  TextStyle style, {
-  required double maxWidth,
-}) {
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textAlign: TextAlign.center,
-    textDirection: TextDirection.ltr,
-    maxLines: 4,
-    ellipsis: '...',
-  )..layout(maxWidth: maxWidth);
-  painter.paint(
-    canvas,
-    Offset(center.dx - painter.width / 2, center.dy - painter.height / 2),
-  );
-}
-
-void _drawDottedLine(Canvas canvas, Offset start, Offset end, Paint paint) {
-  const dash = 5.0;
-  const gap = 5.0;
-  final distance = (end - start).distance;
-  final direction = (end - start) / distance;
-  var travelled = 0.0;
-  while (travelled < distance) {
-    final from = start + direction * travelled;
-    final to = start + direction * math.min(travelled + dash, distance);
-    canvas.drawLine(from, to, paint);
-    travelled += dash + gap;
-  }
-}
-
-String _timeframeLabel(String value) => switch (value) {
+/// Le libellé court d'une unité de temps dans le sélecteur.
+String _timeframeLabel(String timeframe) => switch (timeframe) {
       '15m' => '15 min',
       '1h' => '1 h',
       '4h' => '4 h',
       '1d' => '1 j',
       '1w' => '1 sem.',
-      _ => value,
+      _ => timeframe,
     };
 
-String _periodForTimeframe(String value) => switch (value) {
-      '1d' => '3m',
-      '1w' => '1y',
-      _ => '7d',
+/// La profondeur demandée à l'API pour une unité donnée.
+///
+/// Une vue hebdomadaire sur sept jours ne montrerait qu'une bougie: la période
+/// suit l'unité plutôt qu'une constante unique.
+String _periodForTimeframe(String timeframe) => switch (timeframe) {
+      '15m' => '7d',
+      '1h' => '30d',
+      '4h' => '3m',
+      '1d' => '1y',
+      '1w' => 'max',
+      _ => '3m',
     };
-
-class _DrawableCandle {
-  final DateTime? time;
-  final double open;
-  final double high;
-  final double low;
-  final double close;
-  final double volume;
-
-  const _DrawableCandle({
-    required this.time,
-    required this.open,
-    required this.high,
-    required this.low,
-    required this.close,
-    required this.volume,
-  });
-}
-
-List<_DrawableCandle> _drawableCandles(_ChartData data) {
-  final chartCandles = data.chart?.candles ?? const <CandlePoint>[];
-  if (data.chart?.available == true && chartCandles.isNotEmpty) {
-    final step = math.max(1, (chartCandles.length / 56).ceil());
-    return [
-      for (var i = 0; i < chartCandles.length; i += step)
-        _DrawableCandle(
-          time: chartCandles[i].time,
-          open: chartCandles[i].open,
-          high: chartCandles[i].high,
-          low: chartCandles[i].low,
-          close: chartCandles[i].close,
-          volume: chartCandles[i].volume,
-        ),
-    ];
-  }
-  return const [];
-}
-
-List<String> _axisLabels(num min, num max, int digits) => [
-      for (var i = 0; i < 5; i += 1)
-        _priceFr(max - (max - min) * i / 4, digits: digits),
-    ];
-
-List<String> _dateLabels(List<_DrawableCandle> candles, String timeframe) {
-  final dated = candles.where((candle) => candle.time != null).toList();
-  if (dated.length < 5) {
-    return switch (timeframe) {
-      '15m' || '1h' || '4h' => const [
-          'début',
-          'milieu',
-          'maintenant',
-        ],
-      '1d' => const ['M-3', 'M-2', 'M-1', 'auj.'],
-      _ => const ['début', 'milieu', 'auj.'],
-    };
-  }
-
-  final indexes = [
-    0,
-    (dated.length * 0.25).floor(),
-    (dated.length * 0.50).floor(),
-    (dated.length * 0.75).floor(),
-    dated.length - 1,
-  ];
-  return [
-    for (final index in indexes) _shortDate(dated[index].time!),
-  ];
-}
-
-String _shortDate(DateTime date) {
-  const months = [
-    'janv.',
-    'févr.',
-    'mars',
-    'avr.',
-    'mai',
-    'juin',
-    'juil.',
-    'août',
-    'sept.',
-    'oct.',
-    'nov.',
-    'déc.',
-  ];
-  return '${date.day} ${months[date.month - 1]}';
-}
 
 List<_IndicatorState> _indicatorSignals(_ChartData data) {
   final pattern = data.primaryPattern;
