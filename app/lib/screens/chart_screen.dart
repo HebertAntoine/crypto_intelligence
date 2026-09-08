@@ -450,6 +450,10 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
                     candles: candles,
                     timeframe: widget.timeframe,
                     layers: _layers,
+                    // Nommés d'après l'appel réellement effectué; sur repli,
+                    // l'en-tête ne prétend pas venir du direct.
+                    pair: live?.symbol,
+                    source: live?.source,
                   ),
                 ),
               );
@@ -641,7 +645,7 @@ class _IndicatorStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final signals = _indicatorSignals(data);
     return Container(
-      height: 82,
+      height: 104,
       decoration: BoxDecoration(
         color: const Color(0xFF0B1624).withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(12),
@@ -693,36 +697,39 @@ class _SignalChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Empilé plutôt qu'en ligne. Côte à côte, le rond de 54 px et les marges
+    // ne laissaient qu'une soixantaine de pixels au texte pour quatre signaux
+    // partageant la largeur: le libellé passait en ellipse et la pastille se
+    // réduisait à une barre verticale illisible.
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 54,
-            height: 54,
+            width: 34,
+            height: 34,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: color.withValues(alpha: filled ? 0.20 : 0.10),
             ),
-            child: Icon(icon, color: color, size: 31),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: AppColors.text, fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 3),
           Flexible(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.text, fontSize: 17),
-                ),
-                const SizedBox(height: 5),
-                MobilePill(
-                    label: state, color: color, dense: true, filled: filled),
-              ],
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: MobilePill(
+                  label: state, color: color, dense: true, filled: filled),
             ),
           ),
         ],

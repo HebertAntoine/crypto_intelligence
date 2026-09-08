@@ -24,7 +24,9 @@ const _textSecondary = Color(0xFFB7C5D9);
 
 /// Réserve à droite pour l'axe des prix, et en bas pour les dates.
 const double _priceAxisWidth = 62;
-const double _timeAxisHeight = 22;
+// Deux lignes — « 4 sept. » puis « 14:00 » — plus l'interligne. À 22 px
+// l'heure était coupée en deux par le bord du cadre.
+const double _timeAxisHeight = 34;
 const double _volumeFraction = 0.18;
 
 class CandleChart extends StatefulWidget {
@@ -34,11 +36,19 @@ class CandleChart extends StatefulWidget {
   /// Unité de temps, pour formater les dates de l'axe et du crosshair.
   final String timeframe;
 
+  /// La paire réellement appelée et sa source. Affichées telles quelles: le
+  /// graphique ne doit jamais annoncer un fournisseur dont les données ne
+  /// viennent pas.
+  final String? pair;
+  final String? source;
+
   const CandleChart({
     super.key,
     required this.candles,
     required this.timeframe,
     required this.layers,
+    this.pair,
+    this.source,
   });
 
   @override
@@ -138,6 +148,8 @@ class _CandleChartState extends State<CandleChart> {
               body: body,
               crosshair: _crosshair,
               timeframe: widget.timeframe,
+              pair: widget.pair,
+              source: widget.source,
             ),
           ),
         );
@@ -152,6 +164,8 @@ class _CandleChartPainter extends CustomPainter {
   final Rect body;
   final Offset? crosshair;
   final String timeframe;
+  final String? pair;
+  final String? source;
 
   _CandleChartPainter({
     required this.viewport,
@@ -159,6 +173,8 @@ class _CandleChartPainter extends CustomPainter {
     required this.body,
     required this.crosshair,
     required this.timeframe,
+    this.pair,
+    this.source,
   });
 
   Rect get _plot => viewport.plot;
@@ -180,6 +196,7 @@ class _CandleChartPainter extends CustomPainter {
     if (layers.isVisible(ChartLayer.labels)) {
       _paintPriceAxis(canvas, size);
       _paintTimeAxis(canvas, size);
+      _paintHeader(canvas);
     }
     if (crosshair != null) _paintCrosshair(canvas, size);
   }
@@ -194,6 +211,55 @@ class _CandleChartPainter extends CustomPainter {
       anchor: _Anchor.center,
     );
   }
+
+  /// L'identité de ce qui est dessiné, en haut à gauche.
+  ///
+  /// La paire et la source viennent de l'appel réellement effectué. Le prix et
+  /// la variation se lisent sur la dernière bougie **visible**, pas sur la
+  /// dernière du jeu: en remontant l'historique, l'en-tête doit décrire ce
+  /// qu'on regarde.
+  void _paintHeader(Canvas canvas) {
+    final last = viewport.candles[viewport.endIndex - 1];
+    final first = viewport.candles[viewport.startIndex];
+    final change = first.close == 0
+        ? 0.0
+        : (last.close - first.close) / first.close * 100;
+    final rising = change >= 0;
+    final colour = rising ? _bull : _bear;
+    var dy = _plot.top + 4;
+
+    final title = [pair, _timeframeLabel]
+        .whereType<String>()
+        .where((part) => part.isNotEmpty)
+        .join(' · ');
+    if (title.isNotEmpty) {
+      _text(canvas, title, Offset(_plot.left + 6, dy),
+          const TextStyle(
+              color: _textPrimary, fontSize: 11.5, fontWeight: FontWeight.w800));
+      dy += 14;
+    }
+    if (source != null && source!.isNotEmpty) {
+      _text(canvas, source!, Offset(_plot.left + 6, dy),
+          const TextStyle(color: Color(0xFF7790A8), fontSize: 10));
+      dy += 13;
+    }
+    _text(
+      canvas,
+      '${_price(last.close)}  ${rising ? '+' : ''}'
+      '${change.toStringAsFixed(2).replaceAll('.', ',')} %',
+      Offset(_plot.left + 6, dy),
+      TextStyle(color: colour, fontSize: 11.5, fontWeight: FontWeight.w700),
+    );
+  }
+
+  String get _timeframeLabel => switch (timeframe) {
+        '15m' => '15 min',
+        '1h' => '1 h',
+        '4h' => '4 h',
+        '1d' => '1 j',
+        '1w' => '1 sem.',
+        _ => timeframe,
+      };
 
   // --- calque 0 : grille --------------------------------------------------
 
@@ -503,7 +569,9 @@ class _CandleChartPainter extends CustomPainter {
       old.viewport != viewport ||
       old.crosshair != crosshair ||
       old.layers != layers ||
-      old.body != body;
+      old.body != body ||
+      old.pair != pair ||
+      old.source != source;
 }
 
 enum _Anchor { topLeft, topRight, topCenter, centerLeft, center }

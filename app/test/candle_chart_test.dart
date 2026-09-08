@@ -205,6 +205,47 @@ void main() {
     });
   });
 
+  group('En-tête et axes', () {
+    testWidgets('la paire et la source affichées sont celles reçues',
+        (tester) async {
+      tester.view.physicalSize = const Size(390, 600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 420,
+            child: CandleChart(
+              candles: _candles(200),
+              timeframe: '4h',
+              layers: ChartLayerSet.initial(),
+              pair: 'BTCUSDT',
+              source: 'Binance',
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sans paire ni source, l’en-tête n’invente rien',
+        (tester) async {
+      await _pump(tester);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('les étiquettes de dates tiennent dans leur bande',
+        (tester) async {
+      // Deux lignes — « 4 sept. » puis « 14:00 » — à 22 px la seconde était
+      // coupée par le bord du cadre.
+      for (final size in [const Size(360, 640), const Size(430, 820)]) {
+        await _pump(tester, size: size);
+        expect(tester.takeException(), isNull);
+      }
+    });
+  });
+
   group('Calques', () {
     testWidgets('masquer le volume ne casse pas la mise en page',
         (tester) async {
