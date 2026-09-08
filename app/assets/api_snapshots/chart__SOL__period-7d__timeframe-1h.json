@@ -10,9 +10,21 @@
   "sources": [
     "binance"
   ],
-  "generated_at": "2026-09-08T21:18:24.564531+00:00",
+  "storage_origin": "local_database",
+  "stored_rows": 53252,
+  "generated_at": "2026-09-08T21:44:54.212378+00:00",
   "as_of": "2026-09-08T21:00:00+00:00",
   "last_candle_time": "2026-09-08T21:00:00+00:00",
+  "last_candle_at": "2026-09-08T21:00:00+00:00",
+  "last_candle_expected_close": "2026-09-08T22:00:00+00:00",
+  "last_candle_closed": false,
+  "age_seconds": 2694.212,
+  "freshness": "LIVE",
+  "is_stale": false,
+  "interval_seconds": 3600,
+  "fallback_used": false,
+  "refresh_exchange": "BINANCE",
+  "refresh_source": "binance",
   "refresh_status": "refreshed",
   "refresh_error": null,
   "refresh_attempted": true,
@@ -21,9 +33,9 @@
   "available": true,
   "summary": {
     "available": true,
-    "last_price": 103.31,
+    "last_price": 103.06,
     "first_price": 99.61,
-    "change_pct": 3.714486497339627,
+    "change_pct": 3.4635076799518147,
     "period_high": 107.36,
     "period_low": 97.38,
     "high_time": "2026-09-06T12:00:00+00:00",
@@ -1386,9 +1398,9 @@
       "time": "2026-09-08T21:00:00+00:00",
       "open": 103.1,
       "high": 103.36,
-      "low": 103.07,
-      "close": 103.31,
-      "volume": 12966.282
+      "low": 102.89,
+      "close": 103.06,
+      "volume": 46086.299
     }
   ],
   "overlays": {
@@ -1561,7 +1573,7 @@
       103.58234729,
       103.54974279,
       103.50595776,
-      103.48729511
+      103.46348559
     ],
     "ema50": [
       102.59472339,
@@ -1732,7 +1744,7 @@
       103.9387928,
       103.91138916,
       103.87917782,
-      103.85685712
+      103.8470532
     ],
     "ema200": [
       101.86009638,
@@ -1903,7 +1915,7 @@
       103.23209744,
       103.23217607,
       103.23076138,
-      103.23154982
+      103.22906226
     ],
     "bb_upper": [
       104.71256424,
@@ -2074,7 +2086,7 @@
       104.4459907,
       104.40464201,
       104.30824663,
-      104.12527716
+      104.11797826
     ],
     "bb_middle": [
       101.959,
@@ -2245,7 +2257,7 @@
       103.4115,
       103.3835,
       103.3335,
-      103.2795
+      103.267
     ],
     "bb_lower": [
       99.20543576,
@@ -2416,7 +2428,7 @@
       102.3770093,
       102.36235799,
       102.35875337,
-      102.43372284
+      102.41602174
     ]
   },
   "panels": {
@@ -2589,7 +2601,7 @@
       46.98601298,
       45.75889125,
       44.42029861,
-      46.8749423
+      44.14217278
     ],
     "macd": [
       -0.90051825,
@@ -2760,7 +2772,7 @@
       -0.16182584,
       -0.17189728,
       -0.18979489,
-      -0.18410446
+      -0.20404748
     ],
     "macd_signal": [
       -0.64896866,
@@ -2931,7 +2943,7 @@
       -0.28474471,
       -0.26217523,
       -0.24769916,
-      -0.23498022
+      -0.23896882
     ],
     "macd_hist": [
       -0.2515496,
@@ -3102,7 +3114,7 @@
       0.12291887,
       0.09027794,
       0.05790427,
-      0.05087576
+      0.03492134
     ]
   },
   "levels": {
@@ -3145,7 +3157,7 @@
       "invalidation": 104.83,
       "start_index": 149,
       "end_index": 168,
-      "notes": "Range 101.72-104.83 (3.1% wide) over 20 bars, 3 top / 1 bottom touches. Price at 51% of range."
+      "notes": "Range 101.72-104.83 (3.1% wide) over 20 bars, 3 top / 1 bottom touches. Price at 43% of range."
     }
   ],
   "structural_patterns": [
@@ -3221,7 +3233,9 @@
       "span_end": "2026-03-27T23:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-13T22:00:00+00:00",
-      "bars_to_resolution": 407
+      "bars_to_resolution": 407,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -3295,7 +3309,9 @@
       "span_end": "2026-03-28T06:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-14T13:00:00+00:00",
-      "bars_to_resolution": 415
+      "bars_to_resolution": 415,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -3400,7 +3416,9 @@
       "span_end": "2026-03-29T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-03-29T13:00:00+00:00",
-      "bars_to_resolution": 5
+      "bars_to_resolution": 5,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -3505,7 +3523,9 @@
       "span_end": "2026-03-31T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-01T16:00:00+00:00",
-      "bars_to_resolution": 40
+      "bars_to_resolution": 40,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -3610,7 +3630,9 @@
       "span_end": "2026-04-01T18:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-02T01:00:00+00:00",
-      "bars_to_resolution": 7
+      "bars_to_resolution": 7,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -3684,7 +3706,9 @@
       "span_end": "2026-04-02T21:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-07T23:00:00+00:00",
-      "bars_to_resolution": 122
+      "bars_to_resolution": 122,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -3785,7 +3809,9 @@
       "span_end": "2026-04-05T11:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-05T12:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -3890,7 +3916,9 @@
       "span_end": "2026-04-05T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-05T23:00:00+00:00",
-      "bars_to_resolution": 3
+      "bars_to_resolution": 3,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -3964,7 +3992,9 @@
       "span_end": "2026-04-08T11:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-02T09:00:00+00:00",
-      "bars_to_resolution": 1318
+      "bars_to_resolution": 1318,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -4038,7 +4068,9 @@
       "span_end": "2026-04-08T19:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-02T14:00:00+00:00",
-      "bars_to_resolution": 1315
+      "bars_to_resolution": 1315,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -4139,7 +4171,9 @@
       "span_end": "2026-04-11T01:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-11T19:00:00+00:00",
-      "bars_to_resolution": 18
+      "bars_to_resolution": 18,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4213,7 +4247,9 @@
       "span_end": "2026-04-12T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-13T22:00:00+00:00",
-      "bars_to_resolution": 26
+      "bars_to_resolution": 26,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -4314,7 +4350,9 @@
       "span_end": "2026-04-17T19:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-18T10:00:00+00:00",
-      "bars_to_resolution": 15
+      "bars_to_resolution": 15,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4388,7 +4426,9 @@
       "span_end": "2026-04-19T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-22T12:00:00+00:00",
-      "bars_to_resolution": 72
+      "bars_to_resolution": 72,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -4493,7 +4533,9 @@
       "span_end": "2026-04-20T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-22T02:00:00+00:00",
-      "bars_to_resolution": 30
+      "bars_to_resolution": 30,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -4567,7 +4609,9 @@
       "span_end": "2026-04-22T19:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-23T08:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4641,7 +4685,9 @@
       "span_end": "2026-04-23T15:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-06T08:00:00+00:00",
-      "bars_to_resolution": 305
+      "bars_to_resolution": 305,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -4746,7 +4792,9 @@
       "span_end": "2026-04-23T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-27T15:00:00+00:00",
-      "bars_to_resolution": 91
+      "bars_to_resolution": 91,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4820,7 +4868,9 @@
       "span_end": "2026-04-23T22:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-06T08:00:00+00:00",
-      "bars_to_resolution": 298
+      "bars_to_resolution": 298,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -4921,7 +4971,9 @@
       "span_end": "2026-04-26T13:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-26T18:00:00+00:00",
-      "bars_to_resolution": 5
+      "bars_to_resolution": 5,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -5022,7 +5074,9 @@
       "span_end": "2026-04-30T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-01T05:00:00+00:00",
-      "bars_to_resolution": 9
+      "bars_to_resolution": 9,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5096,7 +5150,9 @@
       "span_end": "2026-05-02T01:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-23T07:00:00+00:00",
-      "bars_to_resolution": 510
+      "bars_to_resolution": 510,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -5201,7 +5257,9 @@
       "span_end": "2026-05-02T07:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-04T02:00:00+00:00",
-      "bars_to_resolution": 43
+      "bars_to_resolution": 43,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -5302,7 +5360,9 @@
       "span_end": "2026-05-03T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-03T22:00:00+00:00",
-      "bars_to_resolution": 14
+      "bars_to_resolution": 14,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -5403,7 +5463,9 @@
       "span_end": "2026-05-04T05:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-04T06:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -5506,7 +5568,9 @@
       "span_end": "2026-05-04T05:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-04T06:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -5607,7 +5671,9 @@
       "span_end": "2026-05-07T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-07T11:00:00+00:00",
-      "bars_to_resolution": 3
+      "bars_to_resolution": 3,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -5708,7 +5774,9 @@
       "span_end": "2026-05-07T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-08T17:00:00+00:00",
-      "bars_to_resolution": 21
+      "bars_to_resolution": 21,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5782,7 +5850,9 @@
       "span_end": "2026-05-09T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-15T13:00:00+00:00",
-      "bars_to_resolution": 137
+      "bars_to_resolution": 137,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -5856,7 +5926,9 @@
       "span_end": "2026-05-13T05:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-22T04:00:00+00:00",
-      "bars_to_resolution": 2423
+      "bars_to_resolution": 2423,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -5930,7 +6002,9 @@
       "span_end": "2026-05-14T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-22T02:00:00+00:00",
-      "bars_to_resolution": 2394
+      "bars_to_resolution": 2394,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6031,7 +6105,9 @@
       "span_end": "2026-05-15T10:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-15T13:00:00+00:00",
-      "bars_to_resolution": 3
+      "bars_to_resolution": 3,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -6105,7 +6181,9 @@
       "span_end": "2026-05-16T23:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-21T05:00:00+00:00",
-      "bars_to_resolution": 2310
+      "bars_to_resolution": 2310,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -6179,7 +6257,9 @@
       "span_end": "2026-05-17T06:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-21T04:00:00+00:00",
-      "bars_to_resolution": 2302
+      "bars_to_resolution": 2302,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6280,7 +6360,9 @@
       "span_end": "2026-05-17T06:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-17T07:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6381,7 +6463,9 @@
       "span_end": "2026-05-18T23:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-19T00:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -6482,7 +6566,9 @@
       "span_end": "2026-05-19T05:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-20T16:00:00+00:00",
-      "bars_to_resolution": 35
+      "bars_to_resolution": 35,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6583,7 +6669,9 @@
       "span_end": "2026-05-19T19:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-20T14:00:00+00:00",
-      "bars_to_resolution": 19
+      "bars_to_resolution": 19,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "symmetrical_triangle",
@@ -6723,7 +6811,9 @@
       "span_end": "2026-05-20T18:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-23T07:00:00+00:00",
-      "bars_to_resolution": 61
+      "bars_to_resolution": 61,
+      "noise_ratio": 6.65,
+      "noise_verdict": "MORE_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -6824,7 +6914,9 @@
       "span_end": "2026-05-21T13:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-21T17:00:00+00:00",
-      "bars_to_resolution": 4
+      "bars_to_resolution": 4,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "rising_wedge",
@@ -6950,7 +7042,9 @@
       "span_end": "2026-05-22T11:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-21T01:00:00+00:00",
-      "bars_to_resolution": 2174
+      "bars_to_resolution": 2174,
+      "noise_ratio": 3.32,
+      "noise_verdict": "MORE_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -7051,7 +7145,9 @@
       "span_end": "2026-05-24T02:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-28T03:00:00+00:00",
-      "bars_to_resolution": 97
+      "bars_to_resolution": 97,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -7125,7 +7221,9 @@
       "span_end": "2026-05-24T14:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-28T03:00:00+00:00",
-      "bars_to_resolution": 85
+      "bars_to_resolution": 85,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -7226,7 +7324,9 @@
       "span_end": "2026-05-26T06:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-26T17:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -7327,7 +7427,9 @@
       "span_end": "2026-05-26T19:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-26T20:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -7401,7 +7503,9 @@
       "span_end": "2026-05-28T23:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-19T21:00:00+00:00",
-      "bars_to_resolution": 1990
+      "bars_to_resolution": 1990,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "triple_top",
@@ -7504,7 +7608,9 @@
       "span_end": "2026-06-01T21:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-01T22:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -7605,7 +7711,9 @@
       "span_end": "2026-06-09T11:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-09T15:00:00+00:00",
-      "bars_to_resolution": 4
+      "bars_to_resolution": 4,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -7706,7 +7814,9 @@
       "span_end": "2026-06-10T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-10T21:00:00+00:00",
-      "bars_to_resolution": 5
+      "bars_to_resolution": 5,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -7807,7 +7917,9 @@
       "span_end": "2026-06-10T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-10T21:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -7908,7 +8020,9 @@
       "span_end": "2026-06-11T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-11T17:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -7982,7 +8096,9 @@
       "span_end": "2026-06-12T07:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-25T13:00:00+00:00",
-      "bars_to_resolution": 318
+      "bars_to_resolution": 318,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -8087,7 +8203,9 @@
       "span_end": "2026-06-13T06:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-13T21:00:00+00:00",
-      "bars_to_resolution": 15
+      "bars_to_resolution": 15,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -8161,7 +8279,9 @@
       "span_end": "2026-06-14T10:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-24T16:00:00+00:00",
-      "bars_to_resolution": 246
+      "bars_to_resolution": 246,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -8235,7 +8355,9 @@
       "span_end": "2026-06-16T07:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-18T11:00:00+00:00",
-      "bars_to_resolution": 52
+      "bars_to_resolution": 52,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -8336,7 +8458,9 @@
       "span_end": "2026-06-17T21:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-17T22:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -8410,7 +8534,9 @@
       "span_end": "2026-06-19T17:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-20T05:00:00+00:00",
-      "bars_to_resolution": 12
+      "bars_to_resolution": 12,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -8511,7 +8637,9 @@
       "span_end": "2026-06-19T17:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-20T03:00:00+00:00",
-      "bars_to_resolution": 10
+      "bars_to_resolution": 10,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -8585,7 +8713,9 @@
       "span_end": "2026-06-21T21:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-23T04:00:00+00:00",
-      "bars_to_resolution": 31
+      "bars_to_resolution": 31,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -8686,7 +8816,9 @@
       "span_end": "2026-06-22T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-22T13:00:00+00:00",
-      "bars_to_resolution": 9
+      "bars_to_resolution": 9,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -8760,7 +8892,9 @@
       "span_end": "2026-06-23T19:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-29T12:00:00+00:00",
-      "bars_to_resolution": 137
+      "bars_to_resolution": 137,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -8834,7 +8968,9 @@
       "span_end": "2026-06-24T06:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-26T15:00:00+00:00",
-      "bars_to_resolution": 57
+      "bars_to_resolution": 57,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -8908,7 +9044,9 @@
       "span_end": "2026-06-27T06:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -9013,7 +9151,9 @@
       "span_end": "2026-06-28T17:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-28T22:00:00+00:00",
-      "bars_to_resolution": 5
+      "bars_to_resolution": 5,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -9114,7 +9254,9 @@
       "span_end": "2026-06-29T03:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-29T05:00:00+00:00",
-      "bars_to_resolution": 2
+      "bars_to_resolution": 2,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -9215,7 +9357,9 @@
       "span_end": "2026-07-01T06:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-01T07:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -9320,7 +9464,9 @@
       "span_end": "2026-07-07T10:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-08T01:00:00+00:00",
-      "bars_to_resolution": 15
+      "bars_to_resolution": 15,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -9425,7 +9571,9 @@
       "span_end": "2026-07-13T05:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-13T12:00:00+00:00",
-      "bars_to_resolution": 7
+      "bars_to_resolution": 7,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -9499,7 +9647,9 @@
       "span_end": "2026-07-15T11:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-17T01:00:00+00:00",
-      "bars_to_resolution": 38
+      "bars_to_resolution": 38,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -9600,7 +9750,9 @@
       "span_end": "2026-07-20T11:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-20T15:00:00+00:00",
-      "bars_to_resolution": 4
+      "bars_to_resolution": 4,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -9701,7 +9853,9 @@
       "span_end": "2026-07-22T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-23T12:00:00+00:00",
-      "bars_to_resolution": 16
+      "bars_to_resolution": 16,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -9775,7 +9929,9 @@
       "span_end": "2026-07-25T02:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-26T22:00:00+00:00",
-      "bars_to_resolution": 44
+      "bars_to_resolution": 44,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -9849,7 +10005,9 @@
       "span_end": "2026-07-25T09:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-26T22:00:00+00:00",
-      "bars_to_resolution": 37
+      "bars_to_resolution": 37,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -9950,7 +10108,9 @@
       "span_end": "2026-07-27T19:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-27T22:00:00+00:00",
-      "bars_to_resolution": 3
+      "bars_to_resolution": 3,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -10024,7 +10184,9 @@
       "span_end": "2026-07-28T18:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-09T14:00:00+00:00",
-      "bars_to_resolution": 284
+      "bars_to_resolution": 284,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -10125,7 +10287,9 @@
       "span_end": "2026-07-29T09:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-30T13:00:00+00:00",
-      "bars_to_resolution": 28
+      "bars_to_resolution": 28,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -10226,7 +10390,9 @@
       "span_end": "2026-07-30T02:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-30T12:00:00+00:00",
-      "bars_to_resolution": 10
+      "bars_to_resolution": 10,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -10329,7 +10495,9 @@
       "span_end": "2026-07-30T02:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-30T13:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -10434,7 +10602,9 @@
       "span_end": "2026-07-31T18:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-31T19:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -10508,7 +10678,9 @@
       "span_end": "2026-08-01T09:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-02T21:00:00+00:00",
-      "bars_to_resolution": 36
+      "bars_to_resolution": 36,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -10613,7 +10785,9 @@
       "span_end": "2026-08-02T18:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-02T19:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -10714,7 +10888,9 @@
       "span_end": "2026-08-03T23:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-05T17:00:00+00:00",
-      "bars_to_resolution": 42
+      "bars_to_resolution": 42,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -10819,7 +10995,9 @@
       "span_end": "2026-08-04T05:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-04T18:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_top",
@@ -10922,7 +11100,9 @@
       "span_end": "2026-08-04T15:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-05T17:00:00+00:00",
-      "bars_to_resolution": 26
+      "bars_to_resolution": 26,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -11023,7 +11203,9 @@
       "span_end": "2026-08-05T18:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-05T19:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -11124,7 +11306,9 @@
       "span_end": "2026-08-06T07:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-06T12:00:00+00:00",
-      "bars_to_resolution": 5
+      "bars_to_resolution": 5,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -11227,7 +11411,9 @@
       "span_end": "2026-08-06T07:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-06T12:00:00+00:00",
-      "bars_to_resolution": 5
+      "bars_to_resolution": 5,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -11332,7 +11518,9 @@
       "span_end": "2026-08-06T10:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-06T11:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -11433,7 +11621,9 @@
       "span_end": "2026-08-11T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-11T17:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -11538,7 +11728,9 @@
       "span_end": "2026-08-13T10:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-14T10:00:00+00:00",
-      "bars_to_resolution": 24
+      "bars_to_resolution": 24,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -11639,7 +11831,9 @@
       "span_end": "2026-08-13T21:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-14T18:00:00+00:00",
-      "bars_to_resolution": 21
+      "bars_to_resolution": 21,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -11740,7 +11934,9 @@
       "span_end": "2026-08-15T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-16T21:00:00+00:00",
-      "bars_to_resolution": 37
+      "bars_to_resolution": 37,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -11845,7 +12041,9 @@
       "span_end": "2026-08-15T14:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-16T21:00:00+00:00",
-      "bars_to_resolution": 31
+      "bars_to_resolution": 31,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -11946,7 +12144,9 @@
       "span_end": "2026-08-16T02:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-16T20:00:00+00:00",
-      "bars_to_resolution": 18
+      "bars_to_resolution": 18,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_top",
@@ -12049,7 +12249,9 @@
       "span_end": "2026-08-16T02:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-16T21:00:00+00:00",
-      "bars_to_resolution": 19
+      "bars_to_resolution": 19,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "triple_top",
@@ -12152,7 +12354,9 @@
       "span_end": "2026-08-16T21:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-16T22:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -12253,7 +12457,9 @@
       "span_end": "2026-08-16T21:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-16T22:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -12358,7 +12564,9 @@
       "span_end": "2026-08-17T13:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-17T14:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -12459,7 +12667,9 @@
       "span_end": "2026-08-18T07:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-18T08:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -12533,7 +12743,9 @@
       "span_end": "2026-08-20T19:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -12607,7 +12819,9 @@
       "span_end": "2026-08-25T18:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -12712,7 +12926,9 @@
       "span_end": "2026-08-25T23:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-27T08:00:00+00:00",
-      "bars_to_resolution": 33
+      "bars_to_resolution": 33,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -12786,7 +13002,9 @@
       "span_end": "2026-08-28T03:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-09-01T18:00:00+00:00",
-      "bars_to_resolution": 111
+      "bars_to_resolution": 111,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -12860,7 +13078,9 @@
       "span_end": "2026-08-29T05:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -12934,7 +13154,9 @@
       "span_end": "2026-08-31T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-09-03T15:00:00+00:00",
-      "bars_to_resolution": 71
+      "bars_to_resolution": 71,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -13008,7 +13230,9 @@
       "span_end": "2026-09-02T06:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-09-03T14:00:00+00:00",
-      "bars_to_resolution": 32
+      "bars_to_resolution": 32,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -13082,7 +13306,9 @@
       "span_end": "2026-09-04T06:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -13156,7 +13382,9 @@
       "span_end": "2026-09-05T10:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-09-05T17:00:00+00:00",
-      "bars_to_resolution": 7
+      "bars_to_resolution": 7,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -13257,7 +13485,9 @@
       "span_end": "2026-09-05T23:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-09-06T03:00:00+00:00",
-      "bars_to_resolution": 4
+      "bars_to_resolution": 4,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -13358,11 +13588,22 @@
       "span_end": "2026-09-07T07:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-09-07T08:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     }
   ],
   "figures_in_history": 1398,
   "figures_window_bars": 4000,
+  "noise_benchmark": {
+    "available": true,
+    "measured_at": "2026-09-08T21:36:38.849983+00:00",
+    "timeframe": "1d",
+    "real_bars": 8840,
+    "noise_bars": 29460,
+    "noise_sigma": 0.046957,
+    "note": "How often each shape appears on real prices versus on random walks matched to the same volatility. A ratio near 1 means the shape is what randomness produces anyway. This is NOT an edge measurement - it is the prior question of whether the shape is a property of the market at all."
+  },
   "figures_note": "recognition_confidence describes how cleanly a shape matches its definition - never a probability of any price outcome; read edge_state for that. `resolution` says whether this one figure reached its trigger or its invalidation first: an observation about that instance, not an edge.",
   "markers": [
     {

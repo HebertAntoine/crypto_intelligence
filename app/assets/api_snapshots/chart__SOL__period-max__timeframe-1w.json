@@ -10,9 +10,21 @@
   "sources": [
     "binance"
   ],
-  "generated_at": "2026-09-08T21:18:48.450644+00:00",
+  "storage_origin": "local_database",
+  "stored_rows": 318,
+  "generated_at": "2026-09-08T21:44:56.203296+00:00",
   "as_of": "2026-09-07T00:00:00+00:00",
   "last_candle_time": "2026-09-07T00:00:00+00:00",
+  "last_candle_at": "2026-09-07T00:00:00+00:00",
+  "last_candle_expected_close": "2026-09-14T00:00:00+00:00",
+  "last_candle_closed": false,
+  "age_seconds": 164696.203,
+  "freshness": "LIVE",
+  "is_stale": false,
+  "interval_seconds": 604800,
+  "fallback_used": false,
+  "refresh_exchange": "BINANCE",
+  "refresh_source": "binance",
   "refresh_status": "refreshed",
   "refresh_error": null,
   "refresh_attempted": true,
@@ -21,9 +33,9 @@
   "available": true,
   "summary": {
     "available": true,
-    "last_price": 103.25,
+    "last_price": 103.06,
     "first_price": 3.3885,
-    "change_pct": 2947.070975357828,
+    "change_pct": 2941.4637745315035,
     "period_high": 295.83,
     "period_low": 1.0301,
     "high_time": "2025-01-13T00:00:00+00:00",
@@ -2579,8 +2591,8 @@
       "open": 106.55,
       "high": 107.06,
       "low": 101.72,
-      "close": 103.25,
-      "volume": 4039179.807
+      "close": 103.06,
+      "volume": 4071563.407
     }
   ],
   "overlays": {
@@ -2902,7 +2914,7 @@
       83.30860894,
       85.0649319,
       87.11112886,
-      88.64816421
+      88.63006897
     ],
     "ema50": [
       null,
@@ -3222,7 +3234,7 @@
       105.07890237,
       104.94835718,
       105.0111667,
-      104.94210134
+      104.93465036
     ],
     "ema200": [
       null,
@@ -3542,7 +3554,7 @@
       111.59327545,
       111.49533242,
       111.44612513,
-      111.36457164
+      111.3626811
     ],
     "bb_upper": [
       null,
@@ -3862,7 +3874,7 @@
       95.13343396,
       98.87932262,
       103.22223632,
-      105.90113408
+      105.85813959
     ],
     "bb_middle": [
       null,
@@ -4182,7 +4194,7 @@
       79.9235,
       80.9345,
       82.0885,
-      82.9045
+      82.895
     ],
     "bb_lower": [
       null,
@@ -4502,7 +4514,7 @@
       64.71356604,
       62.98967738,
       60.95476368,
-      59.90786592
+      59.93186041
     ]
   },
   "panels": {
@@ -4824,7 +4836,7 @@
       54.49356758,
       57.86933281,
       60.27937353,
-      57.83009955
+      57.69512639
     ],
     "macd": [
       null,
@@ -5144,7 +5156,7 @@
       -7.56631731,
       -5.27087403,
       -3.02947689,
-      -1.50212042
+      -1.51727712
     ],
     "macd_signal": [
       null,
@@ -5464,7 +5476,7 @@
       -11.18438302,
       -10.00168123,
       -8.60724036,
-      -7.18621637
+      -7.18924771
     ],
     "macd_hist": [
       null,
@@ -5784,7 +5796,7 @@
       3.61806572,
       4.73080719,
       5.57776346,
-      5.68409595
+      5.67197059
     ]
   },
   "levels": {
@@ -5905,7 +5917,9 @@
       "span_end": "2024-01-29T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-02-05T00:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5979,7 +5993,9 @@
       "span_end": "2024-06-24T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-01T00:00:00+00:00",
-      "bars_to_resolution": 101
+      "bars_to_resolution": 101,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6080,7 +6096,9 @@
       "span_end": "2025-05-12T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-02-02T00:00:00+00:00",
-      "bars_to_resolution": 38
+      "bars_to_resolution": 38,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -6154,7 +6172,9 @@
       "span_end": "2025-06-23T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-09-08T00:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6255,11 +6275,22 @@
       "span_end": "2026-01-19T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-01-26T00:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     }
   ],
   "figures_in_history": 5,
   "figures_window_bars": 600,
+  "noise_benchmark": {
+    "available": true,
+    "measured_at": "2026-09-08T21:36:38.849983+00:00",
+    "timeframe": "1d",
+    "real_bars": 8840,
+    "noise_bars": 29460,
+    "noise_sigma": 0.046957,
+    "note": "How often each shape appears on real prices versus on random walks matched to the same volatility. A ratio near 1 means the shape is what randomness produces anyway. This is NOT an edge measurement - it is the prior question of whether the shape is a property of the market at all."
+  },
   "figures_note": "recognition_confidence describes how cleanly a shape matches its definition - never a probability of any price outcome; read edge_state for that. `resolution` says whether this one figure reached its trigger or its invalidation first: an observation about that instance, not an edge.",
   "markers": [
     {

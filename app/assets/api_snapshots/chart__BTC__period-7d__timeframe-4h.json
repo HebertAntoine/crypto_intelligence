@@ -10,9 +10,21 @@
   "sources": [
     "binance"
   ],
-  "generated_at": "2026-09-08T21:16:40.298472+00:00",
+  "storage_origin": "local_database",
+  "stored_rows": 19843,
+  "generated_at": "2026-09-08T21:44:46.449083+00:00",
   "as_of": "2026-09-08T20:00:00+00:00",
   "last_candle_time": "2026-09-08T20:00:00+00:00",
+  "last_candle_at": "2026-09-08T20:00:00+00:00",
+  "last_candle_expected_close": "2026-09-09T00:00:00+00:00",
+  "last_candle_closed": false,
+  "age_seconds": 6286.449,
+  "freshness": "LIVE",
+  "is_stale": false,
+  "interval_seconds": 14400,
+  "fallback_used": false,
+  "refresh_exchange": "BINANCE",
+  "refresh_source": "binance",
   "refresh_status": "refreshed",
   "refresh_error": null,
   "refresh_attempted": true,
@@ -21,9 +33,9 @@
   "available": true,
   "summary": {
     "available": true,
-    "last_price": 78576.03,
+    "last_price": 78535.99,
     "first_price": 77439.0,
-    "change_pct": 1.468291171115328,
+    "change_pct": 1.4165859579798359,
     "period_high": 82300.0,
     "period_low": 76264.0,
     "high_time": "2026-09-03T20:00:00+00:00",
@@ -377,10 +389,10 @@
     {
       "time": "2026-09-08T20:00:00+00:00",
       "open": 78445.99,
-      "high": 78621.77,
+      "high": 78623.21,
       "low": 78410.05,
-      "close": 78576.03,
-      "volume": 372.5836
+      "close": 78535.99,
+      "volume": 568.2825
     }
   ],
   "overlays": {
@@ -427,7 +439,7 @@
       79276.84289812,
       79241.33405068,
       79165.58795062,
-      79109.43957437
+      79105.62624103
     ],
     "ema50": [
       77625.58934496,
@@ -472,7 +484,7 @@
       79012.92579928,
       79008.65419931,
       78986.58932875,
-      78970.48896291
+      78968.91876683
     ],
     "ema200": [
       71736.55009825,
@@ -517,7 +529,7 @@
       74189.74425896,
       74236.65227628,
       74278.53633323,
-      74321.29746424
+      74320.89905628
     ],
     "bb_upper": [
       79118.47172199,
@@ -562,7 +574,7 @@
       80486.52840841,
       80473.00773516,
       80501.80707559,
-      80478.34547502
+      80481.7706865
     ],
     "bb_middle": [
       78230.5515,
@@ -607,7 +619,7 @@
       79494.1995,
       79453.9015,
       79395.7375,
-      79334.2385
+      79332.2365
     ],
     "bb_lower": [
       77342.63127801,
@@ -652,7 +664,7 @@
       78501.87059159,
       78434.79526484,
       78289.66792441,
-      78190.13152498
+      78182.7023135
     ]
   },
   "panels": {
@@ -699,7 +711,7 @@
       39.72284863,
       45.85459333,
       41.46527685,
-      43.12969475
+      42.62734724
     ],
     "macd": [
       -134.21338326,
@@ -744,7 +756,7 @@
       -166.57002578,
       -171.92987616,
       -210.70548683,
-      -228.31127313
+      -231.5053472
     ],
     "macd_signal": [
       -21.60731567,
@@ -789,7 +801,7 @@
       22.27291628,
       -16.56764221,
       -55.39521113,
-      -89.97842353
+      -90.61723835
     ],
     "macd_hist": [
       -112.60606759,
@@ -834,7 +846,7 @@
       -188.84294206,
       -155.36223395,
       -155.3102757,
-      -138.33284959
+      -140.88810885
     ]
   },
   "levels": {
@@ -921,7 +933,9 @@
       "span_end": "2023-12-15T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2023-12-20T12:00:00+00:00",
-      "bars_to_resolution": 31
+      "bars_to_resolution": 31,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "symmetrical_triangle",
@@ -1061,7 +1075,9 @@
       "span_end": "2023-12-18T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2023-12-18T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 6.65,
+      "noise_verdict": "MORE_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -1135,7 +1151,9 @@
       "span_end": "2023-12-23T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-01-18T16:00:00+00:00",
-      "bars_to_resolution": 160
+      "bars_to_resolution": 160,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -1236,7 +1254,9 @@
       "span_end": "2023-12-28T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2023-12-29T20:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_top",
@@ -1339,7 +1359,9 @@
       "span_end": "2023-12-28T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2023-12-29T20:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -1440,7 +1462,9 @@
       "span_end": "2023-12-30T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-01-01T16:00:00+00:00",
-      "bars_to_resolution": 12
+      "bars_to_resolution": 12,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -1514,7 +1538,9 @@
       "span_end": "2024-01-16T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-02-09T08:00:00+00:00",
-      "bars_to_resolution": 143
+      "bars_to_resolution": 143,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -1588,7 +1614,9 @@
       "span_end": "2024-01-25T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-01-26T16:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -1689,7 +1717,9 @@
       "span_end": "2024-02-01T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-02-07T16:00:00+00:00",
-      "bars_to_resolution": 35
+      "bars_to_resolution": 35,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -1763,7 +1793,9 @@
       "span_end": "2024-02-16T16:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -1837,7 +1869,9 @@
       "span_end": "2024-02-18T08:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -1938,7 +1972,9 @@
       "span_end": "2024-02-20T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-02-21T08:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -2039,7 +2075,9 @@
       "span_end": "2024-02-22T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-02-26T12:00:00+00:00",
-      "bars_to_resolution": 25
+      "bars_to_resolution": 25,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -2140,7 +2178,9 @@
       "span_end": "2024-02-24T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-02-26T12:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -2243,7 +2283,9 @@
       "span_end": "2024-02-24T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-02-26T12:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -2346,7 +2388,9 @@
       "span_end": "2024-02-29T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-02-29T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -2451,7 +2495,9 @@
       "span_end": "2024-03-19T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-03-19T04:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -2525,7 +2571,9 @@
       "span_end": "2024-03-19T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-11-06T00:00:00+00:00",
-      "bars_to_resolution": 1392
+      "bars_to_resolution": 1392,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -2626,7 +2674,9 @@
       "span_end": "2024-03-21T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-03-25T12:00:00+00:00",
-      "bars_to_resolution": 22
+      "bars_to_resolution": 22,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -2727,7 +2777,9 @@
       "span_end": "2024-04-01T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-04-02T00:00:00+00:00",
-      "bars_to_resolution": 2
+      "bars_to_resolution": 2,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -2801,7 +2853,9 @@
       "span_end": "2024-04-04T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-04-08T04:00:00+00:00",
-      "bars_to_resolution": 23
+      "bars_to_resolution": 23,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -2906,7 +2960,9 @@
       "span_end": "2024-04-26T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-04-26T20:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -2980,7 +3036,9 @@
       "span_end": "2024-04-28T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-05-17T12:00:00+00:00",
-      "bars_to_resolution": 112
+      "bars_to_resolution": 112,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -3081,7 +3139,9 @@
       "span_end": "2024-05-05T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-05-15T16:00:00+00:00",
-      "bars_to_resolution": 63
+      "bars_to_resolution": 63,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_top",
@@ -3184,7 +3244,9 @@
       "span_end": "2024-05-05T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-05-15T16:00:00+00:00",
-      "bars_to_resolution": 63
+      "bars_to_resolution": 63,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -3258,7 +3320,9 @@
       "span_end": "2024-05-07T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-07-04T04:00:00+00:00",
-      "bars_to_resolution": 348
+      "bars_to_resolution": 348,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -3363,7 +3427,9 @@
       "span_end": "2024-05-07T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-05-15T12:00:00+00:00",
-      "bars_to_resolution": 48
+      "bars_to_resolution": 48,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -3437,7 +3503,9 @@
       "span_end": "2024-05-08T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-07-04T00:00:00+00:00",
-      "bars_to_resolution": 341
+      "bars_to_resolution": 341,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -3542,7 +3610,9 @@
       "span_end": "2024-05-08T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-05-08T08:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -3616,7 +3686,9 @@
       "span_end": "2024-05-20T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-06-24T04:00:00+00:00",
-      "bars_to_resolution": 210
+      "bars_to_resolution": 210,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -3717,7 +3789,9 @@
       "span_end": "2024-05-24T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-06-05T12:00:00+00:00",
-      "bars_to_resolution": 71
+      "bars_to_resolution": 71,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -3818,7 +3892,9 @@
       "span_end": "2024-06-13T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-06-14T16:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -3919,7 +3995,9 @@
       "span_end": "2024-06-14T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-06-14T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -4020,7 +4098,9 @@
       "span_end": "2024-06-18T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-06-18T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4094,7 +4174,9 @@
       "span_end": "2024-06-28T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-07-15T20:00:00+00:00",
-      "bars_to_resolution": 105
+      "bars_to_resolution": 105,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -4199,7 +4281,9 @@
       "span_end": "2024-07-01T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-07-01T04:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4273,7 +4357,9 @@
       "span_end": "2024-07-07T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-07-15T00:00:00+00:00",
-      "bars_to_resolution": 44
+      "bars_to_resolution": 44,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -4374,7 +4460,9 @@
       "span_end": "2024-07-08T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-07-10T04:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -4448,7 +4536,9 @@
       "span_end": "2024-07-17T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-08-05T00:00:00+00:00",
-      "bars_to_resolution": 109
+      "bars_to_resolution": 109,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4522,7 +4612,9 @@
       "span_end": "2024-08-08T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-08-23T16:00:00+00:00",
-      "bars_to_resolution": 93
+      "bars_to_resolution": 93,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -4596,7 +4688,9 @@
       "span_end": "2024-08-10T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-09-06T12:00:00+00:00",
-      "bars_to_resolution": 160
+      "bars_to_resolution": 160,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -4701,7 +4795,9 @@
       "span_end": "2024-08-20T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-08-21T16:00:00+00:00",
-      "bars_to_resolution": 9
+      "bars_to_resolution": 9,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -4775,7 +4871,9 @@
       "span_end": "2024-08-26T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-08-27T20:00:00+00:00",
-      "bars_to_resolution": 7
+      "bars_to_resolution": 7,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -4849,7 +4947,9 @@
       "span_end": "2024-08-30T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-09-23T00:00:00+00:00",
-      "bars_to_resolution": 142
+      "bars_to_resolution": 142,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -4950,7 +5050,9 @@
       "span_end": "2024-08-31T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-09-01T20:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -5024,7 +5126,9 @@
       "span_end": "2024-09-08T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-09-12T00:00:00+00:00",
-      "bars_to_resolution": 21
+      "bars_to_resolution": 21,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -5098,7 +5202,9 @@
       "span_end": "2024-09-09T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-09-12T00:00:00+00:00",
-      "bars_to_resolution": 15
+      "bars_to_resolution": 15,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -5203,7 +5309,9 @@
       "span_end": "2024-09-19T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-09-19T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5277,7 +5385,9 @@
       "span_end": "2024-09-21T12:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5351,7 +5461,9 @@
       "span_end": "2024-09-22T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-10-02T16:00:00+00:00",
-      "bars_to_resolution": 60
+      "bars_to_resolution": 60,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -5452,7 +5564,9 @@
       "span_end": "2024-09-26T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-09-27T00:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5526,7 +5640,9 @@
       "span_end": "2024-09-29T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-10-01T12:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5600,7 +5716,9 @@
       "span_end": "2024-10-18T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-05T08:00:00+00:00",
-      "bars_to_resolution": 3570
+      "bars_to_resolution": 3570,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -5701,7 +5819,9 @@
       "span_end": "2024-10-30T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-10-30T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5775,7 +5895,9 @@
       "span_end": "2024-10-31T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-02-05T16:00:00+00:00",
-      "bars_to_resolution": 2774
+      "bars_to_resolution": 2774,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5849,7 +5971,9 @@
       "span_end": "2024-11-02T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2024-11-03T00:00:00+00:00",
-      "bars_to_resolution": 4
+      "bars_to_resolution": 4,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5923,7 +6047,9 @@
       "span_end": "2024-11-09T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-02-05T12:00:00+00:00",
-      "bars_to_resolution": 2718
+      "bars_to_resolution": 2718,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -5997,7 +6123,9 @@
       "span_end": "2024-11-14T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-04-07T04:00:00+00:00",
-      "bars_to_resolution": 862
+      "bars_to_resolution": 862,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -6102,7 +6230,9 @@
       "span_end": "2024-12-10T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-12-15T16:00:00+00:00",
-      "bars_to_resolution": 30
+      "bars_to_resolution": 30,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6203,7 +6333,9 @@
       "span_end": "2024-12-24T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2024-12-25T20:00:00+00:00",
-      "bars_to_resolution": 7
+      "bars_to_resolution": 7,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -6304,7 +6436,9 @@
       "span_end": "2025-01-01T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-01-02T08:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -6409,7 +6543,9 @@
       "span_end": "2025-01-02T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-01-02T08:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -6483,7 +6619,9 @@
       "span_end": "2025-01-05T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-01-09T04:00:00+00:00",
-      "bars_to_resolution": 21
+      "bars_to_resolution": 21,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -6557,7 +6695,9 @@
       "span_end": "2025-01-11T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-01-17T08:00:00+00:00",
-      "bars_to_resolution": 35
+      "bars_to_resolution": 35,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -6658,7 +6798,9 @@
       "span_end": "2025-01-24T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-01-27T04:00:00+00:00",
-      "bars_to_resolution": 18
+      "bars_to_resolution": 18,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "symmetrical_triangle",
@@ -6798,7 +6940,9 @@
       "span_end": "2025-01-27T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-01-27T04:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 6.65,
+      "noise_verdict": "MORE_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -6872,7 +7016,9 @@
       "span_end": "2025-01-29T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-05-18T20:00:00+00:00",
-      "bars_to_resolution": 657
+      "bars_to_resolution": 657,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -6977,7 +7123,9 @@
       "span_end": "2025-02-05T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-02-24T16:00:00+00:00",
-      "bars_to_resolution": 114
+      "bars_to_resolution": 114,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -7051,7 +7199,9 @@
       "span_end": "2025-02-08T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-05-08T20:00:00+00:00",
-      "bars_to_resolution": 535
+      "bars_to_resolution": 535,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -7152,7 +7302,9 @@
       "span_end": "2025-02-13T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-02-20T16:00:00+00:00",
-      "bars_to_resolution": 44
+      "bars_to_resolution": 44,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -7257,7 +7409,9 @@
       "span_end": "2025-02-22T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-02-24T20:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -7362,7 +7516,9 @@
       "span_end": "2025-03-05T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-04-07T00:00:00+00:00",
-      "bars_to_resolution": 196
+      "bars_to_resolution": 196,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -7436,7 +7592,9 @@
       "span_end": "2025-03-05T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-03-09T12:00:00+00:00",
-      "bars_to_resolution": 25
+      "bars_to_resolution": 25,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -7510,7 +7668,9 @@
       "span_end": "2025-03-26T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-03-28T12:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -7611,7 +7771,9 @@
       "span_end": "2025-04-04T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-04-06T16:00:00+00:00",
-      "bars_to_resolution": 14
+      "bars_to_resolution": 14,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -7714,7 +7876,9 @@
       "span_end": "2025-04-04T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-04-06T16:00:00+00:00",
-      "bars_to_resolution": 14
+      "bars_to_resolution": 14,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -7819,7 +7983,9 @@
       "span_end": "2025-04-05T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-04-06T16:00:00+00:00",
-      "bars_to_resolution": 9
+      "bars_to_resolution": 9,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -7920,7 +8086,9 @@
       "span_end": "2025-04-10T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-04-12T12:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -8021,7 +8189,9 @@
       "span_end": "2025-04-16T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-04-21T00:00:00+00:00",
-      "bars_to_resolution": 25
+      "bars_to_resolution": 25,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -8122,7 +8292,9 @@
       "span_end": "2025-05-01T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-05-01T12:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -8196,7 +8368,9 @@
       "span_end": "2025-05-13T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-06-22T12:00:00+00:00",
-      "bars_to_resolution": 243
+      "bars_to_resolution": 243,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -8299,7 +8473,9 @@
       "span_end": "2025-05-13T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-05-13T04:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -8404,7 +8580,9 @@
       "span_end": "2025-06-09T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-06-09T08:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -8509,7 +8687,9 @@
       "span_end": "2025-06-14T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-06-18T16:00:00+00:00",
-      "bars_to_resolution": 23
+      "bars_to_resolution": 23,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -8583,7 +8763,9 @@
       "span_end": "2025-06-14T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-07-02T16:00:00+00:00",
-      "bars_to_resolution": 107
+      "bars_to_resolution": 107,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -8688,7 +8870,9 @@
       "span_end": "2025-06-15T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-06-21T16:00:00+00:00",
-      "bars_to_resolution": 36
+      "bars_to_resolution": 36,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -8762,7 +8946,9 @@
       "span_end": "2025-06-16T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-07-02T16:00:00+00:00",
-      "bars_to_resolution": 100
+      "bars_to_resolution": 100,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -8867,7 +9053,9 @@
       "span_end": "2025-06-21T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-06-21T12:00:00+00:00",
-      "bars_to_resolution": 2
+      "bars_to_resolution": 2,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -8941,7 +9129,9 @@
       "span_end": "2025-07-15T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-08-25T08:00:00+00:00",
-      "bars_to_resolution": 248
+      "bars_to_resolution": 248,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -9046,7 +9236,9 @@
       "span_end": "2025-07-17T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-07-25T00:00:00+00:00",
-      "bars_to_resolution": 44
+      "bars_to_resolution": 44,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_top",
@@ -9149,7 +9341,9 @@
       "span_end": "2025-07-25T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-07-25T12:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -9250,7 +9444,9 @@
       "span_end": "2025-07-28T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-08-01T04:00:00+00:00",
-      "bars_to_resolution": 20
+      "bars_to_resolution": 20,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -9324,7 +9520,9 @@
       "span_end": "2025-07-30T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-08-01T04:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "triple_top",
@@ -9427,7 +9625,9 @@
       "span_end": "2025-07-30T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-08-01T04:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -9528,7 +9728,9 @@
       "span_end": "2025-08-01T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-08-01T04:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -9602,7 +9804,9 @@
       "span_end": "2025-08-03T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-08-10T00:00:00+00:00",
-      "bars_to_resolution": 37
+      "bars_to_resolution": 37,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -9707,7 +9911,9 @@
       "span_end": "2025-08-29T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-08-29T12:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -9781,7 +9987,9 @@
       "span_end": "2025-09-14T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-09-25T16:00:00+00:00",
-      "bars_to_resolution": 67
+      "bars_to_resolution": 67,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -9882,7 +10090,9 @@
       "span_end": "2025-09-18T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-09-18T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -9983,7 +10193,9 @@
       "span_end": "2025-09-20T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-09-22T00:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -10084,7 +10296,9 @@
       "span_end": "2025-10-08T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-10-10T12:00:00+00:00",
-      "bars_to_resolution": 12
+      "bars_to_resolution": 12,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -10158,7 +10372,9 @@
       "span_end": "2025-10-13T20:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -10259,7 +10475,9 @@
       "span_end": "2025-10-15T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-10-16T12:00:00+00:00",
-      "bars_to_resolution": 7
+      "bars_to_resolution": 7,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -10360,7 +10578,9 @@
       "span_end": "2025-10-21T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-10-21T12:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -10465,7 +10685,9 @@
       "span_end": "2025-10-25T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-10-26T20:00:00+00:00",
-      "bars_to_resolution": 9
+      "bars_to_resolution": 9,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -10539,7 +10761,9 @@
       "span_end": "2025-10-29T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-10-29T20:00:00+00:00",
-      "bars_to_resolution": 3
+      "bars_to_resolution": 3,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -10640,7 +10864,9 @@
       "span_end": "2025-10-31T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-11-03T12:00:00+00:00",
-      "bars_to_resolution": 18
+      "bars_to_resolution": 18,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -10743,7 +10969,9 @@
       "span_end": "2025-10-31T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-11-03T12:00:00+00:00",
-      "bars_to_resolution": 18
+      "bars_to_resolution": 18,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -10844,7 +11072,9 @@
       "span_end": "2025-11-08T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-11-09T16:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -10945,7 +11175,9 @@
       "span_end": "2025-11-08T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-11-09T16:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -11019,7 +11251,9 @@
       "span_end": "2025-11-08T16:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -11120,7 +11354,9 @@
       "span_end": "2025-11-13T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-11-13T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -11194,7 +11430,9 @@
       "span_end": "2025-11-29T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-12-01T00:00:00+00:00",
-      "bars_to_resolution": 10
+      "bars_to_resolution": 10,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -11299,7 +11537,9 @@
       "span_end": "2025-12-01T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-12-01T12:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -11373,7 +11613,9 @@
       "span_end": "2025-12-06T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-12-18T16:00:00+00:00",
-      "bars_to_resolution": 73
+      "bars_to_resolution": 73,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -11478,7 +11720,9 @@
       "span_end": "2025-12-09T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2025-12-18T16:00:00+00:00",
-      "bars_to_resolution": 57
+      "bars_to_resolution": 57,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -11579,7 +11823,9 @@
       "span_end": "2025-12-12T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-12-14T12:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -11682,7 +11928,9 @@
       "span_end": "2025-12-13T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-12-14T12:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -11783,7 +12031,9 @@
       "span_end": "2025-12-18T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-12-18T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -11888,7 +12138,9 @@
       "span_end": "2025-12-27T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-01-03T20:00:00+00:00",
-      "bars_to_resolution": 47
+      "bars_to_resolution": 47,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -11993,7 +12245,9 @@
       "span_end": "2025-12-31T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-01-03T20:00:00+00:00",
-      "bars_to_resolution": 20
+      "bars_to_resolution": 20,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -12098,7 +12352,9 @@
       "span_end": "2026-01-10T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-01-13T20:00:00+00:00",
-      "bars_to_resolution": 21
+      "bars_to_resolution": 21,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -12172,7 +12428,9 @@
       "span_end": "2026-01-11T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-01-13T16:00:00+00:00",
-      "bars_to_resolution": 12
+      "bars_to_resolution": 12,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -12246,7 +12504,9 @@
       "span_end": "2026-01-17T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-01-20T04:00:00+00:00",
-      "bars_to_resolution": 17
+      "bars_to_resolution": 17,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -12320,7 +12580,9 @@
       "span_end": "2026-01-24T08:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -12421,7 +12683,9 @@
       "span_end": "2026-01-29T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-01-29T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -12495,7 +12759,9 @@
       "span_end": "2026-02-03T08:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -12596,7 +12862,9 @@
       "span_end": "2026-02-21T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-02-21T12:00:00+00:00",
-      "bars_to_resolution": 2
+      "bars_to_resolution": 2,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -12697,7 +12965,9 @@
       "span_end": "2026-03-01T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-03-02T12:00:00+00:00",
-      "bars_to_resolution": 9
+      "bars_to_resolution": 9,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -12802,7 +13072,9 @@
       "span_end": "2026-03-01T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-03-04T08:00:00+00:00",
-      "bars_to_resolution": 15
+      "bars_to_resolution": 15,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -12876,7 +13148,9 @@
       "span_end": "2026-03-09T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-03-15T20:00:00+00:00",
-      "bars_to_resolution": 37
+      "bars_to_resolution": 37,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -12977,7 +13251,9 @@
       "span_end": "2026-03-09T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-03-16T16:00:00+00:00",
-      "bars_to_resolution": 42
+      "bars_to_resolution": 42,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -13051,7 +13327,9 @@
       "span_end": "2026-03-21T04:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-11T16:00:00+00:00",
-      "bars_to_resolution": 129
+      "bars_to_resolution": 129,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -13156,7 +13434,9 @@
       "span_end": "2026-03-25T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-03-25T20:00:00+00:00",
-      "bars_to_resolution": 2
+      "bars_to_resolution": 2,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -13230,7 +13510,9 @@
       "span_end": "2026-03-29T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-06T12:00:00+00:00",
-      "bars_to_resolution": 49
+      "bars_to_resolution": 49,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -13304,7 +13586,9 @@
       "span_end": "2026-03-30T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-07T20:00:00+00:00",
-      "bars_to_resolution": 49
+      "bars_to_resolution": 49,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -13405,7 +13689,9 @@
       "span_end": "2026-04-03T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-05T20:00:00+00:00",
-      "bars_to_resolution": 15
+      "bars_to_resolution": 15,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -13510,7 +13796,9 @@
       "span_end": "2026-04-05T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-06T08:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -13611,7 +13899,9 @@
       "span_end": "2026-04-13T16:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-13T20:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -13716,7 +14006,9 @@
       "span_end": "2026-04-20T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-04-22T12:00:00+00:00",
-      "bars_to_resolution": 13
+      "bars_to_resolution": 13,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -13817,7 +14109,9 @@
       "span_end": "2026-04-20T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-22T04:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -13920,7 +14214,9 @@
       "span_end": "2026-04-20T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-22T04:00:00+00:00",
-      "bars_to_resolution": 8
+      "bars_to_resolution": 8,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bull_flag",
@@ -13994,7 +14290,9 @@
       "span_end": "2026-04-24T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-23T04:00:00+00:00",
-      "bars_to_resolution": 172
+      "bars_to_resolution": 172,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -14095,7 +14393,9 @@
       "span_end": "2026-04-27T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-04-28T00:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -14196,7 +14496,9 @@
       "span_end": "2026-05-22T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-22T16:00:00+00:00",
-      "bars_to_resolution": 3
+      "bars_to_resolution": 3,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -14301,7 +14603,9 @@
       "span_end": "2026-05-25T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-05-28T00:00:00+00:00",
-      "bars_to_resolution": 14
+      "bars_to_resolution": 14,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -14402,7 +14706,9 @@
       "span_end": "2026-05-26T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-27T20:00:00+00:00",
-      "bars_to_resolution": 9
+      "bars_to_resolution": 9,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_top",
@@ -14505,7 +14811,9 @@
       "span_end": "2026-05-29T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-05-29T12:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -14579,7 +14887,9 @@
       "span_end": "2026-05-30T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-21T20:00:00+00:00",
-      "bars_to_resolution": 501
+      "bars_to_resolution": 501,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "bear_flag",
@@ -14653,7 +14963,9 @@
       "span_end": "2026-05-31T20:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-21T04:00:00+00:00",
-      "bars_to_resolution": 488
+      "bars_to_resolution": 488,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -14758,7 +15070,9 @@
       "span_end": "2026-06-11T04:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-06-13T20:00:00+00:00",
-      "bars_to_resolution": 16
+      "bars_to_resolution": 16,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "inverse_head_and_shoulders",
@@ -14863,7 +15177,9 @@
       "span_end": "2026-06-22T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-06-24T12:00:00+00:00",
-      "bars_to_resolution": 11
+      "bars_to_resolution": 11,
+      "noise_ratio": 0.89,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bear_flag",
@@ -14937,7 +15253,9 @@
       "span_end": "2026-06-28T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-03T20:00:00+00:00",
-      "bars_to_resolution": 33
+      "bars_to_resolution": 33,
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_bottom",
@@ -15038,7 +15356,9 @@
       "span_end": "2026-07-09T08:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-10T08:00:00+00:00",
-      "bars_to_resolution": 6
+      "bars_to_resolution": 6,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -15139,7 +15459,9 @@
       "span_end": "2026-07-11T08:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-14T12:00:00+00:00",
-      "bars_to_resolution": 19
+      "bars_to_resolution": 19,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_bottom",
@@ -15240,7 +15562,9 @@
       "span_end": "2026-07-14T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-14T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.01,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_bottom",
@@ -15343,7 +15667,9 @@
       "span_end": "2026-07-14T12:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-14T16:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 0.6,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "head_and_shoulders",
@@ -15448,7 +15774,9 @@
       "span_end": "2026-07-18T12:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-07-21T04:00:00+00:00",
-      "bars_to_resolution": 16
+      "bars_to_resolution": 16,
+      "noise_ratio": 0.88,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -15522,7 +15850,9 @@
       "span_end": "2026-07-18T12:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -15623,7 +15953,9 @@
       "span_end": "2026-07-28T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-07-28T04:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "double_top",
@@ -15724,7 +16056,9 @@
       "span_end": "2026-08-06T16:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2026-08-19T12:00:00+00:00",
-      "bars_to_resolution": 77
+      "bars_to_resolution": 77,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -15798,7 +16132,9 @@
       "span_end": "2026-08-24T00:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -15899,7 +16235,9 @@
       "span_end": "2026-08-28T20:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2026-08-29T00:00:00+00:00",
-      "bars_to_resolution": 1
+      "bars_to_resolution": 1,
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "bull_flag",
@@ -15973,11 +16311,22 @@
       "span_end": "2026-09-07T16:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
-      "bars_to_resolution": null
+      "bars_to_resolution": null,
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     }
   ],
   "figures_in_history": 493,
   "figures_window_bars": 6000,
+  "noise_benchmark": {
+    "available": true,
+    "measured_at": "2026-09-08T21:36:38.849983+00:00",
+    "timeframe": "1d",
+    "real_bars": 8840,
+    "noise_bars": 29460,
+    "noise_sigma": 0.046957,
+    "note": "How often each shape appears on real prices versus on random walks matched to the same volatility. A ratio near 1 means the shape is what randomness produces anyway. This is NOT an edge measurement - it is the prior question of whether the shape is a property of the market at all."
+  },
   "figures_note": "recognition_confidence describes how cleanly a shape matches its definition - never a probability of any price outcome; read edge_state for that. `resolution` says whether this one figure reached its trigger or its invalidation first: an observation about that instance, not an edge.",
   "markers": [
     {

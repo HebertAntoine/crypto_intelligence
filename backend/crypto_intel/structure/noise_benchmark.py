@@ -19,7 +19,6 @@ random histories through every detector takes minutes.
 from __future__ import annotations
 
 import json
-import pathlib
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -29,12 +28,17 @@ import pandas as pd
 
 from ..core.enums import Asset, Timeframe
 from ..logging_setup import get_logger
+from ..settings import PROJECT_ROOT
 
 log = get_logger("structure.noise_benchmark")
 
 #: Where the measured result lives. Committed, so the app can state the ratio
 #: without re-running minutes of simulation.
-ARTEFACT = pathlib.Path("config/noise_benchmark.json")
+#:
+#: Ancré sur la racine du projet et non sur le répertoire courant: l'API est
+#: lancée depuis `backend/`, et un chemin relatif y cherchait un fichier
+#: inexistant — le rapport au hasard arrivait vide sans que rien ne le dise.
+ARTEFACT = PROJECT_ROOT / "config" / "noise_benchmark.json"
 
 #: Fixed, so the number is the same for everyone who reruns it.
 SEED = 20260909
