@@ -1812,31 +1812,44 @@ class _MarketPressureSummary extends StatelessWidget {
                       const SizedBox(height: 16),
                       _PressureBar(balance: balance),
                     ],
-                    const SizedBox(height: 11),
-                    ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 330),
-                        child: Text(
-                          pressure.summary.isEmpty
-                              ? '${pressure.measured} source(s) mesurée(s).'
-                              : pressure.summary,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 12),
+                    // Couverture et pression sont deux mesures, affichées
+                    // ensemble. Le résumé en phrase répétait mot pour mot le
+                    // titre au-dessus et le décompte en dessous.
+                    Row(
+                      children: [
+                        Text(
+                          breakdown != null && breakdown!.familiesLine.isNotEmpty
+                              ? breakdown!.familiesLine
+                              : '${pressure.measured} source(s) mesurée(s)',
                           style: const TextStyle(
-                            color: Color(0xFFEAF4FF),
-                            fontSize: 14.5,
-                            height: 1.3,
+                            color: Color(0xFF84C9FF),
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
                           ),
-                        )),
-                    const SizedBox(height: 8),
-                    Text(
-                      breakdown != null && breakdown!.familiesLine.isNotEmpty
-                          ? breakdown!.familiesLine
-                          : '${pressure.measured} source(s) mesurée(s)',
-                      style: const TextStyle(
-                        color: Color(0xFF84C9FF),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                        ),
+                        if (breakdown != null &&
+                            breakdown!.coverageLabel.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _coverageTone(breakdown!.coverageLevel)
+                                  .withValues(alpha: .16),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Text(
+                              'Couverture ${breakdown!.coverageLabel.toLowerCase()}',
+                              style: TextStyle(
+                                color: _coverageTone(breakdown!.coverageLevel),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -1848,6 +1861,15 @@ class _MarketPressureSummary extends StatelessWidget {
     );
   }
 }
+
+/// La couverture décide de ce que le score vaut, donc elle a sa propre couleur.
+Color _coverageTone(String level) => switch (level) {
+      'STRONG' || 'SUFFICIENT' => AppColors.measured,
+      'PARTIAL' => AppColors.warn,
+      'INDICATIVE' || 'NONE' => AppColors.bad,
+      _ => mobileMuted,
+    };
+
 
 void _showPressureDetails(BuildContext context, MarketPressure pressure) {
   showModalBottomSheet<void>(

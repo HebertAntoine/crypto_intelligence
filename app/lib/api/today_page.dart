@@ -483,43 +483,70 @@ class VolatilityReading {
 class PressureContribution {
   final String family;
   final String label;
+
+  /// Applicable dit si la famille a un sens pour cet actif; disponible dit si
+  /// elle a répondu. Il n'existe pas d'ETF spot SOL : cette famille n'est pas
+  /// manquante pour SOL, elle est sans objet, et elle ne compte pas dans la
+  /// couverture.
+  final bool applicable;
   final bool available;
   final double? normalizedScore;
-  final double? contributionPoints;
+  final double? weightedContribution;
+
+  /// STRONG_SELL … STRONG_BUY, ou UNAVAILABLE. L'app s'en sert pour la
+  /// couleur; le texte affiché est `directionLabel`, déjà en français.
   final String direction;
+  final String directionLabel;
+  final String dot;
   final double weight;
   final String source;
-  final String? timestamp;
+  final String? observationTime;
   final String freshness;
+  final String dataQuality;
   final String explanation;
+  final String reason;
 
   const PressureContribution({
     required this.family,
     required this.label,
+    this.applicable = true,
     this.available = false,
     this.normalizedScore,
-    this.contributionPoints,
-    this.direction = 'UNKNOWN',
+    this.weightedContribution,
+    this.direction = 'UNAVAILABLE',
+    this.directionLabel = 'Indisponible',
+    this.dot = '⚪',
     this.weight = 0,
     this.source = '',
-    this.timestamp,
+    this.observationTime,
     this.freshness = 'UNAVAILABLE',
+    this.dataQuality = 'UNAVAILABLE',
     this.explanation = '',
+    this.reason = '',
   });
+
+  /// La phrase à montrer : l'explication quand la famille a répondu, la raison
+  /// de son absence sinon. Jamais rien.
+  String get sentence => available ? explanation : reason;
 
   factory PressureContribution.fromJson(Map<String, dynamic> json) =>
       PressureContribution(
         family: _string(json['family']),
         label: _string(json['label']),
+        applicable: json['applicable'] as bool? ?? true,
         available: json['available'] as bool? ?? false,
         normalizedScore: _double(json['normalized_score']),
-        contributionPoints: _double(json['contribution_points']),
-        direction: _string(json['direction'], 'UNKNOWN'),
-        weight: _double(json['weight_if_any']) ?? 0,
+        weightedContribution: _double(json['weighted_contribution']),
+        direction: _string(json['direction'], 'UNAVAILABLE'),
+        directionLabel: _string(json['direction_label'], 'Indisponible'),
+        dot: _string(json['dot'], '⚪'),
+        weight: _double(json['weight']) ?? 0,
         source: _string(json['source']),
-        timestamp: json['timestamp'] as String?,
+        observationTime: json['observation_time'] as String?,
         freshness: _string(json['freshness'], 'UNAVAILABLE'),
+        dataQuality: _string(json['data_quality'], 'UNAVAILABLE'),
         explanation: _string(json['explanation']),
+        reason: _string(json['reason']),
       );
 }
 
@@ -535,9 +562,18 @@ class PressureBreakdown {
   final List<PressureContribution> sellers;
   final List<PressureContribution> neutral;
   final List<PressureContribution> unavailable;
+  final List<PressureContribution> notApplicable;
+
+  /// NONE / INDICATIVE / PARTIAL / SUFFICIENT / STRONG. La couverture est une
+  /// seconde mesure, distincte du score : « +61 sur une famille » n'est pas
+  /// une domination acheteuse, et le titre reçu du backend le dit déjà.
+  final String coverageLevel;
+  final String coverageLabel;
+  final double coverageRatio;
   final String buyersTitle;
   final String sellersTitle;
   final String unavailableTitle;
+  final String notApplicableTitle;
   final List<String> contradictions;
   final String tooltip;
   final String missingNote;
@@ -554,13 +590,23 @@ class PressureBreakdown {
     this.sellers = const [],
     this.neutral = const [],
     this.unavailable = const [],
+    this.notApplicable = const [],
+    this.coverageLevel = 'NONE',
+    this.coverageLabel = 'Aucune',
+    this.coverageRatio = 0,
     this.buyersTitle = 'FACTEURS ACHETEURS',
     this.sellersTitle = 'FACTEURS VENDEURS',
     this.unavailableTitle = 'INDISPONIBLE',
+    this.notApplicableTitle = 'NON APPLICABLE',
     this.contradictions = const [],
     this.tooltip = '',
     this.missingNote = '',
   });
+
+  /// Toutes les familles applicables, dans l'ordre de lecture : celles qui
+  /// poussent, puis celles qui ne disent rien, puis celles qui manquent.
+  List<PressureContribution> get applicableFamilies =>
+      [...buyers, ...sellers, ...neutral, ...unavailable];
 
   static const empty = PressureBreakdown();
 
@@ -580,9 +626,15 @@ class PressureBreakdown {
         sellers: _items(json['sellers']),
         neutral: _items(json['neutral']),
         unavailable: _items(json['unavailable']),
+        notApplicable: _items(json['not_applicable']),
+        coverageLevel: _string(json['coverage_level'], 'NONE'),
+        coverageLabel: _string(json['coverage_label'], 'Aucune'),
+        coverageRatio: _double(json['coverage_ratio']) ?? 0,
         buyersTitle: _string(json['buyers_title'], 'FACTEURS ACHETEURS'),
         sellersTitle: _string(json['sellers_title'], 'FACTEURS VENDEURS'),
         unavailableTitle: _string(json['unavailable_title'], 'INDISPONIBLE'),
+        notApplicableTitle:
+            _string(json['not_applicable_title'], 'NON APPLICABLE'),
         contradictions: ((json['contradictions'] as List?) ?? const [])
             .map((item) => '$item')
             .toList(),
