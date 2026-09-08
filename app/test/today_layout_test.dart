@@ -332,8 +332,10 @@ Map<String, dynamic> _page(String asset) => {
       ],
       'pressure': {
         'state': 'BUY',
-        'label': 'PRESSION ACHETEUSE PARTIELLE',
-        'headline': 'PRESSION ACHETEUSE PARTIELLE +19/100',
+        'label': 'PRESSION ACHETEUSE',
+        'headline': 'PRESSION ACHETEUSE +19/100',
+        'intensity': 'BUYING',
+        'sufficient': true,
         'score': 19.0,
         'families_active': 3,
         'families_total': 5,
@@ -341,6 +343,12 @@ Map<String, dynamic> _page(String asset) => {
         'coverage_level': 'PARTIAL',
         'coverage_label': 'Partielle',
         'coverage_ratio': 0.6,
+        'coverage_breakdown': '1 acheteuse · 1 vendeuse · 1 neutre · 2 indisponibles',
+        'minimum_families': 3,
+        'insufficient_note': '',
+        'short_note': 'Une source indisponible est exclue du calcul.',
+        'methodology_title': 'COMMENT CE SCORE EST CALCULÉ',
+        'methodology': ['score = Σ(score famille × poids effectif)'],
         'buyers': [
           {
             'family': 'institutions',
@@ -353,6 +361,7 @@ Map<String, dynamic> _page(String asset) => {
             'direction_label': 'Acheteur',
             'dot': '🟢',
             'weight': 0.30,
+            'effective_weight': 0.4286,
             'source': 'Farside Investors',
             'observation_time': '2026-09-07T00:00:00.000Z',
             'freshness': 'RECENT',
@@ -373,6 +382,7 @@ Map<String, dynamic> _page(String asset) => {
             'direction_label': 'Vendeur léger',
             'dot': '🟠',
             'weight': 0.25,
+            'effective_weight': 0.3571,
             'source': 'Binance klines, taker buy base volume',
             'observation_time': '2026-09-08T00:00:00.000Z',
             'freshness': 'LIVE',
@@ -394,6 +404,7 @@ Map<String, dynamic> _page(String asset) => {
             'direction_label': 'Neutre',
             'dot': '⚪',
             'weight': 0.15,
+            'effective_weight': 0.2143,
             'source': 'funding.rate Binance',
             'observation_time': '2026-09-08T08:00:00.000Z',
             'freshness': 'LIVE',
@@ -883,15 +894,16 @@ void main() {
     });
 
     testWidgets(
-        'un score élevé sur une couverture faible n’est jamais dit dominant',
+        'l’intensité vient du score, la couverture est nommée à part',
         (tester) async {
       // Le titre vient du backend, qui verrouille le mot par la couverture.
       // L’écran ne doit ni le reformuler ni le durcir.
       await _pumpAt(
           tester, const Size(430, 932), TodayScreen(client: _client()));
       expect(find.textContaining('DOMINANT'), findsNothing);
-      expect(find.text('PRESSION ACHETEUSE PARTIELLE'), findsWidgets);
-      expect(find.text('Partielle'), findsWidgets);
+      expect(find.text('PRESSION ACHETEUSE'), findsWidgets);
+      // La couverture est nommée comme telle, jamais comme une intensité.
+      expect(find.text('Couverture partielle'), findsWidgets);
     });
 
     testWidgets('un prix réellement absent reste explicitement indisponible',

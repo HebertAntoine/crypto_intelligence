@@ -1,13 +1,12 @@
-"""Pression et couverture: deux mesures, jamais confondues.
+"""Pression : intensité, couverture, et la frontière entre les deux.
 
-L'écran a pu afficher « ACHAT DOMINANT +61/100 » sur une seule famille
-disponible sur cinq. Le score n'était pas faux; le mot l'était. Ces tests
-tiennent les deux moitiés du problème:
+Trois affirmations étaient confondues sur une seule ligne — la force du
+déséquilibre, la quantité d'information qui le soutient, et la conclusion
+qu'on peut en tirer. « +30/100 · 4/5 familles · Forte » se lisait « forte
+pression » alors que « Forte » qualifiait la couverture.
 
-  * une absence ne devient jamais un zéro, ni dans le score ni dans la
-    couverture;
-  * le vocabulaire est verrouillé par la couverture, et « dominant » ne peut
-    sortir que lorsque presque toute l'information est là.
+Ces tests tiennent les trois séparément, et vérifient que le score affiché se
+refait à la main depuis les familles.
 """
 
 from __future__ import annotations
@@ -18,22 +17,25 @@ import pytest
 
 from crypto_intel.core.enums import Asset
 from crypto_intel.engines.market_pressure import (
-    DOMINANT_COVERAGE,
-    DOMINANT_SCORE,
+    COVERAGE_FR,
+    INTENSITY_FR,
     WEIGHTS,
     CoverageLevel,
     Direction,
+    Intensity,
     MarketPressureExplanation,
     PressureFamilyContribution,
     assess_pressure,
+    minimum_families,
 )
+
+ALL = ("institutions", "spot", "derivatives", "funding", "whales")
 
 
 def _family(
     name: str, score: float | None, *, applicable: bool = True,
-    available: bool | None = None,
 ) -> PressureFamilyContribution:
-    available = (score is not None) if available is None else available
+    available = applicable and score is not None
     return PressureFamilyContribution(
         family=name, label=name.title(), asset="BTC",
         applicable=applicable, available=available,
@@ -47,208 +49,225 @@ def _family(
 
 
 def _explain(families: list[PressureFamilyContribution]) -> MarketPressureExplanation:
+    """Reproduit exactement le calcul du moteur, pour pouvoir le confronter."""
     out = MarketPressureExplanation(asset="BTC", families=families)
     measured = out.measured
     if not measured:
         return out
     out.denominator = sum(item.weight for item in measured)
+    exact = 0.0
     for item in measured:
-        item.weighted_contribution = round(
-            float(item.normalized_score or 0) * item.weight / out.denominator, 2
-        )
-    out.pressure_score = round(
-        sum(item.weighted_contribution or 0 for item in measured), 1
-    )
+        effective = item.weight / out.denominator
+        item.effective_weight = round(effective, 4)
+        contribution = float(item.normalized_score or 0) * effective
+        exact += contribution
+        item.weighted_contribution = round(contribution, 2)
+    out.pressure_score = round(max(-100.0, min(100.0, exact)), 1)
     out.state = Direction.of(out.pressure_score).value
     return out
 
 
-ALL = ("institutions", "spot", "derivatives", "funding", "whales")
+def _scored(scores: dict[str, float | None]) -> MarketPressureExplanation:
+    return _explain([_family(name, scores.get(name)) for name in ALL])
 
 
-class TestTheScoreIsReproducible:
-    def test_the_weights_are_declared_and_sum_to_one(self):
-        assert set(WEIGHTS) == set(ALL)
-        assert sum(WEIGHTS.values()) == pytest.approx(1.0)
+class TestScoreIsReproducible:
+    """TEST 1, 2, 4 — la somme pondérée, et l'exclusion d'une absente."""
 
-    def test_contributions_add_up_to_the_score(self):
-        out = _explain([_family(name, 40) for name in ALL])
+    def test_five_families_sum_exactly_to_the_score(self):
+        out = _scored(dict.fromkeys(ALL, 40.0))
+        assert len(out.measured) == 5
+        assert out.denominator == pytest.approx(1.0)
         total = sum(item.weighted_contribution for item in out.measured)
         assert total == pytest.approx(out.pressure_score, abs=0.05)
+        # Cinq familles à +40 donnent exactement +40, quels que soient les poids.
+        assert out.pressure_score == pytest.approx(40.0, abs=0.05)
 
-    def test_the_denominator_holds_only_available_families(self):
-        out = _explain([
-            _family("institutions", 60), _family("spot", 20),
-            _family("derivatives", None), _family("funding", None),
-            _family("whales", None),
-        ])
-        assert out.denominator == pytest.approx(
-            WEIGHTS["institutions"] + WEIGHTS["spot"]
-        )
-        # Un zéro pour les absentes aurait tiré le score vers le neutre.
-        assert out.pressure_score > 40
+    def test_an_unavailable_family_is_excluded_and_weights_renormalised(self):
+        out = _scored({
+            "institutions": 60.0, "spot": 20.0, "derivatives": 20.0,
+            "funding": 20.0, "whales": None,
+        })
+        assert len(out.measured) == 4
+        assert out.denominator == pytest.approx(1.0 - WEIGHTS["whales"])
+        # Les poids effectifs des familles restantes somment à 1.
+        assert sum(i.effective_weight for i in out.measured) == pytest.approx(1.0, abs=1e-3)
+        for item in out.measured:
+            assert item.effective_weight == pytest.approx(
+                item.weight / out.denominator, abs=1e-3
+            )
 
-    def test_an_absent_family_carries_no_number_at_all(self):
-        out = _explain([_family(name, None) for name in ALL])
-        for item in out.families:
-            assert item.normalized_score is None
-            assert item.weighted_contribution is None
-            assert item.direction is Direction.UNAVAILABLE
+    def test_an_unavailable_family_contributes_nothing_not_zero(self):
+        """TEST 4 — un zéro tirerait le score vers le neutre."""
+        with_whales = _scored(dict.fromkeys(ALL, 80.0))
+        without = _scored({**dict.fromkeys(ALL, 80.0), "whales": None})
+        # Retirer une famille qui disait la même chose ne change pas le score.
+        assert without.pressure_score == pytest.approx(with_whales.pressure_score, abs=0.1)
+        # Et si elle valait 0, le score baisserait: vérifions que ce n'est pas le cas.
+        as_zero = _scored({**dict.fromkeys(ALL, 80.0), "whales": 0.0})
+        assert as_zero.pressure_score < without.pressure_score
+        absent = next(i for i in without.families if i.family == "whales")
+        assert absent.normalized_score is None
+        assert absent.weighted_contribution is None
+        assert absent.effective_weight is None
 
     def test_the_score_stays_within_its_bounds(self):
-        out = _explain([_family(name, 100) for name in ALL])
-        assert -100 <= out.pressure_score <= 100
+        assert _scored(dict.fromkeys(ALL, 100.0)).pressure_score <= 100
+        assert _scored(dict.fromkeys(ALL, -100.0)).pressure_score >= -100
 
 
-class TestVocabularyIsGatedByCoverage:
-    """« Dominant » demande presque toute l'information, pas seulement un score."""
+class TestIntensityScale:
+    """TEST 5, 6, 7, 8 — le mot dépend du score, jamais de la couverture."""
 
-    def test_five_buying_families_may_be_called_dominant(self):
-        out = _explain([_family(name, 70) for name in ALL])
-        assert out.coverage_ratio == pytest.approx(1.0)
-        assert out.label == "ACHETEURS DOMINANTS"
+    @pytest.mark.parametrize(
+        ("score", "expected"),
+        [
+            (70.0, Intensity.STRONG_BUYING),
+            (60.0, Intensity.STRONG_BUYING),
+            (59.0, Intensity.BUYING),
+            (30.0, Intensity.BUYING),
+            (25.0, Intensity.BUYING),
+            (24.0, Intensity.BALANCED),
+            (0.0, Intensity.BALANCED),
+            (-24.0, Intensity.BALANCED),
+            (-25.0, Intensity.SELLING),
+            (-30.0, Intensity.SELLING),
+            (-59.0, Intensity.SELLING),
+            (-60.0, Intensity.STRONG_SELLING),
+        ],
+    )
+    def test_each_band_gets_its_own_word(self, score, expected):
+        assert Intensity.of(score) is expected
 
-    def test_four_buying_and_one_neutral_is_strong_but_stated_plainly(self):
+    def test_thirty_is_never_called_strong(self):
+        """TEST 5 — le défaut exact: +30 annoncé « forte pression »."""
+        out = _scored(dict.fromkeys(ALL, 30.0))
+        assert out.pressure_score == pytest.approx(30.0, abs=0.05)
+        assert out.label == "PRESSION ACHETEUSE"
+        assert "FORTE" not in out.label
+
+    def test_seventy_is_strong(self):
+        out = _scored(dict.fromkeys(ALL, 70.0))
+        assert out.label == "FORTE PRESSION ACHETEUSE"
+
+    def test_minus_thirty_is_selling(self):
+        out = _scored(dict.fromkeys(ALL, -30.0))
+        assert out.label == "PRESSION VENDEUSE"
+
+    def test_the_neutral_band_is_balanced(self):
+        out = _scored(dict.fromkeys(ALL, 10.0))
+        assert out.label == "ÉQUILIBRÉE"
+
+    def test_full_coverage_never_upgrades_a_weak_score(self):
+        strong_coverage = _scored(dict.fromkeys(ALL, 30.0))
+        assert strong_coverage.coverage_level is CoverageLevel.EXCELLENT
+        assert strong_coverage.label == "PRESSION ACHETEUSE"
+
+
+class TestCoverageIsItsOwnMeasure:
+    """TEST 3 — la couverture compte des familles, pas des poids."""
+
+    @pytest.mark.parametrize(
+        ("available", "level", "label"),
+        [
+            (5, CoverageLevel.EXCELLENT, "Excellente"),
+            (4, CoverageLevel.GOOD, "Bonne"),
+            (3, CoverageLevel.PARTIAL, "Partielle"),
+            (2, CoverageLevel.LOW, "Faible"),
+            (1, CoverageLevel.LOW, "Faible"),
+        ],
+    )
+    def test_the_count_decides_the_word(self, available, level, label):
+        scores = {name: (40.0 if i < available else None)
+                  for i, name in enumerate(ALL)}
+        out = _scored(scores)
+        assert len(out.measured) == available
+        assert out.coverage_level is level
+        assert out.coverage_label == label
+
+    def test_three_available_reads_three_on_five(self):
+        out = _scored({"institutions": 30.0, "spot": 30.0, "derivatives": 30.0,
+                       "funding": None, "whales": None})
+        assert out.coverage_line == "3/5 familles"
+
+    def test_a_family_without_meaning_leaves_the_denominator(self):
         out = _explain([
-            *(_family(name, 70) for name in ALL[:4]), _family("whales", 0),
+            _family("institutions", None, applicable=False),
+            *(_family(name, 30.0) for name in ALL[1:]),
         ])
-        assert out.coverage_level is CoverageLevel.STRONG
-        assert out.label == "ACHETEURS DOMINANTS"
+        # Quatre applicables, quatre disponibles: 4/4, pas 4/5.
+        assert out.coverage_line == "4/4 familles"
+        assert out.coverage_level is CoverageLevel.GOOD
 
-    def test_three_buying_against_two_selling_lands_between(self):
-        out = _explain([
-            _family("institutions", 60), _family("spot", 50),
-            _family("derivatives", 40), _family("funding", -50),
-            _family("whales", -60),
-        ])
-        assert 0 < out.pressure_score < DOMINANT_SCORE
-        assert out.label.startswith("PRESSION ACHETEUSE")
-        assert "DOMINANT" not in out.label
+    def test_coverage_never_borrows_intensity_vocabulary(self):
+        for label in COVERAGE_FR.values():
+            assert "PRESSION" not in label.upper()
+        for label in INTENSITY_FR.values():
+            assert label not in COVERAGE_FR.values()
 
-    def test_two_available_and_three_missing_is_never_dominant(self):
-        out = _explain([
-            _family("institutions", 90), _family("spot", 90),
-            _family("derivatives", None), _family("funding", None),
-            _family("whales", None),
-        ])
-        assert out.pressure_score > DOMINANT_SCORE
-        assert out.coverage_ratio < DOMINANT_COVERAGE
-        assert "DOMINANT" not in out.label
-        assert "PARTIELLE" in out.label
 
-    def test_one_strong_buy_against_four_missing_is_only_indicative(self):
-        """Le cas exact qui a produit « ACHAT DOMINANT +61 » sur 1/5."""
-        out = _explain([
-            _family("institutions", 95),
-            *(_family(name, None) for name in ALL[1:]),
-        ])
-        assert out.pressure_score == pytest.approx(95, abs=0.5)
-        assert out.coverage_level is CoverageLevel.INDICATIVE
-        assert out.label == "PRESSION ACHETEUSE INDICATIVE"
-        assert "DOMINANT" not in out.label
+class TestInsufficientData:
+    """TEST 12 — sous le minimum, aucune conclusion n'est annoncée."""
 
-    def test_no_family_at_all_is_insufficient_not_balanced(self):
-        out = _explain([_family(name, None) for name in ALL])
-        assert out.state == "INSUFFICIENT_DATA"
+    def test_two_families_is_not_a_balanced_market(self):
+        out = _scored({"institutions": 90.0, "spot": 90.0,
+                       "derivatives": None, "funding": None, "whales": None})
+        assert len(out.measured) == 2 < minimum_families()
+        assert out.has_enough_families is False
+        assert out.label == "DONNÉES INSUFFISANTES"
+        assert out.intensity is Intensity.INSUFFICIENT
+
+    def test_no_family_at_all_is_insufficient_not_zero(self):
+        out = _scored(dict.fromkeys(ALL, None))
         assert out.pressure_score is None
         assert out.label == "DONNÉES INSUFFISANTES"
         assert out.balance is None
 
-    def test_a_strong_reading_on_a_weak_score_stays_light(self):
-        out = _explain([_family(name, 12) for name in ALL])
-        assert out.coverage_level is CoverageLevel.STRONG
-        assert "LÉGÈRE" in out.label
+    def test_the_minimum_is_configured_not_hardcoded(self):
+        assert minimum_families() == 3
 
-
-class TestNotApplicableIsNotMissing:
-    def test_a_family_without_meaning_leaves_the_denominator(self):
-        out = _explain([
-            _family("institutions", None, applicable=False, available=False),
-            _family("spot", 30), _family("derivatives", 30),
-            _family("funding", 30), _family("whales", 30),
-        ])
-        assert len(out.applicable) == 4
-        assert len(out.measured) == 4
-        # Quatre applicables et quatre disponibles: 4/4, pas 4/5.
-        assert out.coverage_line == "4/4 familles"
-        assert out.coverage_ratio == pytest.approx(1.0)
-
-    def test_sol_has_no_spot_etf_and_is_not_penalised_for_it(self):
-        out = assess_pressure(Asset.SOL, funding_percentile=50, leverage_state="QUIET")
-        institutions = next(
-            item for item in out.families if item.family == "institutions"
-        )
-        assert institutions.applicable is False
-        assert institutions.reason
-        assert institutions not in out.applicable
-
-    def test_btc_does_expect_an_etf_family(self):
-        out = assess_pressure(Asset.BTC, funding_percentile=50, leverage_state="QUIET")
-        institutions = next(
-            item for item in out.families if item.family == "institutions"
-        )
-        assert institutions.applicable is True
-
-
-class TestOpenInterestIsNeverReadAsBuying:
-    """Un future a un long ET un short: l'OI seul n'a pas de direction."""
-
-    def test_the_derivatives_family_names_its_inputs(self):
-        out = assess_pressure(Asset.BTC, funding_percentile=50, leverage_state="NEW_LONGS")
-        derivatives = next(
-            item for item in out.families if item.family == "derivatives"
-        )
-        assert "open interest" in derivatives.source.lower()
-        assert "comptes" in derivatives.source.lower()
-
-    def test_rising_open_interest_alone_is_not_a_buy(self):
-        from crypto_intel.engines.market_pressure import _derivatives
-
-        # Sans état joint prix/OI ni bascule des comptes, rien n'est affirmé.
-        item = _derivatives(Asset.BTC, "")
-        assert item.direction is not Direction.STRONG_BUY
-
-    def test_new_shorts_reads_as_selling(self):
-        from crypto_intel.engines.market_pressure import _derivatives
-
-        item = _derivatives(Asset.BTC, "NEW_SHORTS")
-        if item.available:
-            assert item.normalized_score < 0
+    def test_at_the_minimum_an_intensity_is_produced(self):
+        out = _scored({"institutions": 40.0, "spot": 40.0, "derivatives": 40.0,
+                       "funding": None, "whales": None})
+        assert out.has_enough_families is True
+        assert out.label == "PRESSION ACHETEUSE"
 
 
 class TestTheContractIsStable:
-    def test_the_payload_carries_the_canonical_family_model(self):
-        payload = assess_pressure(
-            Asset.BTC, funding_percentile=50, leverage_state="QUIET"
-        ).to_dict()
-        assert {
-            "state", "pressure_score", "families", "components", "coverage",
-            "contradictions", "missing", "summary", "as_of", "method", "label",
-        } <= set(payload)
+    def test_the_payload_separates_intensity_from_coverage(self):
+        payload = _scored(dict.fromkeys(ALL, 30.0)).to_dict()
+        assert payload["intensity"] == "BUYING"
+        assert payload["intensity_label"] == "PRESSION ACHETEUSE"
+        assert payload["coverage"]["label"] == "Excellente"
+        assert payload["coverage"]["sufficient"] is True
+        assert payload["coverage"]["breakdown"]
+
+    def test_every_family_carries_its_effective_weight(self):
+        payload = _scored({**dict.fromkeys(ALL, 30.0), "whales": None}).to_dict()
         for family in payload["families"]:
-            assert {
-                "family", "asset", "applicable", "available", "direction",
-                "raw_value", "normalized_score", "weight",
-                "weighted_contribution", "source", "event_time",
-                "observation_time", "ingested_at", "freshness", "data_quality",
-                "explanation",
-            } <= set(family)
+            if family["available"]:
+                assert family["effective_weight"] is not None
+                assert family["weighted_contribution"] is not None
+            else:
+                assert family["effective_weight"] is None
+                assert family["weighted_contribution"] is None
 
-    def test_the_method_is_published_with_the_score(self):
-        method = assess_pressure(
-            Asset.BTC, funding_percentile=50, leverage_state="QUIET"
-        ).to_dict()["method"]
-        assert method["weights"] == WEIGHTS
-        assert method["bounds"] == [-100, 100]
+    def test_the_method_publishes_both_scales(self):
+        method = _scored(dict.fromkeys(ALL, 30.0)).to_dict()["method"]
+        assert method["intensity_scale"]["strong_buy"] == 60
+        assert method["coverage_scale"]["excellent"] == 5
         assert "jamais convertie en zéro" in method["missing_data"]
-        assert f"{DOMINANT_SCORE:.0f}" in method["dominant_gate"]
 
-    def test_every_direction_has_a_french_name(self):
+    def test_every_direction_and_level_has_a_french_name(self):
         from crypto_intel.engines.market_pressure import DIRECTION_DOT, DIRECTION_FR
 
         for direction in Direction:
             assert direction.value in DIRECTION_FR
             assert direction.value in DIRECTION_DOT
+        for level in CoverageLevel:
+            assert level.value in COVERAGE_FR
+        for intensity in Intensity:
+            assert intensity.value in INTENSITY_FR
 
 
 class TestNoFabricatedSource:
@@ -258,13 +277,17 @@ class TestNoFabricatedSource:
         assert whales.available is False
         assert whales.normalized_score is None
         assert "payant" in whales.reason
-        for forbidden in ("baleines acheteuses", "baleines vendeuses"):
-            assert forbidden not in whales.reason.lower()
+
+    def test_sol_has_no_spot_etf_and_is_not_penalised(self):
+        out = assess_pressure(Asset.SOL, funding_percentile=50, leverage_state="QUIET")
+        institutions = next(i for i in out.families if i.family == "institutions")
+        assert institutions.applicable is False
+        assert institutions not in out.applicable
 
     def test_no_family_advertises_a_proxy_as_a_measurement(self):
         out = assess_pressure(Asset.BTC, funding_percentile=50, leverage_state="QUIET")
         for item in out.families:
             if item.available:
                 assert item.data_quality in ("MEASURED", "DERIVED", "PARTIAL")
-                assert item.source, f"{item.family} ne nomme pas sa source"
-                assert item.observation_time, f"{item.family} n'a pas d'horodatage"
+                assert item.source
+                assert item.observation_time

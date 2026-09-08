@@ -208,9 +208,9 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Support principal'), findsOneWidget);
+      expect(find.text('Support à'), findsOneWidget);
       expect(find.text('-2.4 %'), findsOneWidget);
-      expect(find.text('Résistance principale'), findsOneWidget);
+      expect(find.text('Résistance à'), findsOneWidget);
       expect(find.text('+0.7 %'), findsOneWidget);
     });
 
@@ -339,6 +339,162 @@ void main() {
         const ChangeConditionsBlock(conditions: ChangeConditions.empty),
       );
       expect(find.byType(TodayPanel), findsNothing);
+    });
+  });
+
+  group('Intensité et couverture ne se qualifient jamais l’une l’autre', () {
+    // Le contrat est porté par le modèle: l'écran affiche `label` tel quel et
+    // n'a pas le droit de le durcir. Tester un widget dédié ici prouverait
+    // qu'un widget que l'app n'utilise pas se comporte bien.
+    PressureBreakdown parse(Map<String, dynamic> json) =>
+        PressureBreakdown.fromJson(json);
+
+    test('un score modéré sur couverture complète reste modéré', () {
+      // Le défaut: « +30/100 · 4/5 · Forte » se lisait « forte pression ».
+      final pressure = parse({
+        'label': 'PRESSION ACHETEUSE',
+        'score': 30.0,
+        'sufficient': true,
+        'families_active': 5,
+        'families_total': 5,
+        'families_line': '5/5 familles disponibles',
+        'coverage_level': 'EXCELLENT',
+        'coverage_label': 'Excellente',
+        'intensity': 'BUYING',
+      });
+      expect(pressure.label, 'PRESSION ACHETEUSE');
+      expect(pressure.label, isNot(contains('FORTE')));
+      // La couverture existe, nommée, et ne touche pas au titre.
+      expect(pressure.coverageLabel, 'Excellente');
+      expect(pressure.label, isNot(contains(pressure.coverageLabel)));
+    });
+
+    test('un score fort est dit fort', () {
+      final pressure = parse({
+        'label': 'FORTE PRESSION ACHETEUSE',
+        'score': 70.0,
+        'sufficient': true,
+        'intensity': 'STRONG_BUYING',
+        'coverage_level': 'GOOD',
+        'coverage_label': 'Bonne',
+      });
+      expect(pressure.label, 'FORTE PRESSION ACHETEUSE');
+      expect(pressure.intensity, 'STRONG_BUYING');
+    });
+
+    test('sous le minimum, aucun score n’est annoncé', () {
+      final pressure = parse({
+        'label': 'DONNÉES INSUFFISANTES',
+        'score': null,
+        'sufficient': false,
+        'families_active': 2,
+        'families_total': 5,
+        'families_line': '2/5 familles disponibles',
+        'coverage_level': 'LOW',
+        'coverage_label': 'Faible',
+        'intensity': 'INSUFFICIENT',
+        'insufficient_note': 'Données insuffisantes pour déterminer la pression.',
+      });
+      // Ni +0/100 ni « équilibré »: une absence n'est pas un marché neutre.
+      expect(pressure.score, isNull);
+      expect(pressure.sufficient, isFalse);
+      expect(pressure.label, 'DONNÉES INSUFFISANTES');
+      expect(pressure.insufficientNote, isNotEmpty);
+    });
+
+    test('le poids effectif accompagne la contribution', () {
+      const family = PressureContribution(
+        family: 'institutions', label: 'ETF', available: true,
+        normalizedScore: 98.7, weightedContribution: 32.9,
+        effectiveWeight: 0.3333, weight: 0.30,
+      );
+      // 98,7 × 0,3333 = 32,9 : l'arithmétique se refait à la main.
+      expect(
+        family.normalizedScore! * family.effectiveWeight!,
+        closeTo(family.weightedContribution!, 0.05),
+      );
+      // Et le poids affiché est l'effectif, pas le théorique.
+      expect(family.effectiveWeight, isNot(family.weight));
+    });
+
+    test('la méthodologie voyage avec le score', () {
+      final pressure = parse({
+        'methodology_title': 'COMMENT CE SCORE EST CALCULÉ',
+        'methodology': ['score = Σ(score famille × poids effectif)'],
+        'short_note': 'Une source indisponible est exclue du calcul.',
+      });
+      expect(pressure.methodology, isNotEmpty);
+      expect(pressure.shortNote, contains('exclue du calcul'));
+    });
+  });
+
+  group('Fraîcheur de l’analyse', () {
+    // Le piège: un instantané embarqué fige « FRESH · il y a 0 min » au moment
+    // de son export. Ouvert quatre heures plus tard il dirait encore
+    // « actualisée ». L'âge se mesure donc contre l'horloge de celui qui
+    // regarde, jamais contre celle qui a produit le fichier.
+    AnalysisStamp at(DateTime computed) => AnalysisStamp.fromJson({
+          'computed_at': computed.toUtc().toIso8601String(),
+          'freshness_status': 'FRESH',
+          'freshness_sentence': 'Actualisée il y a 0 min',
+          'verdict_is_actionable': true,
+        });
+
+    final now = DateTime.utc(2026, 9, 8, 17, 16);
+
+    test('une analyse récente reste active', () {
+      final stamp = at(now.subtract(const Duration(minutes: 8)));
+      expect(stamp.freshnessStatus(now: now), 'FRESH');
+      expect(stamp.verdictIsActionable(now: now), isTrue);
+      expect(stamp.freshnessSentence(now: now), 'Actualisée il y a 8 min');
+    });
+
+    test('chaque palier a son état', () {
+      expect(at(now.subtract(const Duration(minutes: 30)))
+          .freshnessStatus(now: now), 'AGING');
+      expect(at(now.subtract(const Duration(hours: 2)))
+          .freshnessStatus(now: now), 'STALE');
+      expect(at(now.subtract(const Duration(hours: 5)))
+          .freshnessStatus(now: now), 'EXPIRED');
+    });
+
+    test('une analyse de 13:24 lue à 17:16 n’est plus active', () {
+      // Le cas exact de la capture.
+      final stamp = at(DateTime.utc(2026, 9, 8, 13, 24));
+      expect(stamp.freshnessStatus(now: now), 'EXPIRED');
+      expect(stamp.verdictIsActionable(now: now), isFalse);
+      expect(stamp.freshnessSentence(now: now), 'Analyse non actualisée · 3 h 52');
+    });
+
+    test('un instantané figé sur FRESH ne trompe pas le client', () {
+      // Le payload dit FRESH; l'horloge dit autre chose. L'horloge gagne.
+      final stamp = at(now.subtract(const Duration(hours: 4)));
+      expect(stamp.publishedFreshnessStatus, 'FRESH');
+      expect(stamp.freshnessStatus(now: now), 'EXPIRED');
+      expect(stamp.verdictIsActionable(now: now), isFalse);
+    });
+
+    test('le mode hors ligne se nomme et se date', () {
+      final stamp = at(now.subtract(const Duration(hours: 3, minutes: 52)));
+      final sentence = stamp.freshnessSentence(now: now, offline: true);
+      expect(sentence, contains('hors ligne'));
+      expect(sentence, contains('3 h 52'));
+    });
+
+    test('sans horodatage, la valeur publiée sert de repli', () {
+      final stamp = AnalysisStamp.fromJson({
+        'freshness_status': 'STALE',
+        'verdict_is_actionable': false,
+      });
+      expect(stamp.freshnessStatus(), 'STALE');
+      expect(stamp.verdictIsActionable(), isFalse);
+    });
+
+    test('les seuils du client suivent ceux du backend', () {
+      // config/thresholds.yaml: 900 / 3600 / 10800.
+      expect(AnalysisStamp.freshSeconds, 900);
+      expect(AnalysisStamp.agingSeconds, 3600);
+      expect(AnalysisStamp.staleSeconds, 10800);
     });
   });
 

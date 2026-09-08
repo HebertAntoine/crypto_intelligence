@@ -104,6 +104,11 @@ class PressureFamilyContribution:
     raw_value: Any = None
     normalized_score: float | None = None
     weight: float = 0.0
+    # Poids théorique renormalisé sur les familles qui ont répondu. C'est lui
+    # qui multiplie le score, donc c'est lui qu'il faut montrer à côté de la
+    # contribution: afficher le poids théorique laissait croire à deux
+    # arithmétiques différentes.
+    effective_weight: float | None = None
     weighted_contribution: float | None = None
     source: str = ""
     # L'heure de l'événement décrit, celle de l'observation, et celle de son
@@ -161,6 +166,7 @@ class PressureFamilyContribution:
             "score": self.normalized_score,
             "normalized_pressure": self.normalized_score,
             "weight": self.weight,
+            "effective_weight": self.effective_weight,
             "weighted_contribution": self.weighted_contribution,
             "source": self.source,
             "event_time": self.event_time,
@@ -187,26 +193,97 @@ WEIGHTS: dict[str, float] = {
     "whales": 0.10,         # quand une source vérifiée existe
 }
 
-# Au-dessous, la lecture reste indicative quel que soit le score.
-COVERAGE_INDICATIVE = 0.40
-COVERAGE_PARTIAL = 0.70
-# Le mot « dominant » demande les deux: presque toute l'information, et un
-# déséquilibre franc.
-DOMINANT_COVERAGE = 0.75
-DOMINANT_SCORE = 45.0
+# Intensité et couverture répondent à deux questions et se lisaient comme une
+# seule. « +30/100 · 4/5 familles · Forte » laissait entendre que la pression
+# était forte, alors que « Forte » qualifiait la couverture et que +30 est une
+# pression modérée. Les deux échelles sont désormais séparées, et leurs bornes
+# vivent dans `config/thresholds.yaml` — un seuil dupliqué dans un widget est
+# un seuil qui finira par contredire le moteur.
+def _intensity_thresholds() -> dict[str, float]:
+    from ..config_loader import threshold
+
+    raw = threshold("pressure", "intensity", default={}) or {}
+    return {
+        "strong_buy": float(raw.get("strong_buy", 60)),
+        "buy": float(raw.get("buy", 25)),
+        "neutral_band": float(raw.get("neutral_band", 24)),
+        "sell": float(raw.get("sell", -25)),
+        "strong_sell": float(raw.get("strong_sell", -60)),
+    }
+
+
+def _coverage_thresholds() -> dict[str, int]:
+    from ..config_loader import threshold
+
+    raw = threshold("pressure", "coverage", default={}) or {}
+    return {
+        "excellent": int(raw.get("excellent", 5)),
+        "good": int(raw.get("good", 4)),
+        "partial": int(raw.get("partial", 3)),
+    }
+
+
+def minimum_families() -> int:
+    """En dessous, aucune conclusion de pression n'est produite.
+
+    Deux familles sur cinq ne disent pas « marché équilibré » : elles disent
+    que nous ne savons pas. Afficher 0/100 dans ce cas serait une conclusion
+    tirée d'une absence.
+    """
+    from ..config_loader import threshold
+
+    return int(threshold("pressure", "minimum_families", default=3) or 3)
+
+
+class Intensity(StrEnum):
+    """Ce que dit le score, indépendamment de sa couverture."""
+
+    STRONG_BUYING = "STRONG_BUYING"
+    BUYING = "BUYING"
+    BALANCED = "BALANCED"
+    SELLING = "SELLING"
+    STRONG_SELLING = "STRONG_SELLING"
+    INSUFFICIENT = "INSUFFICIENT"
+
+    @classmethod
+    def of(cls, score: float | None) -> Intensity:
+        if score is None:
+            return cls.INSUFFICIENT
+        limits = _intensity_thresholds()
+        if score >= limits["strong_buy"]:
+            return cls.STRONG_BUYING
+        if score >= limits["buy"]:
+            return cls.BUYING
+        if score <= limits["strong_sell"]:
+            return cls.STRONG_SELLING
+        if score <= limits["sell"]:
+            return cls.SELLING
+        return cls.BALANCED
+
+
+INTENSITY_FR: dict[str, str] = {
+    "STRONG_BUYING": "FORTE PRESSION ACHETEUSE",
+    "BUYING": "PRESSION ACHETEUSE",
+    "BALANCED": "ÉQUILIBRÉE",
+    "SELLING": "PRESSION VENDEUSE",
+    "STRONG_SELLING": "FORTE PRESSION VENDEUSE",
+    "INSUFFICIENT": "DONNÉES INSUFFISANTES",
+}
 
 
 class CoverageLevel(StrEnum):
+    """Combien de familles applicables ont répondu — jamais une intensité."""
+
     NONE = "NONE"
-    INDICATIVE = "INDICATIVE"
+    LOW = "LOW"
     PARTIAL = "PARTIAL"
-    SUFFICIENT = "SUFFICIENT"
-    STRONG = "STRONG"
+    GOOD = "GOOD"
+    EXCELLENT = "EXCELLENT"
 
 
 COVERAGE_FR: dict[str, str] = {
-    "NONE": "Aucune", "INDICATIVE": "Faible", "PARTIAL": "Partielle",
-    "SUFFICIENT": "Suffisante", "STRONG": "Forte",
+    "NONE": "Aucune", "LOW": "Faible", "PARTIAL": "Partielle",
+    "GOOD": "Bonne", "EXCELLENT": "Excellente",
 }
 
 
@@ -237,6 +314,7 @@ class MarketPressureExplanation:
 
     @property
     def coverage_ratio(self) -> float:
+        """Part du poids applicable qui a effectivement répondu."""
         total = sum(WEIGHTS[item.family] for item in self.applicable)
         if total <= 0:
             return 0.0
@@ -244,49 +322,86 @@ class MarketPressureExplanation:
 
     @property
     def coverage_level(self) -> CoverageLevel:
-        if not self.measured:
+        """Classée sur le nombre de familles, pas sur leur poids.
+
+        La ligne affichée compte des familles (« 4/5 ») ; classer sur le poids
+        produisait des paires contradictoires — SOL affichait « 3/4 » avec un
+        niveau calculé à 86 %, deux mesures différentes présentées comme une.
+        """
+        count = len(self.measured)
+        if count == 0:
             return CoverageLevel.NONE
-        ratio = self.coverage_ratio
-        if ratio < COVERAGE_INDICATIVE:
-            return CoverageLevel.INDICATIVE
-        if ratio < COVERAGE_PARTIAL:
+        limits = _coverage_thresholds()
+        if count >= limits["excellent"]:
+            return CoverageLevel.EXCELLENT
+        if count >= limits["good"]:
+            return CoverageLevel.GOOD
+        if count >= limits["partial"]:
             return CoverageLevel.PARTIAL
-        if ratio < DOMINANT_COVERAGE:
-            return CoverageLevel.SUFFICIENT
-        return CoverageLevel.STRONG
+        return CoverageLevel.LOW
+
+    @property
+    def has_enough_families(self) -> bool:
+        return len(self.measured) >= minimum_families()
+
+    @property
+    def intensity(self) -> Intensity:
+        """L'intensité ne se prononce pas sans un minimum de familles."""
+        if not self.has_enough_families:
+            return Intensity.INSUFFICIENT
+        return Intensity.of(self.pressure_score)
 
     @property
     def coverage_line(self) -> str:
         return f"{len(self.measured)}/{len(self.applicable)} familles"
 
     @property
-    def label(self) -> str:
-        """Le titre affiché, verrouillé par la couverture.
-
-        « ACHETEURS DOMINANTS » demande une couverture forte et un déséquilibre
-        franc. Sans les deux, la même pression se dit « indicative » ou
-        « partielle » — ce qui est la vérité, pas une atténuation.
-        """
-        score = self.pressure_score
-        if score is None or not self.measured:
-            return "DONNÉES INSUFFISANTES"
-        side = "ACHETEUSE" if score > 0 else "VENDEUSE"
-        level = self.coverage_level
-        if abs(score) <= 8:
-            return "ÉQUILIBRÉE" if level is not CoverageLevel.INDICATIVE else (
-                "LECTURE INDICATIVE"
+    def breakdown_line(self) -> str:
+        """« 2 acheteuses · 1 vendeuse · 1 neutre · 1 indisponible »."""
+        buying = sum(
+            1 for item in self.measured
+            if item.direction in (Direction.STRONG_BUY, Direction.BUY,
+                                  Direction.SLIGHT_BUY)
+        )
+        selling = sum(
+            1 for item in self.measured
+            if item.direction in (Direction.STRONG_SELL, Direction.SELL,
+                                  Direction.SLIGHT_SELL)
+        )
+        neutral = sum(
+            1 for item in self.measured if item.direction is Direction.NEUTRAL
+        )
+        unavailable = len(self.applicable) - len(self.measured)
+        parts = []
+        if buying:
+            parts.append(f"{buying} acheteuse{'s' if buying > 1 else ''}")
+        if selling:
+            parts.append(f"{selling} vendeuse{'s' if selling > 1 else ''}")
+        if neutral:
+            parts.append(f"{neutral} neutre{'s' if neutral > 1 else ''}")
+        if unavailable:
+            parts.append(
+                f"{unavailable} indisponible{'s' if unavailable > 1 else ''}"
             )
-        if level is CoverageLevel.INDICATIVE:
-            return f"PRESSION {side} INDICATIVE"
-        if level is CoverageLevel.PARTIAL:
-            return f"PRESSION {side} PARTIELLE"
-        if level is CoverageLevel.STRONG and abs(score) >= DOMINANT_SCORE:
-            return "ACHETEURS DOMINANTS" if score > 0 else "VENDEURS DOMINANTS"
-        # Une couverture forte ne rend pas un déséquilibre faible important:
-        # « pression vendeuse » à -9 sur 100 disait plus que la mesure.
-        if abs(score) < 25:
-            return f"PRESSION {side} LÉGÈRE"
-        return f"PRESSION {side}"
+        return " · ".join(parts)
+
+    @property
+    def label(self) -> str:
+        """Le titre affiché : l'intensité seule, jamais la couverture.
+
+        L'ancien titre fusionnait les deux — « PRESSION ACHETEUSE PARTIELLE »
+        décrivait un score par un adjectif de couverture, et « 4/5 · Forte »
+        juste en dessous laissait lire « forte pression ». Le titre dit
+        maintenant ce que vaut le score ; la couverture se lit à côté, avec
+        ses propres mots.
+        """
+        if not self.has_enough_families:
+            return INTENSITY_FR["INSUFFICIENT"]
+        return INTENSITY_FR[self.intensity.value]
+
+    @property
+    def coverage_label(self) -> str:
+        return COVERAGE_FR[self.coverage_level.value]
 
     # --- compatibilité ----------------------------------------------------
     @property
@@ -316,13 +431,18 @@ class MarketPressureExplanation:
             "label": self.label,
             "families": [item.to_dict() for item in self.families],
             "components": [item.to_dict() for item in self.families],
+            "intensity": self.intensity.value,
+            "intensity_label": INTENSITY_FR[self.intensity.value],
             "coverage": {
                 "measured": len(self.measured),
                 "applicable": len(self.applicable),
                 "line": self.coverage_line,
+                "breakdown": self.breakdown_line,
                 "ratio": round(self.coverage_ratio, 3),
                 "level": self.coverage_level.value,
-                "label": COVERAGE_FR[self.coverage_level.value],
+                "label": self.coverage_label,
+                "sufficient": self.has_enough_families,
+                "minimum": minimum_families(),
             },
             "contradictions": self.contradictions,
             "missing": self.missing,
@@ -346,9 +466,11 @@ class MarketPressureExplanation:
                 "not_applicable": (
                     "retirée du dénominateur et du décompte de couverture"
                 ),
-                "dominant_gate": (
-                    f"« dominant » exige une couverture ≥ {DOMINANT_COVERAGE:.0%} "
-                    f"et |score| ≥ {DOMINANT_SCORE:.0f}"
+                "intensity_scale": _intensity_thresholds(),
+                "coverage_scale": _coverage_thresholds(),
+                "insufficient_below": (
+                    f"moins de {minimum_families()} familles disponibles : "
+                    "aucune intensité n'est annoncée"
                 ),
             },
             "caveat": (
@@ -717,16 +839,20 @@ def assess_pressure(
         )
         return out
 
+    # Une seule formule, documentée et reproductible:
+    #   poids effectif = poids / somme des poids disponibles
+    #   score          = Σ(score famille × poids effectif),  borné à [-100, 100]
+    # Une famille absente sort du dénominateur; elle ne vaut ni 0 ni neutre.
     denominator = sum(item.weight for item in measured)
     out.denominator = denominator
+    exact = 0.0
     for item in measured:
-        item.weighted_contribution = round(
-            float(item.normalized_score or 0) * item.weight / denominator, 2
-        )
-    score = round(
-        sum(item.weighted_contribution or 0 for item in measured), 1
-    )
-    out.pressure_score = max(-100.0, min(100.0, score))
+        effective = item.weight / denominator
+        item.effective_weight = round(effective, 4)
+        contribution = float(item.normalized_score or 0) * effective
+        exact += contribution
+        item.weighted_contribution = round(contribution, 2)
+    out.pressure_score = round(max(-100.0, min(100.0, exact)), 1)
     out.state = Direction.of(out.pressure_score).value
 
     positive = [item for item in measured if (item.normalized_score or 0) >= 20]
@@ -736,6 +862,16 @@ def assess_pressure(
             f"{positive[0].label} penche à l'achat pendant que "
             f"{negative[0].label} penche à la vente."
         )
+
+    if not out.has_enough_families:
+        # Deux familles sur cinq ne disent pas « marché équilibré »: elles
+        # disent que nous ne savons pas. Le score reste calculé et auditable,
+        # mais aucune intensité n'est annoncée.
+        out.summary = (
+            f"Données insuffisantes pour déterminer la pression : "
+            f"{out.coverage_line} disponibles, {minimum_families()} au minimum."
+        )
+        return out
 
     out.summary = (
         f"{out.label} ({out.pressure_score:+.0f}/100), sur "

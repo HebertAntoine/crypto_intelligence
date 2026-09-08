@@ -289,7 +289,7 @@ class TestTimeframes:
         ))
         block = tv.timeframe_summary(snapshot)
         assert block["alignment"] == "DIVERGENT"
-        assert block["alignment_label"] == "Divergent"
+        assert block["alignment_label"] == "Divergente"
 
     def test_every_row_carries_a_word_not_only_an_arrow(self):
         snapshot = _snapshot(structure=self._structure(
@@ -319,7 +319,8 @@ class TestContradictions:
             "timeframes": {"1w": {"state": "BEARISH_STRUCTURE"}}, "conflict": None
         })
         block = tv.contradictions(snapshot)
-        assert block["badge"] == "LECTURE MIXTE"
+        # « LECTURE MIXTE » entrait en collision avec l'alignement « Mixte ».
+        assert block["badge"] == "LECTURES OPPOSÉES"
         assert "long terme" in block["items"][0]["text"]
 
     def test_agreement_raises_no_badge(self):
@@ -420,7 +421,7 @@ class TestPressureDecomposition:
         assert {item["label"] for item in block["unavailable"]} == {
             "Baleines / flux exchanges", "Spot / agressivité"
         }
-        assert block["families_line"] == "3/5 familles"
+        assert block["families_line"] == "3/5 familles disponibles"
 
     def test_an_unavailable_family_contributes_nothing_rather_than_zero(self):
         pressure = self._pressure([
@@ -445,7 +446,7 @@ class TestPressureDecomposition:
             self._family("whales", "Baleines", 20.0),
         ])
         block = tv.pressure_breakdown(_snapshot(pressure=pressure))
-        assert block["families_line"] == "4/4 familles"
+        assert block["families_line"] == "4/4 familles disponibles"
         assert [item["label"] for item in block["not_applicable"]] == [
             "ETF / Institutions"
         ]
@@ -464,8 +465,10 @@ class TestPressureDecomposition:
         assert total == pytest.approx(
             block["reconstruction"]["sum_of_contributions"], abs=0.05
         )
-        assert block["reconstruction"]["matches_score"] is True
+        # Et la somme des apports refait le score, aux arrondis d'affichage près.
+        assert total == pytest.approx(block["score"], abs=0.05)
         assert block["reconstruction"]["formula"]
+        assert block["reconstruction"]["rounding_note"]
 
     def test_every_contribution_states_its_provenance(self):
         pressure = self._pressure([self._family("institutions", "ETF", 28.0)])
@@ -483,11 +486,12 @@ class TestPressureDecomposition:
         ])
         block = tv.pressure_breakdown(_snapshot(pressure=pressure))
         assert block["families_active"] == 0
-        assert block["headline"] == "Pression indéterminée"
+        assert block["headline"] == "DONNÉES INSUFFISANTES"
+        assert block["score"] is None
         assert block["reconstruction"]["sum_of_contributions"] is None
 
-    def test_a_high_score_on_thin_coverage_is_never_called_dominant(self):
-        """Le défaut exact: « ACHAT DOMINANT +61 » sur une famille sur cinq."""
+    def test_a_high_score_on_thin_coverage_announces_nothing(self):
+        """Une famille sur cinq ne conclut pas, quel que soit son score."""
         pressure = self._pressure([
             self._family("institutions", "ETF", 95.0),
             self._family("spot", "Spot", None),
@@ -496,10 +500,11 @@ class TestPressureDecomposition:
             self._family("whales", "Baleines", None),
         ])
         block = tv.pressure_breakdown(_snapshot(pressure=pressure))
-        assert block["score"] > 60
-        assert "DOMINANT" not in block["label"]
-        assert block["label"] == "PRESSION ACHETEUSE INDICATIVE"
-        assert block["coverage_level"] == "INDICATIVE"
+        assert block["sufficient"] is False
+        assert block["score"] is None, "aucun score annoncé sous le minimum"
+        assert block["label"] == "DONNÉES INSUFFISANTES"
+        assert block["coverage_level"] == "LOW"
+        assert block["insufficient_note"]
 
     def test_the_tooltip_refuses_the_probability_reading(self):
         pressure = self._pressure([self._family("institutions", "ETF", 20.0)])

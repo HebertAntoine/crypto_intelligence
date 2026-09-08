@@ -968,29 +968,34 @@ class _AnalysisStampLine extends StatelessWidget {
     final stamp = read.analysis;
     final moment = stamp.computedAtUtc?.toLocal();
     final drifted = stamp.staleForCurrentPrice;
-    if (moment == null && !drifted) return const SizedBox.shrink();
+    // Une analyse de quatre heures ne se présente pas comme « maintenant ».
+    // L'état vient du backend; l'écran ne fait que le rendre visible.
+    final aged = !stamp.verdictIsActionable();
+    if (moment == null && !drifted && !aged) return const SizedBox.shrink();
 
+    final horloge = 'Analyse calculée à ${_clockLabel(moment ?? DateTime.now())}';
+    final age = ' · ${stamp.freshnessSentence()}';
     final texte = drifted
-        ? 'Analyse calculée à ${_clockLabel(moment ?? DateTime.now())} sur un '
-            'prix de ${_analysisPriceLabel(stamp.priceAtAnalysis)}. Le prix a '
-            'bougé de ${_driftLabel(stamp.driftPct)} depuis : actualisation '
-            'recommandée.'
-        : 'Analyse calculée à ${_clockLabel(moment!)}';
+        ? '$horloge sur un prix de '
+            '${_analysisPriceLabel(stamp.priceAtAnalysis)}. Le prix a bougé de '
+            '${_driftLabel(stamp.driftPct)} depuis : actualisation recommandée.'
+        : '$horloge$age';
+    final alerte = drifted || aged;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          drifted ? Icons.update_rounded : Icons.schedule_rounded,
+          alerte ? Icons.update_rounded : Icons.schedule_rounded,
           size: 17,
-          color: drifted ? AppColors.warn : mobileMuted,
+          color: alerte ? AppColors.warn : mobileMuted,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             texte,
             style: TextStyle(
-              color: drifted ? AppColors.warn : mobileMuted,
+              color: alerte ? AppColors.warn : mobileMuted,
               fontSize: 14.5,
               height: 1.3,
             ),
@@ -1133,6 +1138,32 @@ class _EntryAnswerPanel extends StatelessWidget {
                           ],
                         ),
                       ),
+                      // §12: au-delà du seuil de péremption, le verdict reste
+                      // lisible mais cesse d'être présenté comme actif. Le
+                      // faire passer pour une décision du moment serait le
+                      // défaut le plus coûteux de cette page.
+                      if (!read.analysis.verdictIsActionable()) ...[
+                        const SizedBox(height: 7),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.warn.withValues(alpha: .16),
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(
+                                color: AppColors.warn.withValues(alpha: .5)),
+                          ),
+                          child: Text(
+                            'Analyse à actualiser · '
+                            '${read.analysis.freshnessSentence()}',
+                            style: const TextStyle(
+                              color: AppColors.warn,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 10),
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 335),
@@ -1463,18 +1494,14 @@ class _TodayIconTile extends StatelessWidget {
   const _TodayIconTile({required this.icon, required this.tone});
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: 47,
-        height: 47,
-        decoration: BoxDecoration(
-          color: tone.withValues(alpha: .13),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: tone.withValues(alpha: .62)),
-          boxShadow: [
-            BoxShadow(color: tone.withValues(alpha: .18), blurRadius: 16),
-          ],
-        ),
-        child: Icon(icon, color: tone, size: 27),
+  Widget build(BuildContext context) => SizedBox(
+        width: 34,
+        height: 34,
+        // Sans cadre. Le container bordé de 47 px se lisait comme un carré
+        // vide en attente d'image, alors que le glyphe était bien là — les six
+        // icônes de ces cartes sont présentes dans la police livrée. C'est
+        // l'encadrement qui ressemblait à un placeholder, pas l'icône.
+        child: Icon(icon, color: tone, size: 30),
       );
 }
 
@@ -1911,8 +1938,12 @@ class _MarketPressureSummary extends StatelessWidget {
                                     .withValues(alpha: .16),
                                 borderRadius: BorderRadius.circular(7),
                               ),
+                              // « Couverture bonne », pas « Bonne » seul: le
+                              // mot « couverture » est ce qui empêche de lire
+                              // cet adjectif comme une intensité de pression.
                               child: Text(
-                                breakdown!.coverageLabel,
+                                'Couverture '
+                                '${breakdown!.coverageLabel.toLowerCase()}',
                                 style: TextStyle(
                                   color:
                                       _coverageTone(breakdown!.coverageLevel),
@@ -1937,9 +1968,9 @@ class _MarketPressureSummary extends StatelessWidget {
 
 /// La couverture décide de ce que le score vaut, donc elle a sa propre couleur.
 Color _coverageTone(String level) => switch (level) {
-      'STRONG' || 'SUFFICIENT' => AppColors.measured,
+      'EXCELLENT' || 'GOOD' => AppColors.measured,
       'PARTIAL' => AppColors.warn,
-      'INDICATIVE' || 'NONE' => AppColors.bad,
+      'LOW' || 'NONE' => AppColors.bad,
       _ => mobileMuted,
     };
 
@@ -3445,7 +3476,7 @@ class _ExpandToggle extends StatelessWidget {
               children: [
                 Flexible(
                   child: Text(
-                    expanded ? 'Réduire' : 'Plus de détail',
+                    expanded ? 'Réduire' : 'Plus de détails',
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.accent,
@@ -3814,6 +3845,11 @@ void _showCoverageDetail(BuildContext context, TodayPage page) {
 /// Une ligne par famille : pastille, nom, état, une phrase. Les poids et les
 /// apports au total viennent ensuite, pour qui veut refaire le calcul ; les
 /// valeurs brutes restent dans Preuves.
+/// Qui achète, qui vend, famille par famille.
+///
+/// L'intensité et la couverture sont annoncées séparément, puis une ligne dit
+/// la répartition. La méthode complète est repliée derrière son propre titre:
+/// elle doit rester consultable sans occuper la lecture principale.
 void _showPressureBreakdown(BuildContext context, PressureBreakdown breakdown) {
   _showTodaySheet(
     context,
@@ -3847,10 +3883,32 @@ void _showPressureBreakdown(BuildContext context, PressureBreakdown breakdown) {
       ),
       const SizedBox(height: 4),
       Text(
-        'Couverture : ${breakdown.familiesLine} · '
-        '${breakdown.coverageLabel.toLowerCase()}',
+        'Couverture : ${breakdown.familiesLine}'
+        '${breakdown.coverageLabel.isEmpty ? '' : ' · ${breakdown.coverageLabel.toLowerCase()}'}',
         style: const TextStyle(color: mobileMuted, fontSize: 14),
       ),
+      if (breakdown.coverageBreakdown.isNotEmpty) ...[
+        const SizedBox(height: 2),
+        Text(
+          breakdown.coverageBreakdown,
+          style: const TextStyle(color: mobileMuted, fontSize: 13),
+        ),
+      ],
+      if (breakdown.insufficientNote.isNotEmpty) ...[
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.warn.withValues(alpha: .12),
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Text(
+            breakdown.insufficientNote,
+            style: const TextStyle(
+                color: AppColors.warn, fontSize: 13, height: 1.32),
+          ),
+        ),
+      ],
       const SizedBox(height: 20),
       PressureFamilyList(pressure: breakdown, showContributions: true),
       if (breakdown.contradictions.isNotEmpty)
@@ -3865,8 +3923,82 @@ void _showPressureBreakdown(BuildContext context, PressureBreakdown breakdown) {
               ),
           ],
         ),
-      if (breakdown.missingNote.isNotEmpty) _SheetNote(breakdown.missingNote),
+      if (breakdown.shortNote.isNotEmpty) _SheetNote(breakdown.shortNote),
       if (breakdown.tooltip.isNotEmpty) _SheetNote(breakdown.tooltip),
+      if (breakdown.methodology.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        _MethodologyPanel(
+          title: breakdown.methodologyTitle,
+          lines: breakdown.methodology,
+        ),
+      ],
     ],
   );
+}
+
+/// La méthode, repliée par défaut.
+///
+/// Elle ne doit pas disparaître — un score qu'on ne peut pas refaire n'est pas
+/// un score — mais elle n'a pas à occuper la lecture principale du détail.
+class _MethodologyPanel extends StatefulWidget {
+  final String title;
+  final List<String> lines;
+
+  const _MethodologyPanel({required this.title, required this.lines});
+
+  @override
+  State<_MethodologyPanel> createState() => _MethodologyPanelState();
+}
+
+class _MethodologyPanelState extends State<_MethodologyPanel> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(9),
+              onTap: () => setState(() => _open = !_open),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.title,
+                        style: const TextStyle(
+                          color: AppColors.accent,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: .4,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _open
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
+                      color: AppColors.accent,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (_open)
+            for (final line in widget.lines)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  line,
+                  style: const TextStyle(
+                      color: mobileMuted, fontSize: 12.5, height: 1.4),
+                ),
+              ),
+        ],
+      );
 }

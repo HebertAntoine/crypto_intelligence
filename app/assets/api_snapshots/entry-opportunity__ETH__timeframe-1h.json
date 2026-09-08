@@ -11,15 +11,8 @@
       "source": "structure"
     },
     {
-      "contribution": 12.0,
-      "detail": "En 1h, le prix est dans le tiers bas de son range (qualit\u00e9 de zone 65/100)",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
-    },
-    {
       "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 9.0e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 9.8e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
@@ -30,21 +23,28 @@
       "is_measured_edge": false,
       "name": "funding leaning",
       "source": "derivatives"
+    },
+    {
+      "contribution": 0.0,
+      "detail": "En 1h, le prix est au milieu de son range (qualit\u00e9 de zone 74/100)",
+      "is_measured_edge": false,
+      "name": "structural location",
+      "source": "structure"
     }
   ],
   "from_analysis": false,
-  "invalidation": "Une cl\u00f4ture 1h sous 2471.61 casserait la zone basse du range et invaliderait cette lecture.",
+  "invalidation": "Une cl\u00f4ture 1h hors de 2459.29-2511.40 invaliderait cette lecture du range.",
   "measured_edge_note": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict f",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [],
-  "score": 13.5,
+  "score": 10.5,
   "state": "FAVORABLE",
-  "statement": "ETH 1h configuration is FAVORABLE (+14). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "statement": "ETH 1h configuration is FAVORABLE (+10). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "1h",
   "why_now": [
     "Structure 1d haussi\u00e8re (HH HH HL HL)",
-    "En 1h, le prix est dans le tiers bas de son range (qualit\u00e9 de zone 65/100)",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 9.0e centile : les mouvements sont petits, dans les deux sens",
-    "Funding sous sa m\u00e9diane, au 20e centile"
+    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 9.8e centile : les mouvements sont petits, dans les deux sens",
+    "Funding sous sa m\u00e9diane, au 20e centile",
+    "En 1h, le prix est au milieu de son range (qualit\u00e9 de zone 74/100)"
   ]
 }

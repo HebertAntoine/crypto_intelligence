@@ -634,6 +634,16 @@ class AnalysisStamp {
   final String driftSeverity;
   final double ageSeconds;
 
+  /// L'état publié par le backend au moment du calcul.
+  ///
+  /// Il ne sert que de repli. Un instantané embarqué fige « FRESH · il y a
+  /// 0 min » au moment de son export, et l'app le lirait encore quatre heures
+  /// plus tard : l'âge doit se mesurer contre l'horloge de celui qui regarde,
+  /// pas contre celle de l'export.
+  final String publishedFreshnessStatus;
+  final String publishedFreshnessSentence;
+  final bool publishedVerdictIsActionable;
+
   const AnalysisStamp({
     this.analysisId = '',
     this.computedAt,
@@ -644,7 +654,60 @@ class AnalysisStamp {
     this.staleForCurrentPrice = false,
     this.driftSeverity = 'NONE',
     this.ageSeconds = 0,
+    this.publishedFreshnessStatus = 'FRESH',
+    this.publishedFreshnessSentence = '',
+    this.publishedVerdictIsActionable = true,
   });
+
+  // Mêmes bornes que `config/thresholds.yaml`. Elles vivent ici parce que le
+  // client doit pouvoir juger l'âge sans réseau; tout écart avec le backend
+  // est tenu par un test.
+  static const freshSeconds = 900;
+  static const agingSeconds = 3600;
+  static const staleSeconds = 10800;
+
+  /// Âge réel de l'analyse, mesuré maintenant.
+  Duration age({DateTime? now}) {
+    final computed = computedAtUtc;
+    if (computed == null) return Duration.zero;
+    final reference = (now ?? DateTime.now()).toUtc();
+    final delta = reference.difference(computed);
+    return delta.isNegative ? Duration.zero : delta;
+  }
+
+  /// FRESH / AGING / STALE / EXPIRED, calculé contre l'horloge courante.
+  String freshnessStatus({DateTime? now}) {
+    if (computedAtUtc == null) return publishedFreshnessStatus;
+    final seconds = age(now: now).inSeconds;
+    if (seconds <= freshSeconds) return 'FRESH';
+    if (seconds <= agingSeconds) return 'AGING';
+    if (seconds <= staleSeconds) return 'STALE';
+    return 'EXPIRED';
+  }
+
+  /// Faux au-delà du seuil de péremption : le verdict reste lisible et daté,
+  /// mais cesse d'être présenté comme une décision active.
+  bool verdictIsActionable({DateTime? now}) {
+    if (computedAtUtc == null) return publishedVerdictIsActionable;
+    final status = freshnessStatus(now: now);
+    return status == 'FRESH' || status == 'AGING';
+  }
+
+  /// « Actualisée il y a 8 min », « Analyse non actualisée · 3 h 52 ».
+  String freshnessSentence({DateTime? now, bool offline = false}) {
+    if (computedAtUtc == null) return publishedFreshnessSentence;
+    final minutes = age(now: now).inMinutes;
+    final label = minutes < 60
+        ? '$minutes min'
+        : '${minutes ~/ 60} h ${(minutes % 60).toString().padLeft(2, '0')}';
+    if (offline) return 'Mode hors ligne · analyse non actualisée depuis $label';
+    return switch (freshnessStatus(now: now)) {
+      'FRESH' => 'Actualisée il y a $label',
+      'AGING' => 'Analyse datant de $label',
+      'STALE' => 'Analyse ancienne · $label',
+      _ => 'Analyse non actualisée · $label',
+    };
+  }
 
   static const unknown = AnalysisStamp();
 
@@ -655,6 +718,12 @@ class AnalysisStamp {
         analysisId: json['analysis_id'] as String? ?? '',
         driftSeverity: json['drift_severity'] as String? ?? 'NONE',
         ageSeconds: (json['age_seconds'] as num?)?.toDouble() ?? 0,
+        publishedFreshnessStatus:
+            json['freshness_status'] as String? ?? 'FRESH',
+        publishedFreshnessSentence:
+            json['freshness_sentence'] as String? ?? '',
+        publishedVerdictIsActionable:
+            json['verdict_is_actionable'] as bool? ?? true,
         computedAt: json['computed_at'] as String?,
         priceAtAnalysis: (json['price_at_analysis'] as num?)?.toDouble(),
         livePrice: (json['live_price'] as num?)?.toDouble(),

@@ -123,7 +123,7 @@ CROWDING_FR: dict[str, str] = {
 
 FUNDING_BAND_FR: dict[str, str] = {
     "EXTREME_NEGATIVE": "Nettement négatif", "NEGATIVE": "Plutôt faible",
-    "NEUTRAL": "Dans sa normale", "POSITIVE": "Plutôt élevé",
+    "NEUTRAL": "Dans la norme", "POSITIVE": "Plutôt élevé",
     "EXTREME_POSITIVE": "Nettement élevé", "UNKNOWN": "Indisponible",
 }
 

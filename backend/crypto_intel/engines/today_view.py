@@ -208,9 +208,13 @@ def nearest_levels(snapshot: Any, price: float | None = None) -> dict[str, Any]:
     resistance = nearest(snapshot.resistances, below=False)
     return {
         "reference_price": reference,
+        "reference_is_analysis_price": price is None,
         "support": support,
         "resistance": resistance,
         "available": bool(support or resistance),
+        # §3: libellés courts, la distance porte le sens.
+        "support_label": "Support à",
+        "resistance_label": "Résistance à",
         "source": "clusters de swings 4H (TechnicalAnalysisEngine)",
         "reason": (
             "" if support or resistance
@@ -364,7 +368,12 @@ def change_conditions(snapshot: Any, limit: int = 2) -> dict[str, Any]:
 
     def conditions(items: list[Any]) -> list[dict[str, str]]:
         return [
-            {"title": item.title, "detail": item.detail, "text": item.sentence}
+            {
+                "title": item.title,
+                "detail": item.detail,
+                "direction": getattr(item, "direction", "NEUTRAL"),
+                "text": item.sentence,
+            }
             for item in items[:limit]
         ]
 
@@ -410,19 +419,24 @@ def timeframe_summary(snapshot: Any) -> dict[str, Any]:
     bearish = [row for row in rows if row["state"] == "BEARISH_STRUCTURE"]
     named = [row for row in rows if row["state"] in
              ("BULLISH_STRUCTURE", "BEARISH_STRUCTURE", "RANGE_STRUCTURE")]
+    # Trois états, et trois seulement. « Divergent » et « lecture mixte »
+    # coexistaient et disaient presque la même chose sans jamais s'accorder;
+    # le badge de contradiction porte maintenant un autre nom pour qu'aucun
+    # des deux vocabulaires ne recouvre l'autre.
     directional = bullish + bearish
+    ranged = [row for row in rows if row["state"] == "RANGE_STRUCTURE"]
     if len(named) <= 1:
-        alignment, label = "UNDETERMINED", "Indéterminé"
+        alignment, label = "UNDETERMINED", "Indéterminée"
     elif bullish and bearish:
-        alignment, label = "DIVERGENT", "Divergent"
-    elif not directional:
-        # Every readable timeframe is in a range. That is agreement, not a
-        # partial one: they all say the same thing.
-        alignment, label = "ALIGNED", "Aligné (toutes en range)"
+        # Des horizons qui pointent dans des sens opposés.
+        alignment, label = "DIVERGENT", "Divergente"
     elif len(directional) == len(named):
-        alignment, label = "ALIGNED", "Aligné"
+        alignment, label = "ALIGNED", "Alignée"
+    elif len(ranged) >= len(directional):
+        # Majorité en range: ni accord directionnel, ni désaccord.
+        alignment, label = "MIXED", "Mixte"
     else:
-        alignment, label = "PARTIAL", "Partiellement aligné"
+        alignment, label = "ALIGNED", "Alignée"
     return {
         "rows": rows,
         "alignment": alignment,
@@ -430,8 +444,8 @@ def timeframe_summary(snapshot: Any) -> dict[str, Any]:
         # Une phrase, et c'est tout: le reste appartient au détail.
         "sentence": {
             "ALIGNED": "Tous les horizons racontent la même chose.",
-            "PARTIAL": "Les horizons ne sont pas encore tous alignés.",
-            "DIVERGENT": "Les horizons ne sont pas encore alignés.",
+            "MIXED": "Plusieurs horizons sont en range : pas de sens dominant.",
+            "DIVERGENT": "Les horizons ne pointent pas dans le même sens.",
             "UNDETERMINED": "Trop peu d'horizons lisibles pour conclure.",
         }[alignment],
         "note": (
@@ -477,7 +491,10 @@ def contradictions(snapshot: Any) -> dict[str, Any]:
     return {
         "items": found[:3],
         "has_contradiction": bool(found),
-        "badge": "LECTURE MIXTE" if found else "",
+        # « LECTURE MIXTE » entrait en collision avec l'alignement « Mixte »,
+        # qui décrit autre chose: ici deux lectures se contredisent, là les
+        # horizons sont simplement en range.
+        "badge": "LECTURES OPPOSÉES" if found else "",
     }
 
 
@@ -586,16 +603,20 @@ def positioning_block(snapshot: Any) -> dict[str, Any]:
 def pressure_breakdown(snapshot: Any) -> dict[str, Any]:
     """Les cinq familles, telles que le moteur les a calculées.
 
-    Rien n'est recalculé ici. Le moteur publie déjà l'apport pondéré de chaque
-    famille et le dénominateur qu'il a employé; les refaire à l'écran, c'était
-    risquer deux arithmétiques pour un seul score.
+    Rien n'est recalculé ici. Le moteur publie déjà le poids effectif et
+    l'apport de chaque famille; les refaire à l'écran, c'était risquer deux
+    arithmétiques pour un seul score.
 
-    Deux nombres sortent côte à côte et ne se remplacent pas : la pression, et
-    la couverture sur laquelle elle repose. Un +61 mesuré sur une famille n'est
-    pas une domination acheteuse, et le titre le dit.
+    Deux nombres sortent côte à côte et ne se remplacent pas : l'intensité de
+    la pression, et la couverture sur laquelle elle repose. Sous le minimum de
+    familles, aucune intensité n'est annoncée — « équilibré » serait une
+    conclusion tirée d'une absence.
     """
     payload = snapshot.pressure.to_dict()
     families = payload["families"]
+    coverage = payload["coverage"]
+    sufficient = coverage["sufficient"]
+    score = payload["pressure_score"] if sufficient else None
 
     def group(*directions: str) -> list[dict[str, Any]]:
         return [
@@ -616,24 +637,26 @@ def pressure_breakdown(snapshot: Any) -> dict[str, Any]:
         item for item in families if item["applicable"] and not item["available"]
     ]
     not_applicable = [item for item in families if not item["applicable"]]
-    coverage = payload["coverage"]
-    score = payload["pressure_score"]
 
     return {
         "state": payload["state"],
         "label": payload["label"],
+        "intensity": payload["intensity"],
         "score": score,
+        "sufficient": sufficient,
         "headline": (
             f"{payload['label']} {score:+.0f}/100" if score is not None
-            else "Pression indéterminée"
+            else payload["label"]
         ),
         # La couverture est une seconde mesure, pas une note de bas de page.
         "families_active": coverage["measured"],
         "families_total": coverage["applicable"],
-        "families_line": coverage["line"],
+        "families_line": f"{coverage['line']} disponibles",
         "coverage_level": coverage["level"],
         "coverage_label": coverage["label"],
         "coverage_ratio": coverage["ratio"],
+        "coverage_breakdown": coverage["breakdown"],
+        "minimum_families": coverage["minimum"],
         "buyers": buyers,
         "sellers": sellers,
         "neutral": neutral,
@@ -644,35 +667,44 @@ def pressure_breakdown(snapshot: Any) -> dict[str, Any]:
         "unavailable_title": "INDISPONIBLE",
         "not_applicable_title": "NON APPLICABLE",
         "contradictions": payload["contradictions"],
+        "insufficient_note": (
+            "" if sufficient else
+            f"Données insuffisantes pour déterminer la pression : "
+            f"{coverage['line']} disponibles, {coverage['minimum']} au minimum."
+        ),
         "reconstruction": {
             "method": payload["method"]["formula"],
             "formula": payload["method"]["formula"],
             "denominator": payload["method"]["denominator"],
             "weights": payload["method"]["weights"],
-            "dominant_gate": payload["method"]["dominant_gate"],
+            "intensity_scale": payload["method"]["intensity_scale"],
+            "coverage_scale": payload["method"]["coverage_scale"],
             "sum_of_contributions": (
                 round(
                     sum(
                         item["weighted_contribution"] or 0
                         for item in families if item["available"]
-                    ), 1,
-                ) if score is not None else None
+                    ), 2,
+                ) if payload["pressure_score"] is not None else None
             ),
-            "matches_score": (
-                None if score is None else abs(
-                    sum(
-                        item["weighted_contribution"] or 0
-                        for item in families if item["available"]
-                    ) - float(score)
-                ) <= 0.5
+            "rounding_note": (
+                "Chaque apport est arrondi au centième pour l'affichage; leur "
+                "somme peut différer du score de quelques centièmes."
             ),
         },
+        # Court sur la feuille de détail; le texte long va dans la méthodologie.
+        "short_note": "Une source indisponible est exclue du calcul.",
         "tooltip": payload["caveat"],
-        "missing_note": (
-            "Une source absente n'est ni neutre ni zéro : elle est retirée du "
-            "calcul et listée ici. Une famille sans objet pour cet actif ne "
-            "compte pas non plus dans la couverture."
-        ),
+        "methodology_title": "COMMENT CE SCORE EST CALCULÉ",
+        "methodology": [
+            payload["method"]["formula"],
+            "Une famille absente sort du dénominateur : elle ne vaut ni zéro "
+            "ni neutre, et les poids des familles restantes sont renormalisés.",
+            "Une famille sans objet pour cet actif ne compte ni dans le calcul "
+            "ni dans la couverture.",
+            payload["method"]["insufficient_below"] + ".",
+            payload["caveat"],
+        ],
     }
 
 
@@ -857,7 +889,10 @@ def render(snapshot: Any, live_price: float | None = None) -> dict[str, Any]:
         "direction_timing_edge": direction_timing_edge(snapshot),
         "decision": decision_block(snapshot),
         "structural_position": structural_position(snapshot),
-        "levels": nearest_levels(snapshot, live_price),
+        # Pas de prix live ici: les niveaux ont été calculés sur la clôture
+        # de l'analyse, et les comparer au prix du moment mélangerait deux
+        # instants sans le dire.
+        "levels": nearest_levels(snapshot),
         "immediate_context": immediate_context(snapshot),
         "pressure": pressure_breakdown(snapshot),
         "catalysts": catalysts(snapshot),

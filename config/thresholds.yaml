@@ -13,6 +13,32 @@ freshness:
   regulation:  {live: 3600, min_15: 21600, hour_1: 86400, today: 604800}
   default:     {live: 300, min_15: 900, hour_1: 3600, today: 86400}
 
+# Pression acheteuse / vendeuse. Une seule definition, lue par le moteur et
+# par l'interface : dupliquer ces bornes dans un widget, c'est garantir qu'un
+# jour l'ecran dira "forte pression" la ou le moteur dit "moderee".
+pressure:
+  # Intensite du score, sur le score seul. Elle ne depend pas de la couverture.
+  intensity:
+    strong_buy: 60      # +60 .. +100  forte pression acheteuse
+    buy: 25             # +25 .. +59   pression acheteuse
+    neutral_band: 24    # -24 .. +24   equilibree
+    sell: -25           # -59 .. -25   pression vendeuse
+    strong_sell: -60    # -100 .. -60  forte pression vendeuse
+  # Couverture, sur le nombre de familles applicables qui ont repondu.
+  coverage:
+    excellent: 5
+    good: 4
+    partial: 3
+  # En dessous, aucune conclusion de pression n'est produite.
+  minimum_families: 3
+
+# Age d'une analyse. Une lecture de quatre heures n'est pas une lecture
+# actuelle, et un marche crypto ne pardonne pas de le laisser croire.
+analysis_freshness:
+  fresh_seconds: 900       # 15 min
+  aging_seconds: 3600      # 1 h
+  stale_seconds: 10800     # 3 h  -> au-dela : EXPIRED, le verdict n'est plus actif
+
 technical:
   rsi: {oversold: 30, overbought: 70, extreme_low: 20, extreme_high: 80}
   volume: {high_ratio: 1.5, low_ratio: 0.6, spike_ratio: 2.5}

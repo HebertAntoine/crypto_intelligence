@@ -335,7 +335,7 @@ class NearestLevelsRow extends StatelessWidget {
         if (levels.support != null)
           Expanded(
             child: _LevelChip(
-              label: 'Support principal',
+              label: levels.supportLabel,
               value: distance(levels.support!),
               tone: AppColors.measured,
             ),
@@ -345,7 +345,7 @@ class NearestLevelsRow extends StatelessWidget {
         if (levels.resistance != null)
           Expanded(
             child: _LevelChip(
-              label: 'Résistance principale',
+              label: levels.resistanceLabel,
               value: distance(levels.resistance!),
               tone: AppColors.warn,
             ),
@@ -695,6 +695,15 @@ class ChangeConditionsBlock extends StatelessWidget {
   }
 }
 
+String _conditionGlyph(ChangeCondition condition, String fallback) =>
+    // Le sens appartient à la condition. Une flèche unique par groupe donnait
+    // la même à « cassure du haut du range » et à « retour vers le bas ».
+    switch (condition.direction) {
+      'UP' => '↗',
+      'DOWN' => '↘',
+      _ => fallback,
+    };
+
 class _ConditionGroup extends StatelessWidget {
   final String title;
   final List<ChangeCondition> conditions;
@@ -721,7 +730,7 @@ class _ConditionGroup extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    glyph,
+                    _conditionGlyph(condition, glyph),
                     style: TextStyle(color: tone, fontSize: 13, height: 1.35),
                   ),
                   const SizedBox(width: 8),
@@ -1101,12 +1110,18 @@ class PressureFamilyList extends StatelessWidget {
                               color: mobileMuted, fontSize: 12.5, height: 1.32),
                         ),
                       ],
+                      // « Apport +32,9 · poids 30 % » donnait deux
+                      // arithmétiques: +32,9 contient déjà le poids. On nomme
+                      // donc la contribution, et le poids réellement utilisé.
                       if (showContributions &&
                           family.weightedContribution != null)
                         Text(
-                          'Apport ${family.weightedContribution! >= 0 ? '+' : ''}'
-                          '${family.weightedContribution!.toStringAsFixed(1)} '
-                          '· poids ${(family.weight * 100).toStringAsFixed(0)} %',
+                          'Contribution : '
+                          '${family.weightedContribution! >= 0 ? '+' : ''}'
+                          '${family.weightedContribution!.toStringAsFixed(1)}'
+                          '${family.effectiveWeight == null ? '' : '  ·  '
+                              'Poids effectif : '
+                              '${(family.effectiveWeight! * 100).toStringAsFixed(0)} %'}',
                           style: const TextStyle(
                               color: mobileMuted, fontSize: 11.5),
                         ),

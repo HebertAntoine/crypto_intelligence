@@ -681,13 +681,23 @@ class ChangeCondition:
     Une phrase de trente mots dit la même chose mais ne se lit pas: sur la
     page, « Retour vers le support » se comprend avant qu'on ait fini de lire,
     et le détail répond ensuite à « pourquoi ça compterait ».
+
+    `direction` porte le sens propre de la condition, pas celui de son groupe:
+    dans « changement à surveiller », une cassure du haut du range monte et un
+    retour vers le bas descend. Une flèche unique par groupe donnait la même
+    au deux.
     """
 
     title: str
     detail: str
+    direction: str = "NEUTRAL"   # UP / DOWN / NEUTRAL
 
     def to_dict(self) -> dict[str, str]:
-        return {"title": self.title, "detail": self.detail}
+        return {
+            "title": self.title,
+            "detail": self.detail,
+            "direction": self.direction,
+        }
 
     @property
     def sentence(self) -> str:
@@ -721,27 +731,32 @@ def _changes(
             improve.append(ChangeCondition(
                 "Retour vers le support",
                 "Meilleur emplacement si le support tient.",
+                direction="DOWN",
             ))
         if contribution > 0 and "structure" in name:
             degrade.append(ChangeCondition(
                 "Perte de la structure",
                 "La structure haussière actuelle ne tiendrait plus.",
+                direction="DOWN",
             ))
 
     if edge_state != "POSITIVE_EDGE":
         improve.append(ChangeCondition(
             "Avantage confirmé",
-            "Une configuration qui passe enfin les tests statistiques.",
+            "Un signal avec un avantage statistique validé.",
+            direction="UP",
         ))
     if crowding_level in ("ELEVATED", "EXTREME"):
         improve.append(ChangeCondition(
             "Levier qui se dégonfle",
             "Un encombrement dérivé revenu vers sa normale.",
+            direction="DOWN",
         ))
     else:
         degrade.append(ChangeCondition(
             "Levier trop chargé",
             "Un encombrement dérivé extrême dégraderait le timing.",
+            direction="UP",
         ))
 
     if any(
@@ -764,19 +779,23 @@ def _changes(
                 "Cassure du haut du range",
                 "Une clôture 4H au-dessus changerait la structure. "
                 "À confirmer par un retest.",
+                direction="UP",
             ))
             change.append(ChangeCondition(
                 "Retour vers le bas du range",
-                "La structure actuelle redeviendrait lisible.",
+                "La structure actuelle redeviendrait plus lisible.",
+                direction="DOWN",
             ))
         elif "BOTTOM" in location_state:
             change.append(ChangeCondition(
                 "Cassure du bas du range",
                 "Une clôture 4H en dessous changerait la structure.",
+                direction="DOWN",
             ))
             degrade.append(ChangeCondition(
                 "Perte du bas de range",
                 "Le support qui cède confirmerait une lecture plus faible.",
+                direction="DOWN",
             ))
         else:
             change.append(ChangeCondition(
@@ -789,11 +808,13 @@ def _changes(
         degrade.append(ChangeCondition(
             "Volatilité en expansion",
             "Des mouvements plus amples à la baisse.",
+            direction="DOWN",
         ))
     if not degrade:
         degrade.append(ChangeCondition(
             "Régime journalier retourné",
             "La tendance de fond qui bascule.",
+            direction="DOWN",
         ))
 
     def unique(

@@ -183,6 +183,13 @@ class NearestLevels {
   final PriceLevel? resistance;
   final String source;
   final String reason;
+  final String supportLabel;
+  final String resistanceLabel;
+
+  /// Vrai quand la distance est mesurée depuis le prix de l'analyse, celui sur
+  /// lequel les niveaux ont été calculés — jamais depuis le prix live, qui
+  /// appartient à un autre instant.
+  final bool referenceIsAnalysisPrice;
 
   const NearestLevels({
     this.available = false,
@@ -191,6 +198,9 @@ class NearestLevels {
     this.resistance,
     this.source = '',
     this.reason = '',
+    this.supportLabel = 'Support à',
+    this.resistanceLabel = 'Résistance à',
+    this.referenceIsAnalysisPrice = true,
   });
 
   static const unavailable = NearestLevels();
@@ -202,6 +212,10 @@ class NearestLevels {
         resistance: PriceLevel.maybe(json['resistance']),
         source: _string(json['source']),
         reason: _string(json['reason']),
+        supportLabel: _string(json['support_label'], 'Support à'),
+        resistanceLabel: _string(json['resistance_label'], 'Résistance à'),
+        referenceIsAnalysisPrice:
+            json['reference_is_analysis_price'] as bool? ?? true,
       );
 }
 
@@ -336,11 +350,21 @@ class ChangeCondition {
   final String title;
   final String detail;
 
-  const ChangeCondition({required this.title, this.detail = ''});
+  /// UP / DOWN / NEUTRAL. Le sens appartient à la condition, pas à son groupe:
+  /// dans « changement à surveiller », une cassure du haut du range monte et
+  /// un retour vers le bas descend.
+  final String direction;
+
+  const ChangeCondition({
+    required this.title,
+    this.detail = '',
+    this.direction = 'NEUTRAL',
+  });
 
   factory ChangeCondition.fromJson(Map<String, dynamic> json) => ChangeCondition(
         title: _string(json['title']),
         detail: _string(json['detail']),
+        direction: _string(json['direction'], 'NEUTRAL'),
       );
 }
 
@@ -518,6 +542,12 @@ class PressureContribution {
   final double? normalizedScore;
   final double? weightedContribution;
 
+  /// Poids renormalisé sur les familles qui ont répondu. C'est lui qui
+  /// multiplie le score, donc c'est lui qu'on affiche à côté de la
+  /// contribution : montrer le poids théorique laissait croire à deux
+  /// arithmétiques différentes.
+  final double? effectiveWeight;
+
   /// STRONG_SELL … STRONG_BUY, ou UNAVAILABLE. L'app s'en sert pour la
   /// couleur; le texte affiché est `directionLabel`, déjà en français.
   final String direction;
@@ -538,6 +568,7 @@ class PressureContribution {
     this.available = false,
     this.normalizedScore,
     this.weightedContribution,
+    this.effectiveWeight,
     this.direction = 'UNAVAILABLE',
     this.directionLabel = 'Indisponible',
     this.dot = '⚪',
@@ -562,6 +593,7 @@ class PressureContribution {
         available: json['available'] as bool? ?? false,
         normalizedScore: _double(json['normalized_score']),
         weightedContribution: _double(json['weighted_contribution']),
+        effectiveWeight: _double(json['effective_weight']),
         direction: _string(json['direction'], 'UNAVAILABLE'),
         directionLabel: _string(json['direction_label'], 'Indisponible'),
         dot: _string(json['dot'], '⚪'),
@@ -595,6 +627,22 @@ class PressureBreakdown {
   final String coverageLevel;
   final String coverageLabel;
   final double coverageRatio;
+
+  /// « 2 acheteuses · 1 vendeuse · 1 neutre · 1 indisponible ».
+  final String coverageBreakdown;
+
+  /// L'intensité vient du score seul. La couverture est une seconde mesure et
+  /// ne doit jamais la qualifier : « 4/5 · Forte » se lisait « forte pression »
+  /// alors que « Forte » parlait de la couverture.
+  final String intensity;
+
+  /// Faux sous le minimum de familles : aucune intensité n'est annoncée.
+  final bool sufficient;
+  final int minimumFamilies;
+  final String insufficientNote;
+  final String shortNote;
+  final String methodologyTitle;
+  final List<String> methodology;
   final String buyersTitle;
   final String sellersTitle;
   final String unavailableTitle;
@@ -619,6 +667,14 @@ class PressureBreakdown {
     this.coverageLevel = 'NONE',
     this.coverageLabel = 'Aucune',
     this.coverageRatio = 0,
+    this.coverageBreakdown = '',
+    this.intensity = 'INSUFFICIENT',
+    this.sufficient = false,
+    this.minimumFamilies = 3,
+    this.insufficientNote = '',
+    this.shortNote = '',
+    this.methodologyTitle = 'COMMENT CE SCORE EST CALCULÉ',
+    this.methodology = const [],
     this.buyersTitle = 'FACTEURS ACHETEURS',
     this.sellersTitle = 'FACTEURS VENDEURS',
     this.unavailableTitle = 'INDISPONIBLE',
@@ -655,6 +711,17 @@ class PressureBreakdown {
         coverageLevel: _string(json['coverage_level'], 'NONE'),
         coverageLabel: _string(json['coverage_label'], 'Aucune'),
         coverageRatio: _double(json['coverage_ratio']) ?? 0,
+        coverageBreakdown: _string(json['coverage_breakdown']),
+        intensity: _string(json['intensity'], 'INSUFFICIENT'),
+        sufficient: json['sufficient'] as bool? ?? false,
+        minimumFamilies: _int(json['minimum_families'], 3),
+        insufficientNote: _string(json['insufficient_note']),
+        shortNote: _string(json['short_note']),
+        methodologyTitle:
+            _string(json['methodology_title'], 'COMMENT CE SCORE EST CALCULÉ'),
+        methodology: ((json['methodology'] as List?) ?? const [])
+            .map((item) => '$item')
+            .toList(),
         buyersTitle: _string(json['buyers_title'], 'FACTEURS ACHETEURS'),
         sellersTitle: _string(json['sellers_title'], 'FACTEURS VENDEURS'),
         unavailableTitle: _string(json['unavailable_title'], 'INDISPONIBLE'),

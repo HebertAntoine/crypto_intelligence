@@ -226,3 +226,57 @@ def test_freshness_is_recomputed_against_the_clock_not_read_from_the_payload():
     assert (APP_LIB / "api" / "freshness.dart").exists()
     freshness = _source("api/freshness.dart")
     assert "deriveFreshness" in freshness
+
+
+def test_the_client_freshness_thresholds_match_the_backend_config():
+    """Deux couches jugent l'âge; une seule vérité doit les gouverner.
+
+    Le client mesure la fraîcheur contre sa propre horloge — un instantané
+    embarqué fige « FRESH » à l'export et l'app le lirait encore des heures
+    plus tard. Il porte donc ses propres constantes, et rien n'empêchait
+    jusqu'ici qu'elles s'écartent silencieusement du fichier de seuils.
+    """
+    import re
+
+    from crypto_intel.config_loader import threshold
+
+    backend = threshold("analysis_freshness", default={}) or {}
+    models = _source("api/models.dart")
+    client = {
+        name: int(re.search(rf"{name} = (\d+);", models).group(1))
+        for name in ("freshSeconds", "agingSeconds", "staleSeconds")
+    }
+    assert client["freshSeconds"] == backend["fresh_seconds"]
+    assert client["agingSeconds"] == backend["aging_seconds"]
+    assert client["staleSeconds"] == backend["stale_seconds"]
+
+
+def test_the_client_never_composes_a_pressure_verdict():
+    """Le libellé d'intensité vient du moteur; l'écran ne le fabrique pas.
+
+    Un seuil recopié dans un widget finit toujours par contredire le moteur:
+    c'est ainsi que « +30/100 · 4/5 · Forte » se lisait « forte pression ».
+    L'écran reçoit `label` et l'affiche tel quel.
+    """
+    for name in ("widgets/today_blocks.dart", "screens/today_screen.dart"):
+        source = _source(name)
+        for forbidden in (
+            "'FORTE PRESSION", '"FORTE PRESSION',
+            "'PRESSION ACHETEUSE", '"PRESSION ACHETEUSE',
+            "'PRESSION VENDEUSE", '"PRESSION VENDEUSE',
+            "'ACHETEURS DOMINANTS", "'VENDEURS DOMINANTS",
+        ):
+            assert forbidden not in source, (
+                f"{name}: le verdict de pression est composé dans la vue "
+                f"({forbidden!r})"
+            )
+
+
+def test_the_coverage_words_never_qualify_an_intensity():
+    """« Bonne », « Partielle » décrivent la couverture, jamais la pression."""
+    source = _source("screens/today_screen.dart")
+    # Le badge doit porter le mot « couverture » avec l'adjectif, sans quoi
+    # « Bonne » seul se lit comme une force de pression.
+    assert "'Couverture '" in source or "Couverture $" in source or (
+        "'Couverture ${" in source
+    ), "l'adjectif de couverture s'affiche sans être nommé comme tel"

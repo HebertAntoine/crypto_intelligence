@@ -30,6 +30,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from enum import StrEnum
 from typing import Any
 
 from ..core import labels_fr
@@ -947,6 +948,71 @@ DRIFT_THRESHOLD_PCT = 1.5
 DRIFT_SEVERE_PCT = 3.0
 
 
+class AnalysisFreshness(StrEnum):
+    """L'âge d'une lecture, et ce qu'elle a encore le droit d'affirmer.
+
+    Une analyse de quatre heures présentée comme « maintenant » est le défaut
+    le plus coûteux de cette page: en crypto, le prix sur lequel elle a été
+    calculée n'existe plus. Au-delà du dernier seuil le verdict n'est plus
+    présenté comme une décision active — il reste lisible, daté, et annoncé
+    comme non actualisé.
+    """
+
+    FRESH = "FRESH"
+    AGING = "AGING"
+    STALE = "STALE"
+    EXPIRED = "EXPIRED"
+
+    @property
+    def is_actionable(self) -> bool:
+        return self in (AnalysisFreshness.FRESH, AnalysisFreshness.AGING)
+
+
+def _freshness_limits() -> dict[str, int]:
+    from ..config_loader import threshold
+
+    raw = threshold("analysis_freshness", default={}) or {}
+    return {
+        "fresh": int(raw.get("fresh_seconds", 900)),
+        "aging": int(raw.get("aging_seconds", 3600)),
+        "stale": int(raw.get("stale_seconds", 10800)),
+    }
+
+
+def analysis_freshness(age_seconds: float) -> AnalysisFreshness:
+    limits = _freshness_limits()
+    if age_seconds <= limits["fresh"]:
+        return AnalysisFreshness.FRESH
+    if age_seconds <= limits["aging"]:
+        return AnalysisFreshness.AGING
+    if age_seconds <= limits["stale"]:
+        return AnalysisFreshness.STALE
+    return AnalysisFreshness.EXPIRED
+
+
+def _age_label(age_seconds: float) -> str:
+    """« il y a 8 min », « 3 h 52 » — jamais un nombre de secondes brut."""
+    minutes = max(0, int(age_seconds // 60))
+    if minutes < 60:
+        return f"{minutes} min"
+    hours, rest = divmod(minutes, 60)
+    return f"{hours} h {rest:02d}"
+
+
+def freshness_sentence(
+    status: AnalysisFreshness, age_seconds: float, offline: bool = False
+) -> str:
+    age = _age_label(age_seconds)
+    if offline:
+        return f"Mode hors ligne · analyse non actualisée depuis {age}"
+    return {
+        AnalysisFreshness.FRESH: f"Actualisée il y a {age}",
+        AnalysisFreshness.AGING: f"Analyse datant de {age}",
+        AnalysisFreshness.STALE: f"Analyse ancienne · {age}",
+        AnalysisFreshness.EXPIRED: f"Analyse non actualisée · {age}",
+    }[status]
+
+
 def live_layer(
     snapshot: AnalysisContextSnapshot,
     market: dict[str, Any] | None,
@@ -982,11 +1048,19 @@ def live_layer(
         else "NOTABLE"
     )
     age_seconds = round((reference - snapshot.analysis_time).total_seconds(), 1)
+    # Une analyse vieille de quatre heures n'est pas une analyse actuelle.
+    # L'état est calculé ici et voyage avec le payload: laisser l'écran le
+    # deviner, c'est laisser chaque écran le deviner différemment.
+    freshness = analysis_freshness(age_seconds)
     return {
         "analysis": {
             "analysis_id": snapshot.analysis_id,
             "computed_at": snapshot.analysis_time.isoformat(),
             "age_seconds": age_seconds,
+            "freshness_status": freshness.value,
+            "freshness_sentence": freshness_sentence(freshness, age_seconds),
+            "verdict_is_actionable": freshness.is_actionable,
+            "freshness_limits": _freshness_limits(),
             "price_at_analysis": analysis_price,
             "live_price": live_price,
             "price_drift_pct": drift_pct,
