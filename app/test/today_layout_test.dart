@@ -331,61 +331,114 @@ Map<String, dynamic> _page(String asset) => {
         },
       ],
       'pressure': {
-        'state': 'BUYING',
-        'label': 'ACHAT LÉGER',
-        'headline': 'ACHAT LÉGER +19/100',
+        'state': 'BUY',
+        'label': 'PRESSION ACHETEUSE PARTIELLE',
+        'headline': 'PRESSION ACHETEUSE PARTIELLE +19/100',
         'score': 19.0,
         'families_active': 3,
         'families_total': 5,
-        'families_line': '3/5 familles disponibles',
+        'families_line': '3/5 familles',
+        'coverage_level': 'PARTIAL',
+        'coverage_label': 'Partielle',
+        'coverage_ratio': 0.6,
         'buyers': [
           {
             'family': 'institutions',
-            'label': 'Institutions (ETF spot)',
+            'label': 'ETF / Institutions',
+            'applicable': true,
             'available': true,
             'normalized_score': 28.0,
-            'contribution_points': 14.2,
-            'direction': 'BUYING',
-            'weight_if_any': 0.35,
+            'weighted_contribution': 14.2,
+            'direction': 'BUY',
+            'direction_label': 'Acheteur',
+            'dot': '🟢',
+            'weight': 0.30,
             'source': 'Farside Investors',
-            'timestamp': '2026-09-07T00:00:00.000Z',
+            'observation_time': '2026-09-07T00:00:00.000Z',
             'freshness': 'RECENT',
-            'explanation': '+450 M\$ sur 5 séances.',
+            'data_quality': 'MEASURED',
+            'explanation': 'Les flux récents sont positifs.',
+            'reason': '',
           },
         ],
         'sellers': [
           {
-            'family': 'levier',
-            'label': 'Funding perpétuel',
+            'family': 'spot',
+            'label': 'Spot / agressivité',
+            'applicable': true,
             'available': true,
-            'normalized_score': -4.0,
-            'contribution_points': -1.1,
-            'direction': 'SELLING',
-            'weight_if_any': 0.20,
-            'source': 'funding.rate',
-            'freshness': 'RECENT',
-            'explanation': 'Coût de portage dans sa normale.',
+            'normalized_score': -12.0,
+            'weighted_contribution': -3.1,
+            'direction': 'SLIGHT_SELL',
+            'direction_label': 'Vendeur léger',
+            'dot': '🟠',
+            'weight': 0.25,
+            'source': 'Binance klines, taker buy base volume',
+            'observation_time': '2026-09-08T00:00:00.000Z',
+            'freshness': 'LIVE',
+            'data_quality': 'MEASURED',
+            'explanation': 'Les vendeurs traversent le spread un peu plus souvent.',
+            'reason': '',
           },
         ],
-        'neutral': [],
+        'neutral': [
+          {
+            'family': 'funding',
+            'label': 'Funding / levier',
+            'applicable': true,
+            'available': true,
+            'normalized_score': 2.0,
+            'weighted_contribution': 0.4,
+            'direction': 'NEUTRAL',
+            'direction_label': 'Neutre',
+            'dot': '⚪',
+            'weight': 0.15,
+            'source': 'funding.rate Binance',
+            'observation_time': '2026-09-08T08:00:00.000Z',
+            'freshness': 'LIVE',
+            'data_quality': 'MEASURED',
+            'explanation': 'Le coût du levier reste proche de sa normale.',
+            'reason': '',
+          },
+        ],
         'unavailable': [
           {
-            'family': 'baleines',
-            'label': 'Baleines',
+            'family': 'whales',
+            'label': 'Baleines / flux exchanges',
+            'applicable': true,
             'available': false,
-            'direction': 'UNKNOWN',
-            'source': 'fournisseur on-chain vérifié',
+            'direction': 'UNAVAILABLE',
+            'direction_label': 'Indisponible',
+            'dot': '⚪',
+            'weight': 0.10,
+            'source': 'fournisseur on-chain avec attribution d’adresses',
             'freshness': 'UNAVAILABLE',
-            'explanation': 'Aucun fournisseur fiable configuré.',
+            'data_quality': 'UNAVAILABLE',
+            'explanation': '',
+            'reason': 'Aucun fournisseur fiable configuré.',
+          },
+          {
+            'family': 'derivatives',
+            'label': 'Dérivés / positionnement',
+            'applicable': true,
+            'available': false,
+            'direction': 'UNAVAILABLE',
+            'direction_label': 'Indisponible',
+            'dot': '⚪',
+            'weight': 0.20,
+            'source': 'open interest multi-exchange',
+            'freshness': 'UNAVAILABLE',
+            'data_quality': 'UNAVAILABLE',
+            'explanation': '',
+            'reason': 'Open interest trop ancien.',
           },
         ],
+        'not_applicable': [],
         'buyers_title': 'FACTEURS ACHETEURS',
         'sellers_title': 'FACTEURS VENDEURS',
         'unavailable_title': 'INDISPONIBLE',
-        'contradictions': [
-          'Institutions (ETF spot) indique une pression acheteuse tandis que '
-              'Funding perpétuel indique une pression vendeuse.',
-        ],
+        'not_applicable_title': 'NON APPLICABLE',
+        'contradictions': [],
         'tooltip': 'Ce score mesure la pression relative des facteurs '
             'disponibles. Il ne représente ni une probabilité de hausse ni '
             'une edge statistique.',
@@ -758,7 +811,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('toucher la carte pression ouvre les sources et les absences',
+    testWidgets('toucher la carte pression liste les familles et les absences',
         (tester) async {
       await _pumpAt(
           tester, const Size(430, 932), TodayScreen(client: _client()));
@@ -768,14 +821,31 @@ void main() {
       await tester.tap(trigger);
       await tester.pumpAndSettle();
 
-      expect(find.text('FACTEURS ACHETEURS'), findsOneWidget);
-      expect(find.text('FACTEURS VENDEURS'), findsOneWidget);
-      expect(find.text('INDISPONIBLE'), findsWidgets);
-      expect(find.text('Institutions (ETF spot)'), findsOneWidget);
-      expect(find.text('Baleines'), findsOneWidget);
-      expect(find.textContaining('Aucun fournisseur fiable'), findsOneWidget);
-      // Une source absente n'est pas comptée zéro: elle n'a pas de score.
-      expect(find.text('—'), findsWidgets);
+      // Une ligne par famille: nom, état, une phrase.
+      expect(find.text('ETF / Institutions'), findsOneWidget);
+      expect(find.text('Spot / agressivité'), findsOneWidget);
+      expect(find.text('Funding / levier'), findsOneWidget);
+      expect(find.text('Baleines / flux exchanges'), findsOneWidget);
+      expect(find.text('Acheteur'), findsOneWidget);
+      expect(find.text('Vendeur léger'), findsOneWidget);
+      expect(find.text('Indisponible'), findsNWidgets(2));
+      expect(find.text('Les flux récents sont positifs.'), findsOneWidget);
+      // Une absence dit pourquoi, et ne porte aucun chiffre.
+      expect(find.text('Aucun fournisseur fiable configuré.'), findsOneWidget);
+      // La couverture est affichée à côté du score, pas à sa place.
+      expect(find.textContaining('3/5 familles'), findsWidgets);
+    });
+
+    testWidgets(
+        'un score élevé sur une couverture faible n’est jamais dit dominant',
+        (tester) async {
+      // Le titre vient du backend, qui verrouille le mot par la couverture.
+      // L’écran ne doit ni le reformuler ni le durcir.
+      await _pumpAt(
+          tester, const Size(430, 932), TodayScreen(client: _client()));
+      expect(find.textContaining('DOMINANT'), findsNothing);
+      expect(find.text('PRESSION ACHETEUSE PARTIELLE'), findsWidgets);
+      expect(find.text('Partielle'), findsWidgets);
     });
 
     testWidgets('un prix réellement absent reste explicitement indisponible',

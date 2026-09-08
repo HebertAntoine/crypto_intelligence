@@ -1795,12 +1795,20 @@ class _MarketPressureSummary extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Text(
-                          pressure.label,
-                          style: TextStyle(
-                            color: tone,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
+                        Flexible(
+                          child: Text(
+                            // Le titre verrouillé par la couverture vient de la
+                            // décomposition; l'ancien modèle ne connaît pas
+                            // cette contrainte et dirait « dominant » sur une
+                            // seule famille.
+                            breakdown?.label ?? pressure.label,
+                            textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: tone,
+                              fontSize: 16,
+                              height: 1.15,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 3),
@@ -1816,7 +1824,10 @@ class _MarketPressureSummary extends StatelessWidget {
                     // Couverture et pression sont deux mesures, affichées
                     // ensemble. Le résumé en phrase répétait mot pour mot le
                     // titre au-dessus et le décompte en dessous.
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           breakdown != null && breakdown!.familiesLine.isNotEmpty
@@ -1829,8 +1840,7 @@ class _MarketPressureSummary extends StatelessWidget {
                           ),
                         ),
                         if (breakdown != null &&
-                            breakdown!.coverageLabel.isNotEmpty) ...[
-                          const SizedBox(width: 8),
+                            breakdown!.coverageLabel.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 3),
@@ -1840,7 +1850,7 @@ class _MarketPressureSummary extends StatelessWidget {
                               borderRadius: BorderRadius.circular(7),
                             ),
                             child: Text(
-                              'Couverture ${breakdown!.coverageLabel.toLowerCase()}',
+                              breakdown!.coverageLabel,
                               style: TextStyle(
                                 color: _coverageTone(breakdown!.coverageLevel),
                                 fontSize: 12,
@@ -1848,7 +1858,6 @@ class _MarketPressureSummary extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ],
@@ -3737,98 +3746,53 @@ void _showCoverageDetail(BuildContext context, TodayPage page) {
 ///
 /// Une source absente n'apparaît ni comme neutre ni comme zéro: elle est
 /// listée avec la raison de son absence, et retirée du calcul.
+/// Qui achète, qui vend, famille par famille.
+///
+/// Une ligne par famille : pastille, nom, état, une phrase. Les poids et les
+/// apports au total viennent ensuite, pour qui veut refaire le calcul ; les
+/// valeurs brutes restent dans Preuves.
 void _showPressureBreakdown(BuildContext context, PressureBreakdown breakdown) {
-  String signed(double? value) => value == null
-      ? '—'
-      : '${value >= 0 ? '+' : ''}${value.toStringAsFixed(0)}';
-
-  Widget contributions(
-    String title,
-    List<PressureContribution> items,
-    Color tone,
-  ) {
-    if (items.isEmpty) return const SizedBox.shrink();
-    return _SheetSection(
-      title: title,
-      children: [
-        for (final item in items)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.label,
-                        style: const TextStyle(
-                          color: AppColors.text,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      item.available ? signed(item.normalizedScore) : '—',
-                      style: TextStyle(
-                        color: item.available ? tone : mobileMuted,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                if (item.explanation.isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    item.explanation,
-                    style: const TextStyle(
-                        color: mobileMuted, fontSize: 13, height: 1.34),
-                  ),
-                ],
-                if (item.available && item.contributionPoints != null)
-                  Text(
-                    'Apport au total : '
-                    '${signed(item.contributionPoints)} · poids '
-                    '${(item.weight * 100).toStringAsFixed(0)} %',
-                    style: const TextStyle(color: mobileMuted, fontSize: 12),
-                  ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
   _showTodaySheet(
     context,
     title: 'Qui achète, qui vend ?',
-    initialSize: .78,
+    initialSize: .72,
     children: [
-      Text(
-        breakdown.headline,
-        style: const TextStyle(
-          color: AppColors.text,
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-        ),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Text(
+              breakdown.label,
+              style: const TextStyle(
+                color: AppColors.text,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          if (breakdown.score != null)
+            Text(
+              '${breakdown.score! >= 0 ? '+' : ''}'
+              '${breakdown.score!.toStringAsFixed(0)}/100',
+              style: const TextStyle(
+                color: AppColors.text,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+        ],
       ),
-      const SizedBox(height: 3),
+      const SizedBox(height: 4),
       Text(
-        breakdown.familiesLine,
+        'Couverture : ${breakdown.familiesLine} · '
+        '${breakdown.coverageLabel.toLowerCase()}',
         style: const TextStyle(color: mobileMuted, fontSize: 14),
       ),
-      const SizedBox(height: 18),
-      contributions(
-          breakdown.buyersTitle, breakdown.buyers, AppColors.measured),
-      contributions(breakdown.sellersTitle, breakdown.sellers, AppColors.bad),
-      contributions('SANS DIRECTION NETTE', breakdown.neutral, mobileMuted),
-      contributions(
-          breakdown.unavailableTitle, breakdown.unavailable, mobileMuted),
+      const SizedBox(height: 20),
+      PressureFamilyList(pressure: breakdown, showContributions: true),
       if (breakdown.contradictions.isNotEmpty)
         _SheetSection(
-          title: 'SOURCES EN DÉSACCORD',
+          title: 'FAMILLES EN DÉSACCORD',
           children: [
             for (final line in breakdown.contradictions)
               Text(

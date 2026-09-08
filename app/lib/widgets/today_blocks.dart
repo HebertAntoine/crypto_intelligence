@@ -987,3 +987,109 @@ class AnalysisMismatchBanner extends StatelessWidget {
         ),
       );
 }
+
+Color _pressureTone(String direction) => switch (direction) {
+      'STRONG_BUY' || 'BUY' || 'SLIGHT_BUY' => AppColors.measured,
+      'SLIGHT_SELL' => AppColors.warn,
+      'SELL' || 'STRONG_SELL' => AppColors.bad,
+      _ => mobileMuted,
+    };
+
+/// Les cinq familles, une ligne chacune: pastille, nom, état, une phrase.
+///
+/// C'est la lecture complète que demande un clic sur « qui achète, qui vend ».
+/// Les valeurs brutes — funding, open interest, flux par émetteur — restent
+/// dans Preuves: ici la question est qui pousse, pas comment le chiffre est
+/// fabriqué.
+class PressureFamilyList extends StatelessWidget {
+  final PressureBreakdown pressure;
+
+  /// Affiche l'apport de chaque famille au total. Réservé à la feuille de
+  /// détail; la carte principale n'en a pas besoin.
+  final bool showContributions;
+
+  const PressureFamilyList({
+    super.key,
+    required this.pressure,
+    this.showContributions = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final families = [
+      ...pressure.applicableFamilies,
+      ...pressure.notApplicable,
+    ];
+    if (families.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final family in families)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 11),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 22,
+                  child: Text(
+                    family.applicable ? family.dot : '·',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              family.label,
+                              style: const TextStyle(
+                                color: AppColors.text,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            family.applicable
+                                ? family.directionLabel
+                                : 'Sans objet',
+                            style: TextStyle(
+                              color: _pressureTone(family.direction),
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (family.sentence.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          family.sentence,
+                          style: const TextStyle(
+                              color: mobileMuted, fontSize: 12.5, height: 1.32),
+                        ),
+                      ],
+                      if (showContributions &&
+                          family.weightedContribution != null)
+                        Text(
+                          'Apport ${family.weightedContribution! >= 0 ? '+' : ''}'
+                          '${family.weightedContribution!.toStringAsFixed(1)} '
+                          '· poids ${(family.weight * 100).toStringAsFixed(0)} %',
+                          style: const TextStyle(
+                              color: mobileMuted, fontSize: 11.5),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}

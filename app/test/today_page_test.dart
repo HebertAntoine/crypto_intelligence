@@ -62,7 +62,7 @@ PressureContribution _contribution({
       label: label,
       available: available,
       normalizedScore: score,
-      contributionPoints: available && score != null ? score * .5 : null,
+      weightedContribution: available && score != null ? score * .5 : null,
       direction: direction,
       weight: .3,
       explanation: explanation,
@@ -243,7 +243,7 @@ void main() {
           _contribution(
             label: 'Baleines',
             available: false,
-            direction: 'UNKNOWN',
+            direction: 'UNAVAILABLE',
             explanation: 'Aucun fournisseur fiable configuré.',
           ),
         ],
@@ -251,8 +251,8 @@ void main() {
       );
       final missing = breakdown.unavailable.single;
       expect(missing.normalizedScore, isNull);
-      expect(missing.contributionPoints, isNull);
-      expect(missing.direction, 'UNKNOWN');
+      expect(missing.weightedContribution, isNull);
+      expect(missing.direction, 'UNAVAILABLE');
       expect(breakdown.familiesActive, lessThan(breakdown.familiesTotal));
     });
 
@@ -262,7 +262,7 @@ void main() {
         _contribution(label: 'Positionnement', score: 20),
       ];
       final total = buyers.fold<double>(
-          0, (sum, item) => sum + (item.contributionPoints ?? 0));
+          0, (sum, item) => sum + (item.weightedContribution ?? 0));
       expect(total, 30.0);
     });
 
