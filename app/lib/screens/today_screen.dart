@@ -17,7 +17,9 @@ import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/live_price_builder.dart';
+import '../api/today_page.dart';
 import '../widgets/mobile_kit.dart';
+import '../widgets/today_blocks.dart';
 
 class TodayScreen extends StatefulWidget {
   final ApiClient client;
@@ -35,6 +37,12 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
   DateTime _lastFetch = DateTime.fromMillisecondsSinceEpoch(0);
 
   static const _assets = ['BTC', 'ETH', 'SOL'];
+
+  /// Une carte développée à la fois. Les trois actifs développés faisaient
+  /// une page de plusieurs écrans où plus rien ne se comparait; replié, chaque
+  /// actif garde la réponse (direction, timing, avantage, décision, position)
+  /// et range le reste derrière un geste.
+  String _expanded = _assets.first;
 
   /// En dessous, un retour au premier plan ne relance pas d'appel: revenir
   /// dans l'app trois fois en dix secondes ne doit pas produire trois séries
@@ -129,6 +137,10 @@ class _TodayScreenState extends State<TodayScreen> with WidgetsBindingObserver {
                     read: read,
                     provenance: provenance,
                     livePrices: widget.livePrices,
+                    expanded: read.asset == _expanded,
+                    onToggle: () => setState(
+                      () => _expanded = read.asset == _expanded ? '' : read.asset,
+                    ),
                   ),
                   // Sans encadrement, c'est l'espace qui separe les trois
                   // actifs: il doit etre plus franc qu'avec une bordure.
@@ -235,15 +247,24 @@ class _MarketCard extends StatelessWidget {
   /// D'ou vient ce payload: le diagnostic ouvert au clic en a besoin.
   final DataProvenance provenance;
 
+  /// Développée, la carte répond aux huit questions. Repliée, elle en garde
+  /// les cinq premières et range le reste: trois actifs entièrement déroulés
+  /// donnaient une page qu'on ne pouvait plus parcourir.
+  final bool expanded;
+  final VoidCallback onToggle;
+
   const _MarketCard({
     required this.read,
     required this.provenance,
     required this.livePrices,
+    required this.expanded,
+    required this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
     final meta = AssetVisuals.forAsset(read.asset);
+    final page = read.page;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -264,12 +285,83 @@ class _MarketCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               _AnalysisStampLine(read: read),
+
+              // Deux blocs qui ne portent pas le même identifiant d'analyse
+              // décrivent deux instants. On le dit plutôt que de les empiler.
+              if (!read.isCoherent) ...[
+                const SizedBox(height: 12),
+                const AnalysisMismatchBanner(),
+              ],
+
               const SizedBox(height: 14),
-              _CompactRegimeRow(read: read),
+              // Direction, timing, avantage: trois lectures indépendantes.
+              // Quand le backend ne les envoie pas encore, l'ancienne ligne de
+              // régime reste affichée plutôt que rien.
+              if (page.isEmpty)
+                _CompactRegimeRow(read: read)
+              else
+                DirectionTimingEdgeRow(
+                  readings: page.readings,
+                  onTap: () => _showReadingsDetail(context, page),
+                ),
+
               const SizedBox(height: 12),
               _EntryAnswerPanel(read: read),
+
+              if (!page.isEmpty) ...[
+                const SizedBox(height: 12),
+                StructuralPositionBar(
+                  position: page.position,
+                  onTap: () => _showPositionDetail(context, page),
+                ),
+                if (page.levels.available) ...[
+                  const SizedBox(height: 8),
+                  NearestLevelsRow(levels: page.levels),
+                ],
+              ],
+
               const SizedBox(height: 12),
-              _MarketPressureSummary(pressure: read.pressure),
+              _MarketPressureSummary(
+                pressure: read.pressure,
+                breakdown: page.isEmpty ? null : page.pressure,
+              ),
+
+              if (!page.isEmpty) ...[
+                if (expanded) ...[
+                  if (page.immediateContext.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    ImmediateContextBlock(items: page.immediateContext),
+                  ],
+                  if (page.catalysts.items.isNotEmpty ||
+                      page.catalysts.alert != null) ...[
+                    const SizedBox(height: 12),
+                    CatalystsBlock(catalysts: page.catalysts),
+                  ],
+                  if (!page.changeConditions.isEmpty) ...[
+                    const SizedBox(height: 12),
+                    ChangeConditionsBlock(conditions: page.changeConditions),
+                  ],
+                  if (page.timeframes.rows.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    TimeframeStrip(
+                      summary: page.timeframes,
+                      contradictions: page.contradictions,
+                      onTap: () => _showTimeframeDetail(context, page),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  DataCoverageBlock(
+                    coverage: page.coverage,
+                    onTap: () => _showCoverageDetail(context, page),
+                  ),
+                  if (page.lastChange.available) ...[
+                    const SizedBox(height: 12),
+                    LastChangeLine(change: page.lastChange),
+                  ],
+                ],
+                const SizedBox(height: 10),
+                _ExpandToggle(expanded: expanded, onTap: onToggle),
+              ],
             ],
           ),
         ),
@@ -1433,7 +1525,11 @@ class _ConditionsBlock extends StatelessWidget {
 class _MarketPressureSummary extends StatelessWidget {
   final MarketPressure pressure;
 
-  const _MarketPressureSummary({required this.pressure});
+  /// La décomposition par famille, quand le backend l'envoie. Null sur un
+  /// backend plus ancien: la feuille retombe alors sur la liste des sources.
+  final PressureBreakdown? breakdown;
+
+  const _MarketPressureSummary({required this.pressure, this.breakdown});
 
   @override
   Widget build(BuildContext context) {
@@ -1442,7 +1538,9 @@ class _MarketPressureSummary extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => _showPressureDetails(context, pressure),
+        onTap: () => breakdown == null
+            ? _showPressureDetails(context, pressure)
+            : _showPressureBreakdown(context, breakdown!),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -1482,9 +1580,14 @@ class _MarketPressureSummary extends StatelessWidget {
               ],
               const SizedBox(height: 9),
               Text(
-                pressure.summary.isEmpty
-                    ? '${pressure.measured} source(s) mesurée(s).'
-                    : pressure.summary,
+                // « 3/5 familles disponibles » dit ce sur quoi le score
+                // repose. Une source absente n'y compte pas comme neutre:
+                // elle est retirée du calcul et listée au détail.
+                breakdown != null && breakdown!.familiesLine.isNotEmpty
+                    ? breakdown!.familiesLine
+                    : pressure.summary.isEmpty
+                        ? '${pressure.measured} source(s) mesurée(s).'
+                        : pressure.summary,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: mobileMuted, fontSize: 14),
@@ -1492,7 +1595,7 @@ class _MarketPressureSummary extends StatelessWidget {
               const SizedBox(height: 8),
               const Row(
                 children: [
-                  Text('Voir les sources',
+                  Text('Voir le détail',
                       style: TextStyle(
                         color: AppColors.accent,
                         fontSize: 14,
@@ -2988,4 +3091,499 @@ String _sentenceCase(String value) {
   if (value.isEmpty) return value;
   final lower = value.toLowerCase();
   return '${lower[0].toUpperCase()}${lower.substring(1)}';
+}
+
+/// Le geste qui développe ou replie une carte.
+///
+/// Sans lui, les trois actifs développés donnaient une page de plusieurs
+/// écrans: la comparaison BTC / ETH / SOL, qui est la raison d'être de cette
+/// liste, devenait impossible.
+class _ExpandToggle extends StatelessWidget {
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _ExpandToggle({required this.expanded, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(11),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    expanded ? 'Réduire' : 'Plus de détail',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: AppColors.accent,
+                  size: 21,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+/// Une feuille de détail au dessin commun à toute la page.
+void _showTodaySheet(
+  BuildContext context, {
+  required String title,
+  required List<Widget> children,
+  double initialSize = .6,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: mobilePanel,
+    builder: (context) => DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: initialSize,
+      minChildSize: .35,
+      maxChildSize: .94,
+      builder: (context, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.fromLTRB(22, 20, 22, 34),
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
+    ),
+  );
+}
+
+class _SheetSection extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _SheetSection({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                color: mobileMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...children,
+          ],
+        ),
+      );
+}
+
+class _SheetNote extends StatelessWidget {
+  final String text;
+
+  const _SheetNote(this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: mobileMuted,
+            fontSize: 13,
+            height: 1.36,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+}
+
+/// Ce que direction, timing et avantage veulent dire, séparément.
+void _showReadingsDetail(BuildContext context, TodayPage page) {
+  Widget block(String label, ReadingLine line) => _SheetSection(
+        title: label,
+        children: [
+          Text(
+            line.value,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (line.question.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              line.question,
+              style: const TextStyle(color: mobileMuted, fontSize: 13),
+            ),
+          ],
+          if (line.detail.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              line.detail,
+              style: const TextStyle(
+                  color: mobileMuted, fontSize: 14, height: 1.36),
+            ),
+          ],
+        ],
+      );
+
+  _showTodaySheet(
+    context,
+    title: 'Direction, timing, avantage',
+    children: [
+      block('DIRECTION', page.readings.direction),
+      block('TIMING', page.readings.timing),
+      block('AVANTAGE DÉMONTRÉ', page.readings.edge),
+      if (page.readings.note.isNotEmpty) _SheetNote(page.readings.note),
+    ],
+  );
+}
+
+/// La position dans le range, et ce qui l'invaliderait.
+void _showPositionDetail(BuildContext context, TodayPage page) {
+  final position = page.position;
+  final levels = page.levels;
+  String money(double? value) =>
+      value == null ? '—' : _numberFr(value, digits: 0);
+
+  _showTodaySheet(
+    context,
+    title: 'Position ${position.timeframe}',
+    initialSize: .55,
+    children: [
+      _SheetSection(
+        title: 'LECTURE',
+        children: [
+          Text(
+            position.headline,
+            style: const TextStyle(
+              color: AppColors.text,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (position.detail.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(position.detail,
+                style: const TextStyle(color: mobileMuted, fontSize: 14)),
+          ],
+        ],
+      ),
+      if (position.hasRange)
+        _SheetSection(
+          title: 'BORNES DU RANGE',
+          children: [
+            _TodaySheetLine(
+                label: position.bottomLabel, value: money(position.rangeBottom)),
+            _TodaySheetLine(
+                label: 'Milieu', value: money(position.rangeMidpoint)),
+            _TodaySheetLine(
+                label: position.topLabel, value: money(position.rangeTop)),
+          ],
+        ),
+      if (levels.available)
+        _SheetSection(
+          title: 'NIVEAUX LES PLUS PROCHES',
+          children: [
+            if (levels.support != null)
+              _TodaySheetLine(
+                label: 'Support',
+                value: '${money(levels.support!.price)} · '
+                    '${levels.support!.distancePct.toStringAsFixed(1)} %',
+              ),
+            if (levels.resistance != null)
+              _TodaySheetLine(
+                label: 'Résistance',
+                value: '${money(levels.resistance!.price)} · '
+                    '+${levels.resistance!.distancePct.toStringAsFixed(1)} %',
+              ),
+            if (levels.source.isNotEmpty) _SheetNote(levels.source),
+          ],
+        ),
+      if (position.invalidation.isNotEmpty)
+        _SheetSection(
+          title: 'CE QUI INVALIDERAIT CETTE LECTURE',
+          children: [
+            Text(
+              position.invalidation,
+              style: const TextStyle(
+                  color: mobileMuted, fontSize: 14, height: 1.36),
+            ),
+          ],
+        ),
+      if (position.note.isNotEmpty) _SheetNote(position.note),
+    ],
+  );
+}
+
+/// Les quatre unités de temps, nommées, et leurs désaccords.
+void _showTimeframeDetail(BuildContext context, TodayPage page) {
+  _showTodaySheet(
+    context,
+    title: 'Structure par unité de temps',
+    initialSize: .55,
+    children: [
+      _SheetSection(
+        title: 'LECTURES',
+        children: [
+          for (final row in page.timeframes.rows)
+            _TodaySheetLine(label: row.timeframe, value: row.label),
+          _TodaySheetLine(
+              label: 'Alignement', value: page.timeframes.alignmentLabel),
+        ],
+      ),
+      if (page.contradictions.items.isNotEmpty)
+        _SheetSection(
+          title: page.contradictions.badge,
+          children: [
+            for (final item in page.contradictions.items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        color: AppColors.text,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.text,
+                      style: const TextStyle(
+                          color: mobileMuted, fontSize: 13.5, height: 1.36),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      if (page.timeframes.note.isNotEmpty) _SheetNote(page.timeframes.note),
+    ],
+  );
+}
+
+/// Ce que nous avons pu observer, et ce que nous n'avons pas.
+void _showCoverageDetail(BuildContext context, TodayPage page) {
+  final coverage = page.coverage;
+  Widget group(String title, List<CoverageFamily> families) {
+    if (families.isEmpty) return const SizedBox.shrink();
+    return _SheetSection(
+      title: title,
+      children: [
+        for (final family in families)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        family.label,
+                        style: const TextStyle(
+                            color: AppColors.text, fontSize: 14.5),
+                      ),
+                    ),
+                    if (family.stale)
+                      const Text(
+                        'périmée',
+                        style:
+                            TextStyle(color: AppColors.warn, fontSize: 12.5),
+                      ),
+                  ],
+                ),
+                if (family.reason.isNotEmpty && !family.fresh)
+                  Text(
+                    family.reason,
+                    style: const TextStyle(
+                        color: mobileMuted, fontSize: 12.5, height: 1.3),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  _showTodaySheet(
+    context,
+    title: 'Couverture des données',
+    initialSize: .7,
+    children: [
+      _SheetSection(
+        title: 'RÉSUMÉ',
+        children: [
+          _TodaySheetLine(
+            label: 'Disponibles',
+            value: '${coverage.available} / ${coverage.expected}',
+          ),
+          _TodaySheetLine(label: 'Récentes', value: '${coverage.fresh}'),
+          if (coverage.stale > 0)
+            _TodaySheetLine(label: 'Périmées', value: '${coverage.stale}'),
+          if (coverage.missing > 0)
+            _TodaySheetLine(label: 'Manquantes', value: '${coverage.missing}'),
+          if (coverage.uncertaintyScore != null)
+            _TodaySheetLine(
+              label: 'Incertitude',
+              value:
+                  '${coverage.uncertaintyScore!.toStringAsFixed(0)}/100',
+            ),
+        ],
+      ),
+      if (coverage.uncertaintyNote.isNotEmpty)
+        _SheetNote(coverage.uncertaintyNote),
+      const SizedBox(height: 10),
+      group(coverage.titles['available'] ?? 'DONNÉES DISPONIBLES',
+          coverage.availableFamilies),
+      group(coverage.titles['missing'] ?? 'DONNÉES MANQUANTES',
+          coverage.missingFamilies),
+      group(coverage.titles['not_applicable'] ?? 'NON APPLICABLE',
+          coverage.notApplicableFamilies),
+      group(coverage.titles['by_design'] ?? 'NON COLLECTÉ PAR CONCEPTION',
+          coverage.byDesignFamilies),
+    ],
+  );
+}
+
+/// Qui achète, qui vend, famille par famille, avec l'arithmétique visible.
+///
+/// Une source absente n'apparaît ni comme neutre ni comme zéro: elle est
+/// listée avec la raison de son absence, et retirée du calcul.
+void _showPressureBreakdown(BuildContext context, PressureBreakdown breakdown) {
+  String signed(double? value) => value == null
+      ? '—'
+      : '${value >= 0 ? '+' : ''}${value.toStringAsFixed(0)}';
+
+  Widget contributions(
+    String title,
+    List<PressureContribution> items,
+    Color tone,
+  ) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return _SheetSection(
+      title: title,
+      children: [
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        style: const TextStyle(
+                          color: AppColors.text,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      item.available ? signed(item.normalizedScore) : '—',
+                      style: TextStyle(
+                        color: item.available ? tone : mobileMuted,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                if (item.explanation.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    item.explanation,
+                    style: const TextStyle(
+                        color: mobileMuted, fontSize: 13, height: 1.34),
+                  ),
+                ],
+                if (item.available && item.contributionPoints != null)
+                  Text(
+                    'Apport au total : '
+                    '${signed(item.contributionPoints)} · poids '
+                    '${(item.weight * 100).toStringAsFixed(0)} %',
+                    style: const TextStyle(color: mobileMuted, fontSize: 12),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  _showTodaySheet(
+    context,
+    title: 'Qui achète, qui vend ?',
+    initialSize: .78,
+    children: [
+      Text(
+        breakdown.headline,
+        style: const TextStyle(
+          color: AppColors.text,
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      const SizedBox(height: 3),
+      Text(
+        breakdown.familiesLine,
+        style: const TextStyle(color: mobileMuted, fontSize: 14),
+      ),
+      const SizedBox(height: 18),
+      contributions(breakdown.buyersTitle, breakdown.buyers, AppColors.measured),
+      contributions(breakdown.sellersTitle, breakdown.sellers, AppColors.bad),
+      contributions('SANS DIRECTION NETTE', breakdown.neutral, mobileMuted),
+      contributions(
+          breakdown.unavailableTitle, breakdown.unavailable, mobileMuted),
+      if (breakdown.contradictions.isNotEmpty)
+        _SheetSection(
+          title: 'SOURCES EN DÉSACCORD',
+          children: [
+            for (final line in breakdown.contradictions)
+              Text(
+                line,
+                style: const TextStyle(
+                    color: mobileMuted, fontSize: 13.5, height: 1.36),
+              ),
+          ],
+        ),
+      if (breakdown.missingNote.isNotEmpty) _SheetNote(breakdown.missingNote),
+      if (breakdown.tooltip.isNotEmpty) _SheetNote(breakdown.tooltip),
+    ],
+  );
 }

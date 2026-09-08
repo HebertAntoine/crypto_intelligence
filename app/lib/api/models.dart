@@ -7,6 +7,7 @@
 library;
 
 import 'freshness.dart';
+import 'today_page.dart';
 
 /// Whether a relationship has actually been shown to precede anything.
 enum EdgeState {
@@ -604,6 +605,9 @@ class BuyOpportunity {
 /// Les confondre faisait afficher « analyse hors ligne » au-dessus d'un prix
 /// « en direct »: deux affirmations vraies, incompréhensibles ensemble.
 class AnalysisStamp {
+  /// Le nom de l'analyse dont cette page parle. Deux blocs qui ne portent pas
+  /// le même identifiant décrivent deux instants: ils ne sont pas combinés.
+  final String analysisId;
   final String? computedAt;
   final double? priceAtAnalysis;
   final double? livePrice;
@@ -611,13 +615,20 @@ class AnalysisStamp {
   final double driftThresholdPct;
   final bool staleForCurrentPrice;
 
+  /// NONE / NOTABLE / SEVERE. Le seuil vient du backend, pas de l'écran.
+  final String driftSeverity;
+  final double ageSeconds;
+
   const AnalysisStamp({
+    this.analysisId = '',
     this.computedAt,
     this.priceAtAnalysis,
     this.livePrice,
     this.driftPct,
     this.driftThresholdPct = 1.5,
     this.staleForCurrentPrice = false,
+    this.driftSeverity = 'NONE',
+    this.ageSeconds = 0,
   });
 
   static const unknown = AnalysisStamp();
@@ -626,6 +637,9 @@ class AnalysisStamp {
       computedAt == null ? null : DateTime.tryParse(computedAt!)?.toUtc();
 
   factory AnalysisStamp.fromJson(Map<String, dynamic> json) => AnalysisStamp(
+        analysisId: json['analysis_id'] as String? ?? '',
+        driftSeverity: json['drift_severity'] as String? ?? 'NONE',
+        ageSeconds: (json['age_seconds'] as num?)?.toDouble() ?? 0,
         computedAt: json['computed_at'] as String?,
         priceAtAnalysis: (json['price_at_analysis'] as num?)?.toDouble(),
         livePrice: (json['live_price'] as num?)?.toDouble(),
@@ -685,6 +699,21 @@ class TodayRead {
   /// Quand l'analyse a été calculée, et sur quel prix.
   final AnalysisStamp analysis;
 
+  /// La page compacte, composée par le backend depuis un seul instantané.
+  /// Vide quand le backend est plus ancien que ce champ: l'écran retombe
+  /// alors sur les blocs qu'il sait déjà rendre.
+  final TodayPage page;
+
+  /// L'identifiant de l'analyse décrite par ce payload.
+  String get analysisId =>
+      analysis.analysisId.isNotEmpty ? analysis.analysisId : page.analysisId;
+
+  /// Faux quand deux parties du payload ne parlent pas du même instant.
+  /// L'écran ne les combine alors pas silencieusement: il le dit.
+  bool get isCoherent =>
+      page.isEmpty || analysis.analysisId.isEmpty ||
+      page.analysisId == analysis.analysisId;
+
   const TodayRead({
     required this.asset,
     required this.marketData,
@@ -714,6 +743,7 @@ class TodayRead {
     this.upcomingMacro = const [],
     this.opportunity = BuyOpportunity.unavailable,
     this.analysis = AnalysisStamp.unknown,
+    this.page = TodayPage.unavailable,
   });
 
   factory TodayRead.fromJson(Map<String, dynamic> json) {
@@ -745,6 +775,9 @@ class TodayRead {
           (json['entry_timing'] as Map?)?['summary'] as String? ?? '',
       analysis: AnalysisStamp.fromJson(
         ((json['analysis'] as Map?) ?? const {}).cast<String, dynamic>(),
+      ),
+      page: TodayPage.fromJson(
+        ((json['page'] as Map?) ?? const {}).cast<String, dynamic>(),
       ),
       opportunity: BuyOpportunity.fromJson(
         ((json['buy_opportunity_explanation'] as Map?) ?? const {})

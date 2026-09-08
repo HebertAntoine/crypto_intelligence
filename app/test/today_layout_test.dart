@@ -161,6 +161,19 @@ Map<String, dynamic> _today(String asset, {bool withMarket = true}) => {
           },
         ],
       },
+      'analysis_id': 'an_layout_fixture',
+      'analysis': {
+        'analysis_id': 'an_layout_fixture',
+        'computed_at': '2026-09-07T15:23:29.000Z',
+        'age_seconds': 120.0,
+        'price_at_analysis': 78824.65,
+        'live_price': 79086.715,
+        'price_drift_pct': 0.33,
+        'drift_threshold_pct': 1.5,
+        'drift_severity': 'NONE',
+        'stale_for_current_price': false,
+      },
+      'page': _page(asset),
       'overall_status': withMarket ? 'LIVE' : 'UNAVAILABLE',
       'overall_status_reason': withMarket
           ? 'toutes les entrées critiques sont dans leur cadence'
@@ -220,6 +233,286 @@ Map<String, dynamic> _today(String asset, {bool withMarket = true}) => {
           'fx_source': 'Coinbase direct EUR spot pair',
           'method': 'median of 3 providers',
         },
+    };
+
+/// La page compacte telle que le backend la compose, avec les huit blocs que
+/// l'écran doit savoir rendre sans déborder.
+Map<String, dynamic> _page(String asset) => {
+      'analysis_id': 'an_layout_fixture',
+      'asset': asset,
+      'analysis_time': '2026-09-07T15:23:29.000Z',
+      'price_at_analysis': 78824.65,
+      'direction_timing_edge': {
+        'direction': {
+          'value': 'FORTEMENT HAUSSIÈRE',
+          'state': 'STRONGLY_BULLISH',
+          'detail': 'Tendance, structure et momentum concordent à 80 %.',
+          'question': 'Où va le marché ?',
+        },
+        'timing': {
+          'value': 'ATTENDRE',
+          'state': 'WAIT',
+          'detail': 'Un facteur de risque justifie d’attendre.',
+          'question': 'Est-ce intéressant maintenant ?',
+        },
+        'edge': {
+          'value': 'AUCUN AVANTAGE DÉMONTRÉ',
+          'state': 'NO_MEASURABLE_EDGE',
+          'detail': '3 relation(s) testée(s); aucune n’a survécu.',
+          'question': 'Est-ce historiquement démontré ?',
+        },
+        'note': 'Ces trois lectures sont indépendantes.',
+      },
+      'decision': {
+        'state': 'WAIT',
+        'headline': 'ATTENDRE',
+        'label': 'ATTENDRE',
+        'sentence': 'La tendance de fond reste positive, mais $asset évolue '
+            'proche du haut de son range 4H. Le timing actuel n’est pas '
+            'suffisamment favorable.',
+        'guard_rails': [],
+      },
+      'structural_position': {
+        'has_range': true,
+        'timeframe': '4H',
+        'headline': 'Proche du haut du range',
+        'state': 'NEAR_RANGE_TOP',
+        'range_bottom': 62625.62,
+        'range_midpoint': 72000.68,
+        'range_top': 81375.74,
+        'price': 78824.65,
+        'relative_position': 0.8639,
+        'percent': 86,
+        'bottom_label': 'Bas du range',
+        'top_label': 'Haut du range',
+        'detail': '86 % de la hauteur du range 4H',
+        'invalidation': 'Une clôture 4h au-dessus de 84508.99 casserait la '
+            'zone haute du range et invaliderait cette lecture.',
+        'note': 'La position est descriptive.',
+      },
+      'levels': {
+        'available': true,
+        'reference_price': 78824.65,
+        'support': {'price': 76944.0, 'distance_pct': -2.39, 'touches': 2},
+        'resistance': {'price': 79383.33, 'distance_pct': 0.71, 'touches': 3},
+        'source': 'clusters de swings 4H',
+      },
+      'immediate_context': [
+        {'label': 'Position', 'value': 'Proche du haut du range', 'detail': ''},
+        {'label': 'Volatilité', 'value': 'Faible', 'detail': ''},
+        {'label': 'Encombrement', 'value': 'Normal', 'detail': ''},
+        {
+          'label': 'Prochain événement',
+          'value': 'Inflation US (CPI) · dans 18 h',
+          'detail': '',
+        },
+      ],
+      'pressure': {
+        'state': 'BUYING',
+        'label': 'ACHAT LÉGER',
+        'headline': 'ACHAT LÉGER +19/100',
+        'score': 19.0,
+        'families_active': 3,
+        'families_total': 5,
+        'families_line': '3/5 familles disponibles',
+        'buyers': [
+          {
+            'family': 'institutions',
+            'label': 'Institutions (ETF spot)',
+            'available': true,
+            'normalized_score': 28.0,
+            'contribution_points': 14.2,
+            'direction': 'BUYING',
+            'weight_if_any': 0.35,
+            'source': 'Farside Investors',
+            'timestamp': '2026-09-07T00:00:00.000Z',
+            'freshness': 'RECENT',
+            'explanation': '+450 M\$ sur 5 séances.',
+          },
+        ],
+        'sellers': [
+          {
+            'family': 'levier',
+            'label': 'Funding perpétuel',
+            'available': true,
+            'normalized_score': -4.0,
+            'contribution_points': -1.1,
+            'direction': 'SELLING',
+            'weight_if_any': 0.20,
+            'source': 'funding.rate',
+            'freshness': 'RECENT',
+            'explanation': 'Coût de portage dans sa normale.',
+          },
+        ],
+        'neutral': [],
+        'unavailable': [
+          {
+            'family': 'baleines',
+            'label': 'Baleines',
+            'available': false,
+            'direction': 'UNKNOWN',
+            'source': 'fournisseur on-chain vérifié',
+            'freshness': 'UNAVAILABLE',
+            'explanation': 'Aucun fournisseur fiable configuré.',
+          },
+        ],
+        'buyers_title': 'FACTEURS ACHETEURS',
+        'sellers_title': 'FACTEURS VENDEURS',
+        'unavailable_title': 'INDISPONIBLE',
+        'contradictions': [
+          'Institutions (ETF spot) indique une pression acheteuse tandis que '
+              'Funding perpétuel indique une pression vendeuse.',
+        ],
+        'tooltip': 'Ce score mesure la pression relative des facteurs '
+            'disponibles. Il ne représente ni une probabilité de hausse ni '
+            'une edge statistique.',
+        'missing_note': 'Une source absente n’est ni neutre ni zéro.',
+      },
+      'catalysts': {
+        'items': [
+          {
+            'kind': 'CPI',
+            'name': 'Inflation US (CPI)',
+            'when': 'dans 18 h',
+            'importance': 'CRITICAL',
+            'importance_label': 'Majeur',
+            'hours_until': 18.0,
+            'asset_scope': ['BTC', 'ETH', 'SOL'],
+            'source': 'config/macro_calendar.yaml',
+          },
+        ],
+        'alert': {
+          'label': 'ÉVÉNEMENT IMPORTANT DANS 18 H',
+          'name': 'Inflation US (CPI)',
+          'hours_until': 18.0,
+          'note': 'Le sens n’est pas prédit.',
+        },
+        'horizon_note': 'Événements programmés des 7 prochains jours.',
+        'not_news': 'Uniquement des échéances programmées et sourcées.',
+      },
+      'change_conditions': {
+        'improve': [
+          {'text': 'Le timing deviendrait plus favorable avec un retour du '
+              'prix vers le bas du range'},
+        ],
+        'degrade': [
+          {'text': 'La lecture serait dégradée par la perte confirmée du bas '
+              'de range'},
+        ],
+        'structure_change': [
+          {'text': 'La structure changerait avec une clôture 4H au-dessus du '
+              'haut de range : le range serait invalidé, ce qui n’est pas une '
+              'dégradation'},
+        ],
+        'improve_title': 'POUR DEVENIR PLUS FAVORABLE',
+        'degrade_title': 'POUR DEVENIR MOINS FAVORABLE',
+        'structure_change_title': 'CHANGEMENT À SURVEILLER',
+        'note': 'Ce sont des conditions, pas des prévisions.',
+      },
+      'timeframes': {
+        'rows': [
+          {'timeframe': '1S', 'key': '1w', 'state': 'BEARISH_STRUCTURE',
+           'label': 'Baissière', 'arrow': '↓'},
+          {'timeframe': '1J', 'key': '1d', 'state': 'RANGE_STRUCTURE',
+           'label': 'En range', 'arrow': '↔'},
+          {'timeframe': '4H', 'key': '4h', 'state': 'RANGE_STRUCTURE',
+           'label': 'En range', 'arrow': '↔'},
+          {'timeframe': '1H', 'key': '1h', 'state': 'BULLISH_STRUCTURE',
+           'label': 'Haussière', 'arrow': '↑'},
+        ],
+        'alignment': 'DIVERGENT',
+        'alignment_label': 'Divergent',
+        'note': 'L’alignement est descriptif.',
+      },
+      'contradictions': {
+        'items': [
+          {
+            'title': 'Régime haussier, structure hebdomadaire baissière',
+            'text': 'La tendance récente est positive, mais la structure de '
+                'plus long terme n’est pas encore totalement alignée.',
+          },
+        ],
+        'has_contradiction': true,
+        'badge': 'LECTURE MIXTE',
+      },
+      'volatility': {
+        'headline': 'Faible',
+        'realised': {'state': 'LOW', 'label': 'Faible', 'direction': 'STABLE'},
+        'implied': {
+          'available': false,
+          'label': 'Indisponible',
+          'reason': 'aucune série DVOL pour cet actif',
+        },
+        'note': 'Réalisée et implicite ne sont jamais additionnées.',
+      },
+      'edge': {
+        'state': 'NO_MEASURABLE_EDGE',
+        'label': 'AUCUN AVANTAGE DÉMONTRÉ',
+        'tested_relations': 3,
+        'tooltip': 'Les configurations historiques comparables n’ont pas '
+            'démontré de surperformance robuste.',
+        'evidence_label': 'Preuve limitée',
+        'not_a_bearish_signal': 'L’absence d’avantage démontré ne dit pas que '
+            'le prix va baisser.',
+      },
+      'positioning': {
+        'positioning': {'label': 'Positionnement', 'value': 'Nouveaux longs'},
+        'funding': {'label': 'Funding', 'value': 'Dans sa normale'},
+        'crowding': {'label': 'Encombrement', 'value': 'Normal'},
+        'note': 'Les valeurs brutes sont dans l’écran Preuves.',
+      },
+      'etf': {
+        'available': true,
+        'headline': 'Flux récents positifs',
+        'latest_musd': 120.0,
+        'net_5d_musd': 450.0,
+        'caveat': 'Flux observés ≠ avantage prédictif démontré.',
+      },
+      'coverage': {
+        'expected': 12,
+        'available': 11,
+        'fresh': 9,
+        'stale': 2,
+        'missing': 1,
+        'percent': 92,
+        'level': 'GOOD',
+        'label': 'Bonne couverture',
+        'summary': '11/12 familles disponibles, 9 récentes',
+        'uncertainty_score': 40.0,
+        'uncertainty_note': 'L’incertitude et la couverture sont distinctes.',
+        'titles': {
+          'available': 'DONNÉES DISPONIBLES',
+          'missing': 'DONNÉES MANQUANTES',
+          'not_applicable': 'NON APPLICABLE',
+          'by_design': 'NON COLLECTÉ PAR CONCEPTION',
+        },
+        'families': [
+          {'family': 'price', 'label': 'Prix',
+           'coverage': 'EXPECTED_AND_AVAILABLE', 'available': true,
+           'fresh': true, 'stale': false, 'reason': ''},
+          {'family': 'onchain', 'label': 'On-chain',
+           'coverage': 'EXPECTED_BUT_MISSING', 'available': false,
+           'fresh': false, 'stale': false,
+           'reason': 'aucune observation stockée'},
+          {'family': 'dvol', 'label': 'Volatilité implicite (DVOL)',
+           'coverage': 'NOT_APPLICABLE', 'available': false,
+           'fresh': false, 'stale': false,
+           'reason': 'Deribit ne publie pas d’indice DVOL pour cet actif'},
+          {'family': 'whales', 'label': 'Baleines',
+           'coverage': 'UNAVAILABLE_BY_DESIGN', 'available': false,
+           'fresh': false, 'stale': false,
+           'reason': 'aucun fournisseur baleines fiable n’est configuré'},
+        ],
+      },
+      'last_change': {
+        'available': false,
+        'reason': 'Pas encore assez de lectures enregistrées.',
+      },
+      'reading_order': [
+        'direction_timing_edge', 'decision', 'structural_position',
+        'immediate_context', 'pressure', 'catalysts', 'change_conditions',
+        'coverage',
+      ],
     };
 
 ApiClient _client({bool withMarket = true}) => ApiClient(
@@ -300,11 +593,15 @@ void main() {
       await _pumpAt(
           tester, const Size(430, 932), TodayScreen(client: _client()));
 
-      expect(find.text('RÉGIME'), findsWidgets);
+      // Direction, timing et avantage remplacent la ligne « RÉGIME »: trois
+      // lectures indépendantes plutôt qu'une seule.
+      expect(find.text('DIRECTION'), findsWidgets);
+      expect(find.text('TIMING'), findsWidgets);
+      expect(find.text('AVANTAGE'), findsWidgets);
       expect(find.text('FAVORABLE'), findsWidgets);
       expect(find.text('QUI ACHÈTE, QUI VEND ?'), findsWidgets);
       expect(find.text('Voir pourquoi'), findsWidgets);
-      expect(find.text('Voir les sources'), findsWidgets);
+      expect(find.text('Voir le détail'), findsWidgets);
       // Les détails de structure restent fermés au premier regard.
       expect(find.textContaining('prix près du bas du range'), findsNothing);
       expect(find.text('STRONGLY_BULLISH'), findsNothing);
@@ -330,15 +627,19 @@ void main() {
         (tester) async {
       await _pumpAt(
           tester, const Size(430, 932), TodayScreen(client: _client()));
-      final trigger = find.text('Voir les sources').first;
+      final trigger = find.text('Voir le détail').first;
       await tester.ensureVisible(trigger);
       await tester.tap(trigger);
       await tester.pumpAndSettle();
 
+      expect(find.text('FACTEURS ACHETEURS'), findsOneWidget);
+      expect(find.text('FACTEURS VENDEURS'), findsOneWidget);
+      expect(find.text('INDISPONIBLE'), findsWidgets);
       expect(find.text('Institutions (ETF spot)'), findsOneWidget);
       expect(find.text('Baleines'), findsOneWidget);
       expect(find.textContaining('Aucun fournisseur fiable'), findsOneWidget);
-      expect(find.text('CONTRADICTIONS'), findsOneWidget);
+      // Une source absente n'est pas comptée zéro: elle n'a pas de score.
+      expect(find.text('—'), findsWidgets);
     });
 
     testWidgets('un prix réellement absent reste explicitement indisponible',
