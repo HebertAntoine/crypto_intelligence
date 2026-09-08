@@ -118,6 +118,7 @@ async def chart(
     # analysis rather than recomputing them differently.
     levels: dict[str, Any] = {"support": [], "resistance": []}
     patterns: list[dict[str, Any]] = []
+    structural: list[dict[str, Any]] = []
     try:
         from ..core.models import Candle, OHLCVSeries, Provenance
         from ..engines.technical.engine import TechnicalAnalysisEngine
@@ -155,6 +156,21 @@ async def chart(
             }
             for p in snapshot.patterns
         ]
+
+        # Les figures structurelles portent leur géométrie: points nommés,
+        # droites, neckline, zone de cassure. `PatternGeometry` existe depuis
+        # le début et dit dans sa propre docstring qu'un frontend qui la
+        # détient peut redessiner exactement ce que le détecteur a vu — mais
+        # cet endpoint ne la sérialisait pas, alors le graphique ne pouvait
+        # rien tracer d'autre que des bougies. Elle est calculée sur `source`,
+        # les vraies barres de l'unité demandée, jamais sur des barres
+        # agrégées pour l'affichage.
+        from ..structure.patterns import build_context, detect_all
+
+        context = build_context(source, tf)
+        structural = [
+            item.to_dict() for item in (detect_all(context) if context is not None else [])
+        ]
     except Exception as exc:
         log.debug("chart_overlay_failed", error=str(exc))
 
@@ -175,6 +191,8 @@ async def chart(
         "panels": panels,
         "levels": levels,
         "patterns": patterns,
+        # Les figures dessinables, avec leur géométrie en temps/prix.
+        "structural_patterns": structural,
         "markers": _chart_markers(asset, df.index.min(), df.index.max()),
     }
 
