@@ -130,6 +130,77 @@ class TestIdentityIsShared:
         assert len(ids) == len(ASSETS)
 
 
+class TestPressureAndWhyAgree:
+    """A source cannot weigh on one card and be absent from another.
+
+    ETF flows contributing +28 to buying pressure while the explanation says
+    nothing about ETFs is not two views of one analysis; it is two analyses.
+    """
+
+    @pytest.mark.parametrize("asset", ASSETS, ids=lambda a: a.value)
+    def test_a_pressure_family_appears_in_the_explanation_too(self, asset):
+        from crypto_intel.api.routes import why_decision
+        from crypto_intel.api.routes_lot4 import today
+
+        symbol = asset.value
+        page = asyncio.run(today(symbol))
+        why = asyncio.run(why_decision(symbol))
+        assert page["analysis_id"] == why["analysis_id"]
+
+        breakdown = why["pressure"]
+        reported = {
+            item["family"]
+            for group in ("buyers", "sellers", "neutral")
+            for item in breakdown[group]
+        }
+        explained = {
+            factor["id"].removeprefix("pressure.")
+            for factor in why["all_factors"]
+            if factor["id"].startswith("pressure.")
+        }
+        assert reported <= explained, (
+            f"{reported - explained} pèse(nt) sur la pression sans figurer "
+            "dans l'explication"
+        )
+
+    @pytest.mark.parametrize("asset", ASSETS, ids=lambda a: a.value)
+    def test_the_same_source_and_timestamp_are_quoted_on_both_sides(self, asset):
+        from crypto_intel.api.routes import why_decision
+        from crypto_intel.api.routes_lot4 import today
+
+        symbol = asset.value
+        page = asyncio.run(today(symbol))
+        why = asyncio.run(why_decision(symbol))
+        by_family = {
+            item["family"]: item
+            for group in ("buyers", "sellers", "neutral", "unavailable")
+            for item in why["pressure"][group]
+        }
+        for component in page["market_pressure"]["components"]:
+            reported = by_family[component["name"]]
+            assert reported["source"] == component["source"]
+            assert reported["timestamp"] == component["as_of"]
+            assert reported["normalized_score"] == (
+                None if component["score"] is None
+                else round(float(component["score"]), 1)
+            )
+
+    @pytest.mark.parametrize("asset", ASSETS, ids=lambda a: a.value)
+    def test_an_unavailable_family_is_never_counted_as_zero(self, asset):
+        from crypto_intel.api.routes import why_decision
+
+        why = asyncio.run(why_decision(asset.value))
+        breakdown = why["pressure"]
+        for item in breakdown["unavailable"]:
+            assert item["normalized_score"] is None
+            assert item["contribution_points"] is None
+            assert item["direction"] == "UNKNOWN"
+            assert item["explanation"], "une absence doit dire pourquoi"
+        assert breakdown["families_active"] == len(
+            breakdown["buyers"] + breakdown["sellers"] + breakdown["neutral"]
+        )
+
+
 class TestIdentityIsContentAddressed:
     """The id names the inputs, so it is reproducible and it moves when they do."""
 

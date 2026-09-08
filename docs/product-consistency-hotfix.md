@@ -134,6 +134,140 @@ dans les preuves.
 Les trois partagent le régime ; ce qui les sépare est la localisation
 structurelle. Aucune valeur ne diffère entre les blocs d'un même instantané.
 
+## Identité de l'analyse
+
+Chaque endpoint recalculait ce dont il avait besoin. Deux appels séparés d'une
+seconde pouvaient donc décrire deux instants sans que rien ne le dise : le
+régime d'une exécution à côté du funding de la suivante. Aucun chiffre n'était
+faux ; leur combinaison l'était.
+
+Une analyse est maintenant une valeur qui porte un nom.
+
+`AnalysisContextSnapshot` (`engines/analysis_context.py`) rassemble toutes les
+lectures d'une même décision — régime, structure par unité de temps,
+localisation, funding, open interest, encombrement, volatilité réalisée et
+implicite, ETF, macro, edge, analogues, incertitude, couverture, pression,
+entrée, timing et décision — et `analysis_id` la nomme.
+
+L'identifiant est **adressé par le contenu**, pas alloué : c'est le hachage
+d'une empreinte des entrées stockées (nombre de lignes et dernier horodatage
+de chaque série), du calendrier macro programmé et d'un seau d'horloge de cinq
+minutes. Deux processus lisant la même base tombent donc sur le même
+identifiant sans partager d'état, et l'identifiant change exactement quand les
+entrées changent.
+
+Le cache conserve un instantané pendant un seau entier plutôt que de
+recalculer au franchissement de l'horloge : sans cela, deux endpoints appelés à
+une seconde d'intervalle de part et d'autre de :05 renvoyaient deux
+identifiants, et le client devait traiter une paire parfaitement cohérente
+comme un désaccord.
+
+### Endpoints qui partagent l'identifiant
+
+| Endpoint | Sert |
+| --- | --- |
+| `/today/{symbol}` | l'instantané complet et la page compacte |
+| `/why/decision/{symbol}` | le raisonnement derrière le verdict affiché |
+| `/edge/{symbol}` | l'état d'avantage de cet instantané |
+| `/leverage/{symbol}` | funding, encombrement, état de levier |
+| `/volatility/{symbol}` | volatilité réalisée |
+| `/structure/{symbol}` | structure et localisation, quand l'unité demandée est couverte |
+| `/structure/{symbol}/multi-timeframe` | 1S / 1J / 4H / 1H |
+| `/entry-opportunity/{symbol}` | l'évaluation 4H de cet instantané |
+
+Une unité de temps hors de l'analyse (15 m, par exemple) est calculée à la
+demande et le dit en renvoyant `analysis_id: null` : elle n'appartient à aucune
+analyse, et prétendre le contraire laisserait l'écran la combiner avec des
+blocs qui, eux, en font partie.
+
+### Le prix reste dehors
+
+Le prix bouge à la seconde, l'analyse non. `price_at_analysis` est la dernière
+clôture 4H — le prix sur lequel la lecture a réellement été calculée — et
+`live_layer` joint le prix en direct par un écart explicite plutôt qu'en
+fusionnant deux horloges. Un tick ne fabrique donc jamais une nouvelle analyse.
+
+## Qui achète, qui vend
+
+La carte affiche l'essentiel ; le détail s'ouvre au clic, famille par famille :
+score normalisé, poids, apport reproductible au total, source, horodatage et
+raison d'absence. Le total est une moyenne pondérée des familles qui ont
+répondu, et la feuille montre la formule et la somme des apports pour qu'on
+puisse la refaire.
+
+**Une source absente n'est ni neutre ni zéro.** Elle sort du dénominateur et
+reste listée avec la raison de son absence. La confondre avec « aucune
+pression » tirait discrètement chaque score vers le neutre.
+
+## Couverture des données
+
+Nouvelle mesure, distincte de l'incertitude. L'incertitude décrit la solidité
+de la conclusion ; la couverture décrit ce que nous avons pu observer.
+« Incertitude 60/100 élevée » et « couverture 85 % bonne » ensemble est une
+paire cohérente : nous avons vu la plupart des preuves, et elles ne concordent
+pas.
+
+Quatre classes, parce que « manquant » et « ça n'existe pas » sont deux
+réponses différentes :
+
+| Classe | Sens |
+| --- | --- |
+| `EXPECTED_AND_AVAILABLE` | attendue et présente |
+| `EXPECTED_BUT_MISSING` | attendue et absente — un vrai trou |
+| `NOT_APPLICABLE` | n'existe pas pour cet actif |
+| `UNAVAILABLE_BY_DESIGN` | volontairement non collectée |
+
+Les deux dernières sortent du dénominateur : Deribit ne publie pas d'indice
+DVOL pour SOL et aucun ETF spot SOL n'est suivi, donc les compter contre SOL
+signalerait un trou de données là où il y a un fait de marché.
+
+## Défauts trouvés en chemin
+
+- **La table de localisation comptait six entrées pour une énumération de
+  neuf.** `AT_RANGE_TOP`, `AT_RANGE_BOTTOM`, `LOWER_THIRD` et `UPPER_THIRD`
+  tombaient dans le repli : « le prix est AT_RANGE_TOP » atteignait
+  l'utilisateur pendant que `NEAR_RANGE_TOP` s'affichait correctement. Le même
+  écart existait côté Flutter. Chaque vocabulaire vit désormais une seule fois,
+  dans `core/labels_fr.py`, lu par tous les producteurs de texte.
+- **Le texte d'invalidation du range et les détails de `EntryOpportunity`
+  étaient restés anglais.** Traduits à la source.
+- **Le garde-fou anti-enum ne mordait que par accident** : il ne trouvait du
+  texte que si un autre module avait laissé des lignes en base avant lui. Il
+  amorce maintenant son propre historique et lit toute la page.
+- **Le libellé du bouton d'expansion faisait 35 caractères** et débordait la
+  ligne à la largeur de référence — attrapé par les tests avant un téléphone.
+
+## Revue statique écran par écran
+
+Je ne peux pas voir l'application tourner et ne prétends pas l'avoir validée
+visuellement. `tests/unit/test_screen_qa.py` contrôle ce qui est vérifiable sur
+la source des huit écrans : aucun identifiant brut ni phrase anglaise dans les
+chaînes réellement affichées, présence d'un état de chargement, d'erreur et de
+vide, aucun bouton câblé sur rien, identité de l'analyse conservée côté client,
+et aucun seuil de décision numérique dans la vue.
+
+Le contrôle porte sur les arguments de `Text(...)` et les paramètres nommés
+d'affichage, pas sur toute la source : les clés JSON et les identifiants de
+moteur sont du vocabulaire interne et doivent y rester. Un test vérifie que
+l'extracteur trouve effectivement des chaînes, faute de quoi une regex cassée
+rendrait toute la revue verte par vacuité.
+
+## Tests
+
+- `tests/unit/test_analysis_identity.py` — identifiant partagé sur huit
+  endpoints pour BTC / ETH / SOL, mêmes funding, structure, localisation, edge,
+  incertitude et prix d'analyse ; identifiant reproductible à froid ; nouvel
+  identifiant quand une entrée change ; continuité au franchissement d'un
+  seau ; prix live hors de l'identité ; cohérence pression / explication.
+- `tests/unit/test_today_page.py` — position structurelle à 0 / 0,5 / 1, range
+  absent, distances aux niveaux, tri des catalyseurs, événement macro ≤ 24 h,
+  couverture, `NOT_APPLICABLE`, périmé contre manquant, incertitude distincte
+  de la couverture, divergence des unités de temps, régime haussier avec
+  ATTENDRE, absence d'avantage démontré non lue comme baissière, conditions de
+  changement, pression partielle et totale reproductible.
+- `tests/unit/test_screen_qa.py` — la revue statique ci-dessus.
+- `app/test/today_page_test.dart` — les mêmes propriétés rendues réellement.
+
 ## Ce qui reste ouvert
 
 - **Le backend n'est pas déployé.** L'app lit les instantanés embarqués et ne
@@ -141,13 +275,16 @@ structurelle. Aucune valeur ne diffère entre les blocs d'un même instantané.
   direct » qu'affiche l'app vient donc de l'instantané au moment de son export,
   pas d'un flux continu. C'est le blocage produit le plus important et il
   demande une décision d'hébergement.
-- **Textes anglais résiduels** venant des moteurs : `structural location`,
-  `REINTEGRATION`, le texte d'invalidation. Une couche de présentation reste à
-  écrire.
-- **Improve / degrade / change structure** : la distinction demandée n'est pas
-  faite. Une cassure haussière du haut de range est aujourd'hui rangée en
-  « dégraderait », alors qu'elle invalide le range sans dégrader le marché.
-- Analogues, breakout et funding s'affichent encore avec leur vocabulaire
-  technique en première lecture.
+- **`/evidence` et les endpoints de recherche ne portent pas d'`analysis_id`.**
+  C'est délibéré : ils décrivent des études, pas une décision d'un instant. Les
+  rattacher à un instantané suggérerait une fraîcheur qu'ils n'ont pas.
+- **L'historique des verdicts est vide.** « Dernier changement de lecture » ne
+  s'affiche qu'à partir de deux lectures enregistrées, et rien n'est
+  reconstruit après coup. Le travail planifié `decision_track` les écrit toutes
+  les trente minutes ; le bloc apparaîtra quand il aura tourné.
+- **`EdgeEngine` renvoie `INSUFFICIENT_DATA` (0 testée) sur cette base.** La
+  page l'affiche « aucune relation testée », distinct de « aucun avantage
+  démontré ». C'est exact, mais cela signifie que la sortie de recherche n'est
+  pas rattachée à cette base de production.
 
-757 tests backend, 93 Flutter, ruff et analyze propres.
+897 tests backend, ruff propre.

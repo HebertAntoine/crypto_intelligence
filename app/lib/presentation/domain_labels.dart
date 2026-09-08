@@ -28,13 +28,23 @@ String structureLabel(String raw) => switch (raw.toUpperCase()) {
       _ => readableFallback(raw),
     };
 
+/// Les neuf états de `LocationState`, tous les neuf.
+///
+/// Cette table en comptait six: `AT_RANGE_TOP`, `AT_RANGE_BOTTOM`,
+/// `LOWER_THIRD` et `UPPER_THIRD` tombaient dans le repli, qui rend lisible
+/// sans traduire. Le même écart existait côté backend et y a laissé passer
+/// « le prix est AT_RANGE_TOP » jusqu'à l'écran.
 String locationLabel(String raw) => switch (raw.toUpperCase()) {
+      'AT_RANGE_TOP' => 'Sur le haut du range',
       'NEAR_RANGE_TOP' => 'Proche du haut du range',
-      'NEAR_RANGE_BOTTOM' => 'Proche du bas du range',
+      'UPPER_THIRD' => 'Tiers haut du range',
       'MID_RANGE' => 'Milieu de range',
+      'LOWER_THIRD' => 'Tiers bas du range',
+      'NEAR_RANGE_BOTTOM' => 'Proche du bas du range',
+      'AT_RANGE_BOTTOM' => 'Sur le bas du range',
       'ABOVE_RANGE' => 'Au-dessus du range',
       'BELOW_RANGE' => 'Sous le range',
-      'NO_RANGE' => 'Aucun range validé',
+      'NO_RANGE' || 'NO_VALID_RANGE' => 'Aucun range validé',
       _ => readableFallback(raw),
     };
 
