@@ -1027,6 +1027,7 @@ class _EntryAnswerPanel extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: const ValueKey('opportunity-summary-card'),
         borderRadius: BorderRadius.circular(22),
         onTap: () => _showOpportunityDetails(context, read, tone),
         child: ClipRRect(
@@ -1117,11 +1118,6 @@ class _EntryAnswerPanel extends StatelessWidget {
                           height: 1.35,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    _TodayOutlineAction(
-                      label: 'Voir pourquoi',
-                      tone: visual.accent,
                     ),
                   ],
                 ),
@@ -1453,38 +1449,6 @@ class _TodayIconTile extends StatelessWidget {
       );
 }
 
-class _TodayOutlineAction extends StatelessWidget {
-  final String label;
-  final Color tone;
-
-  const _TodayOutlineAction({required this.label, required this.tone});
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 9),
-        decoration: BoxDecoration(
-          color: const Color(0xFF071426).withValues(alpha: .68),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: tone, width: 1.2),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: tone,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(width: 5),
-            Icon(Icons.chevron_right_rounded, color: tone, size: 20),
-          ],
-        ),
-      );
-}
-
 Color _opportunityColour(String state) => switch (state.toUpperCase()) {
       'VERY_FAVORABLE' ||
       'FAVORABLE' ||
@@ -1759,6 +1723,7 @@ class _MarketPressureSummary extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
+        key: const ValueKey('market-pressure-summary-card'),
         borderRadius: BorderRadius.circular(22),
         onTap: () => breakdown == null
             ? _showPressureDetails(context, pressure)
@@ -1872,11 +1837,6 @@ class _MarketPressureSummary extends StatelessWidget {
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const _TodayOutlineAction(
-                      label: 'Voir les sources',
-                      tone: Color(0xFF72C8FF),
                     ),
                   ],
                 ),

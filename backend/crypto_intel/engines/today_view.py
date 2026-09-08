@@ -560,116 +560,94 @@ def positioning_block(snapshot: Any) -> dict[str, Any]:
 # --- who buys, who sells --------------------------------------------------
 
 def pressure_breakdown(snapshot: Any) -> dict[str, Any]:
-    """Every family's contribution, with the arithmetic left visible.
+    """Les cinq familles, telles que le moteur les a calculées.
 
-    The total is a weighted average of the families that actually reported, so
-    an absent source is removed from the denominator. It is never folded in as
-    a zero: "no data" and "no pressure" are different statements, and treating
-    the first as the second quietly pulls every score towards neutral.
+    Rien n'est recalculé ici. Le moteur publie déjà l'apport pondéré de chaque
+    famille et le dénominateur qu'il a employé; les refaire à l'écran, c'était
+    risquer deux arithmétiques pour un seul score.
+
+    Deux nombres sortent côte à côte et ne se remplacent pas : la pression, et
+    la couverture sur laquelle elle repose. Un +61 mesuré sur une famille n'est
+    pas une domination acheteuse, et le titre le dit.
     """
-    pressure = snapshot.pressure
-    components = list(getattr(pressure, "components", []) or [])
-    score = getattr(pressure, "pressure_score", None)
+    payload = snapshot.pressure.to_dict()
+    families = payload["families"]
 
-    usable = [
-        component for component in components
-        if getattr(component, "available", False)
-        and getattr(component, "normalized_pressure", None) is not None
-    ]
-    denominator = sum(
-        float(component.weight) * float(component.confidence) for component in usable
-    )
+    def group(*directions: str) -> list[dict[str, Any]]:
+        return [
+            item for item in families
+            if item["available"] and item["direction"] in directions
+        ]
 
-    def described(component: Any) -> dict[str, Any]:
-        available = bool(getattr(component, "available", False))
-        normalized = getattr(component, "normalized_pressure", None)
-        weight = float(getattr(component, "weight", 0) or 0)
-        confidence = float(getattr(component, "confidence", 0) or 0)
-        contribution = (
-            round(float(normalized) * weight * confidence / denominator, 2)
-            if available and normalized is not None and denominator else None
-        )
-        return {
-            "family": getattr(component, "name", ""),
-            "label": getattr(component, "label", ""),
-            "availability": "AVAILABLE" if available else "UNAVAILABLE",
-            "available": available,
-            "raw_input": getattr(component, "raw_value", None),
-            "normalized_score": (
-                round(float(normalized), 1) if normalized is not None else None
-            ),
-            # Classified by sign, not by a magnitude threshold: a small
-            # selling contribution is still a selling contribution, and its
-            # size is printed next to it.
-            "direction": (
-                "UNKNOWN" if not available or normalized is None else
-                "BUYING" if float(normalized) > 0 else
-                "SELLING" if float(normalized) < 0 else "NEUTRAL"
-            ),
-            "weight_if_any": weight,
-            "confidence": confidence,
-            "contribution_points": contribution,
-            "source": getattr(component, "source", ""),
-            "timestamp": getattr(component, "as_of", None),
-            "freshness": getattr(component, "freshness", "UNAVAILABLE"),
-            "explanation": (
-                getattr(component, "detail", "") if available
-                else getattr(component, "reason", "")
-            ),
-        }
-
-    described_all = [described(component) for component in components]
     buyers = sorted(
-        [item for item in described_all if item["direction"] == "BUYING"],
+        group("STRONG_BUY", "BUY", "SLIGHT_BUY"),
         key=lambda item: -(item["normalized_score"] or 0),
     )
     sellers = sorted(
-        [item for item in described_all if item["direction"] == "SELLING"],
+        group("STRONG_SELL", "SELL", "SLIGHT_SELL"),
         key=lambda item: item["normalized_score"] or 0,
     )
-    neutral = [item for item in described_all if item["direction"] == "NEUTRAL"]
-    unavailable = [item for item in described_all if not item["available"]]
-    reconstructed = (
-        round(sum(item["contribution_points"] or 0 for item in described_all), 1)
-        if denominator else None
-    )
-    state = _enum(getattr(pressure, "state", None), "INSUFFICIENT_DATA")
+    neutral = group("NEUTRAL")
+    unavailable = [
+        item for item in families if item["applicable"] and not item["available"]
+    ]
+    not_applicable = [item for item in families if not item["applicable"]]
+    coverage = payload["coverage"]
+    score = payload["pressure_score"]
+
     return {
-        "state": state,
-        "label": getattr(pressure, "label", ""),
+        "state": payload["state"],
+        "label": payload["label"],
         "score": score,
         "headline": (
-            f"{getattr(pressure, 'label', '')} {score:+.0f}/100"
-            if score is not None else "Pression indéterminée"
+            f"{payload['label']} {score:+.0f}/100" if score is not None
+            else "Pression indéterminée"
         ),
-        "families_active": len(usable),
-        "families_total": len(components),
-        "families_line": f"{len(usable)}/{len(components)} familles disponibles",
+        # La couverture est une seconde mesure, pas une note de bas de page.
+        "families_active": coverage["measured"],
+        "families_total": coverage["applicable"],
+        "families_line": coverage["line"],
+        "coverage_level": coverage["level"],
+        "coverage_label": coverage["label"],
+        "coverage_ratio": coverage["ratio"],
         "buyers": buyers,
         "sellers": sellers,
         "neutral": neutral,
         "unavailable": unavailable,
+        "not_applicable": not_applicable,
         "buyers_title": "FACTEURS ACHETEURS",
         "sellers_title": "FACTEURS VENDEURS",
         "unavailable_title": "INDISPONIBLE",
-        "contradictions": list(getattr(pressure, "contradictions", []) or []),
+        "not_applicable_title": "NON APPLICABLE",
+        "contradictions": payload["contradictions"],
         "reconstruction": {
-            "method": "moyenne pondérée des familles disponibles",
-            "formula": "score = Σ(score_normalisé × poids × confiance) / Σ(poids × confiance)",
-            "denominator": round(denominator, 4) if denominator else 0.0,
-            "sum_of_contributions": reconstructed,
+            "method": payload["method"]["formula"],
+            "formula": payload["method"]["formula"],
+            "denominator": payload["method"]["denominator"],
+            "weights": payload["method"]["weights"],
+            "dominant_gate": payload["method"]["dominant_gate"],
+            "sum_of_contributions": (
+                round(
+                    sum(
+                        item["weighted_contribution"] or 0
+                        for item in families if item["available"]
+                    ), 1,
+                ) if score is not None else None
+            ),
             "matches_score": (
-                None if score is None or reconstructed is None
-                else abs(reconstructed - float(score)) <= 0.5
+                None if score is None else abs(
+                    sum(
+                        item["weighted_contribution"] or 0
+                        for item in families if item["available"]
+                    ) - float(score)
+                ) <= 0.5
             ),
         },
-        "tooltip": (
-            "Ce score mesure la pression relative des facteurs disponibles. Il "
-            "ne représente ni une probabilité de hausse ni une edge statistique."
-        ),
+        "tooltip": payload["caveat"],
         "missing_note": (
             "Une source absente n'est ni neutre ni zéro : elle est retirée du "
-            "calcul et listée ici."
+            "calcul et listée ici. Une famille sans objet pour cet actif ne "
+            "compte pas non plus dans la couverture."
         ),
     }
 

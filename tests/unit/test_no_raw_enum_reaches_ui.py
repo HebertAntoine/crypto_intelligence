@@ -90,6 +90,7 @@ _MACHINE_KEYS = frozenset({
     "reading_order", "raw_input", "raw_value", "type", "asset_scope",
     "edge_state", "from_state", "to_state", "guard_rails", "method",
     "formula", "drift_severity", "price_source", "schema_version", "inputs",
+    "data_quality", "coverage_level", "dominant_gate", "weights",
 })
 
 

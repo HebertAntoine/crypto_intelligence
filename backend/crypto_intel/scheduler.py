@@ -201,7 +201,12 @@ async def job_derivatives_sync() -> None:
     perfectly valid percentile computed over a series whose last observation
     was a day old. Depth is not freshness, and nothing was refreshing it.
     """
-    from .history.backfill import backfill_funding, backfill_open_interest
+    from .history.backfill import (
+        backfill_funding,
+        backfill_long_short_accounts,
+        backfill_open_interest,
+        backfill_spot_taker_flow,
+    )
     from .providers.derivatives.multi_exchange import backfill_bybit_open_interest
     from .providers.volatility.deribit import backfill_dvol
 
@@ -225,6 +230,18 @@ async def job_derivatives_sync() -> None:
             await backfill_bybit_open_interest(asset, max_requests=1)
         except Exception as exc:
             errors.append(f"oi_bybit/{asset.value}: {exc}")
+        # Le côté agresseur du volume spot et la répartition des comptes: deux
+        # familles de la carte de pression qui n'avaient aucune source, alors
+        # que Binance publie les deux gratuitement et que nous appelions déjà
+        # l'endpoint qui porte la première.
+        try:
+            await backfill_spot_taker_flow(asset, depth_days=10, max_requests=1)
+        except Exception as exc:
+            errors.append(f"spot_flow/{asset.value}: {exc}")
+        try:
+            await backfill_long_short_accounts(asset, max_requests=1)
+        except Exception as exc:
+            errors.append(f"long_short/{asset.value}: {exc}")
 
     # Deribit publishes DVOL for BTC and ETH only; SOL has no series and none
     # is invented for it.

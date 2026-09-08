@@ -173,17 +173,15 @@ class TestPressureAndWhyAgree:
         why = asyncio.run(why_decision(symbol))
         by_family = {
             item["family"]: item
-            for group in ("buyers", "sellers", "neutral", "unavailable")
+            for group in ("buyers", "sellers", "neutral", "unavailable",
+                          "not_applicable")
             for item in why["pressure"][group]
         }
         for component in page["market_pressure"]["components"]:
-            reported = by_family[component["name"]]
+            reported = by_family[component["family"]]
             assert reported["source"] == component["source"]
-            assert reported["timestamp"] == component["as_of"]
-            assert reported["normalized_score"] == (
-                None if component["score"] is None
-                else round(float(component["score"]), 1)
-            )
+            assert reported["observation_time"] == component["observation_time"]
+            assert reported["normalized_score"] == component["normalized_score"]
 
     @pytest.mark.parametrize("asset", ASSETS, ids=lambda a: a.value)
     def test_an_unavailable_family_is_never_counted_as_zero(self, asset):
@@ -191,13 +189,17 @@ class TestPressureAndWhyAgree:
 
         why = asyncio.run(why_decision(asset.value))
         breakdown = why["pressure"]
-        for item in breakdown["unavailable"]:
+        for item in breakdown["unavailable"] + breakdown["not_applicable"]:
             assert item["normalized_score"] is None
-            assert item["contribution_points"] is None
-            assert item["direction"] == "UNKNOWN"
-            assert item["explanation"], "une absence doit dire pourquoi"
+            assert item["weighted_contribution"] is None
+            assert item["direction"] == "UNAVAILABLE"
+            assert item["reason"], "une absence doit dire pourquoi"
         assert breakdown["families_active"] == len(
             breakdown["buyers"] + breakdown["sellers"] + breakdown["neutral"]
+        )
+        # Une famille sans objet pour cet actif ne compte pas au dénominateur.
+        assert breakdown["families_total"] == breakdown["families_active"] + len(
+            breakdown["unavailable"]
         )
 
 

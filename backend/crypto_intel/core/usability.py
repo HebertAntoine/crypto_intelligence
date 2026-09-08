@@ -69,8 +69,11 @@ CADENCE: dict[str, dict[str, int]] = {
     # Daily candles close once a day, so the useful question is whether the
     # last close is yesterday's or older. One day plus a margin for ingestion.
     "ohlcv_daily": {"live": 93600, "recent": 172800, "delayed": 345600},
-    # Funding settles every eight hours on most venues.
-    "funding": {"live": 3600, "recent": 32400, "delayed": 86400},
+    # Funding settles every eight hours on most venues, so a rate published
+    # ten hours ago is the current one - there is no newer. A one-hour "live"
+    # window against an eight-hour publication cycle made this family
+    # unusable for most of every cycle while it was perfectly up to date.
+    "funding": {"live": 32400, "recent": 46800, "delayed": 129600},
     # Open interest is polled in minutes but backfilled daily.
     "open_interest": {"live": 3600, "recent": 93600, "delayed": 259200},
     # Implied volatility index, published continuously but consumed daily.
@@ -88,6 +91,9 @@ CADENCE: dict[str, dict[str, int]] = {
     "cross_asset": {"live": 93600, "recent": 345600, "delayed": 1209600},
     # On-chain aggregates are polled hourly and meaningful daily.
     "onchain": {"live": 7200, "recent": 93600, "delayed": 259200},
+    # Aggressive spot volume is read off daily klines: today's bar is the
+    # freshest that exists.
+    "spot": {"live": 93600, "recent": 172800, "delayed": 345600},
     "default": {"live": 300, "recent": 3600, "delayed": 86400},
 }
 
@@ -331,6 +337,7 @@ class CoverageClass(StrEnum):
 
 COVERAGE_LABELS_FR: dict[str, str] = {
     "price": "Prix",
+    "spot": "Agressivité spot",
     "ohlcv_daily": "Bougies journalières",
     "ohlcv_4h": "Bougies 4 heures",
     "structure": "Structure de marché",

@@ -42,6 +42,13 @@ def _range(bottom: float, top: float, valid: bool = True) -> NS:
     )
 
 
+def _empty_pressure():
+    """Un moteur de pression sans aucune famille: l'état par défaut d'un test."""
+    from crypto_intel.engines.market_pressure import MarketPressureExplanation
+
+    return MarketPressureExplanation(asset="BTC", families=[])
+
+
 def _snapshot(**overrides):
     base = {
         "asset": "BTC",
@@ -76,8 +83,7 @@ def _snapshot(**overrides):
         "uncertainty": NS(score=40.0),
         "analogs": None,
         "coverage": None,
-        "pressure": NS(components=[], pressure_score=None, state="INSUFFICIENT_DATA",
-                    label="INDÉTERMINÉ", contradictions=[]),
+        "pressure": _empty_pressure(),
         "etf": {},
     }
     base.update(overrides)
@@ -311,85 +317,152 @@ class TestDirectionTimingEdge:
 
 
 class TestPressureDecomposition:
-    """An absent source is neither neutral nor zero."""
+    """Une source absente n'est ni neutre ni zéro, et le titre le reconnaît."""
 
-    def _component(self, name, label, score, available=True, weight=0.3, confidence=0.8):
-        return NS(
-            name=name, label=label, available=available,
-            normalized_pressure=score, raw_value={"x": 1}, weight=weight,
-            confidence=confidence, detail="parce que", source="src",
-            as_of="2026-09-07T20:00:00+00:00", freshness="RECENT",
+    def _pressure(self, families):
+        from crypto_intel.engines.market_pressure import (
+            Direction,
+            MarketPressureExplanation,
+        )
+
+        out = MarketPressureExplanation(asset="BTC", families=families)
+        measured = out.measured
+        if measured:
+            out.denominator = sum(item.weight for item in measured)
+            for item in measured:
+                item.weighted_contribution = round(
+                    float(item.normalized_score or 0) * item.weight / out.denominator,
+                    2,
+                )
+            out.pressure_score = round(
+                sum(item.weighted_contribution or 0 for item in measured), 1
+            )
+            out.state = Direction.of(out.pressure_score).value
+        return out
+
+    def _family(self, name, label, score, *, applicable=True):
+        from crypto_intel.engines.market_pressure import (
+            WEIGHTS,
+            Direction,
+            PressureFamilyContribution,
+        )
+
+        available = applicable and score is not None
+        return PressureFamilyContribution(
+            family=name, label=label, asset="BTC",
+            applicable=applicable, available=available,
+            direction=Direction.of(score if available else None),
+            normalized_score=score if available else None,
+            weight=WEIGHTS[name],
+            raw_value={"x": 1} if available else None,
+            source="src", observation_time="2026-09-08T08:00:00+00:00",
+            freshness="LIVE" if available else "UNAVAILABLE",
+            data_quality="MEASURED" if available else "UNAVAILABLE",
+            explanation="parce que" if available else "",
             reason="" if available else "aucun fournisseur configuré",
         )
 
-    def _pressure(self, components, score, state="BUYING", label="ACHAT LÉGER"):
-        return NS(components=components, pressure_score=score, state=state,
-                  label=label, contradictions=[])
-
     def test_buyers_and_sellers_are_split_and_missing_sources_listed(self):
         pressure = self._pressure([
-            self._component("institutions", "ETF spot", 28.0),
-            self._component("positionnement", "Positionnement", 16.0),
-            self._component("levier", "Funding", -4.0),
-            self._component("baleines", "Baleines", None, available=False),
-            self._component("flux_spot", "Flux spot / exchanges", None, available=False),
-        ], 19.0)
+            self._family("institutions", "ETF / Institutions", 28.0),
+            self._family("derivatives", "Dérivés / positionnement", 16.0),
+            self._family("funding", "Funding / levier", -14.0),
+            self._family("whales", "Baleines / flux exchanges", None),
+            self._family("spot", "Spot / agressivité", None),
+        ])
         block = tv.pressure_breakdown(_snapshot(pressure=pressure))
-        assert [item["label"] for item in block["buyers"]] == ["ETF spot", "Positionnement"]
-        assert [item["label"] for item in block["sellers"]] == ["Funding"]
+        assert [item["label"] for item in block["buyers"]] == [
+            "ETF / Institutions", "Dérivés / positionnement"
+        ]
+        assert [item["label"] for item in block["sellers"]] == ["Funding / levier"]
         assert {item["label"] for item in block["unavailable"]} == {
-            "Baleines", "Flux spot / exchanges"
+            "Baleines / flux exchanges", "Spot / agressivité"
         }
-        assert block["families_line"] == "3/5 familles disponibles"
+        assert block["families_line"] == "3/5 familles"
 
     def test_an_unavailable_family_contributes_nothing_rather_than_zero(self):
         pressure = self._pressure([
-            self._component("institutions", "ETF spot", 40.0),
-            self._component("baleines", "Baleines", None, available=False),
-        ], 40.0)
+            self._family("institutions", "ETF / Institutions", 40.0),
+            self._family("whales", "Baleines / flux exchanges", None),
+        ])
         block = tv.pressure_breakdown(_snapshot(pressure=pressure))
         missing = block["unavailable"][0]
         assert missing["normalized_score"] is None
-        assert missing["contribution_points"] is None
-        assert missing["direction"] == "UNKNOWN"
-        assert missing["explanation"] == "aucun fournisseur configuré"
-        # Removed from the denominator: the one reporting family carries it all.
+        assert missing["weighted_contribution"] is None
+        assert missing["direction"] == "UNAVAILABLE"
+        assert missing["reason"] == "aucun fournisseur configuré"
+        # Retirée du dénominateur: la seule famille présente porte tout.
         assert block["reconstruction"]["sum_of_contributions"] == pytest.approx(40.0)
+
+    def test_a_family_without_meaning_leaves_the_coverage_denominator(self):
+        pressure = self._pressure([
+            self._family("institutions", "ETF / Institutions", None, applicable=False),
+            self._family("spot", "Spot / agressivité", 20.0),
+            self._family("derivatives", "Dérivés", 20.0),
+            self._family("funding", "Funding", 20.0),
+            self._family("whales", "Baleines", 20.0),
+        ])
+        block = tv.pressure_breakdown(_snapshot(pressure=pressure))
+        assert block["families_line"] == "4/4 familles"
+        assert [item["label"] for item in block["not_applicable"]] == [
+            "ETF / Institutions"
+        ]
 
     def test_the_total_can_be_rebuilt_from_the_parts(self):
         pressure = self._pressure([
-            self._component("institutions", "ETF spot", 60.0, weight=0.35, confidence=0.95),
-            self._component("levier", "Funding", -20.0, weight=0.20, confidence=0.70),
-            self._component("positionnement", "Positionnement", 10.0, weight=0.30,
-                            confidence=0.75),
-        ], None)
+            self._family("institutions", "ETF", 60.0),
+            self._family("funding", "Funding", -20.0),
+            self._family("derivatives", "Dérivés", 10.0),
+        ])
         block = tv.pressure_breakdown(_snapshot(pressure=pressure))
-        total = sum(item["contribution_points"] for item in
-                    block["buyers"] + block["sellers"] + block["neutral"])
-        assert total == pytest.approx(block["reconstruction"]["sum_of_contributions"], abs=0.05)
+        total = sum(
+            item["weighted_contribution"] for item in
+            block["buyers"] + block["sellers"] + block["neutral"]
+        )
+        assert total == pytest.approx(
+            block["reconstruction"]["sum_of_contributions"], abs=0.05
+        )
+        assert block["reconstruction"]["matches_score"] is True
         assert block["reconstruction"]["formula"]
 
     def test_every_contribution_states_its_provenance(self):
-        pressure = self._pressure([self._component("institutions", "ETF spot", 28.0)], 28.0)
+        pressure = self._pressure([self._family("institutions", "ETF", 28.0)])
         item = tv.pressure_breakdown(_snapshot(pressure=pressure))["buyers"][0]
-        for key in ("family", "raw_input", "normalized_score", "direction",
-                    "weight_if_any", "source", "timestamp", "availability",
+        for key in ("family", "raw_value", "normalized_score", "direction",
+                    "weight", "weighted_contribution", "source",
+                    "observation_time", "available", "data_quality",
                     "explanation"):
             assert key in item, f"{key} missing from a pressure contribution"
 
     def test_no_available_source_is_stated_as_indeterminate(self):
-        pressure = self._pressure(
-            [self._component("baleines", "Baleines", None, available=False)],
-            None, state="INSUFFICIENT_DATA", label="INDÉTERMINÉ",
-        )
+        pressure = self._pressure([
+            self._family("whales", "Baleines", None),
+            self._family("spot", "Spot", None),
+        ])
         block = tv.pressure_breakdown(_snapshot(pressure=pressure))
         assert block["families_active"] == 0
         assert block["headline"] == "Pression indéterminée"
         assert block["reconstruction"]["sum_of_contributions"] is None
 
+    def test_a_high_score_on_thin_coverage_is_never_called_dominant(self):
+        """Le défaut exact: « ACHAT DOMINANT +61 » sur une famille sur cinq."""
+        pressure = self._pressure([
+            self._family("institutions", "ETF", 95.0),
+            self._family("spot", "Spot", None),
+            self._family("derivatives", "Dérivés", None),
+            self._family("funding", "Funding", None),
+            self._family("whales", "Baleines", None),
+        ])
+        block = tv.pressure_breakdown(_snapshot(pressure=pressure))
+        assert block["score"] > 60
+        assert "DOMINANT" not in block["label"]
+        assert block["label"] == "PRESSION ACHETEUSE INDICATIVE"
+        assert block["coverage_level"] == "INDICATIVE"
+
     def test_the_tooltip_refuses_the_probability_reading(self):
-        block = tv.pressure_breakdown(_snapshot())
-        assert "ni une probabilité de hausse ni une edge statistique" in block["tooltip"]
+        pressure = self._pressure([self._family("institutions", "ETF", 20.0)])
+        block = tv.pressure_breakdown(_snapshot(pressure=pressure))
+        assert "ni une probabilité de hausse" in block["tooltip"]
 
 
 class TestCoverage:

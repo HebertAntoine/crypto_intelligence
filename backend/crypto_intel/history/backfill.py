@@ -429,3 +429,143 @@ def coverage_table() -> list[dict[str, Any]]:
     """Documented historical depth per dataset - the honest answer to
     'how much history do we actually have?'."""
     return store.backfill_report()
+
+
+async def backfill_spot_taker_flow(
+    asset: Asset, depth_days: int = 3600, max_requests: int = 20
+) -> dict[str, Any]:
+    """Aggressive spot buying, from the klines we already fetch.
+
+    A Binance kline carries the *taker buy base volume* alongside the total
+    volume: the share of the bar's volume where the buyer crossed the spread.
+    Every trade has a buyer and a seller, so volume alone says nothing about
+    direction - but which side was the aggressor does, and it is measured
+    rather than inferred.
+
+    The project fetched these klines already and dropped fields 9 and 10 on the
+    floor, which is why "flux spot" had no source and the pressure card sat at
+    one family out of five. Nothing is proxied here: the ratio is the exchange's
+    own accounting of who lifted the offer.
+
+    Stored as its own series rather than on the candle rows, so a backfill can
+    deepen it without rewriting OHLCV history.
+    """
+    symbol = str(asset_meta(asset.value)["binance_symbol"])
+    http = get_http()
+    end_ms = int(datetime.now(UTC).timestamp() * 1000)
+    floor_ms = int((datetime.now(UTC) - timedelta(days=depth_days)).timestamp() * 1000)
+
+    ratio: list[tuple[datetime, float]] = []
+    notional: list[tuple[datetime, float]] = []
+    seen: set[int] = set()
+    requests = 0
+
+    while requests < max_requests:
+        res = await http.get_json(
+            f"{BINANCE_SPOT}/api/v3/klines",
+            provider="binance_backfill",
+            params={"symbol": symbol, "interval": "1d", "endTime": end_ms, "limit": 1000},
+            cache_ttl=0, rate_limit_per_min=110, retries=2,
+        )
+        requests += 1
+        if not res.ok or not isinstance(res.data, list) or not res.data:
+            break
+
+        added = 0
+        for row in res.data:
+            try:
+                ts_ms = int(row[0])
+                if ts_ms in seen:
+                    continue
+                volume = float(row[5])
+                taker_buy = float(row[9])
+                if volume <= 0:
+                    continue
+                seen.add(ts_ms)
+                when = datetime.fromtimestamp(ts_ms / 1000, tz=UTC)
+                ratio.append((when, taker_buy / volume))
+                # Net aggressive volume in base units: buyers minus sellers.
+                notional.append((when, taker_buy * 2 - volume))
+                added += 1
+            except (IndexError, KeyError, ValueError, TypeError, ZeroDivisionError):
+                continue
+
+        oldest = min(int(row[0]) for row in res.data)
+        if added == 0 or oldest >= end_ms:
+            break
+        end_ms = oldest - 1
+        if floor_ms and oldest <= floor_ms:
+            break
+
+    written = store.save_derivatives(
+        asset, "spot.taker_buy_ratio", ratio, source="binance_spot_klines"
+    )
+    store.save_derivatives(
+        asset, "spot.net_taker_volume", notional, source="binance_spot_klines"
+    )
+    coverage = store.derivatives_coverage(asset).get("spot.taker_buy_ratio", {})
+    store.record_backfill(
+        dataset="spot_taker_flow", asset=asset, timeframe=Timeframe.D1,
+        earliest=coverage.get("start"), latest=coverage.get("end"),
+        rows=coverage.get("rows", 0), source="binance_spot_klines",
+        note=f"{requests} requests, {written} new rows",
+    )
+    return {
+        "asset": asset.value, "metric": "spot.taker_buy_ratio",
+        "new_rows": written, **coverage,
+    }
+
+
+async def backfill_long_short_accounts(
+    asset: Asset, max_requests: int = 1
+) -> dict[str, Any]:
+    """How futures accounts are positioned, long against short.
+
+    Open interest rising says nothing about direction on its own: a future has
+    a long and a short for every contract. This series says which way the
+    accounts actually lean, so "OI up" can be read as new longs or new shorts
+    instead of being turned mechanically into buying.
+
+    Binance keeps roughly thirty days of it. That shallow depth is recorded
+    rather than hidden, because a study must not assume years of it.
+    """
+    symbol = str(asset_meta(asset.value)["binance_symbol"])
+    http = get_http()
+    points: list[tuple[datetime, float]] = []
+    requests = 0
+
+    for period, limit in (("1d", 30), ("4h", 200)):
+        if requests >= max_requests * 2:
+            break
+        res = await http.get_json(
+            f"{BINANCE_FUTURES}/futures/data/globalLongShortAccountRatio",
+            provider="binance_backfill",
+            params={"symbol": symbol, "period": period, "limit": limit},
+            cache_ttl=0, rate_limit_per_min=110, retries=2,
+        )
+        requests += 1
+        if not res.ok or not isinstance(res.data, list):
+            continue
+        for row in res.data:
+            try:
+                points.append((
+                    datetime.fromtimestamp(int(row["timestamp"]) / 1000, tz=UTC),
+                    float(row["longAccount"]),
+                ))
+            except (KeyError, ValueError, TypeError):
+                continue
+
+    written = store.save_derivatives(
+        asset, "derivatives.long_account_share", points, source="binance_futures"
+    )
+    coverage = store.derivatives_coverage(asset).get("derivatives.long_account_share", {})
+    store.record_backfill(
+        dataset="long_short_accounts", asset=asset, timeframe=None,
+        earliest=coverage.get("start"), latest=coverage.get("end"),
+        rows=coverage.get("rows", 0), source="binance_futures",
+        note=f"{requests} requests, {written} new rows; source keeps ~30 days",
+    )
+    return {
+        "asset": asset.value, "metric": "derivatives.long_account_share",
+        "new_rows": written, **coverage,
+    }

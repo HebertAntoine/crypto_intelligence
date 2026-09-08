@@ -722,8 +722,8 @@ void main() {
       expect(find.text('AVANTAGE'), findsWidgets);
       expect(find.text('OPPORTUNITÉ'), findsWidgets);
       expect(find.text('QUI ACHÈTE, QUI VEND ?'), findsWidgets);
-      expect(find.text('Voir pourquoi'), findsWidgets);
-      expect(find.text('Voir les sources'), findsWidgets);
+      expect(find.text('Voir pourquoi'), findsNothing);
+      expect(find.text('Voir les sources'), findsNothing);
       expect(
         find.textContaining('La tendance de fond reste positive'),
         findsWidgets,
@@ -742,11 +742,12 @@ void main() {
       expect(find.text('ohlcv_daily'), findsNothing);
     });
 
-    testWidgets('Voir pourquoi ouvre les groupes sourcés et les conditions',
+    testWidgets('toucher la carte opportunité ouvre le pourquoi',
         (tester) async {
       await _pumpAt(
           tester, const Size(430, 932), TodayScreen(client: _client()));
-      await tester.tap(find.text('Voir pourquoi').first);
+      await tester
+          .tap(find.byKey(const ValueKey('opportunity-summary-card')).first);
       await tester.pumpAndSettle();
 
       expect(find.text('POURQUOI OPPORTUNITÉ ?'), findsOneWidget);
@@ -757,11 +758,12 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('la pression détaille les sources et les absences',
+    testWidgets('toucher la carte pression ouvre les sources et les absences',
         (tester) async {
       await _pumpAt(
           tester, const Size(430, 932), TodayScreen(client: _client()));
-      final trigger = find.text('Voir les sources').first;
+      final trigger =
+          find.byKey(const ValueKey('market-pressure-summary-card')).first;
       await tester.ensureVisible(trigger);
       await tester.tap(trigger);
       await tester.pumpAndSettle();
