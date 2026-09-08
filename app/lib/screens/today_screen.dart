@@ -1050,15 +1050,18 @@ class _EntryAnswerPanel extends StatelessWidget {
                 Positioned.fill(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 420),
-                    child: Image.asset(
-                      visual.asset,
-                      key: ValueKey(visual.asset),
-                      // Ces assets sont composés comme des fonds de carte
-                      // complets (cadre, lumière et sujet). Les recadrer en
-                      // `cover` coupait leur cadre et donnait l'impression
-                      // d'une image posée dans une seconde carte.
-                      fit: BoxFit.fill,
-                      filterQuality: FilterQuality.high,
+                    child: Transform.scale(
+                      // Les sources actuelles gardent une marge autour de leur
+                      // cadre natif. On place ce cadre sous le masque externe :
+                      // le décor remplit alors la carte sans second rectangle.
+                      scaleX: 1.08,
+                      scaleY: 1.58,
+                      child: Image.asset(
+                        visual.asset,
+                        key: ValueKey(visual.asset),
+                        fit: BoxFit.fill,
+                        filterQuality: FilterQuality.high,
+                      ),
                     ),
                   ),
                 ),
@@ -1079,8 +1082,10 @@ class _EntryAnswerPanel extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  constraints: const BoxConstraints(minHeight: 225),
-                  padding: const EdgeInsets.fromLTRB(20, 20, 18, 18),
+                  // La hauteur minimale correspond aux nouveaux fonds hauts.
+                  // Une phrase plus longue agrandit naturellement la carte.
+                  constraints: const BoxConstraints(minHeight: 248),
+                  padding: const EdgeInsets.fromLTRB(20, 22, 18, 22),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
@@ -1133,8 +1138,6 @@ class _EntryAnswerPanel extends StatelessWidget {
                         constraints: const BoxConstraints(maxWidth: 335),
                         child: Text(
                           explanation,
-                          maxLines: 4,
-                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Color(0xFFF2F7FF),
                             fontSize: 15.5,
@@ -1391,8 +1394,8 @@ class _OpportunityVisual {
 /// Association déterministe entre la décision du backend et l'illustration.
 ///
 /// L'écran ne recalcule jamais le verdict. La seule nuance locale concerne
-/// WAIT: la falaise orange illustre un risque déjà mesuré; le sablier jaune
-/// illustre une temporisation sans signal franchement défavorable.
+/// WAIT: la falaise orange reste réservée à une lecture entièrement négative;
+/// un contexte encore soutenu mais mal placé dans le temps garde le sablier.
 _OpportunityVisual _opportunityVisual(BuyOpportunity opportunity) {
   final state = opportunity.state.toUpperCase();
   if (state == 'VERY_FAVORABLE' || state == 'STRONG_OPPORTUNITY') {
@@ -1419,7 +1422,9 @@ _OpportunityVisual _opportunityVisual(BuyOpportunity opportunity) {
       overlay: Color(0xFF0759A5),
     );
   }
-  if (state == 'WAIT' && opportunity.negatives.isNotEmpty) {
+  if (state == 'WAIT' &&
+      opportunity.positives.isEmpty &&
+      opportunity.negatives.isNotEmpty) {
     return const _OpportunityVisual(
       asset: 'assets/visuals/opportunity_risk.png',
       accent: Color(0xFFFFA24B),
@@ -1768,13 +1773,40 @@ class _MarketPressureSummary extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Image.asset(
-                    'assets/visuals/market_pressure.png',
-                    key: const ValueKey('market-pressure-background'),
-                    // Le taureau, l'ours et le graphique forment une seule
-                    // composition : on conserve donc l'image entière.
-                    fit: BoxFit.fill,
-                    filterQuality: FilterQuality.high,
+                  child: ColoredBox(
+                    color: Color(0xFF06172D),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Align(
+                    key: const ValueKey('market-pressure-artwork'),
+                    alignment: Alignment.bottomRight,
+                    child: FractionallySizedBox(
+                      widthFactor: .68,
+                      heightFactor: .68,
+                      alignment: Alignment.bottomRight,
+                      child: ShaderMask(
+                        blendMode: BlendMode.dstIn,
+                        shaderCallback: (bounds) => const RadialGradient(
+                          center: Alignment.bottomRight,
+                          radius: 1.15,
+                          colors: [
+                            Colors.white,
+                            Colors.white,
+                            Colors.transparent,
+                          ],
+                          stops: [0, .62, 1],
+                        ).createShader(bounds),
+                        child: Image.asset(
+                          'assets/visuals/market_pressure.png',
+                          key: const ValueKey('market-pressure-background'),
+                          // Le décor est volontairement réduit d'environ un
+                          // tiers et ancré en bas à droite de la carte.
+                          fit: BoxFit.fill,
+                          filterQuality: FilterQuality.high,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 Positioned.fill(
@@ -1794,8 +1826,8 @@ class _MarketPressureSummary extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  constraints: const BoxConstraints(minHeight: 196),
-                  padding: const EdgeInsets.fromLTRB(18, 17, 18, 16),
+                  constraints: const BoxConstraints(minHeight: 218),
+                  padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(

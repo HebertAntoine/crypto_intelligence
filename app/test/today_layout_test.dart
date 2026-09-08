@@ -775,6 +775,18 @@ void main() {
             .fit,
         BoxFit.fill,
       );
+      final pressureArtwork = tester.widget<Align>(
+        find.byKey(const ValueKey('market-pressure-artwork')).first,
+      );
+      final pressureArtworkBox = tester.widget<FractionallySizedBox>(
+        find.descendant(
+          of: find.byKey(const ValueKey('market-pressure-artwork')).first,
+          matching: find.byType(FractionallySizedBox),
+        ),
+      );
+      expect(pressureArtwork.alignment, Alignment.bottomRight);
+      expect(pressureArtworkBox.widthFactor, .68);
+      expect(pressureArtworkBox.heightFactor, .68);
     });
 
     testWidgets('la carte fermée ne montre que les réponses principales',
@@ -794,6 +806,26 @@ void main() {
       expect(
         find.textContaining('La tendance de fond reste positive'),
         findsWidgets,
+      );
+      final decisionText = tester.widget<Text>(
+        find.textContaining('La tendance de fond reste positive').first,
+      );
+      expect(decisionText.maxLines, isNull);
+      expect(
+        tester
+            .getSize(
+              find.byKey(const ValueKey('opportunity-summary-card')).first,
+            )
+            .height,
+        greaterThanOrEqualTo(248),
+      );
+      expect(
+        tester
+            .getSize(
+              find.byKey(const ValueKey('market-pressure-summary-card')).first,
+            )
+            .height,
+        greaterThanOrEqualTo(218),
       );
       expect(find.text('Nouveaux longs'), findsOneWidget);
       expect(find.text('Dans sa normale'), findsOneWidget);
