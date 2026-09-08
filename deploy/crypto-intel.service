@@ -1,0 +1,38 @@
+# Le planificateur ne vit que dans le processus API. Sans service, il ne tourne
+# que tant qu'un terminal reste ouvert — et c'est exactement ce qui s'est
+# produit : le backend est resté trois jours en l'air avec le planificateur
+# désactivé, pendant que le funding vieillissait de dix-neuf heures et l'open
+# interest de trente-cinq. La profondeur des séries masquait leur immobilité.
+#
+# Installation (au niveau utilisateur, réversible) :
+#   mkdir -p ~/.config/systemd/user
+#   cp deploy/crypto-intel.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now crypto-intel
+#   loginctl enable-linger $USER      # survit à la déconnexion
+#
+# Contrôle :
+#   systemctl --user status crypto-intel
+#   journalctl --user -u crypto-intel -f
+#   crypto-intel data-health          # sortie non nulle si une source traîne
+#
+# Le service n'écoute que sur 127.0.0.1 : rien n'est exposé au réseau, et
+# ouvrir ce port demande une décision séparée.
+
+[Unit]
+Description=Crypto Intelligence API et planificateur de données
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/crypto_intelligence/backend
+ExecStart=%h/crypto_intelligence/.venv/bin/python -m crypto_intel.cli serve --port 8100
+Restart=on-failure
+RestartSec=15
+# Une panne de fournisseur ne doit pas faire tourner le service en boucle.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Install]
+WantedBy=default.target
