@@ -16,6 +16,7 @@ import '../widgets/common.dart';
 import '../chart/candle_chart.dart';
 import '../chart/live_candles.dart';
 import '../chart/chart_layers.dart';
+import '../chart/pattern_geometry.dart';
 import '../widgets/mobile_kit.dart';
 
 class ChartScreen extends StatefulWidget {
@@ -190,8 +191,54 @@ class _ChartData {
 
   double? get changePct => chart?.changePct;
 
-  DetectedPattern? get primaryPattern =>
-      structure.patterns.isEmpty ? null : structure.patterns.first;
+  /// Les figures que le graphique dessine réellement.
+  ///
+  /// `/structure` détecte sur tout l'historique conservé, `/chart` sur la
+  /// seule fenêtre affichée : les deux trouvent donc des figures différentes.
+  /// La fiche doit décrire ce qui est à l'écran, sinon elle annonce une figure
+  /// que le lecteur cherchera en vain sur le graphique.
+  List<StructuralPatternRead> get drawnPatterns =>
+      chart?.structuralPatterns ?? const [];
+
+  /// La figure mise en avant : celle du graphique, avec la fiche complète que
+  /// `/structure` en donne quand il l'a vue lui aussi.
+  DetectedPattern? get primaryPattern {
+    final drawn = drawnPatterns;
+    if (drawn.isEmpty) return null;
+    final names = drawn.map((pattern) => pattern.name).toSet();
+    for (final pattern in structure.patterns) {
+      if (names.contains(pattern.name)) return pattern;
+    }
+    // Vue par le graphique seul : on garde son nom plutôt que d'emprunter
+    // celui d'une figure qui n'est pas dessinée.
+    final first = drawn.first;
+    return DetectedPattern(
+      name: first.name,
+      patternClass: first.patternClass,
+      state: first.state,
+      recognitionConfidence: first.recognitionConfidence,
+      directionIfTextbook: first.directionIfTextbook,
+      keyLevels: const {},
+      invalidationRule: '',
+      edgeState: EdgeState.parse(first.edgeState),
+      notes: '',
+      separationNote: '',
+    );
+  }
+
+  /// Les figures vues sur l'historique complet mais absentes de la fenêtre.
+  ///
+  /// Les taire ferait disparaître une détection réelle ; les afficher comme
+  /// les autres ferait chercher un tracé qui n'existe pas ici. Elles sont donc
+  /// nommées à part, avec leur portée.
+  List<String> get patternsOutsideWindow {
+    final drawn = drawnPatterns.map((pattern) => pattern.name).toSet();
+    return structure.patterns
+        .map((pattern) => pattern.name)
+        .where((name) => !drawn.contains(name))
+        .toSet()
+        .toList();
+  }
 }
 
 class _AssetSelector extends StatelessWidget {
@@ -457,6 +504,11 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
                     // Zones, range et position viennent du backend. Le
                     // graphique les place; il ne les recalcule jamais.
                     location: widget.data.structure.location,
+                    // Les figures viennent du même appel que l'analyse, avec
+                    // leurs points horodatés. Elles se posent donc sur les
+                    // bougies en direct sans être redétectées ici.
+                    patterns:
+                        widget.data.chart?.structuralPatterns ?? const [],
                   ),
                 ),
               );
@@ -849,8 +901,80 @@ class _PatternDetectedPanel extends StatelessWidget {
             style: const TextStyle(
                 color: AppColors.text, fontSize: 20, height: 1.32),
           ),
+          if (data.patternsOutsideWindow.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _OutsideWindowNote(names: data.patternsOutsideWindow),
+          ],
+          if (_undrawable.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _NoGeometryNote(names: _undrawable),
+          ],
         ],
       ),
+    );
+  }
+
+  /// Les figures de la fenêtre dont le détecteur n'a pas fourni la géométrie.
+  List<String> get _undrawable => data.drawnPatterns
+      .where((pattern) => !pattern.isDrawable)
+      .map((pattern) => pattern.label)
+      .toList();
+}
+
+/// « Vue sur l'historique complet, pas sur la fenêtre affichée. »
+///
+/// Sans cette ligne, une figure trouvée par `/structure` mais hors du cadre
+/// disparaissait sans un mot : la détection était réelle, le lecteur ne
+/// pouvait ni la voir ni savoir qu'elle existait.
+class _OutsideWindowNote extends StatelessWidget {
+  final List<String> names;
+
+  const _OutsideWindowNote({required this.names});
+
+  @override
+  Widget build(BuildContext context) => _PatternFootnote(
+        icon: Icons.history_rounded,
+        text: '${names.map(_patternName).join(', ')} : '
+            'détectée sur l’historique complet, hors de la fenêtre affichée. '
+            'Élargissez la période pour la voir.',
+      );
+}
+
+/// « Détectée, mais sans géométrie : rien à tracer. »
+class _NoGeometryNote extends StatelessWidget {
+  final List<String> names;
+
+  const _NoGeometryNote({required this.names});
+
+  @override
+  Widget build(BuildContext context) => _PatternFootnote(
+        icon: Icons.gesture_rounded,
+        text: '${names.join(', ')} : le détecteur n’a pas fourni de tracé. '
+            'La figure est reconnue, elle n’est pas dessinable.',
+      );
+}
+
+class _PatternFootnote extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _PatternFootnote({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: AppColors.textMuted),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+                color: AppColors.textMuted, fontSize: 17, height: 1.3),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1015,7 +1139,15 @@ class _ConfluencePanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF274460), width: 1.2),
             ),
-            child: Row(
+            // `Wrap` et pas `Row`: sur un écran de téléphone la pastille du
+            // score et le compte des familles ne tiennent pas sur une ligne,
+            // et la ligne débordait de près de 300 px — le compte sortait
+            // simplement du cadre.
+            child: Wrap(
+              spacing: 14,
+              runSpacing: 10,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding:
@@ -1026,8 +1158,13 @@ class _ConfluencePanel extends StatelessWidget {
                     border:
                         Border.all(color: const Color(0xFF22C878), width: 1.35),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                  // Wrap ici aussi: « Score global » et « 61 / 100 » à 34 px
+                  // ne tiennent pas côte à côte dans la largeur d'un
+                  // téléphone.
+                  child: Wrap(
+                    spacing: 18,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       const Text(
                         'Score global',
@@ -1037,7 +1174,6 @@ class _ConfluencePanel extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                         ),
                       ),
-                      const SizedBox(width: 24),
                       Text(
                         '$score / 100',
                         style: const TextStyle(
@@ -1050,10 +1186,8 @@ class _ConfluencePanel extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Spacer(),
                 Text(
                   'Données disponibles : ${values.length} familles sur 5',
-                  textAlign: TextAlign.right,
                   style: const TextStyle(color: mobileMuted, fontSize: 17),
                 ),
               ],

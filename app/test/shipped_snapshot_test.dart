@@ -177,4 +177,59 @@ void main() {
       expect(find.textContaining('ACHAT DOMINANT'), findsNothing);
     });
   });
+
+  // --- les figures réellement livrées ------------------------------------
+  //
+  // Même écart que pour « ACHAT DOMINANT » : l'app savait dessiner une
+  // géométrie, mais les fichiers embarqués dataient d'avant l'endpoint et ne
+  // contenaient pas la clé. Hors ligne, le graphique restait donc vide sans
+  // que rien ne le signale.
+  group('Les instantanés /chart livrés portent la géométrie', () {
+    final files = Directory('assets/api_snapshots')
+        .listSync()
+        .whereType<File>()
+        .where((file) => file.uri.pathSegments.last.startsWith('chart__'))
+        .toList()
+      ..sort((a, b) => a.path.compareTo(b.path));
+
+    test('il y a bien quinze vues livrées', () {
+      expect(files, hasLength(15));
+    });
+
+    for (final file in files) {
+      final name = file.uri.pathSegments.last;
+      test('$name : la clé structural_patterns est présente', () {
+        final json = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+        expect(json.containsKey('structural_patterns'), isTrue,
+            reason: '$name a été exporté par un backend trop ancien');
+      });
+
+      test('$name : toute figure traçable tombe dans la fenêtre', () {
+        final read =
+            ChartRead.fromJson(jsonDecode(file.readAsStringSync()) as Map<String, dynamic>);
+        if (read.candles.isEmpty) return;
+        final times = read.candles
+            .map((candle) => candle.time)
+            .whereType<DateTime>()
+            .map((time) => time.toUtc())
+            .toList();
+        final first = times.first, last = times.last;
+
+        for (final pattern in read.structuralPatterns) {
+          if (!pattern.isDrawable) continue;
+          for (final point in pattern.geometry.points) {
+            expect(point.price.isFinite && point.price > 0, isTrue,
+                reason: '${pattern.name}: prix invalide sur ${point.role}');
+            // Une marge d'une barre suffit: `extend` prolonge volontairement
+            // certaines droites au-delà de la dernière bougie, mais un point
+            // nommé hors fenêtre serait dessiné dans le vide.
+            expect(point.time.isBefore(first), isFalse,
+                reason: '${pattern.name}: ${point.role} précède la fenêtre');
+            expect(point.time.isAfter(last), isFalse,
+                reason: '${pattern.name}: ${point.role} dépasse la fenêtre');
+          }
+        }
+      });
+    }
+  });
 }

@@ -48,6 +48,44 @@ def chart_history() -> pd.DataFrame:
     )
 
 
+@pytest.fixture
+def double_top_history() -> pd.DataFrame:
+    """A series that unambiguously contains a double top.
+
+    The plain `chart_history` fixture is a straight line, so no detector fires
+    on it and a test written against it would pass while the route published
+    nothing. Here a human would draw the same figure, so an empty
+    `structural_patterns` is a real failure rather than an absent shape.
+    """
+    import numpy as np
+
+    def leg(start: float, end: float, n: int) -> np.ndarray:
+        return np.linspace(start, end, n, endpoint=False)
+
+    closes = np.concatenate([
+        leg(60_000, 78_000, 110),   # rise into the first top
+        leg(78_000, 64_800, 70),    # a deep, unambiguous reaction
+        leg(64_800, 77_700, 70),    # second top, within a fraction of the first
+        leg(77_700, 67_200, 70),    # roll over, still above the neckline
+    ])
+    end = datetime.now(UTC).replace(second=0, microsecond=0)
+    index = pd.DatetimeIndex(
+        [end - timedelta(minutes=15 * i) for i in reversed(range(len(closes)))],
+        name="timestamp",
+    )
+    wick = np.abs(closes) * 0.004
+    return pd.DataFrame(
+        {
+            "open": closes - wick * 0.2,
+            "high": closes + wick,
+            "low": closes - wick,
+            "close": closes,
+            "volume": np.full(len(closes), 1000.0),
+        },
+        index=index,
+    )
+
+
 def _patch_local_history(monkeypatch, chart_history: pd.DataFrame) -> None:
     from crypto_intel.api import routes_lot2
 
@@ -231,3 +269,84 @@ class TestChartMarketMetadata:
         assert as_of.tzinfo is not None
         assert last_candle.tzinfo is not None
         assert as_of == last_candle == chart_history.index[-1].to_pydatetime()
+
+
+class TestChartPublishesDrawableGeometry:
+    """§LOT 4: what the detector saw must reach the chart, or nothing does.
+
+    The frontend draws figures from this payload alone - it never re-detects
+    and never fills a gap in. So a figure the route drops is a figure the user
+    is told about in the cards below while the chart stays blank.
+    """
+
+    def test_route_publishes_the_geometry_of_a_real_figure(
+        self, client, monkeypatch, double_top_history
+    ):
+        _patch_local_history(monkeypatch, double_top_history)
+        _set_mode(monkeypatch, mock_mode=True)
+
+        body = client.get("/api/chart/BTC?timeframe=15m&period=7d").json()
+
+        assert body["available"] is True
+        patterns = body["structural_patterns"]
+        assert patterns, "the route dropped a figure the detector found"
+        figure = next(p for p in patterns if p["name"] == "double_top")
+
+        geometry = figure["geometry"]
+        assert len(geometry["points"]) == 2
+        assert geometry["neckline"] is not None
+        assert geometry["breakout_area"] is not None
+
+    def test_geometry_carries_timestamps_never_bar_indices(
+        self, client, monkeypatch, double_top_history
+    ):
+        """An index means nothing to a chart holding a different window.
+
+        The app draws live Binance candles while the geometry comes from
+        stored history: only real timestamps can line the two up.
+        """
+        _patch_local_history(monkeypatch, double_top_history)
+        _set_mode(monkeypatch, mock_mode=True)
+
+        body = client.get("/api/chart/BTC?timeframe=15m&period=7d").json()
+        figure = next(
+            p for p in body["structural_patterns"] if p["name"] == "double_top"
+        )
+        geometry = figure["geometry"]
+
+        for point in geometry["points"]:
+            assert datetime.fromisoformat(point["time"]).tzinfo is not None
+            assert point["price"] > 0
+            assert "index" not in point
+        for zone in geometry["zones"]:
+            assert datetime.fromisoformat(zone["start_time"]).tzinfo is not None
+            assert zone["high"] >= zone["low"]
+
+    def test_geometry_points_fall_inside_the_drawn_window(
+        self, client, monkeypatch, double_top_history
+    ):
+        """A point outside the candles would be drawn into empty space."""
+        _patch_local_history(monkeypatch, double_top_history)
+        _set_mode(monkeypatch, mock_mode=True)
+
+        body = client.get("/api/chart/BTC?timeframe=15m&period=7d").json()
+        first = datetime.fromisoformat(body["candles"][0]["time"])
+        last = datetime.fromisoformat(body["candles"][-1]["time"])
+
+        for figure in body["structural_patterns"]:
+            for point in figure["geometry"]["points"]:
+                when = datetime.fromisoformat(point["time"])
+                assert first <= when <= last, f"{figure['name']}/{point['role']}"
+
+    def test_recognition_never_travels_without_its_edge_state(
+        self, client, monkeypatch, double_top_history
+    ):
+        """A confidence shown alone reads as a probability of profit."""
+        _patch_local_history(monkeypatch, double_top_history)
+        _set_mode(monkeypatch, mock_mode=True)
+
+        body = client.get("/api/chart/BTC?timeframe=15m&period=7d").json()
+        for figure in body["structural_patterns"]:
+            assert "recognition_confidence" in figure
+            assert figure["edge_state"]
+            assert "separation_note" in figure

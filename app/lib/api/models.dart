@@ -6,6 +6,7 @@
 /// recognised perfectly and still predict nothing.
 library;
 
+import '../chart/pattern_geometry.dart';
 import 'freshness.dart';
 import 'today_page.dart';
 
@@ -1272,6 +1273,13 @@ class ChartRead {
   final Map<String, List<double?>> panels;
   final Map<String, dynamic> levels;
   final List<Map<String, dynamic>> patterns;
+
+  /// Les figures structurelles avec leur géométrie temps/prix.
+  ///
+  /// Distinctes de `patterns`, qui reste la liste du moteur technique et ne
+  /// porte que des index de barres. Ici, chaque point a un horodatage: c'est
+  /// ce qui permet de le placer sur des bougies venues d'ailleurs.
+  final List<StructuralPatternRead> structuralPatterns;
   final Map<String, dynamic> summary;
 
   const ChartRead({
@@ -1295,6 +1303,7 @@ class ChartRead {
     required this.panels,
     required this.levels,
     required this.patterns,
+    required this.structuralPatterns,
     required this.summary,
   });
 
@@ -1326,6 +1335,11 @@ class ChartRead {
         levels: (json['levels'] as Map?)?.cast<String, dynamic>() ?? const {},
         patterns: ((json['patterns'] as List?) ?? const [])
             .map((item) => (item as Map).cast<String, dynamic>())
+            .toList(),
+        structuralPatterns: ((json['structural_patterns'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((item) =>
+                StructuralPatternRead.fromJson(item.cast<String, dynamic>()))
             .toList(),
         summary: (json['summary'] as Map?)?.cast<String, dynamic>() ?? const {},
       );

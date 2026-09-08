@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../api/models.dart';
 import 'chart_layers.dart';
 import 'chart_viewport.dart';
+import 'pattern_geometry.dart';
 
 // Palette, conforme à l'identité de l'application.
 const _background = Color(0xFF071827);
@@ -49,6 +50,13 @@ class CandleChart extends StatefulWidget {
   /// ne peuvent pas diverger.
   final StructuralLocation? location;
 
+  /// Les figures détectées, avec leur géométrie en temps et en prix.
+  ///
+  /// Le graphique ne reconnaît aucune forme et n'en complète aucune : une
+  /// figure sans géométrie n'est pas dessinée. C'est ce qui garantit que ce
+  /// qui est tracé est exactement ce que le détecteur a vu.
+  final List<StructuralPatternRead> patterns;
+
   const CandleChart({
     super.key,
     required this.candles,
@@ -57,6 +65,7 @@ class CandleChart extends StatefulWidget {
     this.pair,
     this.source,
     this.location,
+    this.patterns = const [],
   });
 
   @override
@@ -150,7 +159,7 @@ class _CandleChartState extends State<CandleChart> {
           onLongPressEnd: (_) => setState(() => _crosshair = null),
           child: CustomPaint(
             size: size,
-            painter: _CandleChartPainter(
+            painter: CandleChartPainter(
               viewport: viewport,
               layers: widget.layers,
               body: body,
@@ -159,6 +168,7 @@ class _CandleChartState extends State<CandleChart> {
               pair: widget.pair,
               source: widget.source,
               location: widget.location,
+              patterns: widget.patterns,
             ),
           ),
         );
@@ -167,7 +177,10 @@ class _CandleChartState extends State<CandleChart> {
   }
 }
 
-class _CandleChartPainter extends CustomPainter {
+/// Le peintre. Public pour être testable: c'est le seul endroit qui convertit
+/// une géométrie en pixels, donc le seul endroit où l'on peut vérifier qu'une
+/// figure reste accrochée à ses bougies quand la fenêtre change.
+class CandleChartPainter extends CustomPainter {
   final ChartViewport viewport;
   final ChartLayerSet layers;
   final Rect body;
@@ -176,8 +189,9 @@ class _CandleChartPainter extends CustomPainter {
   final String? pair;
   final String? source;
   final StructuralLocation? location;
+  final List<StructuralPatternRead> patterns;
 
-  _CandleChartPainter({
+  CandleChartPainter({
     required this.viewport,
     required this.layers,
     required this.body,
@@ -186,13 +200,22 @@ class _CandleChartPainter extends CustomPainter {
     this.pair,
     this.source,
     this.location,
+    this.patterns = const [],
   });
 
   Rect get _plot => viewport.plot;
   Rect get _volume => Rect.fromLTRB(body.left, _plot.bottom, body.right, body.bottom);
 
+  /// Les rectangles déjà occupés par une étiquette, pour cette image.
+  ///
+  /// Deux annotations superposées ne se lisent ni l'une ni l'autre. Le registre
+  /// est vidé à chaque peinture: une position libre dépend de la fenêtre
+  /// courante, pas de la précédente.
+  final List<Rect> _taken = [];
+
   @override
   void paint(Canvas canvas, Size size) {
+    _taken.clear();
     canvas.drawRect(Offset.zero & size, Paint()..color = _background);
     if (viewport.isEmpty) {
       _paintEmpty(canvas, size);
@@ -207,11 +230,17 @@ class _CandleChartPainter extends CustomPainter {
     if (layers.isVisible(ChartLayer.range)) _paintRange(canvas);
     if (layers.isVisible(ChartLayer.levels)) _paintZones(canvas);
     if (layers.isVisible(ChartLayer.candles)) _paintCandles(canvas);
+    // Les figures passent au-dessus des bougies: elles décrivent ces bougies
+    // précisément, les glisser dessous les rendrait illisibles.
+    if (layers.isVisible(ChartLayer.patternGeometry)) _paintPatterns(canvas);
     if (layers.isVisible(ChartLayer.currentPrice)) _paintCurrentPrice(canvas);
     if (layers.isVisible(ChartLayer.labels)) {
       _paintPriceAxis(canvas, size);
       _paintTimeAxis(canvas, size);
       _paintHeader(canvas);
+      if (layers.isVisible(ChartLayer.patternGeometry)) {
+        _paintPatternLabels(canvas);
+      }
       if (layers.isVisible(ChartLayer.range)) _paintRangeLabels(canvas);
       if (layers.isVisible(ChartLayer.levels)) _paintZoneLabels(canvas);
     }
@@ -244,28 +273,51 @@ class _CandleChartPainter extends CustomPainter {
     final rising = change >= 0;
     final colour = rising ? _bull : _bear;
     var dy = _plot.top + 4;
+    var width = 0.0;
+
+    void line(String value, TextStyle style, double advance) {
+      final painter = _painter(value, style);
+      painter.paint(canvas, Offset(_plot.left + 6, dy));
+      width = math.max(width, painter.width);
+      dy += advance;
+    }
 
     final title = [pair, _timeframeLabel]
         .whereType<String>()
         .where((part) => part.isNotEmpty)
         .join(' · ');
     if (title.isNotEmpty) {
-      _text(canvas, title, Offset(_plot.left + 6, dy),
-          const TextStyle(
-              color: _textPrimary, fontSize: 11.5, fontWeight: FontWeight.w800));
-      dy += 14;
+      line(
+        title,
+        const TextStyle(
+            color: _textPrimary, fontSize: 11.5, fontWeight: FontWeight.w800),
+        14,
+      );
     }
     if (source != null && source!.isNotEmpty) {
-      _text(canvas, source!, Offset(_plot.left + 6, dy),
-          const TextStyle(color: Color(0xFF7790A8), fontSize: 10));
-      dy += 13;
+      line(source!, const TextStyle(color: Color(0xFF7790A8), fontSize: 10), 13);
     }
-    _text(
-      canvas,
-      '${_price(last.close)}  ${rising ? '+' : ''}'
-      '${change.toStringAsFixed(2).replaceAll('.', ',')} %',
-      Offset(_plot.left + 6, dy),
-      TextStyle(color: colour, fontSize: 11.5, fontWeight: FontWeight.w700),
+    line(
+      _price(last.close),
+      const TextStyle(
+          color: _textPrimary, fontSize: 11.5, fontWeight: FontWeight.w700),
+      13,
+    );
+    // La variation dit sur quoi elle porte. Elle se mesure entre la première
+    // et la dernière bougie **visibles**, donc elle change quand on zoome:
+    // sans cette mention, un cadrage de trois mois se lisait comme la
+    // variation du jour.
+    line(
+      '${rising ? '+' : ''}'
+      '${change.toStringAsFixed(2).replaceAll('.', ',')} % sur la vue',
+      TextStyle(color: colour, fontSize: 11, fontWeight: FontWeight.w700),
+      4,
+    );
+
+    // L'en-tête est prioritaire: les étiquettes qui suivent se décalent
+    // plutôt que de se poser dessus.
+    _taken.add(
+      Rect.fromLTRB(_plot.left, _plot.top, _plot.left + width + 14, dy),
     );
   }
 
@@ -507,13 +559,209 @@ class _CandleChartPainter extends CustomPainter {
       TextStyle(color: colour, fontSize: 9.5, fontWeight: FontWeight.w800),
     );
     final left = rightAligned ? at.dx - painter.width - 8 : at.dx;
-    final rect = Rect.fromLTWH(left, at.dy, painter.width + 8, painter.height + 3);
-    if (rect.left < _plot.left || rect.right > _plot.right) return;
+    final wanted =
+        Rect.fromLTWH(left, at.dy, painter.width + 8, painter.height + 3);
+    if (wanted.left < _plot.left || wanted.right > _plot.right) return;
+    final rect = _freeSlot(wanted);
+    if (rect == null) return;
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(3)),
       Paint()..color = const Color(0xFF071827).withValues(alpha: 0.82),
     );
     painter.paint(canvas, Offset(rect.left + 4, rect.top + 1.5));
+    _taken.add(rect);
+  }
+
+  /// La première place libre à partir de celle demandée, ou aucune.
+  ///
+  /// Deux étiquettes superposées ne se lisent ni l'une ni l'autre; celle qui
+  /// arrive après se décale verticalement, et renonce plutôt que de recouvrir
+  /// une voisine. Renoncer est honnête: l'information reste dans les fiches
+  /// en dessous, alors qu'un empilement illisible ne serait nulle part.
+  Rect? _freeSlot(Rect wanted) {
+    const step = 15.0;
+    for (var attempt = 0; attempt < 9; attempt++) {
+      final dy = attempt.isEven
+          ? step * (attempt ~/ 2)
+          : -step * ((attempt + 1) ~/ 2);
+      final candidate = wanted.shift(Offset(0, dy));
+      if (candidate.top < _plot.top + 2) continue;
+      if (candidate.bottom > _plot.bottom - 2) continue;
+      if (_taken.any(candidate.overlaps)) continue;
+      return candidate;
+    }
+    return null;
+  }
+
+  // --- calque 6 : figures --------------------------------------------------
+
+  /// Les figures, telles que le détecteur les a décrites.
+  ///
+  /// Rien n'est déduit ici. Chaque point, chaque droite, chaque aire arrive du
+  /// backend avec un horodatage et un prix; le peintre ne fait que les
+  /// convertir en pixels. C'est ce qui garde le tracé collé aux bougies quand
+  /// la fenêtre bouge, et ce qui interdit au graphique de « voir » une figure
+  /// que l'analyse n'a pas vue.
+  void _paintPatterns(Canvas canvas) {
+    if (patterns.isEmpty) return;
+    canvas.save();
+    canvas.clipRect(_plot);
+    for (final pattern in patterns) {
+      if (!pattern.isDrawable) continue;
+      final colour = _patternColour(pattern);
+      // Aires d'abord, droites ensuite, points en dernier: un point posé sur
+      // une droite doit rester visible.
+      for (final zone in pattern.geometry.drawableZones) {
+        _paintGeometryZone(canvas, zone, colour);
+      }
+      for (final line in pattern.geometry.drawableLines) {
+        _paintGeometryLine(canvas, line, colour);
+      }
+      for (final point in pattern.geometry.points) {
+        _paintGeometryPoint(canvas, point, colour);
+      }
+    }
+    canvas.restore();
+  }
+
+  /// La couleur dit ce que **la théorie** associe à la forme, rien de plus.
+  ///
+  /// Elle ne dit pas ce que le système attend du prix: cette question a sa
+  /// propre réponse, `edge_state`, et elle est le plus souvent « jamais
+  /// testée ».
+  Color _patternColour(StructuralPatternRead pattern) =>
+      switch (pattern.directionIfTextbook) {
+        'BULLISH' => _bull,
+        'BEARISH' => _bear,
+        _ => const Color(0xFF9B8CFF),
+      };
+
+  void _paintGeometryZone(Canvas canvas, GeometryZone zone, Color colour) {
+    final left = viewport.timeToX(zone.startTime);
+    final right = viewport.timeToX(zone.endTime);
+    final top = viewport.priceToY(zone.high);
+    final bottom = viewport.priceToY(zone.low);
+    final rect = Rect.fromLTRB(
+      math.min(left, right),
+      math.min(top, bottom),
+      math.max(left, right),
+      math.max(top, bottom),
+    );
+    if (rect.width <= 0 || rect.height <= 0) return;
+    canvas.drawRect(rect, Paint()..color = colour.withValues(alpha: 0.07));
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..color = colour.withValues(alpha: 0.34)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  void _paintGeometryLine(Canvas canvas, GeometryLine line, Color colour) {
+    final from = Offset(
+      viewport.timeToX(line.start.time),
+      viewport.priceToY(line.start.price),
+    );
+    var to = Offset(
+      viewport.timeToX(line.end.time),
+      viewport.priceToY(line.end.price),
+    );
+    // `extend` prolonge vers la droite du cadre. Le backend décide: la borne
+    // d'un triangle garde un sens après la dernière barre, une droite tracée
+    // entre deux sommets achevés non. Le graphique n'en juge pas.
+    if (line.extend && to.dx > from.dx) {
+      final slope = (to.dy - from.dy) / (to.dx - from.dx);
+      to = Offset(_plot.right, to.dy + slope * (_plot.right - to.dx));
+    }
+    _dashedLine(
+      canvas,
+      from,
+      to,
+      Paint()
+        ..color = colour.withValues(alpha: 0.9)
+        ..strokeWidth = 1.4,
+    );
+  }
+
+  /// Pointillés: une droite construite par un détecteur n'est pas un prix
+  /// observé, et ne doit pas se lire comme un trait plein.
+  void _dashedLine(Canvas canvas, Offset from, Offset to, Paint paint) {
+    final total = (to - from).distance;
+    if (total <= 0) return;
+    final step = (to - from) / total;
+    for (var travelled = 0.0; travelled < total; travelled += 9) {
+      final end = math.min(travelled + 5, total);
+      canvas.drawLine(from + step * travelled, from + step * end, paint);
+    }
+  }
+
+  void _paintGeometryPoint(Canvas canvas, GeometryPoint point, Color colour) {
+    final at = Offset(
+      viewport.timeToX(point.time),
+      viewport.priceToY(point.price),
+    );
+    canvas.drawCircle(at, 4.5, Paint()..color = _background);
+    canvas.drawCircle(
+      at,
+      4.5,
+      Paint()
+        ..color = colour
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8,
+    );
+  }
+
+  /// Les noms: la figure, ses points, ses droites.
+  ///
+  /// Sur le calque des étiquettes, comme les zones — on doit pouvoir garder
+  /// les tracés et enlever le texte quand le graphique se charge.
+  void _paintPatternLabels(Canvas canvas) {
+    for (final pattern in patterns) {
+      final colour = _patternColour(pattern);
+      if (!pattern.isDrawable) {
+        // Détectée mais sans géométrie: le détecteur n'a pas fourni de quoi la
+        // tracer. Le dire vaut mieux que laisser le lecteur chercher une
+        // figure absente du dessin alors que la fiche en dessous l'annonce.
+        _tag(
+          canvas,
+          Offset(_plot.left + 8, _plot.bottom - 16),
+          '${pattern.label.toUpperCase()} · TRACÉ NON FOURNI',
+          const Color(0xFF8FA3BC),
+        );
+        continue;
+      }
+      _tag(
+        canvas,
+        Offset(_plot.right - 6, _plot.top + 4),
+        '${pattern.label.toUpperCase()} · ${pattern.stateLabel}',
+        colour,
+        rightAligned: true,
+      );
+      for (final point in pattern.geometry.points) {
+        final label = point.label;
+        if (label.isEmpty) continue;
+        final x = viewport.timeToX(point.time);
+        if (x < _plot.left || x > _plot.right) continue;
+        _tag(
+          canvas,
+          Offset(x - 16, viewport.priceToY(point.price) - 20),
+          label,
+          colour,
+        );
+      }
+      for (final line in pattern.geometry.drawableLines) {
+        final label = line.label;
+        if (label.isEmpty) continue;
+        _tag(
+          canvas,
+          Offset(_plot.right - 6, viewport.priceToY(line.end.price) + 4),
+          label,
+          colour,
+          rightAligned: true,
+        );
+      }
+    }
   }
 
   // --- calque 9 : prix courant --------------------------------------------
@@ -719,14 +967,15 @@ class _CandleChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_CandleChartPainter old) =>
-      old.viewport != viewport ||
-      old.crosshair != crosshair ||
-      old.layers != layers ||
-      old.body != body ||
-      old.pair != pair ||
-      old.source != source ||
-      old.location != location;
+  bool shouldRepaint(CandleChartPainter oldDelegate) =>
+      oldDelegate.viewport != viewport ||
+      oldDelegate.crosshair != crosshair ||
+      oldDelegate.layers != layers ||
+      oldDelegate.body != body ||
+      oldDelegate.pair != pair ||
+      oldDelegate.source != source ||
+      oldDelegate.location != location ||
+      !identical(oldDelegate.patterns, patterns);
 }
 
 enum _Anchor { topLeft, topRight, topCenter, centerLeft, center }
