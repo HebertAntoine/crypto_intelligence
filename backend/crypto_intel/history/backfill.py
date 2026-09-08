@@ -36,10 +36,18 @@ _INTERVAL = {
 # How far back it is worth going per timeframe. 15m candles for five years
 # would be ~175k rows per asset for very little analytical value, so the
 # short timeframes are deliberately capped.
+#: How far back each timeframe is kept, in days.
+#:
+#: These were 120 / 400 / 900 days on the intraday units, which is why the
+#: figure scan found nine years of shapes on daily bars and four months on
+#: 15m: the bars simply were not there. 4h now reaches the listing date like
+#: the daily; 1h and 15m stay bounded because nine years of 15m bars is
+#: 316 000 rows per asset, and a figure from 2018 on a fifteen-minute chart
+#: informs nothing about today.
 DEFAULT_DEPTH_DAYS: dict[Timeframe, int] = {
-    Timeframe.M15: 120,
-    Timeframe.H1: 400,
-    Timeframe.H4: 900,
+    Timeframe.M15: 730,
+    Timeframe.H1: 3600,
+    Timeframe.H4: 3600,
     Timeframe.D1: 3600,   # ~10 years: back to the Binance listing date for each pair
     Timeframe.W1: 3600,
 }

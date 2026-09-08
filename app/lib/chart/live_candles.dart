@@ -36,17 +36,22 @@ const int kBinanceKlineLimit = 1000;
 /// conserve pour les grandes unités, et restent bornées sur les petites où
 /// la profondeur n'apporterait que du poids.
 ///
-///   1 sem. — 474 barres, soit l'intégralité depuis août 2017
+///   1 sem. — 600 barres, soit l'intégralité depuis août 2017
 ///   1 j    — 3 400 barres, soit neuf ans
-///   4 h    — 3 000 barres, soit un an et demi
-///   1 h    — 2 000 barres, soit trois mois
-///   15 min — 1 500 barres, soit seize jours
+///   4 h    — 6 000 barres, soit deux ans et neuf mois
+///   1 h    — 4 000 barres, soit cinq mois et demi
+///   15 min — 3 000 barres, soit un mois
+///
+/// Le backend conserve neuf ans sur toutes les unités et compte les figures
+/// sur tout: l'écran affiche « N sur cette vue · M dans l'historique ». Sur
+/// les petites unités, charger neuf ans coûterait des centaines d'appels et
+/// des mégaoctets pour des figures de 2018 qui n'apprennent rien en 15 min.
 const Map<String, int> kCandleDepth = {
   '1w': 600,
   '1d': 3400,
-  '4h': 3000,
-  '1h': 2000,
-  '15m': 1500,
+  '4h': 6000,
+  '1h': 4000,
+  '15m': 3000,
 };
 
 /// Combien de bougies demander par défaut quand l'unité est inconnue.

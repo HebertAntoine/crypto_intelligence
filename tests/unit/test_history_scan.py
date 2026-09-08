@@ -206,6 +206,75 @@ class TestWindowing:
         assert len(objects) == len(payloads)
 
 
+class TestIncrementalIsIdenticalToAFullReplay:
+    """The optimisation must not change a single answer.
+
+    A new fifteen-minute bar cannot cost a replay of seventy thousand, so the
+    cache resumes from where it stopped. That is only acceptable if resuming
+    and replaying produce the same list - otherwise the count drifts quietly,
+    and nothing would ever say so.
+    """
+
+    @pytest.fixture
+    def isolated_cache(self, tmp_path, monkeypatch):
+        from crypto_intel.structure import history_scan
+
+        monkeypatch.setattr(history_scan, "SCAN_DIR", tmp_path)
+        monkeypatch.setattr(history_scan, "_memo", {})
+        return history_scan
+
+    def test_resuming_gives_the_same_figures_as_starting_over(
+        self, isolated_cache, repeated_frame
+    ):
+        module = isolated_cache
+        cut = 300
+        # Premier passage: on cache le balayage d'un préfixe.
+        module.scan_cached("TEST", Timeframe.D1, repeated_frame.iloc[:cut])
+        # Second passage: la série a grandi, le cache doit reprendre.
+        module._memo.clear()
+        incremental = module.scan_cached("TEST", Timeframe.D1, repeated_frame)
+
+        module._memo.clear()
+        for path in tmp_path_of(module).iterdir():
+            path.unlink()
+        full = module.scan_cached("TEST", Timeframe.D1, repeated_frame)
+
+        assert [f["name"] for f in incremental] == [f["name"] for f in full]
+        assert [f["first_seen_at"] for f in incremental] == [
+            f["first_seen_at"] for f in full
+        ]
+
+    def test_an_unchanged_series_is_not_rescanned(
+        self, isolated_cache, repeated_frame
+    ):
+        module = isolated_cache
+        first = module.scan_cached("TEST", Timeframe.D1, repeated_frame)
+        module._memo.clear()
+        again = module.scan_cached("TEST", Timeframe.D1, repeated_frame)
+        assert first == again
+
+    def test_a_moving_last_price_does_not_invalidate_the_cache(
+        self, isolated_cache, repeated_frame
+    ):
+        """The in-progress bar ticks; the pivots behind it do not.
+
+        Including the last close in the fingerprint made every single request
+        a full rescan - thirty seconds for a price that changes no pivot.
+        """
+        module = isolated_cache
+        module.scan_cached("TEST", Timeframe.D1, repeated_frame)
+        moved = repeated_frame.copy()
+        moved.iloc[-1, moved.columns.get_loc("close")] *= 1.01
+        module._memo.clear()
+        # Même empreinte: la lecture disque doit suffire, sans recalcul.
+        stamp_before = module._stamp(repeated_frame)
+        assert module._stamp(moved) == stamp_before
+
+
+def tmp_path_of(module):
+    return module.SCAN_DIR
+
+
 class TestItStaysQuietOnNoise:
     def test_a_flat_line_produces_nothing(self):
         """§14 still holds: no shape where there is no shape."""

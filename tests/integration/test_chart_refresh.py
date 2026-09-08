@@ -346,7 +346,11 @@ class TestChartPublishesDrawableGeometry:
         _set_mode(monkeypatch, mock_mode=True)
 
         body = client.get("/api/chart/BTC?timeframe=15m&period=7d").json()
+        # The caveat is stated once for the response rather than repeated on
+        # every figure; what must never be missing per figure is the edge
+        # state itself.
+        assert "edge_state" in body["figures_note"]
+        assert "not an edge" in body["figures_note"]
         for figure in body["structural_patterns"]:
             assert "recognition_confidence" in figure
             assert figure["edge_state"]
-            assert "separation_note" in figure

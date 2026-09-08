@@ -197,6 +197,7 @@ def scan_history(
     timeframe: Timeframe,
     lookback: int = 5,
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
+    since_index: int = 0,
 ) -> list[HistoricalPattern]:
     """Replay every detector at every pivot. Returns figures oldest first.
 
@@ -215,6 +216,11 @@ def scan_history(
 
     found: dict[tuple[Any, ...], HistoricalPattern] = {}
     for stop in _detection_points(swings, len(df)):
+        # `since_index` sert au balayage incrémental: les pivets antérieurs
+        # ont déjà été joués, et les rejouer donnerait exactement la même
+        # réponse pour un coût proportionnel à tout l'historique.
+        if stop < since_index:
+            continue
         when = df.index[stop]
         context = PatternContext(
             high=high.iloc[: stop + 1],
@@ -370,14 +376,17 @@ def _stamp(df: pd.DataFrame) -> str:
     """
     import hashlib
 
+    # Volontairement sans la dernière clôture: elle bouge à chaque tick de la
+    # barre en cours, et l'inclure faisait rater le cache à chaque requête —
+    # trente secondes de rebalayage pour un prix qui ne change aucun pivot.
     closes = df["close"]
     sample = [
         float(closes.iloc[position])
-        for position in (0, len(closes) // 3, 2 * len(closes) // 3, -1)
+        for position in (0, len(closes) // 3, 2 * len(closes) // 3)
     ]
     digest = hashlib.sha256(
         "|".join(
-            [df.index[0].isoformat(), df.index[-1].isoformat(), str(len(df))]
+            [df.index[0].isoformat(), str(len(df))]
             + [f"{value:.8f}" for value in sample]
         ).encode()
     ).hexdigest()[:16]
@@ -417,19 +426,102 @@ def scan_cached(
         except (json.JSONDecodeError, OSError, KeyError) as exc:
             log.debug("scan_cache_unreadable", error=str(exc)[:120])
 
-    figures = [item.to_dict() for item in scan_history(
-        df, timeframe, lookback=lookback, min_confidence=min_confidence
-    )]
+    figures = _scan_incrementally(
+        asset, timeframe, df, lookback, min_confidence
+    )
     _memo[key] = (stamp, figures)
     try:
         SCAN_DIR.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(
-            {"stamp": stamp, "version": SCAN_VERSION, "figures": figures}
-        ))
+        path.write_text(json.dumps({
+            "stamp": stamp,
+            "version": SCAN_VERSION,
+            # De quoi reprendre là où on s'est arrêté plutôt que tout rejouer.
+            "first_bar": df.index[0].isoformat(),
+            "bars": len(df),
+            "figures": figures,
+        }))
     except OSError as exc:
         # A cache that cannot be written is a slow scan, not a wrong one.
         log.debug("scan_cache_unwritable", error=str(exc)[:120])
     return figures
+
+
+def _scan_incrementally(
+    asset: str,
+    timeframe: Timeframe,
+    df: pd.DataFrame,
+    lookback: int,
+    min_confidence: float,
+) -> list[dict[str, Any]]:
+    """Replay only the pivots the stored scan has not already seen.
+
+    A new bar every fifteen minutes cannot cost a full replay of seventy
+    thousand: it would make the first request after each bar take half a
+    minute. The stored scan says how far it got; only what came after is
+    replayed, and the results are merged.
+
+    The merge is safe because of the property tested in
+    `test_a_scan_of_a_prefix_is_a_prefix_of_the_scan`: bars that print later
+    cannot change what was found earlier. The one exception is the final bar,
+    which is always a detection point - so the resume overlaps backwards far
+    enough to redo it.
+    """
+    previous = _stored_scan(asset, timeframe)
+    since = 0
+    kept: list[dict[str, Any]] = []
+    if previous is not None:
+        first_seen, scanned_to, figures = previous
+        # Même série ? Le premier horodatage doit correspondre, sinon
+        # l'historique a été réécrit et il faut tout reprendre.
+        if (
+            first_seen == df.index[0].isoformat()
+            and 0 < scanned_to <= len(df)
+        ):
+            # On reprend un peu avant: la dernière barre du balayage
+            # précédent était un point de détection particulier à l'endroit
+            # où la série s'arrêtait.
+            since = max(0, scanned_to - 1)
+            cutoff = df.index[since].isoformat()
+            kept = [
+                figure for figure in figures
+                if figure.get("first_seen_at", "") < cutoff
+            ]
+
+    fresh = [item.to_dict() for item in scan_history(
+        df, timeframe, lookback=lookback,
+        min_confidence=min_confidence, since_index=since,
+    )]
+    if not kept:
+        return fresh
+
+    merged = kept + [
+        figure for figure in fresh
+        if figure.get("first_seen_at", "") >= df.index[since].isoformat()
+    ]
+    merged.sort(key=lambda figure: figure.get("first_seen_at", ""))
+    log.info(
+        "history_scanned_incrementally",
+        timeframe=timeframe.value, reused=len(kept), computed=len(fresh),
+    )
+    return merged
+
+
+def _stored_scan(
+    asset: str, timeframe: Timeframe
+) -> tuple[str, int, list[dict[str, Any]]] | None:
+    """The scan on disk, whatever series it was computed for."""
+    path = _scan_path(asset, timeframe.value)
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text())
+        return (
+            payload["first_bar"],
+            int(payload["bars"]),
+            payload["figures"],
+        )
+    except (json.JSONDecodeError, OSError, KeyError, TypeError, ValueError):
+        return None
 
 
 def within_window(

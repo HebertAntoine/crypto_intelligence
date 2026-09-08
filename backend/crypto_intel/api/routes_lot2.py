@@ -151,9 +151,9 @@ def _chart_market_metadata(
 CHART_CANDLE_DEPTH: dict[str, int] = {
     "1w": 600,
     "1d": 3400,
-    "4h": 3000,
-    "1h": 2000,
-    "15m": 1500,
+    "4h": 6000,
+    "1h": 4000,
+    "15m": 3000,
 }
 
 
@@ -324,6 +324,14 @@ async def chart(
             figure_window[-1].to_pydatetime(),
         )
         figures_total = len(all_figures)
+        # Deux phrases constantes voyageaient sur chaque figure: à cent
+        # soixante-dix figures par vue, cela fait quarante kilo-octets de
+        # texte identique. Elles sont dites une fois pour la réponse — la
+        # discipline qu'elles portent tient à `edge_state`, qui reste sur
+        # chaque figure.
+        for figure in structural:
+            figure.pop("separation_note", None)
+            figure.pop("resolution_note", None)
     except Exception as exc:
         log.debug("chart_overlay_failed", error=str(exc))
 
@@ -352,6 +360,13 @@ async def chart(
         # que trois.
         "figures_in_history": figures_total,
         "figures_window_bars": figures_bars,
+        "figures_note": (
+            "recognition_confidence describes how cleanly a shape matches its "
+            "definition - never a probability of any price outcome; read "
+            "edge_state for that. `resolution` says whether this one figure "
+            "reached its trigger or its invalidation first: an observation "
+            "about that instance, not an edge."
+        ),
         "markers": _chart_markers(asset, df.index.min(), df.index.max()),
     }
 

@@ -40,48 +40,80 @@ les figures de 2018 étaient trouvées, servies, et hors d'atteinte.
 
 | Figure | 1 sem. | 1 j | 4 h | 1 h | 15 min | Total |
 |---|---:|---:|---:|---:|---:|---:|
-| Drapeau haussier | 2 | 15 | 32 | 48 | 72 | **169** |
-| Drapeau baissier | 1 | 7 | 29 | 59 | 71 | **167** |
-| Double creux | 1 | 14 | 32 | 48 | 56 | **151** |
-| Double sommet | 5 | 13 | 22 | 38 | 62 | **140** |
-| ETE inversée | 0 | 9 | 14 | 28 | 44 | **95** |
-| Épaule-tête-épaule | 0 | 8 | 19 | 28 | 29 | **84** |
-| Triple sommet | 2 | 2 | 5 | 7 | 12 | **28** |
-| Triple creux | 0 | 1 | 8 | 7 | 10 | **26** |
-| Triangle symétrique | 0 | 1 | 2 | 1 | 3 | **7** |
-| Biseau ascendant | 0 | 0 | 0 | 2 | 0 | **2** |
-| Biseau descendant | 0 | 0 | 0 | 1 | 0 | **1** |
-| **TOTAL** | **11** | **70** | **163** | **267** | **359** | **870** |
+| Drapeau haussier | 2 | 15 | 104 | 423 | 363 | **907** |
+| Drapeau baissier | 1 | 7 | 88 | 362 | 353 | **811** |
+| Double sommet | 5 | 13 | 73 | 298 | 333 | **722** |
+| Double creux | 1 | 14 | 77 | 241 | 337 | **670** |
+| ETE inversée | 0 | 9 | 63 | 253 | 212 | **537** |
+| Épaule-tête-épaule | 0 | 8 | 55 | 233 | 172 | **468** |
+| Triple sommet | 2 | 2 | 11 | 56 | 87 | **158** |
+| Triple creux | 0 | 1 | 16 | 40 | 79 | **136** |
+| Triangle symétrique | 0 | 1 | 4 | 18 | 8 | **31** |
+| Biseau ascendant | 0 | 0 | 1 | 9 | 8 | **18** |
+| Biseau descendant | 0 | 0 | 0 | 5 | 3 | **8** |
+| Triangle descendant | 0 | 0 | 1 | 0 | 0 | **1** |
+| Triangle ascendant | 0 | 0 | 0 | 0 | 1 | **1** |
+| **TOTAL** | **11** | **70** | **493** | **1 938** | **1 956** | **4 468** |
 
-Avant ce lot, la même colonne donnait **0 ou 1**.
+Avant ce lot, la même colonne donnait **0 ou 1** — les détecteurs n'étaient
+interrogés qu'une fois, au présent.
 
-## BTC : couverture et devenir des figures
+## BTC : couverture et profondeur
 
-| Unité | Bougies | Profondeur | Figures | Déclencheur atteint | Invalidée | Ni l'un ni l'autre |
-|---|---:|---|---:|---:|---:|---:|
-| 1 sem. | 474 | 2017-08-14 → 2026-09-07 (**9,1 ans**) | 11 | 4 | 5 | 2 |
-| 1 j | 3 310 | 2017-08-17 → 2026-09-08 (**9,1 ans**) | 70 | 29 | 35 | 6 |
-| 4 h | 6 024 | 2023-12-10 → 2026-09-08 (2,7 ans) | 163 | 63 | 90 | 10 |
-| 1 h | 10 094 | 2025-07-15 → 2026-09-08 (1,1 an) | 267 | 106 | 148 | 13 |
-| 15 min | 12 189 | 2026-05-04 → 2026-09-08 (0,3 an) | 359 | 131 | 212 | 16 |
+| Unité | Barres | Période couverte | Figures | Balayage à froid |
+|---|---:|---|---:|---:|
+| 1 sem. | 474 | 2017-08-14 → 2026-09-07 (**9,1 ans**) | 11 | 0,0 s |
+| 1 j | 3 310 | 2017-08-17 → 2026-09-08 (**9,1 ans**) | 70 | 0,0 s |
+| 4 h | 19 843 | 2017-08-17 → 2026-09-08 (**9,1 ans**) | 493 | 4,8 s |
+| 1 h | 79 305 | 2017-08-17 → 2026-09-08 (**9,1 ans**) | 1 938 | 32,9 s |
+| 15 min | 71 000 | 2024-09-09 → 2026-09-08 (2,0 ans) | 1 956 | 27,5 s |
 
-« Déclencheur atteint » et « invalidée » sont des **faits** sur chaque instance :
-le prix a franchi en clôture le niveau que le détecteur avait nommé, dans un sens
-ou dans l'autre. Ce n'est pas un avantage statistique, et `edge_state` reste
-`NOT_YET_TESTED` partout. Le rapport 131/212 sur le 15 min ne dit pas que les
-figures échouent : il dit que sur cette unité, sur ces quatre mois, ces
-instances-là ont plus souvent touché leur invalidation d'abord. Rien de plus.
+L'historique local était plafonné à 120 jours en 15 min, 400 en 1 h et 900 en
+4 h : c'est pour cela que le balayage trouvait neuf ans de figures en
+quotidien et quatre mois en 15 min. Les barres manquantes ont été rapatriées
+(**140 000 nouvelles lignes en 4 h, 182 000 en 1 h, 176 000 en 15 min**), et
+`DEFAULT_DEPTH_DAYS` a été relevé pour que le planificateur les conserve.
+
+Le 15 min s'arrête à deux ans volontairement : neuf ans feraient 316 000
+barres par actif, pour des figures de 2018 sur un graphique de quinze minutes
+qui n'apprennent rien sur aujourd'hui.
 
 ## Les trois actifs
 
 | Actif | 1 sem. | 1 j | 4 h | 1 h | 15 min | Total |
 |---|---:|---:|---:|---:|---:|---:|
-| BTC | 11 | 70 | 163 | 267 | 359 | **870** |
-| ETH | 9 | 87 | 152 | 263 | 330 | **841** |
-| SOL | 5 | 41 | 146 | 268 | 356 | **816** |
+| BTC | 11 | 70 | 493 | 1 938 | 1 956 | **4 468** |
+| ETH | 9 | 87 | 460 | 2 013 | 1 865 | **4 434** |
+| SOL | 5 | 41 | 328 | 1 398 | 1 885 | **3 657** |
 
-**2 527 figures** au total, toutes traçables, toutes datées du moment où elles
-sont devenues reconnaissables.
+**12 559 figures** au total, toutes traçables, toutes datées du moment où elles
+sont devenues reconnaissables. SOL couvre 6,1 ans : c'est sa date de cotation
+sur Binance, pas une lacune.
+
+## Ce que voit l'écran
+
+Le graphique ne dessine que les figures qui croisent la **fenêtre visible** —
+en zoomant, il ne reste que ce qu'on regarde. Sous le graphique, une ligne dit
+« 93 figures sur cette vue · 1 956 dans tout l'historique conservé », pour
+qu'une vue serrée ne se lise jamais comme un marché sans figures.
+
+Au plus quatre figures portent leur nom à l'écran, les plus récentes : nommer
+cent soixante figures rendrait le graphique illisible.
+
+| | Avant | Après |
+|---|---:|---:|
+| Figures servies à la vue BTC 4 h | 0 | 164 |
+| Figures dans l'historique BTC 4 h | 0 | 493 |
+| Profondeur visible en 1 sem. | 1 an | 9,1 ans |
+| Zoom arrière maximal | 300 barres | le jeu entier |
+| Réponse `/chart` à froid | — | 0,6 à 35 s |
+| Réponse `/chart` à chaud | — | 0,5 à 1,4 s |
+
+Le premier balayage d'une unité coûte jusqu'à 35 secondes. Il n'a lieu qu'une
+fois : ensuite le cache reprend là où il s'est arrêté, et une nouvelle barre ne
+rejoue que les pivots qui la suivent. Un test vérifie que reprendre et tout
+rejouer donnent exactement la même liste — sans quoi le compte dériverait sans
+que rien ne le dise.
 
 ## Pourquoi ces nombres sont utilisables
 
@@ -108,16 +140,18 @@ souvent.
 
 ## Ce qui n'est pas résolu
 
-**Les 10 ans ne sont atteints qu'en 1 j et 1 sem.** Les autres unités sont
-limitées par ce qui est stocké localement, pas par le balayage :
+**Le 15 min ne remonte qu'à deux ans.** Toutes les autres unités atteignent la
+date de cotation Binance (14 août 2017 pour BTC et ETH, 10 août 2020 pour SOL).
+Aller plus loin en 15 min demanderait ~320 appels et 316 000 lignes par actif ;
+le balayage les traiterait sans changement de code, mais je n'y vois pas
+d'intérêt : une figure de quinze minutes vieille de huit ans ne dit rien du
+marché d'aujourd'hui.
 
-| Unité | Aujourd'hui | Possible | Coût du rattrapage |
-|---|---|---|---|
-| 4 h | 2,7 ans | 9,1 ans | ~20 appels Binance |
-| 1 h | 1,1 an | 9,1 ans | ~80 appels |
-| 15 min | 0,3 an | 9,1 ans | ~320 appels, ~316 000 lignes |
-
-Le balayage les trouvera dès que l'historique sera là — aucun code à changer.
+**L'app n'affiche pas neuf ans sur toutes les unités.** Elle charge 3 400
+barres en quotidien (neuf ans), 600 en hebdomadaire (tout), mais 6 000 en 4 h
+(2,7 ans) et 4 000 en 1 h (5 mois). Charger neuf ans de 1 h serait 80 appels à
+chaque ouverture du graphique. Le compte de l'historique complet reste affiché,
+donc l'écart est dit plutôt que caché — mais il est réel.
 
 **Aucun avantage n'a été mesuré.** 2 527 figures, c'est un échantillon, pas un
 résultat. Savoir si une figure précède quoi que ce soit demande un protocole :
