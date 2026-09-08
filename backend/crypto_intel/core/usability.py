@@ -481,9 +481,16 @@ class DataCoverage:
 
     @property
     def summary_line(self) -> str:
+        """Disponible et à jour sont deux comptes, et l'un contient l'autre.
+
+        « 11/12 disponibles, 8 à jour » se lit sans ambiguïté : onze familles
+        ont répondu, huit d'entre elles décrivent le présent, les trois autres
+        sont là mais datées.
+        """
         return (
-            f"{self.available}/{self.expected} familles disponibles, "
-            f"{self.fresh} récentes"
+            f"{self.available}/{self.expected} disponibles, "
+            f"{self.fresh} à jour"
+            + (f" · {self.stale} anciennes" if self.stale else "")
         )
 
     def to_dict(self) -> dict[str, Any]:

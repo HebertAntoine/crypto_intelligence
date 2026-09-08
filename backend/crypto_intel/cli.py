@@ -444,6 +444,45 @@ def cmd_coverage(args) -> int:
     return 0
 
 
+def cmd_data_health(args) -> int:
+    """Chaque source, actif par actif: utilisable maintenant, ou pourquoi non.
+
+    La profondeur d'une série ne dit rien de sa fraîcheur. Sept mille points de
+    funding immobiles depuis un jour se présentaient exactement comme sept
+    mille points à jour, et rien ne faisait la différence.
+    """
+    import json
+
+    from .core.data_health import report
+
+    init_db()
+    payload = report()
+    if getattr(args, "json", False):
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return 0 if payload["healthy"] else 1
+
+    for asset, rows in payload["assets"].items():
+        print(f"\n{asset}")
+        for row in rows:
+            age = "—" if row["age_hours"] is None else f"{row['age_hours']:.1f}h"
+            depth = "" if not row["history_days"] else f" {row['history_days']:.0f}j"
+            detail = f"  {row['detail']}" if row["detail"] else ""
+            print(
+                f"  {row['source']:16s}{row['status']:16s}"
+                f"{row['rows']:>7} lignes  âge {age:>8}{depth}{detail}"
+            )
+    counts = payload["counts"]
+    print(
+        f"\n{counts['OK']} à jour · {counts['STALE']} en retard · "
+        f"{counts['UNAVAILABLE']} indisponibles · "
+        f"{counts['NOT_APPLICABLE']} sans objet · {counts['ERROR']} en erreur"
+    )
+    print(payload["note"])
+    # Sortie non nulle quand quelque chose est réellement à corriger, pour que
+    # ce contrôle serve aussi de garde dans un cron ou une CI.
+    return 0 if payload["healthy"] else 1
+
+
 def cmd_serve(args) -> int:
     import uvicorn
 
@@ -1182,6 +1221,13 @@ def main() -> int:
 
     p = sub.add_parser("coverage", help="Show available historical depth")
     p.set_defaults(func=cmd_coverage, is_async=False)
+
+    p = sub.add_parser(
+        "data-health",
+        help="Per-source freshness for BTC/ETH/SOL; non-zero exit when stale",
+    )
+    p.add_argument("--json", action="store_true", help="Machine-readable output")
+    p.set_defaults(func=cmd_data_health, is_async=False)
 
     args = parser.parse_args()
     setup_logging(get_settings().log_level)

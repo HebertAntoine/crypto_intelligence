@@ -473,7 +473,7 @@ class TestCoverage:
         states = {}
         for name in ("price", "ohlcv_daily", "ohlcv_4h", "structure", "funding",
                      "open_interest", "dvol", "volatility", "etf", "macro",
-                     "onchain", "cross_asset"):
+                     "onchain", "cross_asset", "spot"):
             states[name] = FamilyState(
                 family=name, available=True, valid=True,
                 freshness=Freshness.RECENT, observed_at=now, source="test",
