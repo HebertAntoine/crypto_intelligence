@@ -197,3 +197,125 @@ def load() -> dict[str, Any]:
         return json.loads(ARTEFACT.read_text())
     except (json.JSONDecodeError, OSError) as exc:
         return {"available": False, "reason": f"unreadable artefact: {exc}"[:120]}
+
+
+# --- bootstrap par blocs ---------------------------------------------------
+#
+# La permutation simple détruit le regroupement de volatilité, donc toute
+# figure de deux ou trois barres devient quasi impossible. Un rapport de 900x
+# ne dit alors rien de la figure — il dit que le test nul est trop destructeur.
+#
+# Le bootstrap par blocs mobiles conserve des morceaux de série intacts: à
+# l'intérieur d'un bloc, les dépendances locales survivent. En faisant varier
+# la taille des blocs, on voit à partir de quelle longueur de mémoire une
+# figure cesse d'être exceptionnelle.
+#
+# Les tailles sont fixées d'avance et TOUTES rapportées. Choisir après coup
+# celle qui donne le résultat souhaité serait le contraire d'une mesure.
+
+BLOCK_SIZES = (5, 10, 20, 50)
+BLOCK_REPLICATES = 4
+
+
+def _moving_block(frame: pd.DataFrame, block: int, rng: np.random.Generator) -> pd.DataFrame:
+    """Une série de même longueur, faite de blocs consécutifs tirés au hasard.
+
+    Chaque bloc est une tranche réelle de l'historique: à l'intérieur, tout est
+    préservé — l'enchaînement des corps, le regroupement de volatilité, les
+    séquences de bougies. Seule la façon dont les blocs se succèdent est
+    aléatoire.
+    """
+    n = len(frame)
+    if block >= n:
+        return frame.copy()
+    starts = rng.integers(0, n - block, size=n // block + 1)
+    pieces = [frame.iloc[s: s + block] for s in starts]
+    rebuilt = pd.concat(pieces).iloc[:n].copy()
+    rebuilt.index = frame.index
+    return rebuilt
+
+
+def block_bootstrap_benchmark(
+    assets: tuple[Asset, ...] = (Asset.BTC, Asset.ETH, Asset.SOL),
+    timeframe: Timeframe = Timeframe.D1,
+    block_sizes: tuple[int, ...] = BLOCK_SIZES,
+    replicates: int = BLOCK_REPLICATES,
+) -> dict[str, Any]:
+    """Fréquences réelles contre un nul qui préserve la mémoire locale."""
+    from collections import Counter
+
+    from ..history import store
+
+    real: Counter[str] = Counter()
+    real_bars = 0
+    frames: dict[str, pd.DataFrame] = {}
+    for asset in assets:
+        frame = store.load_candles(asset, timeframe)
+        if frame is None or frame.empty:
+            continue
+        frames[asset.value] = frame
+        real_bars += len(frame)
+        for detection in scan_candlesticks(frame):
+            real[detection.pattern.value] += 1
+
+    if not real_bars:
+        return {"available": False, "reason": "no stored history"}
+
+    by_block: dict[str, dict[str, float]] = {}
+    for block in block_sizes:
+        rng = np.random.default_rng(SEED + block)
+        counts: Counter[str] = Counter()
+        bars = 0
+        for _ in range(replicates):
+            for frame in frames.values():
+                rebuilt = _moving_block(frame, block, rng)
+                bars += len(rebuilt)
+                for detection in scan_candlesticks(rebuilt):
+                    counts[detection.pattern.value] += 1
+        by_block[str(block)] = {
+            name: round(counts[name] / bars * 1000, 3)
+            for name in (p.value for p in CandlestickPattern)
+        }
+
+    rows: dict[str, Any] = {}
+    for pattern in CandlestickPattern:
+        name = pattern.value
+        per_real = round(real[name] / real_bars * 1000, 3)
+        ratios: dict[str, float | None] = {}
+        for block_name, freqs in by_block.items():
+            null = freqs[name]
+            ratios[block_name] = round(per_real / null, 2) if null > 0 else None
+        finite = [r for r in ratios.values() if r is not None]
+        rows[name] = {
+            "bars": PATTERN_BARS[pattern],
+            "per_1000_real": per_real,
+            "per_1000_by_block": {b: by_block[b][name] for b in by_block},
+            "ratio_by_block": ratios,
+            # L'écart entre tailles de blocs EST le résultat: il dit à quel
+            # point la conclusion dépend de l'hypothèse de mémoire.
+            "ratio_min": min(finite) if finite else None,
+            "ratio_max": max(finite) if finite else None,
+            "sensitive_to_block_size": (
+                bool(finite and max(finite) / max(min(finite), 1e-9) >= 2.0)
+            ),
+        }
+
+    log.info("block_bootstrap", real_bars=real_bars, blocks=list(by_block))
+    return {
+        "available": True,
+        "measured_at": datetime.now(UTC).isoformat(),
+        "seed": SEED,
+        "timeframe": timeframe.value,
+        "assets": [asset.value for asset in assets],
+        "real_bars": real_bars,
+        "block_sizes": list(block_sizes),
+        "replicates": replicates,
+        "detectors": rows,
+        "note": (
+            "Null model: moving-block bootstrap. Inside a block the real "
+            "sequence survives, so local dependence - volatility clustering "
+            "above all - is preserved. Every block size is reported: picking "
+            "the one that gives the preferred answer would not be a "
+            "measurement."
+        ),
+    }

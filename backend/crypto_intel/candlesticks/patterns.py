@@ -35,9 +35,10 @@ from typing import Any
 import pandas as pd
 
 from ..logging_setup import get_logger
-from .anatomy import Candle, candle_at, prior_trend
+from .anatomy import TREND_LOOKBACK, Candle, candle_at, prior_trend
 from .taxonomy import (
     DETECTOR_VERSION,
+    EXPECTED_DIRECTION,
     NEEDS_PRIOR_TREND,
     PATTERN_BARS,
     PATTERN_FAMILY,
@@ -85,6 +86,11 @@ class CandlestickDetection:
 
     Délibérément distinct de `StructuralPattern`: les deux familles ne se
     mélangent pas, et un type commun inviterait à les agréger.
+
+    Contrat volontairement **léger**. Une figure de chandeliers occupe une à
+    trois barres: lui fabriquer une neckline, une zone de cassure ou un
+    objectif serait inventer des concepts auxquels elle n'obéit pas. L'écran
+    n'a besoin que de savoir quelles bougies surligner.
     """
 
     pattern: CandlestickPattern
@@ -97,6 +103,35 @@ class CandlestickDetection:
     prior_trend: str
     components: dict[str, Any] = field(default_factory=dict)
     detector_version: str = DETECTOR_VERSION
+    #: Actif et unité. Le détecteur ne les connaît pas — il ne voit que des
+    #: prix — donc ils sont posés par le balayage, qui les connaît.
+    symbol: str = ""
+    timeframe: str = ""
+    #: La fenêtre que le détecteur a REGARDÉE, figure comprise: elle commence
+    #: au début de la tendance préalable. Sans elle, on ne peut pas rejouer une
+    #: détection ni vérifier qu'elle n'a rien lu au-delà.
+    context_start: datetime | None = None
+
+    @property
+    def start_time(self) -> datetime:
+        return self.bar_times[0] if self.bar_times else self.detected_at
+
+    @property
+    def end_time(self) -> datetime:
+        return self.detected_at
+
+    @property
+    def id(self) -> str:
+        """Identité stable d'une occurrence.
+
+        Dérivée de ce qui l'identifie — actif, unité, figure, instant — et non
+        du moment du calcul, pour qu'un rebalayage donne le même identifiant.
+        """
+        import hashlib
+
+        parts = (self.symbol, self.timeframe, self.pattern.value,
+                 self.detected_at.isoformat())
+        return hashlib.sha1("|".join(parts).encode()).hexdigest()[:24]
 
     @property
     def family(self) -> str:
@@ -108,8 +143,17 @@ class CandlestickDetection:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "id": self.id,
             "pattern": self.pattern.value,
             "taxonomy": "CANDLESTICK_PATTERN",
+            "symbol": self.symbol,
+            "timeframe": self.timeframe,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat(),
+            "context_start": (
+                self.context_start.isoformat() if self.context_start else None
+            ),
+            "expected_direction": EXPECTED_DIRECTION.get(self.pattern, 0),
             "family": self.family,
             "bars": self.bars,
             "detected_at": self.detected_at.isoformat(),
@@ -313,11 +357,23 @@ def _three_bars(
     return None
 
 
+def _trend_magnitude(frame: pd.DataFrame, index: int, atr: float) -> float:
+    """De combien d'ATR le prix a bougé avant la figure, signe compris."""
+    start = index - TREND_LOOKBACK
+    if start < 0 or atr <= 0 or index <= 0:
+        return 0.0
+    before = float(frame["close"].iloc[start])
+    until = float(frame["close"].iloc[index - 1])
+    return (until - before) / atr
+
+
 def detect_at(
     frame: pd.DataFrame,
     index: int,
     atr: float,
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
+    symbol: str = "",
+    timeframe: str = "",
 ) -> list[CandlestickDetection]:
     """Toutes les figures qui se terminent à la barre `index`.
 
@@ -330,6 +386,15 @@ def detect_at(
     trend = prior_trend(frame, index, atr)
     when = frame.index[index].to_pydatetime()
     found: list[CandlestickDetection] = []
+    # Les mesures de contexte, communes à toutes les figures de cette barre.
+    # Une détection doit être explicable: « HAMMER » sans les nombres qui l'ont
+    # produit ne se vérifie pas.
+    last = candle_at(frame, index)
+    context = {
+        "range_atr": round(last.range / atr, 3) if atr > 0 else None,
+        "prior_trend_atr": round(_trend_magnitude(frame, index, atr), 3),
+        "prior_trend_direction": trend,
+    }
 
     def add(result, bars: int) -> None:
         if result is None:
@@ -342,7 +407,9 @@ def detect_at(
             bar_times=[frame.index[index - offset].to_pydatetime()
                        for offset in reversed(range(bars))],
             recognition_confidence=confidence, prior_trend=trend,
-            components=parts,
+            components={**parts, **context},
+            symbol=symbol, timeframe=timeframe,
+            context_start=frame.index[max(0, index - TREND_LOOKBACK)].to_pydatetime(),
         ))
 
     add(_single_bar(candle_at(frame, index), trend), 1)

@@ -30,6 +30,8 @@ MIN_BARS = 25
 def scan_candlesticks(
     frame: pd.DataFrame,
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
+    symbol: str = "",
+    timeframe: str = "",
 ) -> list[CandlestickDetection]:
     """Toutes les figures de chandeliers de la série, les plus anciennes d'abord."""
     if frame is None or frame.empty or len(frame) < MIN_BARS:
@@ -43,7 +45,8 @@ def scan_candlesticks(
         value = float(atr.iloc[index])
         if value != value or value <= 0:
             continue
-        found.extend(detect_at(frame, index, value, min_confidence))
+        found.extend(detect_at(frame, index, value, min_confidence,
+                               symbol=symbol, timeframe=timeframe))
 
     log.info("candlesticks_scanned", bars=len(frame), figures=len(found),
              version=DETECTOR_VERSION)

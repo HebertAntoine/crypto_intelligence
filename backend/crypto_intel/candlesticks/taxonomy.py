@@ -142,5 +142,38 @@ NEEDS_PRIOR_TREND: dict[CandlestickPattern, str] = {
     CandlestickPattern.BEARISH_HARAMI: "UP",
 }
 
+#: Le sens que la théorie prête à chaque figure, +1 ou -1.
+#:
+#: Déclaré AVANT toute mesure et indépendamment d'elle. Sans cela, on serait
+#: tenté de lire un rendement négatif après un marteau comme « la figure marche
+#: dans l'autre sens » — c'est-à-dire de choisir l'hypothèse après avoir vu le
+#: résultat. Zéro pour les figures d'indécision, qui n'annoncent pas de sens.
+EXPECTED_DIRECTION: dict[CandlestickPattern, int] = {
+    CandlestickPattern.DOJI: 0,
+    CandlestickPattern.SPINNING_TOP: 0,
+    CandlestickPattern.DRAGONFLY_DOJI: 1,
+    CandlestickPattern.GRAVESTONE_DOJI: -1,
+    CandlestickPattern.HAMMER: 1,
+    CandlestickPattern.INVERTED_HAMMER: 1,
+    CandlestickPattern.HANGING_MAN: -1,
+    CandlestickPattern.SHOOTING_STAR: -1,
+    CandlestickPattern.MARUBOZU_BULLISH: 1,
+    CandlestickPattern.MARUBOZU_BEARISH: -1,
+    CandlestickPattern.BULLISH_ENGULFING: 1,
+    CandlestickPattern.BEARISH_ENGULFING: -1,
+    CandlestickPattern.BULLISH_HARAMI: 1,
+    CandlestickPattern.BEARISH_HARAMI: -1,
+    CandlestickPattern.PIERCING_LINE: 1,
+    CandlestickPattern.DARK_CLOUD_COVER: -1,
+    CandlestickPattern.MORNING_STAR: 1,
+    CandlestickPattern.EVENING_STAR: -1,
+    CandlestickPattern.THREE_WHITE_SOLDIERS: 1,
+    CandlestickPattern.THREE_BLACK_CROWS: -1,
+}
+
 #: Version des règles, comme pour les détecteurs structurels.
+#:
+#: **Gelée pour la phase de validation.** Mesurer v1 telle quelle, puis
+#: seulement envisager une v2: régler les seuils sur les résultats observés
+#: reviendrait à choisir la définition qui donne le meilleur chiffre.
 DETECTOR_VERSION = "candlestick_v1"
