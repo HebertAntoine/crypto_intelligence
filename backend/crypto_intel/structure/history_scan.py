@@ -91,6 +91,9 @@ class HistoricalPattern:
     #: Rempli par le balayage, pas par le détecteur: un détecteur qui se
     #: valide lui-même ne prouve rien.
     validation: dict[str, Any] | None = None
+    #: Ce que le prix a fait de la frontière de la figure. Un fait sur cette
+    #: instance, jamais un avantage.
+    breakout: dict[str, Any] | None = None
 
     @property
     def name(self) -> str:
@@ -110,6 +113,7 @@ class HistoricalPattern:
         # `geometry_validation` et non `validation`: le contrôle porte sur la
         # cohérence du dessin, pas sur la justesse de la figure.
         payload["geometry_validation"] = self.validation
+        payload["breakout_outcome"] = self.breakout
         payload["resolution_note"] = (
             "Whether this one figure reached its trigger or its invalidation "
             "first. It describes this instance only and is not an edge."
@@ -229,9 +233,19 @@ def enrich_with_detection(
             )
             item["family"] = family_for(figure["name"]).value
             item["lifecycle_state"] = _lifecycle_from_payload(figure).value
+            outcome = figure.get("breakout_outcome") or {}
+            boundary = outcome.get("boundary") or {}
             item["breakout"] = {
-                "level": (figure.get("key_levels") or {}).get("neckline"),
-                "state": _breakout_state_from_payload(figure),
+                "state": outcome.get("state", "NO_TRIGGER_DEFINED"),
+                # Le niveau au moment de l'événement, pas un prix figé: la
+                # frontière d'un triangle bouge à chaque barre.
+                "level": outcome.get("level_at_event"),
+                "boundary": boundary or None,
+                "event_time": outcome.get("event_time"),
+                "bars_to_event": outcome.get("bars_to_event"),
+                "first_wick_time": outcome.get("first_wick_time"),
+                "retest_time": outcome.get("retest_time"),
+                "retest_held": outcome.get("retest_held"),
             }
             item["invalidation"] = {
                 "level": figure.get("invalidation_level"),
@@ -248,38 +262,37 @@ def enrich_with_detection(
 
 
 def _lifecycle_from_payload(figure: dict[str, Any]) -> Any:
-    """Le cycle de vie à six états, déduit de ce qui est déjà publié.
+    """Le cycle de vie, déduit de l'état de la frontière puis de la figure.
 
-    On réutilise `PatternStatus` plutôt que d'inventer une énumération: elle
-    existe, elle est documentée, et une seconde enum divergerait.
+    `PatternStatus` existe et est documenté: on le réutilise plutôt que
+    d'inventer une seconde énumération qui divergerait. La cassure est
+    consultée en premier parce qu'elle est mesurée sur la frontière réelle,
+    là où `resolution` compare à un niveau unique.
     """
+    from .breakout import BreakoutState
     from .detection import PatternStatus
 
+    outcome = (figure.get("breakout_outcome") or {}).get("state")
+    if outcome == BreakoutState.CLOSE_CONFIRMED.value:
+        return PatternStatus.CONFIRMED
+    if outcome in (
+        BreakoutState.FAILED_BREAKOUT.value,
+        BreakoutState.INVALIDATED_FIRST.value,
+    ):
+        return PatternStatus.INVALIDATED
+    if outcome in (BreakoutState.POTENTIAL.value, BreakoutState.WICK_ONLY.value):
+        return PatternStatus.BREAKOUT_PENDING
+
     resolution = figure.get("resolution")
-    state = figure.get("state")
     if resolution == Resolution.REACHED_TRIGGER.value:
         return PatternStatus.CONFIRMED
     if resolution == Resolution.REACHED_INVALIDATION.value:
         return PatternStatus.INVALIDATED
-    if state == "CONFIRMED":
+    if figure.get("state") == "CONFIRMED":
         return PatternStatus.CONFIRMED
-    if state == "FAILED":
+    if figure.get("state") == "FAILED":
         return PatternStatus.INVALIDATED
     return PatternStatus.DETECTED
-
-
-def _breakout_state_from_payload(figure: dict[str, Any]) -> str:
-    """Où en est la cassure, sans la confondre avec l'état de la figure."""
-    resolution = figure.get("resolution")
-    if resolution == Resolution.REACHED_TRIGGER.value:
-        return "CLOSE_CONFIRMED"
-    if resolution == Resolution.REACHED_INVALIDATION.value:
-        return "FAILED"
-    if (figure.get("key_levels") or {}).get("neckline") is None:
-        # Sans niveau, il n'y a rien à casser. C'est le cas des drapeaux, des
-        # biseaux et des triangles aujourd'hui — corrigé en PHASE C.
-        return "NO_TRIGGER_DEFINED"
-    return "PENDING"
 
 
 def scan_history(
@@ -350,6 +363,26 @@ def scan_history(
             visible,
             float(atr.iloc[item.first_seen_index]),
         ).to_dict()
+    from .breakout import boundaries_for, evaluate_breakout
+
+    for item in ordered:
+        # La frontière se déduit de la géométrie connue à la détection; ce que
+        # le prix en fait ensuite se lit sur les barres POSTÉRIEURES et
+        # uniquement sur elles.
+        bounds = boundaries_for(
+            item.name,
+            item.pattern.geometry,
+            item.pattern.direction_if_textbook,
+        )
+        item.breakout = evaluate_breakout(
+            bounds,
+            df.iloc[item.first_seen_index + 1:],
+            float(atr.iloc[item.first_seen_index]),
+            invalidation_level=item.pattern.invalidation_level,
+            direction=item.pattern.direction_if_textbook,
+            bars_span=item.pattern.bars_span,
+        ).to_dict()
+
     for item in ordered:
         resolution, resolved_at, bars = _resolve(
             item.pattern, item.first_seen_index, close
@@ -464,7 +497,7 @@ import pathlib  # noqa: E402
 #: measured on lows instead of closes, and the flag is anchored to pivots. Not
 #: bumping would have served yesterday's figures from disk under today's rules,
 #: and nothing would have said so.
-SCAN_VERSION = "lot5-history-3"
+SCAN_VERSION = "lot5-history-5"
 
 SCAN_DIR = pathlib.Path("data/cache/figures")
 

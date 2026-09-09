@@ -12,13 +12,13 @@
   ],
   "storage_origin": "local_database",
   "stored_rows": 474,
-  "generated_at": "2026-09-09T00:24:45.884965+00:00",
+  "generated_at": "2026-09-09T10:29:36.941016+00:00",
   "as_of": "2026-09-07T00:00:00+00:00",
   "last_candle_time": "2026-09-07T00:00:00+00:00",
   "last_candle_at": "2026-09-07T00:00:00+00:00",
   "last_candle_expected_close": "2026-09-14T00:00:00+00:00",
   "last_candle_closed": false,
-  "age_seconds": 174285.885,
+  "age_seconds": 210576.941,
   "freshness": "LIVE",
   "is_stale": false,
   "interval_seconds": 604800,
@@ -33,9 +33,9 @@
   "available": true,
   "summary": {
     "available": true,
-    "last_price": 78660.0,
+    "last_price": 79109.86,
     "first_price": 4086.29,
-    "change_pct": 1824.9735089775816,
+    "change_pct": 1835.9825171488076,
     "period_high": 126199.63,
     "period_low": 2817.0,
     "high_time": "2025-10-06T00:00:00+00:00",
@@ -3839,8 +3839,8 @@
       "open": 80341.83,
       "high": 80443.99,
       "low": 77620.01,
-      "close": 78660.0,
-      "volume": 29939.3137
+      "close": 79109.86,
+      "volume": 34958.8984
     }
   ],
   "overlays": {
@@ -4318,7 +4318,7 @@
       69319.32932665,
       70115.77415269,
       71089.68423338,
-      71810.66668735
+      71853.51049687
     ],
     "ema50": [
       null,
@@ -4794,7 +4794,7 @@
       77282.10275034,
       77297.78499542,
       77417.15930933,
-      77465.89815994
+      77483.53972857
     ],
     "ema200": [
       null,
@@ -5270,7 +5270,7 @@
       68522.3751974,
       68613.5157427,
       68730.21538705,
-      68829.01921404
+      68833.49543295
     ],
     "bb_upper": [
       null,
@@ -5746,7 +5746,7 @@
       83315.21577441,
       84108.32405407,
       85067.07373821,
-      85067.47482319
+      85142.32921748
     ],
     "bb_middle": [
       null,
@@ -6222,7 +6222,7 @@
       69540.078,
       69887.129,
       70214.131,
-      70214.2535
+      70236.7465
     ],
     "bb_lower": [
       null,
@@ -6698,7 +6698,7 @@
       55764.94022559,
       55665.93394593,
       55361.18826179,
-      55361.03217681
+      55331.16378252
     ]
   },
   "panels": {
@@ -7176,7 +7176,7 @@
       56.61008496,
       56.54795914,
       59.0249966,
-      56.81937138
+      57.39302555
     ],
     "macd": [
       null,
@@ -7652,7 +7652,7 @@
       -3580.55449302,
       -2509.40575573,
       -1429.40927204,
-      -701.13169339
+      -665.24542559
     ],
     "macd_signal": [
       null,
@@ -8128,7 +8128,7 @@
       -4966.49612349,
       -4475.07804994,
       -3865.94429436,
-      -3232.98177416
+      -3225.8045206
     ],
     "macd_hist": [
       null,
@@ -8604,7 +8604,7 @@
       1385.94163047,
       1965.67229421,
       2436.53502232,
-      2531.85008077
+      2560.55909502
     ]
   },
   "levels": {
@@ -8715,12 +8715,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2018-12-10T00:00:00+00:00",
+          "start_price": 3156.26,
+          "end_time": "2019-01-14T00:00:00+00:00",
+          "end_price": 3156.26
+        },
+        "level_at_event": 7680.0,
+        "event_time": "2019-05-13T00:00:00+00:00",
+        "bars_to_event": 17,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "76a2cc3c12c456d3115cc2ee",
       "family": "CONTINUATION",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": null,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 7680.0,
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2018-12-10T00:00:00+00:00",
+          "start_price": 3156.26,
+          "end_time": "2019-01-14T00:00:00+00:00",
+          "end_price": 3156.26
+        },
+        "event_time": "2019-05-13T00:00:00+00:00",
+        "bars_to_event": 17,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 7680.0,
@@ -8819,12 +8852,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2019-01-28T00:00:00+00:00",
+          "start_price": 3349.92,
+          "end_time": "2019-03-04T00:00:00+00:00",
+          "end_price": 3349.92
+        },
+        "level_at_event": 7680.0,
+        "event_time": "2019-05-13T00:00:00+00:00",
+        "bars_to_event": 10,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "b977c93992020f72433968ca",
       "family": "CONTINUATION",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": null,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 7680.0,
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2019-01-28T00:00:00+00:00",
+          "start_price": 3349.92,
+          "end_time": "2019-03-04T00:00:00+00:00",
+          "end_price": 3349.92
+        },
+        "event_time": "2019-05-13T00:00:00+00:00",
+        "bars_to_event": 10,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 7680.0,
@@ -8947,12 +9013,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "FAILED_BREAKOUT",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2019-10-21T00:00:00+00:00",
+          "start_price": 6435.0,
+          "end_time": "2020-03-16T00:00:00+00:00",
+          "end_price": 6435.0
+        },
+        "level_at_event": 6435.0,
+        "event_time": "2020-03-23T00:00:00+00:00",
+        "bars_to_event": 1,
+        "first_wick_time": null,
+        "retest_time": "2020-03-30T00:00:00+00:00",
+        "retest_held": false,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "4b168f4855e3a619c40bd84b",
       "family": "REVERSAL",
-      "lifecycle_state": "CONFIRMED",
+      "lifecycle_state": "INVALIDATED",
       "breakout": {
+        "state": "FAILED_BREAKOUT",
         "level": 6435.0,
-        "state": "CLOSE_CONFIRMED"
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2019-10-21T00:00:00+00:00",
+          "start_price": 6435.0,
+          "end_time": "2020-03-16T00:00:00+00:00",
+          "end_price": 6435.0
+        },
+        "event_time": "2020-03-23T00:00:00+00:00",
+        "bars_to_event": 1,
+        "first_wick_time": null,
+        "retest_time": "2020-03-30T00:00:00+00:00",
+        "retest_held": false
       },
       "invalidation": {
         "level": 10500.0,
@@ -9051,12 +9150,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2020-03-09T00:00:00+00:00",
+          "start_price": 3782.13,
+          "end_time": "2020-04-13T00:00:00+00:00",
+          "end_price": 3782.13
+        },
+        "level_at_event": 10500.0,
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 15,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "247ea1449ef5755a8325f9b0",
       "family": "CONTINUATION",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": null,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 10500.0,
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2020-03-09T00:00:00+00:00",
+          "start_price": 3782.13,
+          "end_time": "2020-04-13T00:00:00+00:00",
+          "end_price": 3782.13
+        },
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 15,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 10500.0,
@@ -9155,12 +9287,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "FAILED_BREAKOUT",
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2020-06-01T00:00:00+00:00",
+          "start_price": 10380.0,
+          "end_time": "2020-07-06T00:00:00+00:00",
+          "end_price": 10380.0
+        },
+        "level_at_event": 10380.0,
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 3,
+        "first_wick_time": null,
+        "retest_time": "2020-08-31T00:00:00+00:00",
+        "retest_held": false,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "a36f24ce487ddcc00bc34fad",
       "family": "CONTINUATION",
-      "lifecycle_state": "DETECTED",
+      "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": null,
-        "state": "NO_TRIGGER_DEFINED"
+        "state": "FAILED_BREAKOUT",
+        "level": 10380.0,
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2020-06-01T00:00:00+00:00",
+          "start_price": 10380.0,
+          "end_time": "2020-07-06T00:00:00+00:00",
+          "end_price": 10380.0
+        },
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 3,
+        "first_wick_time": null,
+        "retest_time": "2020-08-31T00:00:00+00:00",
+        "retest_held": false
       },
       "invalidation": {
         "level": 3782.13,
@@ -9283,12 +9448,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2020-02-10T00:00:00+00:00",
+          "start_price": 3782.13,
+          "end_time": "2020-07-06T00:00:00+00:00",
+          "end_price": 3782.13
+        },
+        "level_at_event": 10500.0,
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 3,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "5d86eb168ab4ba6a84786b7f",
       "family": "REVERSAL",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": 3782.13,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 10500.0,
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2020-02-10T00:00:00+00:00",
+          "start_price": 3782.13,
+          "end_time": "2020-07-06T00:00:00+00:00",
+          "end_price": 3782.13
+        },
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 3,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 10500.0,
@@ -9413,12 +9611,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2019-10-21T00:00:00+00:00",
+          "start_price": 3782.13,
+          "end_time": "2020-07-06T00:00:00+00:00",
+          "end_price": 3782.13
+        },
+        "level_at_event": 10500.0,
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 3,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "6c54148313a8178515001840",
       "family": "REVERSAL",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": 3782.13,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 10500.0,
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2019-10-21T00:00:00+00:00",
+          "start_price": 3782.13,
+          "end_time": "2020-07-06T00:00:00+00:00",
+          "end_price": 3782.13
+        },
+        "event_time": "2020-07-27T00:00:00+00:00",
+        "bars_to_event": 3,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 10500.0,
@@ -9541,12 +9772,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2021-04-12T00:00:00+00:00",
+          "start_price": 28805.0,
+          "end_time": "2021-12-13T00:00:00+00:00",
+          "end_price": 28805.0
+        },
+        "level_at_event": 28805.0,
+        "event_time": "2022-06-06T00:00:00+00:00",
+        "bars_to_event": 25,
+        "first_wick_time": "2022-05-09T00:00:00+00:00",
+        "retest_time": "2022-06-13T00:00:00+00:00",
+        "retest_held": true,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "a98cd21c4d5cdd8badd20d3d",
       "family": "REVERSAL",
       "lifecycle_state": "CONFIRMED",
       "breakout": {
+        "state": "CLOSE_CONFIRMED",
         "level": 28805.0,
-        "state": "CLOSE_CONFIRMED"
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2021-04-12T00:00:00+00:00",
+          "start_price": 28805.0,
+          "end_time": "2021-12-13T00:00:00+00:00",
+          "end_price": 28805.0
+        },
+        "event_time": "2022-06-06T00:00:00+00:00",
+        "bars_to_event": 25,
+        "first_wick_time": "2022-05-09T00:00:00+00:00",
+        "retest_time": "2022-06-13T00:00:00+00:00",
+        "retest_held": true
       },
       "invalidation": {
         "level": 69000.0,
@@ -9645,12 +9909,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2022-01-24T00:00:00+00:00",
+          "start_price": 32917.17,
+          "end_time": "2022-02-28T00:00:00+00:00",
+          "end_price": 32917.17
+        },
+        "level_at_event": 32917.17,
+        "event_time": "2022-05-09T00:00:00+00:00",
+        "bars_to_event": 10,
+        "first_wick_time": null,
+        "retest_time": "2022-05-16T00:00:00+00:00",
+        "retest_held": true,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "f677c400dce05c23fd2e6880",
       "family": "CONTINUATION",
-      "lifecycle_state": "INVALIDATED",
+      "lifecycle_state": "CONFIRMED",
       "breakout": {
-        "level": null,
-        "state": "FAILED"
+        "state": "CLOSE_CONFIRMED",
+        "level": 32917.17,
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2022-01-24T00:00:00+00:00",
+          "start_price": 32917.17,
+          "end_time": "2022-02-28T00:00:00+00:00",
+          "end_price": 32917.17
+        },
+        "event_time": "2022-05-09T00:00:00+00:00",
+        "bars_to_event": 10,
+        "first_wick_time": null,
+        "retest_time": "2022-05-16T00:00:00+00:00",
+        "retest_held": true
       },
       "invalidation": {
         "level": 69000.0,
@@ -9749,12 +10046,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2022-06-13T00:00:00+00:00",
+          "start_price": 17622.0,
+          "end_time": "2022-07-18T00:00:00+00:00",
+          "end_price": 17622.0
+        },
+        "level_at_event": 17622.0,
+        "event_time": "2022-11-07T00:00:00+00:00",
+        "bars_to_event": 16,
+        "first_wick_time": null,
+        "retest_time": "2022-11-14T00:00:00+00:00",
+        "retest_held": true,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "8ca5870e1cc1cc4aa47a019f",
       "family": "CONTINUATION",
-      "lifecycle_state": "INVALIDATED",
+      "lifecycle_state": "CONFIRMED",
       "breakout": {
-        "level": null,
-        "state": "FAILED"
+        "state": "CLOSE_CONFIRMED",
+        "level": 17622.0,
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2022-06-13T00:00:00+00:00",
+          "start_price": 17622.0,
+          "end_time": "2022-07-18T00:00:00+00:00",
+          "end_price": 17622.0
+        },
+        "event_time": "2022-11-07T00:00:00+00:00",
+        "bars_to_event": 16,
+        "first_wick_time": null,
+        "retest_time": "2022-11-14T00:00:00+00:00",
+        "retest_held": true
       },
       "invalidation": {
         "level": 48189.84,
@@ -9853,12 +10183,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2023-04-10T00:00:00+00:00",
+          "start_price": 31000.0,
+          "end_time": "2023-05-15T00:00:00+00:00",
+          "end_price": 31000.0
+        },
+        "level_at_event": 31000.0,
+        "event_time": "2023-10-23T00:00:00+00:00",
+        "bars_to_event": 23,
+        "first_wick_time": "2023-06-19T00:00:00+00:00",
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "0cb3c2884c9123adb5490327",
       "family": "CONTINUATION",
-      "lifecycle_state": "DETECTED",
+      "lifecycle_state": "CONFIRMED",
       "breakout": {
-        "level": null,
-        "state": "NO_TRIGGER_DEFINED"
+        "state": "CLOSE_CONFIRMED",
+        "level": 31000.0,
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2023-04-10T00:00:00+00:00",
+          "start_price": 31000.0,
+          "end_time": "2023-05-15T00:00:00+00:00",
+          "end_price": 31000.0
+        },
+        "event_time": "2023-10-23T00:00:00+00:00",
+        "bars_to_event": 23,
+        "first_wick_time": "2023-06-19T00:00:00+00:00",
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 19549.09,
@@ -9981,12 +10344,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2023-04-10T00:00:00+00:00",
+          "start_price": 24800.0,
+          "end_time": "2023-08-14T00:00:00+00:00",
+          "end_price": 24800.0
+        },
+        "level_at_event": 31804.2,
+        "event_time": "2023-10-23T00:00:00+00:00",
+        "bars_to_event": 10,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "d10a397f38e94470a1cdd149",
       "family": "REVERSAL",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": 24800.0,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 31804.2,
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2023-04-10T00:00:00+00:00",
+          "start_price": 24800.0,
+          "end_time": "2023-08-14T00:00:00+00:00",
+          "end_price": 24800.0
+        },
+        "event_time": "2023-10-23T00:00:00+00:00",
+        "bars_to_event": 10,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 31804.2,
@@ -10109,12 +10505,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2023-06-12T00:00:00+00:00",
+          "start_price": 31804.2,
+          "end_time": "2023-10-16T00:00:00+00:00",
+          "end_price": 31804.2
+        },
+        "level_at_event": 31804.2,
+        "event_time": "2023-10-23T00:00:00+00:00",
+        "bars_to_event": 1,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "5d35abc6a7b6e0e803e28992",
       "family": "REVERSAL",
       "lifecycle_state": "CONFIRMED",
       "breakout": {
+        "state": "CLOSE_CONFIRMED",
         "level": 31804.2,
-        "state": "CLOSE_CONFIRMED"
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2023-06-12T00:00:00+00:00",
+          "start_price": 31804.2,
+          "end_time": "2023-10-16T00:00:00+00:00",
+          "end_price": 31804.2
+        },
+        "event_time": "2023-10-23T00:00:00+00:00",
+        "bars_to_event": 1,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 24800.0,
@@ -10213,12 +10642,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2024-03-11T00:00:00+00:00",
+          "start_price": 73777.0,
+          "end_time": "2024-04-15T00:00:00+00:00",
+          "end_price": 73777.0
+        },
+        "level_at_event": 73777.0,
+        "event_time": "2024-11-04T00:00:00+00:00",
+        "bars_to_event": 29,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "c365d5dd4311f4aca3e42626",
       "family": "CONTINUATION",
-      "lifecycle_state": "DETECTED",
+      "lifecycle_state": "CONFIRMED",
       "breakout": {
-        "level": null,
-        "state": "NO_TRIGGER_DEFINED"
+        "state": "CLOSE_CONFIRMED",
+        "level": 73777.0,
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2024-03-11T00:00:00+00:00",
+          "start_price": 73777.0,
+          "end_time": "2024-04-15T00:00:00+00:00",
+          "end_price": 73777.0
+        },
+        "event_time": "2024-11-04T00:00:00+00:00",
+        "bars_to_event": 29,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 38555.0,
@@ -10341,12 +10803,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "FAILED_BREAKOUT",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2024-03-11T00:00:00+00:00",
+          "start_price": 56552.82,
+          "end_time": "2024-07-08T00:00:00+00:00",
+          "end_price": 56552.82
+        },
+        "level_at_event": 56552.82,
+        "event_time": "2024-09-02T00:00:00+00:00",
+        "bars_to_event": 8,
+        "first_wick_time": "2024-08-05T00:00:00+00:00",
+        "retest_time": "2024-09-09T00:00:00+00:00",
+        "retest_held": false,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "6a44e55e617d95aff036a364",
       "family": "REVERSAL",
-      "lifecycle_state": "CONFIRMED",
+      "lifecycle_state": "INVALIDATED",
       "breakout": {
+        "state": "FAILED_BREAKOUT",
         "level": 56552.82,
-        "state": "CLOSE_CONFIRMED"
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2024-03-11T00:00:00+00:00",
+          "start_price": 56552.82,
+          "end_time": "2024-07-08T00:00:00+00:00",
+          "end_price": 56552.82
+        },
+        "event_time": "2024-09-02T00:00:00+00:00",
+        "bars_to_event": 8,
+        "first_wick_time": "2024-08-05T00:00:00+00:00",
+        "retest_time": "2024-09-09T00:00:00+00:00",
+        "retest_held": false
       },
       "invalidation": {
         "level": 73777.0,
@@ -10471,12 +10966,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2024-03-11T00:00:00+00:00",
+          "start_price": 53485.93,
+          "end_time": "2025-02-17T00:00:00+00:00",
+          "end_price": 53485.93
+        },
+        "level_at_event": 73777.0,
+        "event_time": "2025-02-24T00:00:00+00:00",
+        "bars_to_event": 1,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "e4015d72d7af6372f9a7963c",
       "family": "REVERSAL",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": 53485.93,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 73777.0,
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2024-03-11T00:00:00+00:00",
+          "start_price": 53485.93,
+          "end_time": "2025-02-17T00:00:00+00:00",
+          "end_price": 53485.93
+        },
+        "event_time": "2025-02-24T00:00:00+00:00",
+        "bars_to_event": 1,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 73777.0,
@@ -10575,12 +11103,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2025-05-19T00:00:00+00:00",
+          "start_price": 111980.0,
+          "end_time": "2025-06-23T00:00:00+00:00",
+          "end_price": 111980.0
+        },
+        "level_at_event": 111980.0,
+        "event_time": "2025-07-07T00:00:00+00:00",
+        "bars_to_event": 2,
+        "first_wick_time": null,
+        "retest_time": "2025-07-21T00:00:00+00:00",
+        "retest_held": true,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "e30bafe1bc08c0982cfbc52a",
       "family": "CONTINUATION",
-      "lifecycle_state": "INVALIDATED",
+      "lifecycle_state": "CONFIRMED",
       "breakout": {
-        "level": null,
-        "state": "FAILED"
+        "state": "CLOSE_CONFIRMED",
+        "level": 111980.0,
+        "boundary": {
+          "role": "flag_top",
+          "type": "HORIZONTAL",
+          "side": "ABOVE",
+          "start_time": "2025-05-19T00:00:00+00:00",
+          "start_price": 111980.0,
+          "end_time": "2025-06-23T00:00:00+00:00",
+          "end_price": 111980.0
+        },
+        "event_time": "2025-07-07T00:00:00+00:00",
+        "bars_to_event": 2,
+        "first_wick_time": null,
+        "retest_time": "2025-07-21T00:00:00+00:00",
+        "retest_held": true
       },
       "invalidation": {
         "level": 74508.0,
@@ -10703,12 +11264,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "INVALIDATED_FIRST",
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2025-01-20T00:00:00+00:00",
+          "start_price": 74508.0,
+          "end_time": "2025-06-23T00:00:00+00:00",
+          "end_price": 74508.0
+        },
+        "level_at_event": 111980.0,
+        "event_time": "2025-07-07T00:00:00+00:00",
+        "bars_to_event": 2,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "efa5e40b4af822c5c0eccf97",
       "family": "REVERSAL",
       "lifecycle_state": "INVALIDATED",
       "breakout": {
-        "level": 74508.0,
-        "state": "FAILED"
+        "state": "INVALIDATED_FIRST",
+        "level": 111980.0,
+        "boundary": {
+          "role": "neckline",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2025-01-20T00:00:00+00:00",
+          "start_price": 74508.0,
+          "end_time": "2025-06-23T00:00:00+00:00",
+          "end_price": 74508.0
+        },
+        "event_time": "2025-07-07T00:00:00+00:00",
+        "bars_to_event": 2,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 111980.0,
@@ -10807,12 +11401,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "CLOSE_CONFIRMED",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2025-11-17T00:00:00+00:00",
+          "start_price": 80600.0,
+          "end_time": "2025-12-22T00:00:00+00:00",
+          "end_price": 80600.0
+        },
+        "level_at_event": 80600.0,
+        "event_time": "2026-01-26T00:00:00+00:00",
+        "bars_to_event": 5,
+        "first_wick_time": null,
+        "retest_time": "2026-02-02T00:00:00+00:00",
+        "retest_held": true,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "36c2caea7af31975bb896a07",
       "family": "CONTINUATION",
-      "lifecycle_state": "DETECTED",
+      "lifecycle_state": "CONFIRMED",
       "breakout": {
-        "level": null,
-        "state": "NO_TRIGGER_DEFINED"
+        "state": "CLOSE_CONFIRMED",
+        "level": 80600.0,
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2025-11-17T00:00:00+00:00",
+          "start_price": 80600.0,
+          "end_time": "2025-12-22T00:00:00+00:00",
+          "end_price": 80600.0
+        },
+        "event_time": "2026-01-26T00:00:00+00:00",
+        "bars_to_event": 5,
+        "first_wick_time": null,
+        "retest_time": "2026-02-02T00:00:00+00:00",
+        "retest_held": true
       },
       "invalidation": {
         "level": 126199.63,
@@ -10911,12 +11538,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "WICK_ONLY",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2026-02-02T00:00:00+00:00",
+          "start_price": 60000.0,
+          "end_time": "2026-03-09T00:00:00+00:00",
+          "end_price": 60000.0
+        },
+        "level_at_event": 60000.0,
+        "event_time": "2026-06-01T00:00:00+00:00",
+        "bars_to_event": 12,
+        "first_wick_time": "2026-06-01T00:00:00+00:00",
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "c228fd7576d5ae14486376cd",
       "family": "CONTINUATION",
-      "lifecycle_state": "DETECTED",
+      "lifecycle_state": "BREAKOUT_PENDING",
       "breakout": {
-        "level": null,
-        "state": "NO_TRIGGER_DEFINED"
+        "state": "WICK_ONLY",
+        "level": 60000.0,
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2026-02-02T00:00:00+00:00",
+          "start_price": 60000.0,
+          "end_time": "2026-03-09T00:00:00+00:00",
+          "end_price": 60000.0
+        },
+        "event_time": "2026-06-01T00:00:00+00:00",
+        "bars_to_event": 12,
+        "first_wick_time": "2026-06-01T00:00:00+00:00",
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 97924.49,
@@ -11015,12 +11675,45 @@
         "warnings": [],
         "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
       },
+      "breakout_outcome": {
+        "state": "NO_BREAKOUT",
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2026-06-29T00:00:00+00:00",
+          "start_price": 57800.19,
+          "end_time": "2026-08-03T00:00:00+00:00",
+          "end_price": 57800.19
+        },
+        "level_at_event": null,
+        "event_time": null,
+        "bars_to_event": null,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null,
+        "note": "A close beyond the boundary by the ATR buffer, never a wick. This is what price did, not evidence that the figure predicts."
+      },
       "id": "0f6efd41a958a8126079fedc",
       "family": "CONTINUATION",
       "lifecycle_state": "DETECTED",
       "breakout": {
+        "state": "NO_BREAKOUT",
         "level": null,
-        "state": "NO_TRIGGER_DEFINED"
+        "boundary": {
+          "role": "flag_bottom",
+          "type": "HORIZONTAL",
+          "side": "BELOW",
+          "start_time": "2026-06-29T00:00:00+00:00",
+          "start_price": 57800.19,
+          "end_time": "2026-08-03T00:00:00+00:00",
+          "end_price": 57800.19
+        },
+        "event_time": null,
+        "bars_to_event": null,
+        "first_wick_time": null,
+        "retest_time": null,
+        "retest_held": null
       },
       "invalidation": {
         "level": 82850.0,
