@@ -8,11 +8,13 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show OverflowBoxFit;
 
 import '../api/client.dart';
 import '../api/models.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/real_pattern_overlay.dart' show verifiedRealPatterns;
 import '../chart/candle_chart.dart';
 import '../chart/live_candles.dart';
 import '../chart/chart_layers.dart';
@@ -206,22 +208,21 @@ class _ChartData {
   DetectedPattern? get primaryPattern {
     final drawn = drawnPatterns;
     if (drawn.isEmpty) return null;
-    final names = drawn.map((pattern) => pattern.name).toSet();
+    final selected = drawn.last;
     for (final pattern in structure.patterns) {
-      if (names.contains(pattern.name)) return pattern;
+      if (pattern.name == selected.name) return pattern;
     }
     // Vue par le graphique seul : on garde son nom plutôt que d'emprunter
     // celui d'une figure qui n'est pas dessinée.
-    final first = drawn.first;
     return DetectedPattern(
-      name: first.name,
-      patternClass: first.patternClass,
-      state: first.state,
-      recognitionConfidence: first.recognitionConfidence,
-      directionIfTextbook: first.directionIfTextbook,
+      name: selected.name,
+      patternClass: selected.patternClass,
+      state: selected.state,
+      recognitionConfidence: selected.recognitionConfidence,
+      directionIfTextbook: selected.directionIfTextbook,
       keyLevels: const {},
       invalidationRule: '',
-      edgeState: EdgeState.parse(first.edgeState),
+      edgeState: EdgeState.parse(selected.edgeState),
       notes: '',
       separationNote: '',
     );
@@ -321,6 +322,12 @@ class _HorizontalBleed extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) => OverflowBox(
         alignment: Alignment.center,
+        // Sans `deferToChild`, la boîte prend la plus grande taille permise:
+        // dans une zone défilante la hauteur autorisée est infinie, et toute
+        // la page tombait en « infinite size during layout ». Elle adopte
+        // maintenant la hauteur de son enfant, et ne déborde qu'en largeur —
+        // ce qui est le seul but de ce widget.
+        fit: OverflowBoxFit.deferToChild,
         minWidth: constraints.maxWidth + amount * 2,
         maxWidth: constraints.maxWidth + amount * 2,
         child: SizedBox(
@@ -559,71 +566,80 @@ class _VisualChartPanelState extends State<_VisualChartPanel> {
     final live = _liveCandles;
     final fallback = widget.data.chart?.candles ?? const <CandlePoint>[];
     final candles = live?.candles ?? fallback;
-    return GlassPanel(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // §5: le graphique est la priorité visuelle. Il occupait 320 px
-          // fixes; il prend maintenant une hauteur proportionnée à l'écran,
-          // bornée pour rester utilisable en paysage.
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final height = math.max(
-                360.0,
-                math.min(MediaQuery.sizeOf(context).height * 0.58, 640.0),
-              );
-              return SizedBox(
-                height: height,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: CandleChart(
-                    // La clé force une fenêtre neuve au changement d'actif ou
-                    // d'unité: garder la précédente montrerait un intervalle
-                    // qui n'existe pas dans le nouveau jeu.
-                    key: ValueKey('${widget.asset}-${widget.timeframe}'),
-                    candles: candles,
-                    timeframe: widget.timeframe,
-                    layers: _layers,
-                    // Nommés d'après l'appel réellement effectué; sur repli,
-                    // l'en-tête ne prétend pas venir du direct.
-                    pair: live?.symbol,
-                    source: live?.source,
-                    // Zones, range et position viennent du backend. Le
-                    // graphique les place; il ne les recalcule jamais.
-                    location: widget.data.structure.location,
-                    // Les figures viennent du même appel que l'analyse, avec
-                    // leurs points horodatés. Elles se posent donc sur les
-                    // bougies en direct sans être redétectées ici.
-                    patterns: widget.data.chart?.structuralPatterns ?? const [],
-                  ),
-                ),
-              );
-            },
+    final chart = widget.data.chart;
+    final verifiedPatterns = chart == null
+        ? const <StructuralPatternRead>[]
+        : verifiedRealPatterns(
+            chart,
+            candles: candles,
+            maximum: 8,
+          ).map((verified) => verified.pattern).toList(growable: false);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GlassPanel(
+          padding: const EdgeInsets.fromLTRB(7, 7, 7, 9),
+          borderColor: const Color(0xFF147ED0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // La référence consacre presque toute la largeur au tracé,
+                  // avec une hauteur voisine de 90 % de cette largeur.
+                  final height =
+                      (constraints.maxWidth * 0.90).clamp(360.0, 410.0);
+                  return SizedBox(
+                    key: const Key('chart-main-viewport'),
+                    height: height,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CandleChart(
+                        // La clé force une fenêtre neuve au changement
+                        // d'actif ou d'unité.
+                        key: ValueKey('${widget.asset}-${widget.timeframe}'),
+                        candles: candles,
+                        timeframe: widget.timeframe,
+                        layers: _layers,
+                        // En repli, l'identité vient de la réponse réellement
+                        // affichée et ne prétend pas être du direct.
+                        pair: live?.symbol ??
+                            (chart?.pair.isNotEmpty == true
+                                ? chart!.pair
+                                : chart?.symbol),
+                        source: live?.source ??
+                            (chart?.source.isNotEmpty == true
+                                ? chart!.source
+                                : chart?.exchange),
+                        location: widget.data.structure.location,
+                        patterns: verifiedPatterns,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 7),
+              _CandleSourceLine(
+                live: live,
+                loading: _loading,
+                error: _liveError,
+                fallbackCount: fallback.length,
+                onRetry: _loadLive,
+              ),
+              const SizedBox(height: 4),
+              _FigureCountLine(
+                drawn: verifiedPatterns.length,
+                inHistory: chart?.figuresInHistory ?? 0,
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          _CandleSourceLine(
-            live: live,
-            loading: _loading,
-            error: _liveError,
-            fallbackCount: fallback.length,
-            onRetry: _loadLive,
-          ),
-          const SizedBox(height: 6),
-          _FigureCountLine(
-            drawn: widget.data.drawnPatterns.length,
-            inHistory: widget.data.chart?.figuresInHistory ?? 0,
-          ),
-          const SizedBox(height: 8),
-          _LayerBar(
-            layers: _layers,
-            onToggle: (layer) =>
-                setState(() => _layers = _layers.toggled(layer)),
-          ),
-          const SizedBox(height: 11),
-          _IndicatorStrip(data: widget.data),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        _LayerBar(
+          layers: _layers,
+          onToggle: (layer) => setState(() => _layers = _layers.toggled(layer)),
+        ),
+      ],
     );
   }
 }
@@ -644,7 +660,7 @@ class _FigureCountLine extends StatelessWidget {
     if (inHistory == 0 && drawn == 0) {
       return const Text(
         'Aucune figure sur cette unité de temps.',
-        style: TextStyle(color: AppColors.textMuted, fontSize: 16),
+        style: TextStyle(color: AppColors.textMuted, fontSize: 11.5),
       );
     }
     final here = drawn <= 1
@@ -652,7 +668,7 @@ class _FigureCountLine extends StatelessWidget {
         : '$drawn figures sur cette vue';
     return Text(
       '$here · $inHistory dans tout l’historique conservé',
-      style: const TextStyle(color: AppColors.textMuted, fontSize: 16),
+      style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5),
     );
   }
 }
@@ -808,110 +824,6 @@ class _LayerChip extends StatelessWidget {
           ),
         ),
       );
-}
-
-class _IndicatorStrip extends StatelessWidget {
-  final _ChartData data;
-
-  const _IndicatorStrip({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final signals = _indicatorSignals(data);
-    return Container(
-      height: 104,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1624).withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF294969), width: 1.25),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < signals.length; i += 1) ...[
-            Expanded(
-              child: _SignalChip(
-                icon: signals[i].icon,
-                label: signals[i].label,
-                state: signals[i].state,
-                color: signals[i].color,
-                filled: signals[i].filled,
-              ),
-            ),
-            if (i != signals.length - 1) const _VerticalDivider(),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _VerticalDivider extends StatelessWidget {
-  const _VerticalDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1.2, height: 50, color: const Color(0xFF344B66));
-  }
-}
-
-class _SignalChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String state;
-  final Color color;
-  final bool filled;
-
-  const _SignalChip({
-    required this.icon,
-    required this.label,
-    required this.state,
-    required this.color,
-    this.filled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Empilé plutôt qu'en ligne. Côte à côte, le rond de 54 px et les marges
-    // ne laissaient qu'une soixantaine de pixels au texte pour quatre signaux
-    // partageant la largeur: le libellé passait en ellipse et la pastille se
-    // réduisait à une barre verticale illisible.
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: filled ? 0.20 : 0.10),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: AppColors.text,
-                fontSize: 12,
-                fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 3),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: MobilePill(
-                  label: state, color: color, dense: true, filled: filled),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _PatternDetectedPanel extends StatelessWidget {
@@ -1626,22 +1538,6 @@ class _ConfluenceItem {
   const _ConfluenceItem(this.label, this.value, this.color);
 }
 
-class _IndicatorState {
-  final IconData icon;
-  final String label;
-  final String state;
-  final Color color;
-  final bool filled;
-
-  const _IndicatorState({
-    required this.icon,
-    required this.label,
-    required this.state,
-    required this.color,
-    this.filled = false,
-  });
-}
-
 /// Le libellé court d'une unité de temps dans le sélecteur.
 String _timeframeLabel(String timeframe) => switch (timeframe) {
       '15m' => '15 min',
@@ -1668,42 +1564,6 @@ String _periodForTimeframe(String value) => switch (value) {
       '1w' => 'max',
       _ => '7d',
     };
-
-List<_IndicatorState> _indicatorSignals(_ChartData data) {
-  final pattern = data.primaryPattern;
-  final patternDirection =
-      _patternDirection(pattern, data.structure, data.opportunity);
-  final rsi = _lastNumeric(data.chart?.panels['rsi']);
-  final volumeState = _volumeState(data.chart?.candles);
-  return [
-    _IndicatorState(
-      icon: Icons.trending_up_rounded,
-      label: pattern == null ? 'Structure' : 'Pattern',
-      state: _directionShortLabel(patternDirection).toUpperCase(),
-      color: _directionTone(patternDirection),
-      filled: _directionTone(patternDirection) == AppColors.measured,
-    ),
-    _IndicatorState(
-      icon: Icons.show_chart_rounded,
-      label: 'RSI',
-      state: _rsiLabel(rsi),
-      color: _rsiColor(rsi),
-    ),
-    _IndicatorState(
-      icon: Icons.bar_chart_rounded,
-      label: 'Volume',
-      state: volumeState.$1,
-      color: volumeState.$2,
-      filled: volumeState.$2 == AppColors.measured,
-    ),
-    _IndicatorState(
-      icon: Icons.monetization_on_rounded,
-      label: 'Funding',
-      state: _fundingLabel(data.today?.fundingBand),
-      color: const Color(0xFFB9C5DD),
-    ),
-  ];
-}
 
 List<_ConfluenceItem> _confluenceItems(_ChartData data) {
   final items = <_ConfluenceItem>[];
@@ -1905,53 +1765,6 @@ String _patternNarrative(
       'Cette configuration décrit le contexte visuel, mais elle reste séparée '
       'du verdict d’edge mesurable.';
 }
-
-double? _lastNumeric(List<double?>? values) {
-  if (values == null) return null;
-  for (var i = values.length - 1; i >= 0; i -= 1) {
-    final value = values[i];
-    if (value != null && !value.isNaN) return value;
-  }
-  return null;
-}
-
-String _rsiLabel(double? value) {
-  if (value == null) return 'N/A';
-  if (value >= 70) return 'ÉLEVÉ';
-  if (value <= 30) return 'FAIBLE';
-  return 'NEUTRE';
-}
-
-Color _rsiColor(double? value) {
-  if (value == null) return const Color(0xFF8EA2BE);
-  if (value >= 70 || value <= 30) return AppColors.warn;
-  return const Color(0xFFB9C5DD);
-}
-
-(String, Color) _volumeState(List<CandlePoint>? candles) {
-  if (candles == null || candles.length < 6) {
-    return ('N/A', const Color(0xFF8EA2BE));
-  }
-  final tail =
-      candles.length > 24 ? candles.sublist(candles.length - 24) : candles;
-  final average =
-      tail.map((candle) => candle.volume).reduce((a, b) => a + b) / tail.length;
-  final current = tail.last.volume;
-  if (average <= 0) return ('N/A', const Color(0xFF8EA2BE));
-  if (current >= average * 1.18) return ('HAUSSIER', AppColors.measured);
-  if (current <= average * 0.72) return ('FAIBLE', AppColors.warn);
-  return ('NORMAL', const Color(0xFFB9C5DD));
-}
-
-String _fundingLabel(String? raw) => switch ((raw ?? '').toUpperCase()) {
-      'NEUTRAL' => 'NEUTRE',
-      'LOW' => 'FAIBLE',
-      'HIGH' => 'ÉLEVÉ',
-      'NEGATIVE' => 'NÉGATIF',
-      'POSITIVE' => 'POSITIF',
-      '' => 'N/A',
-      _ => readableLabel(raw!),
-    };
 
 int _derivativesScore(TodayRead read) {
   final funding = read.fundingPercentile;

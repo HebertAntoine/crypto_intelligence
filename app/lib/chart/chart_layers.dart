@@ -60,6 +60,7 @@ class ChartLayerSet {
     ChartLayer.grid,
     ChartLayer.candles,
     ChartLayer.volume,
+    ChartLayer.indicators,
     ChartLayer.levels,
     ChartLayer.range,
     ChartLayer.patternGeometry,

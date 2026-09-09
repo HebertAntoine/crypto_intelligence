@@ -6,7 +6,9 @@ import asyncio
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+import pandas as pd
 import pytest
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.mark.parametrize(
@@ -116,6 +118,73 @@ async def test_chart_refresh_has_a_real_wall_clock_timeout(monkeypatch):
     assert result["attempted"] is True
     assert result["source"] == "binance"
     assert cancelled.is_set(), "the timed-out request coroutine was left running"
+
+
+async def test_chart_route_serves_local_rows_after_refresh_failure(monkeypatch):
+    from crypto_intel.api import routes_lot2
+    from crypto_intel.structure import history_scan
+
+    end = datetime.now(UTC).replace(second=0, microsecond=0)
+    index = pd.date_range(end=end, periods=80, freq="15min", tz=UTC)
+    values = [100.0 + number for number in range(len(index))]
+    frame = pd.DataFrame(
+        {
+            "open": values,
+            "high": [value + 2 for value in values],
+            "low": [value - 2 for value in values],
+            "close": [value + 1 for value in values],
+            "volume": [10.0] * len(index),
+        },
+        index=index,
+    )
+
+    async def offline(*_args, **_kwargs):
+        raise OSError("offline")
+
+    monkeypatch.setattr(
+        routes_lot2,
+        "get_settings",
+        lambda: SimpleNamespace(mock_mode=False),
+    )
+    monkeypatch.setattr(routes_lot2.backfill_module, "refresh_recent_ohlcv", offline)
+    monkeypatch.setattr(routes_lot2.store, "load_candles", lambda *_args: frame)
+    monkeypatch.setattr(
+        routes_lot2.store,
+        "candle_metadata",
+        lambda *_args: {
+            "rows": len(frame),
+            "start": frame.index[0].to_pydatetime(),
+            "end": frame.index[-1].to_pydatetime(),
+            "source": "binance",
+            "sources": ["binance"],
+        },
+    )
+    monkeypatch.setattr(routes_lot2, "_chart_markers", lambda *_args: [])
+    monkeypatch.setattr(history_scan, "scan_cached", lambda *_args: [])
+
+    from crypto_intel.main import create_app
+
+    async with AsyncClient(
+        transport=ASGITransport(app=create_app()),
+        base_url="http://test",
+    ) as client:
+        response = await client.get(
+            "/api/chart/BTC",
+            params={
+                "timeframe": "15m",
+                "period": "7d",
+                "indicators": "",
+                "figures_bars": 80,
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["available"] is True
+    assert len(body["candles"]) == len(frame)
+    assert body["refresh_status"] == "failed"
+    assert body["fallback_used"] is True
 
 
 def test_fallback_metadata_describes_stored_rows_not_the_failed_venue(monkeypatch):

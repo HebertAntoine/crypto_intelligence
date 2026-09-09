@@ -11,9 +11,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../api/models.dart';
+import '../widgets/real_pattern_overlay.dart'
+    show realPatternColor, realPatternPointLabel, realPatternStateLabel;
 import 'chart_layers.dart';
 import 'chart_viewport.dart';
 import 'pattern_geometry.dart';
+import 'technical_series.dart';
 
 // Palette, conforme à l'identité de l'application.
 const _background = Color(0xFF071827);
@@ -78,12 +81,19 @@ class CandleChart extends StatefulWidget {
 class _CandleChartState extends State<CandleChart> {
   ChartViewport? _viewport;
   Offset? _crosshair;
+  late TechnicalSeries _technical;
 
   // État du geste en cours. Le pincement et le glissement arrivent par le même
   // rappel: on garde la fenêtre de départ pour appliquer une transformation
   // absolue plutôt que d'accumuler des arrondis à chaque image.
   ChartViewport? _gestureStart;
   Offset? _gestureOrigin;
+
+  @override
+  void initState() {
+    super.initState();
+    _technical = TechnicalSeries.fromCandles(widget.candles);
+  }
 
   @override
   void didUpdateWidget(CandleChart old) {
@@ -94,6 +104,7 @@ class _CandleChartState extends State<CandleChart> {
     if (!identical(old.candles, widget.candles)) {
       _viewport = null;
       _crosshair = null;
+      _technical = TechnicalSeries.fromCandles(widget.candles);
     }
   }
 
@@ -120,10 +131,35 @@ class _CandleChartState extends State<CandleChart> {
           full.right - _priceAxisWidth,
           full.bottom - _timeAxisHeight,
         );
-        final volumeHeight =
-            widget.layers.isVisible(ChartLayer.volume) ? body.height * _volumeFraction : 0.0;
+        final showIndicators = widget.layers.isVisible(ChartLayer.indicators);
+        final volumeHeight = widget.layers.isVisible(ChartLayer.volume)
+            ? body.height * (showIndicators ? 0.11 : _volumeFraction)
+            : 0.0;
+        final macdHeight = showIndicators ? body.height * 0.15 : 0.0;
+        final rsiHeight = showIndicators ? body.height * 0.14 : 0.0;
         final plot = Rect.fromLTRB(
-          body.left, body.top, body.right, body.bottom - volumeHeight,
+          body.left,
+          body.top,
+          body.right,
+          body.bottom - volumeHeight - macdHeight - rsiHeight,
+        );
+        final volumePanel = Rect.fromLTRB(
+          body.left,
+          plot.bottom,
+          body.right,
+          plot.bottom + volumeHeight,
+        );
+        final macdPanel = Rect.fromLTRB(
+          body.left,
+          volumePanel.bottom,
+          body.right,
+          volumePanel.bottom + macdHeight,
+        );
+        final rsiPanel = Rect.fromLTRB(
+          body.left,
+          macdPanel.bottom,
+          body.right,
+          body.bottom,
         );
         final viewport = _ensureViewport(plot);
 
@@ -172,6 +208,10 @@ class _CandleChartState extends State<CandleChart> {
               source: widget.source,
               location: widget.location,
               patterns: widget.patterns,
+              technical: _technical,
+              volumePanel: volumePanel,
+              macdPanel: macdPanel,
+              rsiPanel: rsiPanel,
             ),
           ),
         );
@@ -193,6 +233,10 @@ class CandleChartPainter extends CustomPainter {
   final String? source;
   final StructuralLocation? location;
   final List<StructuralPatternRead> patterns;
+  final TechnicalSeries technical;
+  final Rect volumePanel;
+  final Rect macdPanel;
+  final Rect rsiPanel;
 
   CandleChartPainter({
     required this.viewport,
@@ -204,10 +248,16 @@ class CandleChartPainter extends CustomPainter {
     this.source,
     this.location,
     this.patterns = const [],
+    this.technical = TechnicalSeries.empty,
+    this.volumePanel = Rect.zero,
+    this.macdPanel = Rect.zero,
+    this.rsiPanel = Rect.zero,
   });
 
   Rect get _plot => viewport.plot;
-  Rect get _volume => Rect.fromLTRB(body.left, _plot.bottom, body.right, body.bottom);
+  Rect get _volume => volumePanel == Rect.zero
+      ? Rect.fromLTRB(body.left, _plot.bottom, body.right, body.bottom)
+      : volumePanel;
 
   /// Les rectangles déjà occupés par une étiquette, pour cette image.
   ///
@@ -232,11 +282,18 @@ class CandleChartPainter extends CustomPainter {
     // ne doivent pas masquer le prix.
     if (layers.isVisible(ChartLayer.range)) _paintRange(canvas);
     if (layers.isVisible(ChartLayer.levels)) _paintZones(canvas);
+    if (layers.isVisible(ChartLayer.indicators)) {
+      _paintPriceIndicators(canvas);
+    }
     if (layers.isVisible(ChartLayer.candles)) _paintCandles(canvas);
     // Les figures passent au-dessus des bougies: elles décrivent ces bougies
     // précisément, les glisser dessous les rendrait illisibles.
     if (layers.isVisible(ChartLayer.patternGeometry)) _paintPatterns(canvas);
     if (layers.isVisible(ChartLayer.currentPrice)) _paintCurrentPrice(canvas);
+    if (layers.isVisible(ChartLayer.indicators)) {
+      _paintMacd(canvas);
+      _paintRsi(canvas);
+    }
     if (layers.isVisible(ChartLayer.labels)) {
       _paintPriceAxis(canvas, size);
       _paintTimeAxis(canvas, size);
@@ -246,6 +303,9 @@ class CandleChartPainter extends CustomPainter {
       }
       if (layers.isVisible(ChartLayer.range)) _paintRangeLabels(canvas);
       if (layers.isVisible(ChartLayer.levels)) _paintZoneLabels(canvas);
+      if (layers.isVisible(ChartLayer.indicators)) {
+        _paintIndicatorLabels(canvas);
+      }
     }
     if (crosshair != null) _paintCrosshair(canvas, size);
   }
@@ -270,9 +330,8 @@ class CandleChartPainter extends CustomPainter {
   void _paintHeader(Canvas canvas) {
     final last = viewport.candles[viewport.endIndex - 1];
     final first = viewport.candles[viewport.startIndex];
-    final change = first.close == 0
-        ? 0.0
-        : (last.close - first.close) / first.close * 100;
+    final change =
+        first.close == 0 ? 0.0 : (last.close - first.close) / first.close * 100;
     final rising = change >= 0;
     final colour = rising ? _bull : _bear;
     var dy = _plot.top + 4;
@@ -298,7 +357,8 @@ class CandleChartPainter extends CustomPainter {
       );
     }
     if (source != null && source!.isNotEmpty) {
-      line(source!, const TextStyle(color: Color(0xFF7790A8), fontSize: 10), 13);
+      line(
+          source!, const TextStyle(color: Color(0xFF7790A8), fontSize: 10), 13);
     }
     line(
       _price(last.close),
@@ -314,8 +374,41 @@ class CandleChartPainter extends CustomPainter {
       '${rising ? '+' : ''}'
       '${change.toStringAsFixed(2).replaceAll('.', ',')} % sur la vue',
       TextStyle(color: colour, fontSize: 11, fontWeight: FontWeight.w700),
-      4,
+      layers.isVisible(ChartLayer.indicators) ? 13 : 4,
     );
+    if (layers.isVisible(ChartLayer.indicators)) {
+      final index = viewport.endIndex - 1;
+      final ema50 = _valueAt(technical.ema50, index);
+      final ema200 = _valueAt(technical.ema200, index);
+      final bb = _valueAt(technical.bbMiddle, index);
+      line(
+        'EMA 50  ${ema50 == null ? '—' : _price(ema50)}',
+        const TextStyle(
+          color: Color(0xFF4CA4FF),
+          fontSize: 9.5,
+          fontWeight: FontWeight.w600,
+        ),
+        12,
+      );
+      line(
+        'EMA 200  ${ema200 == null ? '—' : _price(ema200)}',
+        const TextStyle(
+          color: Color(0xFFFFA126),
+          fontSize: 9.5,
+          fontWeight: FontWeight.w600,
+        ),
+        12,
+      );
+      line(
+        'BB 20  ${bb == null ? '—' : _price(bb)}',
+        const TextStyle(
+          color: Color(0xFFB7C5D9),
+          fontSize: 9.5,
+          fontWeight: FontWeight.w600,
+        ),
+        3,
+      );
+    }
 
     // L'en-tête est prioritaire: les étiquettes qui suivent se décalent
     // plutôt que de se poser dessus.
@@ -356,7 +449,8 @@ class CandleChartPainter extends CustomPainter {
     final span = max - min;
     if (span <= 0) return const [];
     final rough = span / 5;
-    final magnitude = math.pow(10, (math.log(rough) / math.ln10).floor()).toDouble();
+    final magnitude =
+        math.pow(10, (math.log(rough) / math.ln10).floor()).toDouble();
     final step = [1.0, 2.0, 2.5, 5.0, 10.0]
         .map((m) => m * magnitude)
         .firstWhere((s) => s >= rough, orElse: () => magnitude * 10);
@@ -434,6 +528,279 @@ class CandleChartPainter extends CustomPainter {
     }
   }
 
+  // --- calque 3 : indicateurs mesurés ------------------------------------
+
+  /// Moyennes mobiles et bandes de Bollinger, calculées sur exactement les
+  /// mêmes clôtures que les bougies visibles.
+  void _paintPriceIndicators(Canvas canvas) {
+    if (technical.ema20.isEmpty) return;
+    canvas.save();
+    canvas.clipRect(_plot);
+    _paintBollingerBand(canvas);
+    _paintSeries(
+      canvas,
+      technical.ema20,
+      const Color(0xFFB7C5D9).withValues(alpha: 0.72),
+      width: 1,
+    );
+    _paintSeries(canvas, technical.ema50, const Color(0xFF218CFF), width: 1.35);
+    _paintSeries(canvas, technical.ema200, const Color(0xFFFFA126),
+        width: 1.45);
+    canvas.restore();
+  }
+
+  void _paintBollingerBand(Canvas canvas) {
+    final upper = technical.bbUpper, lower = technical.bbLower;
+    final path = Path();
+    var started = false;
+    for (var index = viewport.startIndex; index < viewport.endIndex; index++) {
+      final value = index < upper.length ? upper[index] : null;
+      if (value == null || !value.isFinite) continue;
+      final point =
+          Offset(viewport.indexToX(index.toDouble()), viewport.priceToY(value));
+      if (!started) {
+        path.moveTo(point.dx, point.dy);
+        started = true;
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    if (!started) return;
+    for (var index = viewport.endIndex - 1;
+        index >= viewport.startIndex;
+        index--) {
+      final value = index < lower.length ? lower[index] : null;
+      if (value == null || !value.isFinite) continue;
+      path.lineTo(
+        viewport.indexToX(index.toDouble()),
+        viewport.priceToY(value),
+      );
+    }
+    path.close();
+    canvas.drawPath(
+      path,
+      Paint()..color = const Color(0xFF287BE8).withValues(alpha: 0.10),
+    );
+    _paintSeries(
+      canvas,
+      upper,
+      const Color(0xFF3B83F6).withValues(alpha: 0.72),
+      width: 0.9,
+    );
+    _paintSeries(
+      canvas,
+      lower,
+      const Color(0xFF3B83F6).withValues(alpha: 0.72),
+      width: 0.9,
+    );
+  }
+
+  void _paintSeries(
+    Canvas canvas,
+    List<double?> values,
+    Color colour, {
+    double width = 1.2,
+    double Function(double)? yFor,
+  }) {
+    var path = Path();
+    var started = false;
+    for (var index = viewport.startIndex; index < viewport.endIndex; index++) {
+      final value = index < values.length ? values[index] : null;
+      if (value == null || !value.isFinite) {
+        if (started) {
+          canvas.drawPath(
+            path,
+            Paint()
+              ..color = colour
+              ..strokeWidth = width
+              ..style = PaintingStyle.stroke,
+          );
+        }
+        path = Path();
+        started = false;
+        continue;
+      }
+      final point = Offset(
+        viewport.indexToX(index.toDouble()),
+        yFor?.call(value) ?? viewport.priceToY(value),
+      );
+      if (!started) {
+        path.moveTo(point.dx, point.dy);
+        started = true;
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    if (started) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = colour
+          ..strokeWidth = width
+          ..style = PaintingStyle.stroke,
+      );
+    }
+  }
+
+  void _paintMacd(Canvas canvas) {
+    final area = macdPanel;
+    if (area.height <= 4 || technical.macd.isEmpty) return;
+    _panelTopLine(canvas, area);
+    final values = <double>[];
+    for (var index = viewport.startIndex; index < viewport.endIndex; index++) {
+      for (final series in [
+        technical.macd,
+        technical.macdSignal,
+        technical.macdHistogram,
+      ]) {
+        final value = index < series.length ? series[index] : null;
+        if (value != null && value.isFinite) values.add(value.abs());
+      }
+    }
+    final extent =
+        values.isEmpty ? 1.0 : math.max(1e-9, values.reduce(math.max));
+    final center = area.center.dy;
+    final scale = area.height * 0.38 / extent;
+    double yFor(double value) => center - value * scale;
+
+    canvas.save();
+    canvas.clipRect(area);
+    canvas.drawLine(
+      Offset(area.left, center),
+      Offset(area.right, center),
+      Paint()
+        ..color = _grid.withValues(alpha: 0.48)
+        ..strokeWidth = .8,
+    );
+    final barWidth = math.max(1.0, math.min(viewport.candleWidth * .62, 8.0));
+    for (var index = viewport.startIndex; index < viewport.endIndex; index++) {
+      final value = index < technical.macdHistogram.length
+          ? technical.macdHistogram[index]
+          : null;
+      if (value == null || !value.isFinite) continue;
+      final x = viewport.indexToX(index.toDouble());
+      final y = yFor(value);
+      canvas.drawRect(
+        Rect.fromLTRB(x - barWidth / 2, math.min(center, y), x + barWidth / 2,
+            math.max(center, y)),
+        Paint()..color = (value >= 0 ? _bull : _bear).withValues(alpha: .82),
+      );
+    }
+    _paintSeries(
+      canvas,
+      technical.macd,
+      const Color(0xFF258CFF),
+      width: 1.15,
+      yFor: yFor,
+    );
+    _paintSeries(
+      canvas,
+      technical.macdSignal,
+      const Color(0xFFFF9C22),
+      width: 1.15,
+      yFor: yFor,
+    );
+    canvas.restore();
+  }
+
+  void _paintRsi(Canvas canvas) {
+    final area = rsiPanel;
+    if (area.height <= 4 || technical.rsi.isEmpty) return;
+    _panelTopLine(canvas, area);
+    double yFor(double value) =>
+        area.bottom - value.clamp(0, 100) / 100 * area.height;
+    final upper = yFor(70), lower = yFor(30);
+    canvas.drawRect(
+      Rect.fromLTRB(area.left, upper, area.right, lower),
+      Paint()..color = const Color(0xFF7A5CF0).withValues(alpha: .09),
+    );
+    for (final level in const [30.0, 50.0, 70.0]) {
+      final y = yFor(level);
+      final paint = Paint()
+        ..color =
+            const Color(0xFFA394FF).withValues(alpha: level == 50 ? .25 : .52)
+        ..strokeWidth = .8;
+      for (var x = area.left; x < area.right; x += 8) {
+        canvas.drawLine(
+            Offset(x, y), Offset(math.min(x + 4, area.right), y), paint);
+      }
+    }
+    canvas.save();
+    canvas.clipRect(area);
+    _paintSeries(
+      canvas,
+      technical.rsi,
+      const Color(0xFFA078FF),
+      width: 1.25,
+      yFor: yFor,
+    );
+    canvas.restore();
+  }
+
+  void _panelTopLine(Canvas canvas, Rect area) {
+    canvas.drawLine(
+      area.topLeft,
+      area.topRight,
+      Paint()
+        ..color = const Color(0xFF315878).withValues(alpha: .82)
+        ..strokeWidth = 1,
+    );
+  }
+
+  void _paintIndicatorLabels(Canvas canvas) {
+    if (macdPanel.height > 4) {
+      final macd = _valueAt(technical.macd, viewport.endIndex - 1);
+      final signal = _valueAt(technical.macdSignal, viewport.endIndex - 1);
+      _text(
+        canvas,
+        'MACD 12 26 9  ${_compact(macd)}  ${_compact(signal)}',
+        Offset(macdPanel.left + 6, macdPanel.top + 4),
+        const TextStyle(
+            color: _textPrimary, fontSize: 9.5, fontWeight: FontWeight.w600),
+      );
+    }
+    if (rsiPanel.height > 4) {
+      final rsi = _valueAt(technical.rsi, viewport.endIndex - 1);
+      _text(
+        canvas,
+        'RSI 14  ${rsi == null ? '—' : rsi.toStringAsFixed(1).replaceAll('.', ',')}',
+        Offset(rsiPanel.left + 6, rsiPanel.top + 4),
+        const TextStyle(
+            color: Color(0xFFC7B9FF),
+            fontSize: 9.5,
+            fontWeight: FontWeight.w600),
+      );
+      for (final level in const [70, 50, 30]) {
+        final y = rsiPanel.bottom - level / 100 * rsiPanel.height;
+        _text(
+          canvas,
+          '$level',
+          Offset(_plot.right + 6, y),
+          const TextStyle(color: Color(0xFF9EB0C8), fontSize: 8.5),
+          anchor: _Anchor.centerLeft,
+        );
+      }
+    }
+  }
+
+  double? _valueAt(List<double?> values, int index) {
+    if (index < 0 || index >= values.length) return null;
+    final value = values[index];
+    return value != null && value.isFinite ? value : null;
+  }
+
+  String _compact(double? value) {
+    if (value == null) return '—';
+    final abs = value.abs();
+    final digits = abs >= 100
+        ? 0
+        : abs >= 10
+            ? 1
+            : 2;
+    final prefix = value > 0 ? '+' : '';
+    return '$prefix${value.toStringAsFixed(digits).replaceAll('.', ',')}';
+  }
+
   // --- calques 5 et 6 : zones et range -------------------------------------
   //
   // Rien n'est inventé ici. Une zone porte ses bornes basse et haute telles
@@ -454,7 +821,10 @@ class CandleChartPainter extends CustomPainter {
     final upper = viewport.priceToY(top.midpoint);
     final lower = viewport.priceToY(bottom.midpoint);
     final band = Rect.fromLTRB(
-      _plot.left, math.min(upper, lower), _plot.right, math.max(upper, lower),
+      _plot.left,
+      math.min(upper, lower),
+      _plot.right,
+      math.max(upper, lower),
     );
     final clipped = band.intersect(_plot);
     if (clipped.height <= 0) return;
@@ -465,7 +835,8 @@ class CandleChartPainter extends CustomPainter {
     for (final y in [upper, lower]) {
       if (y < _plot.top || y > _plot.bottom) continue;
       canvas.drawLine(
-        Offset(_plot.left, y), Offset(_plot.right, y),
+        Offset(_plot.left, y),
+        Offset(_plot.right, y),
         Paint()
           ..color = const Color(0xFF6B79FF).withValues(alpha: 0.5)
           ..strokeWidth = 1.2,
@@ -478,8 +849,8 @@ class CandleChartPainter extends CustomPainter {
         ..color = const Color(0xFF6FAEFF).withValues(alpha: 0.45)
         ..strokeWidth = 1;
       for (var x = _plot.left; x < _plot.right; x += 10) {
-        canvas.drawLine(
-            Offset(x, middle), Offset(math.min(x + 5, _plot.right), middle), paint);
+        canvas.drawLine(Offset(x, middle),
+            Offset(math.min(x + 5, _plot.right), middle), paint);
       }
     }
   }
@@ -490,11 +861,15 @@ class CandleChartPainter extends CustomPainter {
     for (final zone in [range?.bottomZone, range?.topZone]) {
       if (zone == null) continue;
       final support = zone.kind == 'support';
-      final colour = support ? const Color(0xFF25D98F) : const Color(0xFFFF5964);
+      final colour =
+          support ? const Color(0xFF25D98F) : const Color(0xFFFF5964);
       final top = viewport.priceToY(zone.high);
       final bottom = viewport.priceToY(zone.low);
       final band = Rect.fromLTRB(
-        _plot.left, math.min(top, bottom), _plot.right, math.max(top, bottom),
+        _plot.left,
+        math.min(top, bottom),
+        _plot.right,
+        math.max(top, bottom),
       ).intersect(_plot);
       if (band.height <= 0 || band.width <= 0) continue;
       canvas.drawRect(band, Paint()..color = colour.withValues(alpha: 0.13));
@@ -584,9 +959,8 @@ class CandleChartPainter extends CustomPainter {
   Rect? _freeSlot(Rect wanted) {
     const step = 15.0;
     for (var attempt = 0; attempt < 9; attempt++) {
-      final dy = attempt.isEven
-          ? step * (attempt ~/ 2)
-          : -step * ((attempt + 1) ~/ 2);
+      final dy =
+          attempt.isEven ? step * (attempt ~/ 2) : -step * ((attempt + 1) ~/ 2);
       final candidate = wanted.shift(Offset(0, dy));
       if (candidate.top < _plot.top + 2) continue;
       if (candidate.bottom > _plot.bottom - 2) continue;
@@ -638,6 +1012,7 @@ class CandleChartPainter extends CustomPainter {
       for (final line in pattern.geometry.drawableLines) {
         _paintGeometryLine(canvas, line, colour);
       }
+      _paintPatternSkeleton(canvas, pattern, colour);
       for (final point in pattern.geometry.points) {
         _paintGeometryPoint(canvas, point, colour);
       }
@@ -645,17 +1020,10 @@ class CandleChartPainter extends CustomPainter {
     canvas.restore();
   }
 
-  /// La couleur dit ce que **la théorie** associe à la forme, rien de plus.
-  ///
-  /// Elle ne dit pas ce que le système attend du prix: cette question a sa
-  /// propre réponse, `edge_state`, et elle est le plus souvent « jamais
-  /// testée ».
+  /// Une couleur stable par type. Elle distingue les figures simultanées sans
+  /// faire passer la couleur pour un signal directionnel.
   Color _patternColour(StructuralPatternRead pattern) =>
-      switch (pattern.directionIfTextbook) {
-        'BULLISH' => _bull,
-        'BEARISH' => _bear,
-        _ => const Color(0xFF9B8CFF),
-      };
+      realPatternColor(pattern.name);
 
   void _paintGeometryZone(Canvas canvas, GeometryZone zone, Color colour) {
     final left = viewport.timeToX(zone.startTime);
@@ -669,14 +1037,14 @@ class CandleChartPainter extends CustomPainter {
       math.max(top, bottom),
     );
     if (rect.width <= 0 || rect.height <= 0) return;
-    canvas.drawRect(rect, Paint()..color = colour.withValues(alpha: 0.07));
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..color = colour.withValues(alpha: 0.34)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
-    );
+    canvas.drawRect(rect, Paint()..color = colour.withValues(alpha: 0.035));
+    // Cette aire est une zone de cassure/consolidation, pas la boîte de la
+    // figure. Deux bornes horizontales suffisent et la silhouette reste nette.
+    final boundary = Paint()
+      ..color = colour.withValues(alpha: 0.34)
+      ..strokeWidth = 0.9;
+    _dashedLine(canvas, rect.topLeft, rect.topRight, boundary);
+    _dashedLine(canvas, rect.bottomLeft, rect.bottomRight, boundary);
   }
 
   void _paintGeometryLine(Canvas canvas, GeometryLine line, Color colour) {
@@ -733,6 +1101,63 @@ class CandleChartPainter extends CustomPainter {
     );
   }
 
+  /// Silhouette reliant uniquement des pivots réellement publiés.
+  ///
+  /// Une ETE devient immédiatement lisible. Pour doubles/triples, la ligne
+  /// n'apparaît que lorsque les réactions intermédiaires sont présentes dans
+  /// le contrat backend; aucun creux ou sommet n'est inventé par l'interface.
+  void _paintPatternSkeleton(
+    Canvas canvas,
+    StructuralPatternRead pattern,
+    Color colour,
+  ) {
+    final points = [...pattern.geometry.points]
+      ..sort((left, right) => left.time.compareTo(right.time));
+    final isShoulders = pattern.name == 'head_and_shoulders' ||
+        pattern.name == 'inverse_head_and_shoulders';
+    final hasReaction = points.any((point) =>
+        point.role.contains('reaction') || point.role.contains('armpit'));
+    final isRepeatedExtreme = pattern.name.startsWith('double_') ||
+        pattern.name.startsWith('triple_');
+    final isFlag = pattern.name == 'bull_flag' || pattern.name == 'bear_flag';
+    final canDraw = isShoulders ||
+        (isRepeatedExtreme && hasReaction) ||
+        (isFlag && points.length >= 3);
+    if (!canDraw || points.length < 3) return;
+
+    final path = Path();
+    for (var index = 0; index < points.length; index++) {
+      final at = Offset(
+        viewport.timeToX(points[index].time),
+        viewport.priceToY(points[index].price),
+      );
+      if (index == 0) {
+        path.moveTo(at.dx, at.dy);
+      } else {
+        path.lineTo(at.dx, at.dy);
+      }
+    }
+    final faded = pattern.state == 'FAILED' || pattern.state == 'INVALIDATED';
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = colour.withValues(alpha: faded ? .12 : .18)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 5
+        ..strokeJoin = StrokeJoin.round
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = colour.withValues(alpha: faded ? .50 : .94)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..strokeJoin = StrokeJoin.round
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
   /// Les noms: la figure, ses points, ses droites.
   ///
   /// Sur le calque des étiquettes, comme les zones — on doit pouvoir garder
@@ -747,20 +1172,8 @@ class CandleChartPainter extends CustomPainter {
         ? visible
         : visible.sublist(visible.length - _maxNamedPatterns);
 
-    for (final pattern in patterns) {
+    for (final pattern in visible) {
       final colour = _patternColour(pattern);
-      if (!pattern.isDrawable) {
-        // Détectée mais sans géométrie: le détecteur n'a pas fourni de quoi la
-        // tracer. Le dire vaut mieux que laisser le lecteur chercher une
-        // figure absente du dessin alors que la fiche en dessous l'annonce.
-        _tag(
-          canvas,
-          Offset(_plot.left + 8, _plot.bottom - 16),
-          '${pattern.label.toUpperCase()} · TRACÉ NON FOURNI',
-          const Color(0xFF8FA3BC),
-        );
-        continue;
-      }
       if (!named.contains(pattern)) continue;
       // Le nom, l'état, et ce que vaut la forme face au hasard. Afficher
       // « DOUBLE SOMMET » seul le ferait lire comme une découverte alors que
@@ -769,12 +1182,13 @@ class CandleChartPainter extends CustomPainter {
       _tag(
         canvas,
         Offset(_plot.right - 6, _plot.top + 4),
-        '${pattern.label.toUpperCase()} · ${pattern.stateLabel}$noise',
-        pattern.isNoDifferentFromNoise ? const Color(0xFF8FA3BC) : colour,
+        '${pattern.label.toUpperCase()} · '
+            '${realPatternStateLabel(pattern.state)}$noise',
+        colour,
         rightAligned: true,
       );
       for (final point in pattern.geometry.points) {
-        final label = point.label;
+        final label = realPatternPointLabel(point);
         if (label.isEmpty) continue;
         final x = viewport.timeToX(point.time);
         if (x < _plot.left || x > _plot.right) continue;
@@ -803,9 +1217,8 @@ class CandleChartPainter extends CustomPainter {
 
   void _paintCurrentPrice(Canvas canvas) {
     final last = viewport.candles[viewport.endIndex - 1];
-    final previous = viewport.endIndex >= 2
-        ? viewport.candles[viewport.endIndex - 2]
-        : null;
+    final previous =
+        viewport.endIndex >= 2 ? viewport.candles[viewport.endIndex - 2] : null;
     final rising = previous == null || last.close >= previous.close;
     final colour = rising ? _bull : _bear;
     final y = viewport.priceToY(last.close);
@@ -815,7 +1228,8 @@ class CandleChartPainter extends CustomPainter {
       ..color = colour.withValues(alpha: 0.75)
       ..strokeWidth = 1;
     for (var x = _plot.left; x < _plot.right; x += 8) {
-      canvas.drawLine(Offset(x, y), Offset(math.min(x + 4, _plot.right), y), dash);
+      canvas.drawLine(
+          Offset(x, y), Offset(math.min(x + 4, _plot.right), y), dash);
     }
     _badge(canvas, Offset(_plot.right + 4, y), _price(last.close), colour,
         rising ? const Color(0xFF04271C) : const Color(0xFF2A0710));
@@ -869,10 +1283,12 @@ class CandleChartPainter extends CustomPainter {
       ..color = const Color(0xFF8DCAFF).withValues(alpha: 0.55)
       ..strokeWidth = 1;
     for (var dy = _plot.top; dy < body.bottom; dy += 7) {
-      canvas.drawLine(Offset(x, dy), Offset(x, math.min(dy + 3.5, body.bottom)), line);
+      canvas.drawLine(
+          Offset(x, dy), Offset(x, math.min(dy + 3.5, body.bottom)), line);
     }
     for (var dx = _plot.left; dx < _plot.right; dx += 7) {
-      canvas.drawLine(Offset(dx, y), Offset(math.min(dx + 3.5, _plot.right), y), line);
+      canvas.drawLine(
+          Offset(dx, y), Offset(math.min(dx + 3.5, _plot.right), y), line);
     }
     _badge(canvas, Offset(_plot.right + 4, y), _price(viewport.yToPrice(y)),
         const Color(0xFF8DCAFF), const Color(0xFF04182B));
@@ -908,7 +1324,10 @@ class CandleChartPainter extends CustomPainter {
         ..strokeWidth = 1,
     );
     if (time != null) {
-      _text(canvas, _dateTime(time), Offset(rect.left + padding, rect.top + padding),
+      _text(
+          canvas,
+          _dateTime(time),
+          Offset(rect.left + padding, rect.top + padding),
           const TextStyle(color: _textSecondary, fontSize: 10.5));
     }
     var dy = rect.top + padding + 16;
@@ -931,8 +1350,10 @@ class CandleChartPainter extends CustomPainter {
       TextStyle(color: foreground, fontSize: 10.5, fontWeight: FontWeight.w800),
     );
     final rect = Rect.fromLTWH(
-      at.dx, at.dy - painter.height / 2 - 2,
-      painter.width + 10, painter.height + 4,
+      at.dx,
+      at.dy - painter.height / 2 - 2,
+      painter.width + 10,
+      painter.height + 4,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(4)),
@@ -941,7 +1362,8 @@ class CandleChartPainter extends CustomPainter {
     painter.paint(canvas, Offset(rect.left + 5, rect.top + 2));
   }
 
-  TextPainter _painter(String value, TextStyle style, {TextAlign align = TextAlign.left}) {
+  TextPainter _painter(String value, TextStyle style,
+      {TextAlign align = TextAlign.left}) {
     final painter = TextPainter(
       text: TextSpan(text: value, style: style),
       textDirection: TextDirection.ltr,
@@ -975,18 +1397,35 @@ class CandleChartPainter extends CustomPainter {
   }
 
   String _volumeLabel(double value) {
-    if (value >= 1e9) return '${(value / 1e9).toStringAsFixed(1).replaceAll('.', ',')} Md';
-    if (value >= 1e6) return '${(value / 1e6).toStringAsFixed(1).replaceAll('.', ',')} M';
-    if (value >= 1e3) return '${(value / 1e3).toStringAsFixed(1).replaceAll('.', ',')} k';
+    if (value >= 1e9) {
+      return '${(value / 1e9).toStringAsFixed(1).replaceAll('.', ',')} Md';
+    }
+    if (value >= 1e6) {
+      return '${(value / 1e6).toStringAsFixed(1).replaceAll('.', ',')} M';
+    }
+    if (value >= 1e3) {
+      return '${(value / 1e3).toStringAsFixed(1).replaceAll('.', ',')} k';
+    }
     return value.toStringAsFixed(0);
   }
 
   static const _months = [
-    'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
-    'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.',
+    'janv.',
+    'févr.',
+    'mars',
+    'avr.',
+    'mai',
+    'juin',
+    'juil.',
+    'août',
+    'sept.',
+    'oct.',
+    'nov.',
+    'déc.',
   ];
 
-  bool get _intraday => timeframe == '15m' || timeframe == '1h' || timeframe == '4h';
+  bool get _intraday =>
+      timeframe == '15m' || timeframe == '1h' || timeframe == '4h';
 
   String _date(DateTime value) => _intraday
       ? '${value.day} ${_months[value.month - 1]}\n'
@@ -1010,6 +1449,10 @@ class CandleChartPainter extends CustomPainter {
       oldDelegate.pair != pair ||
       oldDelegate.source != source ||
       oldDelegate.location != location ||
+      oldDelegate.technical != technical ||
+      oldDelegate.volumePanel != volumePanel ||
+      oldDelegate.macdPanel != macdPanel ||
+      oldDelegate.rsiPanel != rsiPanel ||
       !identical(oldDelegate.patterns, patterns);
 }
 
