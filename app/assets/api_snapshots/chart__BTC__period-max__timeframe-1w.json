@@ -12,13 +12,13 @@
   ],
   "storage_origin": "local_database",
   "stored_rows": 474,
-  "generated_at": "2026-09-08T21:44:47.572859+00:00",
+  "generated_at": "2026-09-09T00:24:45.884965+00:00",
   "as_of": "2026-09-07T00:00:00+00:00",
   "last_candle_time": "2026-09-07T00:00:00+00:00",
   "last_candle_at": "2026-09-07T00:00:00+00:00",
   "last_candle_expected_close": "2026-09-14T00:00:00+00:00",
   "last_candle_closed": false,
-  "age_seconds": 164687.573,
+  "age_seconds": 174285.885,
   "freshness": "LIVE",
   "is_stale": false,
   "interval_seconds": 604800,
@@ -33,9 +33,9 @@
   "available": true,
   "summary": {
     "available": true,
-    "last_price": 78535.99,
+    "last_price": 78660.0,
     "first_price": 4086.29,
-    "change_pct": 1821.938726815767,
+    "change_pct": 1824.9735089775816,
     "period_high": 126199.63,
     "period_low": 2817.0,
     "high_time": "2025-10-06T00:00:00+00:00",
@@ -3839,8 +3839,8 @@
       "open": 80341.83,
       "high": 80443.99,
       "low": 77620.01,
-      "close": 78535.99,
-      "volume": 28975.9666
+      "close": 78660.0,
+      "volume": 29939.3137
     }
   ],
   "overlays": {
@@ -4318,7 +4318,7 @@
       69319.32932665,
       70115.77415269,
       71089.68423338,
-      71798.85621116
+      71810.66668735
     ],
     "ema50": [
       null,
@@ -4794,7 +4794,7 @@
       77282.10275034,
       77297.78499542,
       77417.15930933,
-      77461.03502269
+      77465.89815994
     ],
     "ema200": [
       null,
@@ -5270,7 +5270,7 @@
       68522.3751974,
       68613.5157427,
       68730.21538705,
-      68827.78528369
+      68829.01921404
     ],
     "bb_upper": [
       null,
@@ -5746,7 +5746,7 @@
       83315.21577441,
       84108.32405407,
       85067.07373821,
-      85047.26331516
+      85067.47482319
     ],
     "bb_middle": [
       null,
@@ -6222,7 +6222,7 @@
       69540.078,
       69887.129,
       70214.131,
-      70208.053
+      70214.2535
     ],
     "bb_lower": [
       null,
@@ -6698,7 +6698,7 @@
       55764.94022559,
       55665.93394593,
       55361.18826179,
-      55368.84268484
+      55361.03217681
     ]
   },
   "panels": {
@@ -7176,7 +7176,7 @@
       56.61008496,
       56.54795914,
       59.0249966,
-      56.66324661
+      56.81937138
     ],
     "macd": [
       null,
@@ -7652,7 +7652,7 @@
       -3580.55449302,
       -2509.40575573,
       -1429.40927204,
-      -711.024229
+      -701.13169339
     ],
     "macd_signal": [
       null,
@@ -8128,7 +8128,7 @@
       -4966.49612349,
       -4475.07804994,
       -3865.94429436,
-      -3234.96028129
+      -3232.98177416
     ],
     "macd_hist": [
       null,
@@ -8604,7 +8604,7 @@
       1385.94163047,
       1965.67229421,
       2436.53502232,
-      2523.93605228
+      2531.85008077
     ]
   },
   "levels": {
@@ -8633,51 +8633,54 @@
       "name": "bear_flag",
       "pattern_class": "EXPERIMENTAL",
       "state": "FAILED",
-      "recognition_confidence": 70.5,
-      "detected_at": "2019-03-25T00:00:00+00:00",
-      "confirmation_time": null,
+      "recognition_confidence": 90.8,
+      "detected_at": "2019-01-14T00:00:00+00:00",
+      "confirmation_time": "2019-01-14T00:00:00+00:00",
       "direction_if_textbook": "BEARISH",
       "key_levels": {
-        "pole_start": 6250.81,
-        "pole_end": 3987.6
+        "pole_start": 7680.0,
+        "pole_end": 3156.26
       },
-      "invalidation_level": 6250.81,
-      "invalidation_rule": "a close beyond the start of the pole at 6250.81 invalidates the continuation reading",
+      "invalidation_level": 7680.0,
+      "invalidation_rule": "a close beyond the start of the pole at 7680.00 invalidates the continuation reading",
       "components": {
-        "pole_atr": -4.23,
-        "flag_atr": 1.17
+        "pole_atr": -5.45,
+        "flag_atr": 0.37,
+        "pole_bars": 8,
+        "flag_bars": 5,
+        "pole_straightness": 0.957
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "notes": "a 5.4 ATR move over 8 bars, then 5 bars drifting the other way",
       "geometry": {
         "points": [
           {
-            "time": "2018-09-03T00:00:00+00:00",
-            "price": 6250.81,
+            "time": "2018-10-15T00:00:00+00:00",
+            "price": 7680.0,
             "role": "pole_start",
-            "kind": "close"
+            "kind": "pivot"
           },
           {
-            "time": "2018-12-31T00:00:00+00:00",
-            "price": 3987.6,
+            "time": "2018-12-10T00:00:00+00:00",
+            "price": 3156.26,
             "role": "pole_end",
-            "kind": "close"
+            "kind": "pivot"
           }
         ],
         "trend_lines": [
           {
             "start": {
-              "time": "2018-09-03T00:00:00+00:00",
-              "price": 6250.81,
+              "time": "2018-10-15T00:00:00+00:00",
+              "price": 7680.0,
               "role": "pole",
-              "kind": "close"
+              "kind": "pivot"
             },
             "end": {
-              "time": "2018-12-31T00:00:00+00:00",
-              "price": 3987.6,
+              "time": "2018-12-10T00:00:00+00:00",
+              "price": 3156.26,
               "role": "pole",
-              "kind": "close"
+              "kind": "pivot"
             },
             "role": "pole",
             "extend": false
@@ -8685,8 +8688,112 @@
         ],
         "zones": [
           {
-            "start_time": "2019-01-07T00:00:00+00:00",
-            "end_time": "2019-03-25T00:00:00+00:00",
+            "start_time": "2018-12-10T00:00:00+00:00",
+            "end_time": "2019-01-14T00:00:00+00:00",
+            "low": 3156.26,
+            "high": 4198.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 13,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2019-01-14T00:00:00+00:00",
+      "span_start": "2018-10-15T00:00:00+00:00",
+      "span_end": "2019-01-14T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2019-05-13T00:00:00+00:00",
+      "bars_to_resolution": 17,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "76a2cc3c12c456d3115cc2ee",
+      "family": "CONTINUATION",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": null,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 7680.0,
+        "rule": "a close beyond the start of the pole at 7680.00 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 100.0,
+      "detected_at": "2019-03-04T00:00:00+00:00",
+      "confirmation_time": "2019-03-04T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 7680.0,
+        "pole_end": 3349.92
+      },
+      "invalidation_level": 7680.0,
+      "invalidation_rule": "a close beyond the start of the pole at 7680.00 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -7.09,
+        "flag_atr": 0.75,
+        "pole_bars": 15,
+        "flag_bars": 5,
+        "pole_straightness": 0.602
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 7.1 ATR move over 15 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2018-10-15T00:00:00+00:00",
+            "price": 7680.0,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2019-01-28T00:00:00+00:00",
+            "price": 3349.92,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2018-10-15T00:00:00+00:00",
+              "price": 7680.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2019-01-28T00:00:00+00:00",
+              "price": 3349.92,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2019-01-28T00:00:00+00:00",
+            "end_time": "2019-03-04T00:00:00+00:00",
             "low": 3349.92,
             "high": 4198.0,
             "role": "consolidation"
@@ -8695,13 +8802,38 @@
         "neckline": null,
         "breakout_area": null
       },
-      "bars_span": 30,
-      "first_seen_at": "2019-03-25T00:00:00+00:00",
-      "span_start": "2018-09-03T00:00:00+00:00",
-      "span_end": "2019-03-25T00:00:00+00:00",
+      "bars_span": 20,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2019-03-04T00:00:00+00:00",
+      "span_start": "2018-10-15T00:00:00+00:00",
+      "span_end": "2019-03-04T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
-      "resolved_at": "2019-05-06T00:00:00+00:00",
-      "bars_to_resolution": 6,
+      "resolved_at": "2019-05-13T00:00:00+00:00",
+      "bars_to_resolution": 10,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "b977c93992020f72433968ca",
+      "family": "CONTINUATION",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": null,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 7680.0,
+        "rule": "a close beyond the start of the pole at 7680.00 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 0.55,
       "noise_verdict": "LESS_THAN_NOISE"
     },
@@ -8709,29 +8841,29 @@
       "name": "double_top",
       "pattern_class": "DETERMINISTIC",
       "state": "CONFIRMED",
-      "recognition_confidence": 66.9,
+      "recognition_confidence": 69.6,
       "detected_at": "2020-03-16T00:00:00+00:00",
       "confirmation_time": "2020-03-16T00:00:00+00:00",
       "direction_if_textbook": "BEARISH",
       "key_levels": {
         "first_extreme": 10370.0,
         "second_extreme": 10500.0,
-        "neckline": 6903.28
+        "neckline": 6435.0
       },
       "invalidation_level": 10500.0,
       "invalidation_rule": "a 1w close above 10500.00 would break both highs and invalidate the double top",
       "components": {
         "extreme_agreement": 90.8,
-        "reaction_depth": 81.4,
+        "reaction_depth": 92.4,
         "time_separation": 26.7,
         "pivot_quality": 68.7,
         "difference_atr": 0.092,
-        "reaction_atr": 2.442,
+        "reaction_atr": 2.771,
         "bars_between": 16
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "two tops within 0.09 ATR of each other, separated by 16 bars, with a 2.44 ATR reaction between them",
+      "notes": "two tops within 0.09 ATR of each other, separated by 16 bars, with a 2.77 ATR reaction between them",
       "geometry": {
         "points": [
           {
@@ -8751,13 +8883,13 @@
           {
             "start": {
               "time": "2019-10-21T00:00:00+00:00",
-              "price": 6903.28,
+              "price": 6435.0,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2020-03-16T00:00:00+00:00",
-              "price": 6903.28,
+              "price": 6435.0,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -8769,7 +8901,7 @@
           {
             "start_time": "2019-10-21T00:00:00+00:00",
             "end_time": "2020-03-16T00:00:00+00:00",
-            "low": 6903.28,
+            "low": 6435.0,
             "high": 10500.0,
             "role": "breakout"
           }
@@ -8777,13 +8909,13 @@
         "neckline": {
           "start": {
             "time": "2019-10-21T00:00:00+00:00",
-            "price": 6903.28,
+            "price": 6435.0,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2020-03-16T00:00:00+00:00",
-            "price": 6903.28,
+            "price": 6435.0,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -8793,20 +8925,253 @@
         "breakout_area": {
           "start_time": "2019-10-21T00:00:00+00:00",
           "end_time": "2020-03-16T00:00:00+00:00",
-          "low": 6903.28,
+          "low": 6435.0,
           "high": 10500.0,
           "role": "breakout"
         }
       },
       "bars_span": 16,
+      "detector_version": "double_v3",
       "first_seen_at": "2020-03-16T00:00:00+00:00",
       "span_start": "2019-10-21T00:00:00+00:00",
       "span_end": "2020-03-16T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2020-03-23T00:00:00+00:00",
       "bars_to_resolution": 1,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "4b168f4855e3a619c40bd84b",
+      "family": "REVERSAL",
+      "lifecycle_state": "CONFIRMED",
+      "breakout": {
+        "level": 6435.0,
+        "state": "CLOSE_CONFIRMED"
+      },
+      "invalidation": {
+        "level": 10500.0,
+        "rule": "a 1w close above 10500.00 would break both highs and invalidate the double top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 1.08,
       "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 85.0,
+      "detected_at": "2020-04-13T00:00:00+00:00",
+      "confirmation_time": "2020-04-13T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 10500.0,
+        "pole_end": 3782.13
+      },
+      "invalidation_level": 10500.0,
+      "invalidation_rule": "a close beyond the start of the pole at 10500.00 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -5.1,
+        "flag_atr": 1.34,
+        "pole_bars": 4,
+        "flag_bars": 5,
+        "pole_straightness": 0.992
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 5.1 ATR move over 4 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2020-02-10T00:00:00+00:00",
+            "price": 10500.0,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2020-03-09T00:00:00+00:00",
+            "price": 3782.13,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2020-02-10T00:00:00+00:00",
+              "price": 10500.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2020-03-09T00:00:00+00:00",
+              "price": 3782.13,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2020-03-09T00:00:00+00:00",
+            "end_time": "2020-04-13T00:00:00+00:00",
+            "low": 3782.13,
+            "high": 8179.31,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 9,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2020-04-13T00:00:00+00:00",
+      "span_start": "2020-02-10T00:00:00+00:00",
+      "span_end": "2020-04-13T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2020-07-27T00:00:00+00:00",
+      "bars_to_resolution": 15,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "247ea1449ef5755a8325f9b0",
+      "family": "CONTINUATION",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": null,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 10500.0,
+        "rule": "a close beyond the start of the pole at 10500.00 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 97.0,
+      "detected_at": "2020-07-06T00:00:00+00:00",
+      "confirmation_time": "2020-07-06T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 3782.13,
+        "pole_end": 10380.0
+      },
+      "invalidation_level": 3782.13,
+      "invalidation_rule": "a close beyond the start of the pole at 3782.13 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 5.82,
+        "flag_atr": -0.39,
+        "pole_bars": 12,
+        "flag_bars": 5,
+        "pole_straightness": 0.66
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 5.8 ATR move over 12 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2020-03-09T00:00:00+00:00",
+            "price": 3782.13,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2020-06-01T00:00:00+00:00",
+            "price": 10380.0,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2020-03-09T00:00:00+00:00",
+              "price": 3782.13,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2020-06-01T00:00:00+00:00",
+              "price": 10380.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2020-06-01T00:00:00+00:00",
+            "end_time": "2020-07-06T00:00:00+00:00",
+            "low": 8833.0,
+            "high": 10380.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 17,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2020-07-06T00:00:00+00:00",
+      "span_start": "2020-03-09T00:00:00+00:00",
+      "span_end": "2020-07-06T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "a36f24ce487ddcc00bc34fad",
+      "family": "CONTINUATION",
+      "lifecycle_state": "DETECTED",
+      "breakout": {
+        "level": null,
+        "state": "NO_TRIGGER_DEFINED"
+      },
+      "invalidation": {
+        "level": 3782.13,
+        "rule": "a close beyond the start of the pole at 3782.13 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
     },
     {
       "name": "double_top",
@@ -8819,7 +9184,7 @@
       "key_levels": {
         "first_extreme": 10500.0,
         "second_extreme": 10380.0,
-        "neckline": 5361.3
+        "neckline": 3782.13
       },
       "invalidation_level": 10500.0,
       "invalidation_rule": "a 1w close above 10500.00 would break both highs and invalidate the double top",
@@ -8829,12 +9194,12 @@
         "time_separation": 26.7,
         "pivot_quality": 60.7,
         "difference_atr": 0.106,
-        "reaction_atr": 4.425,
+        "reaction_atr": 5.818,
         "bars_between": 16
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "two tops within 0.11 ATR of each other, separated by 16 bars, with a 4.43 ATR reaction between them",
+      "notes": "two tops within 0.11 ATR of each other, separated by 16 bars, with a 5.82 ATR reaction between them",
       "geometry": {
         "points": [
           {
@@ -8854,13 +9219,13 @@
           {
             "start": {
               "time": "2020-02-10T00:00:00+00:00",
-              "price": 5361.3,
+              "price": 3782.13,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2020-07-06T00:00:00+00:00",
-              "price": 5361.3,
+              "price": 3782.13,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -8872,7 +9237,7 @@
           {
             "start_time": "2020-02-10T00:00:00+00:00",
             "end_time": "2020-07-06T00:00:00+00:00",
-            "low": 5361.3,
+            "low": 3782.13,
             "high": 10500.0,
             "role": "breakout"
           }
@@ -8880,13 +9245,13 @@
         "neckline": {
           "start": {
             "time": "2020-02-10T00:00:00+00:00",
-            "price": 5361.3,
+            "price": 3782.13,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2020-07-06T00:00:00+00:00",
-            "price": 5361.3,
+            "price": 3782.13,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -8896,18 +9261,43 @@
         "breakout_area": {
           "start_time": "2020-02-10T00:00:00+00:00",
           "end_time": "2020-07-06T00:00:00+00:00",
-          "low": 5361.3,
+          "low": 3782.13,
           "high": 10500.0,
           "role": "breakout"
         }
       },
       "bars_span": 16,
+      "detector_version": "double_v3",
       "first_seen_at": "2020-07-06T00:00:00+00:00",
       "span_start": "2020-02-10T00:00:00+00:00",
       "span_end": "2020-07-06T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2020-07-27T00:00:00+00:00",
       "bars_to_resolution": 3,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "5d86eb168ab4ba6a84786b7f",
+      "family": "REVERSAL",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": 3782.13,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 10500.0,
+        "rule": "a 1w close above 10500.00 would break both highs and invalidate the double top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 1.08,
       "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
@@ -8921,7 +9311,7 @@
       "direction_if_textbook": "BEARISH",
       "key_levels": {
         "extremes": 10416.666667,
-        "neckline": 5361.3
+        "neckline": 3782.13
       },
       "invalidation_level": 10500.0,
       "invalidation_rule": "a 1w close beyond 10500.00 invalidates the triple top",
@@ -8959,13 +9349,13 @@
           {
             "start": {
               "time": "2019-10-21T00:00:00+00:00",
-              "price": 5361.3,
+              "price": 3782.13,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2020-07-06T00:00:00+00:00",
-              "price": 5361.3,
+              "price": 3782.13,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -8977,7 +9367,7 @@
           {
             "start_time": "2019-10-21T00:00:00+00:00",
             "end_time": "2020-07-06T00:00:00+00:00",
-            "low": 5361.3,
+            "low": 3782.13,
             "high": 10500.0,
             "role": "breakout"
           }
@@ -8985,13 +9375,13 @@
         "neckline": {
           "start": {
             "time": "2019-10-21T00:00:00+00:00",
-            "price": 5361.3,
+            "price": 3782.13,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2020-07-06T00:00:00+00:00",
-            "price": 5361.3,
+            "price": 3782.13,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -9001,18 +9391,43 @@
         "breakout_area": {
           "start_time": "2019-10-21T00:00:00+00:00",
           "end_time": "2020-07-06T00:00:00+00:00",
-          "low": 5361.3,
+          "low": 3782.13,
           "high": 10500.0,
           "role": "breakout"
         }
       },
       "bars_span": 32,
+      "detector_version": "triple_v3",
       "first_seen_at": "2020-07-06T00:00:00+00:00",
       "span_start": "2019-10-21T00:00:00+00:00",
       "span_end": "2020-07-06T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2020-07-27T00:00:00+00:00",
       "bars_to_resolution": 3,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 14,
+        "checks_total": 14,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "6c54148313a8178515001840",
+      "family": "REVERSAL",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": 3782.13,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 10500.0,
+        "rule": "a 1w close beyond 10500.00 invalidates the triple top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 0.58,
       "noise_verdict": "LESS_THAN_NOISE"
     },
@@ -9027,7 +9442,7 @@
       "key_levels": {
         "first_extreme": 64854.0,
         "second_extreme": 69000.0,
-        "neckline": 31778.56
+        "neckline": 28805.0
       },
       "invalidation_level": 69000.0,
       "invalidation_rule": "a 1w close above 69000.00 would break both highs and invalidate the double top",
@@ -9037,12 +9452,12 @@
         "time_separation": 50.0,
         "pivot_quality": 100.0,
         "difference_atr": 0.547,
-        "reaction_atr": 4.368,
+        "reaction_atr": 4.76,
         "bars_between": 30
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "two tops within 0.55 ATR of each other, separated by 30 bars, with a 4.37 ATR reaction between them",
+      "notes": "two tops within 0.55 ATR of each other, separated by 30 bars, with a 4.76 ATR reaction between them",
       "geometry": {
         "points": [
           {
@@ -9062,13 +9477,13 @@
           {
             "start": {
               "time": "2021-04-12T00:00:00+00:00",
-              "price": 31778.56,
+              "price": 28805.0,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2021-12-13T00:00:00+00:00",
-              "price": 31778.56,
+              "price": 28805.0,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -9080,7 +9495,7 @@
           {
             "start_time": "2021-04-12T00:00:00+00:00",
             "end_time": "2021-12-13T00:00:00+00:00",
-            "low": 31778.56,
+            "low": 28805.0,
             "high": 69000.0,
             "role": "breakout"
           }
@@ -9088,13 +9503,13 @@
         "neckline": {
           "start": {
             "time": "2021-04-12T00:00:00+00:00",
-            "price": 31778.56,
+            "price": 28805.0,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2021-12-13T00:00:00+00:00",
-            "price": 31778.56,
+            "price": 28805.0,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -9104,48 +9519,385 @@
         "breakout_area": {
           "start_time": "2021-04-12T00:00:00+00:00",
           "end_time": "2021-12-13T00:00:00+00:00",
-          "low": 31778.56,
+          "low": 28805.0,
           "high": 69000.0,
           "role": "breakout"
         }
       },
       "bars_span": 30,
+      "detector_version": "double_v3",
       "first_seen_at": "2021-12-13T00:00:00+00:00",
       "span_start": "2021-04-12T00:00:00+00:00",
       "span_end": "2021-12-13T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
-      "resolved_at": "2022-05-09T00:00:00+00:00",
-      "bars_to_resolution": 21,
+      "resolved_at": "2022-06-06T00:00:00+00:00",
+      "bars_to_resolution": 25,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "a98cd21c4d5cdd8badd20d3d",
+      "family": "REVERSAL",
+      "lifecycle_state": "CONFIRMED",
+      "breakout": {
+        "level": 28805.0,
+        "state": "CLOSE_CONFIRMED"
+      },
+      "invalidation": {
+        "level": 69000.0,
+        "rule": "a 1w close above 69000.00 would break both highs and invalidate the double top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 1.08,
       "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 86.2,
+      "detected_at": "2022-02-28T00:00:00+00:00",
+      "confirmation_time": "2022-02-28T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 69000.0,
+        "pole_end": 32917.17
+      },
+      "invalidation_level": 69000.0,
+      "invalidation_rule": "a close beyond the start of the pole at 69000.00 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -5.17,
+        "flag_atr": 0.08,
+        "pole_bars": 11,
+        "flag_bars": 5,
+        "pole_straightness": 0.645
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 5.2 ATR move over 11 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2021-11-08T00:00:00+00:00",
+            "price": 69000.0,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-01-24T00:00:00+00:00",
+            "price": 32917.17,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2021-11-08T00:00:00+00:00",
+              "price": 69000.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2022-01-24T00:00:00+00:00",
+              "price": 32917.17,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-01-24T00:00:00+00:00",
+            "end_time": "2022-02-28T00:00:00+00:00",
+            "low": 32917.17,
+            "high": 45821.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 16,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2022-02-28T00:00:00+00:00",
+      "span_start": "2021-11-08T00:00:00+00:00",
+      "span_end": "2022-02-28T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2024-03-25T00:00:00+00:00",
+      "bars_to_resolution": 108,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "f677c400dce05c23fd2e6880",
+      "family": "CONTINUATION",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": null,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 69000.0,
+        "rule": "a close beyond the start of the pole at 69000.00 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 100.0,
+      "detected_at": "2022-07-18T00:00:00+00:00",
+      "confirmation_time": "2022-07-18T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 48189.84,
+        "pole_end": 17622.0
+      },
+      "invalidation_level": 48189.84,
+      "invalidation_rule": "a close beyond the start of the pole at 48189.84 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -6.31,
+        "flag_atr": 0.41,
+        "pole_bars": 11,
+        "flag_bars": 5,
+        "pole_straightness": 0.966
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 6.3 ATR move over 11 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2022-03-28T00:00:00+00:00",
+            "price": 48189.84,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2022-06-13T00:00:00+00:00",
+            "price": 17622.0,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2022-03-28T00:00:00+00:00",
+              "price": 48189.84,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2022-06-13T00:00:00+00:00",
+              "price": 17622.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2022-06-13T00:00:00+00:00",
+            "end_time": "2022-07-18T00:00:00+00:00",
+            "low": 17622.0,
+            "high": 26895.84,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 16,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2022-07-18T00:00:00+00:00",
+      "span_start": "2022-03-28T00:00:00+00:00",
+      "span_end": "2022-07-18T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2024-02-05T00:00:00+00:00",
+      "bars_to_resolution": 81,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "8ca5870e1cc1cc4aa47a019f",
+      "family": "CONTINUATION",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": null,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 48189.84,
+        "rule": "a close beyond the start of the pole at 48189.84 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 73.9,
+      "detected_at": "2023-05-15T00:00:00+00:00",
+      "confirmation_time": "2023-05-15T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 19549.09,
+        "pole_end": 31000.0
+      },
+      "invalidation_level": 19549.09,
+      "invalidation_rule": "a close beyond the start of the pole at 19549.09 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 4.43,
+        "flag_atr": -1.38,
+        "pole_bars": 5,
+        "flag_bars": 5,
+        "pole_straightness": 0.999
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 4.4 ATR move over 5 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2023-03-06T00:00:00+00:00",
+            "price": 19549.09,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2023-04-10T00:00:00+00:00",
+            "price": 31000.0,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2023-03-06T00:00:00+00:00",
+              "price": 19549.09,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2023-04-10T00:00:00+00:00",
+              "price": 31000.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2023-04-10T00:00:00+00:00",
+            "end_time": "2023-05-15T00:00:00+00:00",
+            "low": 25811.46,
+            "high": 31000.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 10,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2023-05-15T00:00:00+00:00",
+      "span_start": "2023-03-06T00:00:00+00:00",
+      "span_end": "2023-05-15T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "0cb3c2884c9123adb5490327",
+      "family": "CONTINUATION",
+      "lifecycle_state": "DETECTED",
+      "breakout": {
+        "level": null,
+        "state": "NO_TRIGGER_DEFINED"
+      },
+      "invalidation": {
+        "level": 19549.09,
+        "rule": "a close beyond the start of the pole at 19549.09 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.44,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
       "name": "double_top",
       "pattern_class": "DETERMINISTIC",
-      "state": "CONFIRMED",
-      "recognition_confidence": 59.8,
+      "state": "FAILED",
+      "recognition_confidence": 63.8,
       "detected_at": "2023-08-14T00:00:00+00:00",
       "confirmation_time": "2023-08-14T00:00:00+00:00",
       "direction_if_textbook": "BEARISH",
       "key_levels": {
         "first_extreme": 31000.0,
         "second_extreme": 31804.2,
-        "neckline": 25925.55
+        "neckline": 24800.0
       },
       "invalidation_level": 31804.2,
       "invalidation_rule": "a 1w close above 31804.20 would break both highs and invalidate the double top",
       "components": {
         "extreme_agreement": 65.8,
-        "reaction_depth": 71.9,
+        "reaction_depth": 87.9,
         "time_separation": 21.7,
         "pivot_quality": 79.9,
         "difference_atr": 0.342,
-        "reaction_atr": 2.157,
+        "reaction_atr": 2.636,
         "bars_between": 13
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "two tops within 0.34 ATR of each other, separated by 13 bars, with a 2.16 ATR reaction between them",
+      "notes": "two tops within 0.34 ATR of each other, separated by 13 bars, with a 2.64 ATR reaction between them",
       "geometry": {
         "points": [
           {
@@ -9165,13 +9917,13 @@
           {
             "start": {
               "time": "2023-04-10T00:00:00+00:00",
-              "price": 25925.55,
+              "price": 24800.0,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2023-08-14T00:00:00+00:00",
-              "price": 25925.55,
+              "price": 24800.0,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -9183,7 +9935,7 @@
           {
             "start_time": "2023-04-10T00:00:00+00:00",
             "end_time": "2023-08-14T00:00:00+00:00",
-            "low": 25925.55,
+            "low": 24800.0,
             "high": 31804.2,
             "role": "breakout"
           }
@@ -9191,13 +9943,13 @@
         "neckline": {
           "start": {
             "time": "2023-04-10T00:00:00+00:00",
-            "price": 25925.55,
+            "price": 24800.0,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2023-08-14T00:00:00+00:00",
-            "price": 25925.55,
+            "price": 24800.0,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -9207,18 +9959,43 @@
         "breakout_area": {
           "start_time": "2023-04-10T00:00:00+00:00",
           "end_time": "2023-08-14T00:00:00+00:00",
-          "low": 25925.55,
+          "low": 24800.0,
           "high": 31804.2,
           "role": "breakout"
         }
       },
       "bars_span": 13,
+      "detector_version": "double_v3",
       "first_seen_at": "2023-08-14T00:00:00+00:00",
       "span_start": "2023-04-10T00:00:00+00:00",
       "span_end": "2023-08-14T00:00:00+00:00",
-      "resolution": "REACHED_TRIGGER",
-      "resolved_at": "2023-09-04T00:00:00+00:00",
-      "bars_to_resolution": 3,
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2023-10-23T00:00:00+00:00",
+      "bars_to_resolution": 10,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "d10a397f38e94470a1cdd149",
+      "family": "REVERSAL",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": 24800.0,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 31804.2,
+        "rule": "a 1w close above 31804.20 would break both highs and invalidate the double top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 1.08,
       "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
@@ -9226,29 +10003,29 @@
       "name": "double_bottom",
       "pattern_class": "DETERMINISTIC",
       "state": "CONFIRMED",
-      "recognition_confidence": 76.5,
+      "recognition_confidence": 79.2,
       "detected_at": "2023-10-16T00:00:00+00:00",
       "confirmation_time": "2023-10-16T00:00:00+00:00",
       "direction_if_textbook": "BULLISH",
       "key_levels": {
         "first_extreme": 24800.0,
         "second_extreme": 24901.0,
-        "neckline": 30617.03
+        "neckline": 31804.2
       },
       "invalidation_level": 24800.0,
       "invalidation_rule": "a 1w close below 24800.00 would break both lows and invalidate the double bottom",
       "components": {
         "extreme_agreement": 95.3,
-        "reaction_depth": 89.0,
+        "reaction_depth": 100.0,
         "time_separation": 21.7,
         "pivot_quality": 100.0,
         "difference_atr": 0.047,
-        "reaction_atr": 2.669,
+        "reaction_atr": 3.223,
         "bars_between": 13
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "two bottoms within 0.05 ATR of each other, separated by 13 bars, with a 2.67 ATR reaction between them",
+      "notes": "two bottoms within 0.05 ATR of each other, separated by 13 bars, with a 3.22 ATR reaction between them",
       "geometry": {
         "points": [
           {
@@ -9268,13 +10045,13 @@
           {
             "start": {
               "time": "2023-06-12T00:00:00+00:00",
-              "price": 30617.03,
+              "price": 31804.2,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2023-10-16T00:00:00+00:00",
-              "price": 30617.03,
+              "price": 31804.2,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -9287,20 +10064,20 @@
             "start_time": "2023-06-12T00:00:00+00:00",
             "end_time": "2023-10-16T00:00:00+00:00",
             "low": 24800.0,
-            "high": 30617.03,
+            "high": 31804.2,
             "role": "breakout"
           }
         ],
         "neckline": {
           "start": {
             "time": "2023-06-12T00:00:00+00:00",
-            "price": 30617.03,
+            "price": 31804.2,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2023-10-16T00:00:00+00:00",
-            "price": 30617.03,
+            "price": 31804.2,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -9311,17 +10088,42 @@
           "start_time": "2023-06-12T00:00:00+00:00",
           "end_time": "2023-10-16T00:00:00+00:00",
           "low": 24800.0,
-          "high": 30617.03,
+          "high": 31804.2,
           "role": "breakout"
         }
       },
       "bars_span": 13,
+      "detector_version": "double_v3",
       "first_seen_at": "2023-10-16T00:00:00+00:00",
       "span_start": "2023-06-12T00:00:00+00:00",
       "span_end": "2023-10-16T00:00:00+00:00",
       "resolution": "REACHED_TRIGGER",
       "resolved_at": "2023-10-23T00:00:00+00:00",
       "bars_to_resolution": 1,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "5d35abc6a7b6e0e803e28992",
+      "family": "REVERSAL",
+      "lifecycle_state": "CONFIRMED",
+      "breakout": {
+        "level": 31804.2,
+        "state": "CLOSE_CONFIRMED"
+      },
+      "invalidation": {
+        "level": 24800.0,
+        "rule": "a 1w close below 24800.00 would break both lows and invalidate the double bottom"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 1.01,
       "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
@@ -9329,51 +10131,54 @@
       "name": "bull_flag",
       "pattern_class": "EXPERIMENTAL",
       "state": "CANDIDATE",
-      "recognition_confidence": 60.8,
-      "detected_at": "2024-07-08T00:00:00+00:00",
-      "confirmation_time": null,
+      "recognition_confidence": 98.5,
+      "detected_at": "2024-04-15T00:00:00+00:00",
+      "confirmation_time": "2024-04-15T00:00:00+00:00",
       "direction_if_textbook": "BULLISH",
       "key_levels": {
-        "pole_start": 42991.5,
-        "pole_end": 64941.15
+        "pole_start": 38555.0,
+        "pole_end": 73777.0
       },
-      "invalidation_level": 42991.5,
-      "invalidation_rule": "a close beyond the start of the pole at 42991.50 invalidates the continuation reading",
+      "invalidation_level": 38555.0,
+      "invalidation_rule": "a close beyond the start of the pole at 38555.00 invalidates the continuation reading",
       "components": {
-        "pole_atr": 3.65,
-        "flag_atr": -0.39
+        "pole_atr": 5.91,
+        "flag_atr": -0.58,
+        "pole_bars": 7,
+        "flag_bars": 5,
+        "pole_straightness": 0.931
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "notes": "a 5.9 ATR move over 7 bars, then 5 bars drifting the other way",
       "geometry": {
         "points": [
           {
-            "time": "2023-12-18T00:00:00+00:00",
-            "price": 42991.5,
+            "time": "2024-01-22T00:00:00+00:00",
+            "price": 38555.0,
             "role": "pole_start",
-            "kind": "close"
+            "kind": "pivot"
           },
           {
-            "time": "2024-04-15T00:00:00+00:00",
-            "price": 64941.15,
+            "time": "2024-03-11T00:00:00+00:00",
+            "price": 73777.0,
             "role": "pole_end",
-            "kind": "close"
+            "kind": "pivot"
           }
         ],
         "trend_lines": [
           {
             "start": {
-              "time": "2023-12-18T00:00:00+00:00",
-              "price": 42991.5,
+              "time": "2024-01-22T00:00:00+00:00",
+              "price": 38555.0,
               "role": "pole",
-              "kind": "close"
+              "kind": "pivot"
             },
             "end": {
-              "time": "2024-04-15T00:00:00+00:00",
-              "price": 64941.15,
+              "time": "2024-03-11T00:00:00+00:00",
+              "price": 73777.0,
               "role": "pole",
-              "kind": "close"
+              "kind": "pivot"
             },
             "role": "pole",
             "extend": false
@@ -9381,101 +10186,178 @@
         ],
         "zones": [
           {
-            "start_time": "2024-04-22T00:00:00+00:00",
-            "end_time": "2024-07-08T00:00:00+00:00",
-            "low": 53485.93,
-            "high": 71997.02,
+            "start_time": "2024-03-11T00:00:00+00:00",
+            "end_time": "2024-04-15T00:00:00+00:00",
+            "low": 59600.01,
+            "high": 73777.0,
             "role": "consolidation"
           }
         ],
         "neckline": null,
         "breakout_area": null
       },
-      "bars_span": 30,
-      "first_seen_at": "2024-07-08T00:00:00+00:00",
-      "span_start": "2023-12-18T00:00:00+00:00",
-      "span_end": "2024-07-08T00:00:00+00:00",
+      "bars_span": 12,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2024-04-15T00:00:00+00:00",
+      "span_start": "2024-01-22T00:00:00+00:00",
+      "span_end": "2024-04-15T00:00:00+00:00",
       "resolution": "UNRESOLVED",
       "resolved_at": null,
       "bars_to_resolution": null,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "c365d5dd4311f4aca3e42626",
+      "family": "CONTINUATION",
+      "lifecycle_state": "DETECTED",
+      "breakout": {
+        "level": null,
+        "state": "NO_TRIGGER_DEFINED"
+      },
+      "invalidation": {
+        "level": 38555.0,
+        "rule": "a close beyond the start of the pole at 38555.00 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 0.44,
       "noise_verdict": "LESS_THAN_NOISE"
     },
     {
-      "name": "bull_flag",
-      "pattern_class": "EXPERIMENTAL",
-      "state": "CANDIDATE",
-      "recognition_confidence": 71.4,
-      "detected_at": "2025-02-17T00:00:00+00:00",
-      "confirmation_time": null,
-      "direction_if_textbook": "BULLISH",
+      "name": "double_top",
+      "pattern_class": "DETERMINISTIC",
+      "state": "CONFIRMED",
+      "recognition_confidence": 64.7,
+      "detected_at": "2024-07-08T00:00:00+00:00",
+      "confirmation_time": "2024-07-08T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
       "key_levels": {
-        "pole_start": 58161.0,
-        "pole_end": 97185.18
+        "first_extreme": 73777.0,
+        "second_extreme": 71997.02,
+        "neckline": 56552.82
       },
-      "invalidation_level": 58161.0,
-      "invalidation_rule": "a close beyond the start of the pole at 58161.00 invalidates the continuation reading",
+      "invalidation_level": 73777.0,
+      "invalidation_rule": "a 1w close above 73777.00 would break both highs and invalidate the double top",
       "components": {
-        "pole_atr": 4.29,
-        "flag_atr": -0.53
+        "extreme_agreement": 70.4,
+        "reaction_depth": 85.6,
+        "time_separation": 20.0,
+        "pivot_quality": 82.7,
+        "difference_atr": 0.296,
+        "reaction_atr": 2.568,
+        "bars_between": 12
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "classified EXPERIMENTAL: 'sharp pole' and 'shallow flag' are judgements",
+      "notes": "two tops within 0.30 ATR of each other, separated by 12 bars, with a 2.57 ATR reaction between them",
       "geometry": {
         "points": [
           {
-            "time": "2024-07-29T00:00:00+00:00",
-            "price": 58161.0,
-            "role": "pole_start",
-            "kind": "close"
+            "time": "2024-03-11T00:00:00+00:00",
+            "price": 73777.0,
+            "role": "first_top",
+            "kind": "pivot"
           },
           {
-            "time": "2024-11-25T00:00:00+00:00",
-            "price": 97185.18,
-            "role": "pole_end",
-            "kind": "close"
+            "time": "2024-06-03T00:00:00+00:00",
+            "price": 71997.02,
+            "role": "second_top",
+            "kind": "pivot"
           }
         ],
         "trend_lines": [
           {
             "start": {
-              "time": "2024-07-29T00:00:00+00:00",
-              "price": 58161.0,
-              "role": "pole",
-              "kind": "close"
+              "time": "2024-03-11T00:00:00+00:00",
+              "price": 56552.82,
+              "role": "neckline",
+              "kind": "pivot"
             },
             "end": {
-              "time": "2024-11-25T00:00:00+00:00",
-              "price": 97185.18,
-              "role": "pole",
-              "kind": "close"
+              "time": "2024-07-08T00:00:00+00:00",
+              "price": 56552.82,
+              "role": "neckline",
+              "kind": "pivot"
             },
-            "role": "pole",
+            "role": "neckline",
             "extend": false
           }
         ],
         "zones": [
           {
-            "start_time": "2024-12-02T00:00:00+00:00",
-            "end_time": "2025-02-17T00:00:00+00:00",
-            "low": 89256.69,
-            "high": 109588.0,
-            "role": "consolidation"
+            "start_time": "2024-03-11T00:00:00+00:00",
+            "end_time": "2024-07-08T00:00:00+00:00",
+            "low": 56552.82,
+            "high": 73777.0,
+            "role": "breakout"
           }
         ],
-        "neckline": null,
-        "breakout_area": null
+        "neckline": {
+          "start": {
+            "time": "2024-03-11T00:00:00+00:00",
+            "price": 56552.82,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "end": {
+            "time": "2024-07-08T00:00:00+00:00",
+            "price": 56552.82,
+            "role": "neckline",
+            "kind": "pivot"
+          },
+          "role": "neckline",
+          "extend": false
+        },
+        "breakout_area": {
+          "start_time": "2024-03-11T00:00:00+00:00",
+          "end_time": "2024-07-08T00:00:00+00:00",
+          "low": 56552.82,
+          "high": 73777.0,
+          "role": "breakout"
+        }
       },
-      "bars_span": 30,
-      "first_seen_at": "2025-02-17T00:00:00+00:00",
-      "span_start": "2024-07-29T00:00:00+00:00",
-      "span_end": "2025-02-17T00:00:00+00:00",
-      "resolution": "UNRESOLVED",
-      "resolved_at": null,
-      "bars_to_resolution": null,
-      "noise_ratio": 0.44,
-      "noise_verdict": "LESS_THAN_NOISE"
+      "bars_span": 12,
+      "detector_version": "double_v3",
+      "first_seen_at": "2024-07-08T00:00:00+00:00",
+      "span_start": "2024-03-11T00:00:00+00:00",
+      "span_end": "2024-07-08T00:00:00+00:00",
+      "resolution": "REACHED_TRIGGER",
+      "resolved_at": "2024-09-02T00:00:00+00:00",
+      "bars_to_resolution": 8,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "6a44e55e617d95aff036a364",
+      "family": "REVERSAL",
+      "lifecycle_state": "CONFIRMED",
+      "breakout": {
+        "level": 56552.82,
+        "state": "CLOSE_CONFIRMED"
+      },
+      "invalidation": {
+        "level": 73777.0,
+        "rule": "a 1w close above 73777.00 would break both highs and invalidate the double top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 1.08,
+      "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
     },
     {
       "name": "triple_top",
@@ -9487,7 +10369,7 @@
       "direction_if_textbook": "BEARISH",
       "key_levels": {
         "extremes": 71951.336667,
-        "neckline": 55857.81
+        "neckline": 53485.93
       },
       "invalidation_level": 73777.0,
       "invalidation_rule": "a 1w close beyond 73777.00 invalidates the triple top",
@@ -9525,13 +10407,13 @@
           {
             "start": {
               "time": "2024-03-11T00:00:00+00:00",
-              "price": 55857.81,
+              "price": 53485.93,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2025-02-17T00:00:00+00:00",
-              "price": 55857.81,
+              "price": 53485.93,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -9543,7 +10425,7 @@
           {
             "start_time": "2024-03-11T00:00:00+00:00",
             "end_time": "2025-02-17T00:00:00+00:00",
-            "low": 55857.81,
+            "low": 53485.93,
             "high": 73777.0,
             "role": "breakout"
           }
@@ -9551,13 +10433,13 @@
         "neckline": {
           "start": {
             "time": "2024-03-11T00:00:00+00:00",
-            "price": 55857.81,
+            "price": 53485.93,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2025-02-17T00:00:00+00:00",
-            "price": 55857.81,
+            "price": 53485.93,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -9567,19 +10449,148 @@
         "breakout_area": {
           "start_time": "2024-03-11T00:00:00+00:00",
           "end_time": "2025-02-17T00:00:00+00:00",
-          "low": 55857.81,
+          "low": 53485.93,
           "high": 73777.0,
           "role": "breakout"
         }
       },
       "bars_span": 20,
+      "detector_version": "triple_v3",
       "first_seen_at": "2025-02-17T00:00:00+00:00",
       "span_start": "2024-03-11T00:00:00+00:00",
       "span_end": "2025-02-17T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-02-24T00:00:00+00:00",
       "bars_to_resolution": 1,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 14,
+        "checks_total": 14,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "e4015d72d7af6372f9a7963c",
+      "family": "REVERSAL",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": 53485.93,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 73777.0,
+        "rule": "a 1w close beyond 73777.00 invalidates the triple top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 0.58,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
+      "name": "bull_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "FAILED",
+      "recognition_confidence": 70.1,
+      "detected_at": "2025-06-23T00:00:00+00:00",
+      "confirmation_time": "2025-06-23T00:00:00+00:00",
+      "direction_if_textbook": "BULLISH",
+      "key_levels": {
+        "pole_start": 74508.0,
+        "pole_end": 111980.0
+      },
+      "invalidation_level": 74508.0,
+      "invalidation_rule": "a close beyond the start of the pole at 74508.00 invalidates the continuation reading",
+      "components": {
+        "pole_atr": 4.2,
+        "flag_atr": -0.07,
+        "pole_bars": 6,
+        "flag_bars": 5,
+        "pole_straightness": 1.0
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 4.2 ATR move over 6 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-04-07T00:00:00+00:00",
+            "price": 74508.0,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2025-05-19T00:00:00+00:00",
+            "price": 111980.0,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-04-07T00:00:00+00:00",
+              "price": 74508.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2025-05-19T00:00:00+00:00",
+              "price": 111980.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-05-19T00:00:00+00:00",
+            "end_time": "2025-06-23T00:00:00+00:00",
+            "low": 98200.0,
+            "high": 111980.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 11,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2025-06-23T00:00:00+00:00",
+      "span_start": "2025-04-07T00:00:00+00:00",
+      "span_end": "2025-06-23T00:00:00+00:00",
+      "resolution": "REACHED_INVALIDATION",
+      "resolved_at": "2026-02-02T00:00:00+00:00",
+      "bars_to_resolution": 32,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "e30bafe1bc08c0982cfbc52a",
+      "family": "CONTINUATION",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": null,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 74508.0,
+        "rule": "a close beyond the start of the pole at 74508.00 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.44,
       "noise_verdict": "LESS_THAN_NOISE"
     },
     {
@@ -9593,7 +10604,7 @@
       "key_levels": {
         "first_extreme": 109588.0,
         "second_extreme": 111980.0,
-        "neckline": 78430.0
+        "neckline": 74508.0
       },
       "invalidation_level": 111980.0,
       "invalidation_rule": "a 1w close above 111980.00 would break both highs and invalidate the double top",
@@ -9603,12 +10614,12 @@
         "time_separation": 28.3,
         "pivot_quality": 63.9,
         "difference_atr": 0.268,
-        "reaction_atr": 3.495,
+        "reaction_atr": 3.935,
         "bars_between": 17
       },
       "edge_state": "NOT_YET_TESTED",
       "edge_note": "",
-      "notes": "two tops within 0.27 ATR of each other, separated by 17 bars, with a 3.50 ATR reaction between them",
+      "notes": "two tops within 0.27 ATR of each other, separated by 17 bars, with a 3.94 ATR reaction between them",
       "geometry": {
         "points": [
           {
@@ -9628,13 +10639,13 @@
           {
             "start": {
               "time": "2025-01-20T00:00:00+00:00",
-              "price": 78430.0,
+              "price": 74508.0,
               "role": "neckline",
               "kind": "pivot"
             },
             "end": {
               "time": "2025-06-23T00:00:00+00:00",
-              "price": 78430.0,
+              "price": 74508.0,
               "role": "neckline",
               "kind": "pivot"
             },
@@ -9646,7 +10657,7 @@
           {
             "start_time": "2025-01-20T00:00:00+00:00",
             "end_time": "2025-06-23T00:00:00+00:00",
-            "low": 78430.0,
+            "low": 74508.0,
             "high": 111980.0,
             "role": "breakout"
           }
@@ -9654,13 +10665,13 @@
         "neckline": {
           "start": {
             "time": "2025-01-20T00:00:00+00:00",
-            "price": 78430.0,
+            "price": 74508.0,
             "role": "neckline",
             "kind": "pivot"
           },
           "end": {
             "time": "2025-06-23T00:00:00+00:00",
-            "price": 78430.0,
+            "price": 74508.0,
             "role": "neckline",
             "kind": "pivot"
           },
@@ -9670,27 +10681,364 @@
         "breakout_area": {
           "start_time": "2025-01-20T00:00:00+00:00",
           "end_time": "2025-06-23T00:00:00+00:00",
-          "low": 78430.0,
+          "low": 74508.0,
           "high": 111980.0,
           "role": "breakout"
         }
       },
       "bars_span": 17,
+      "detector_version": "double_v3",
       "first_seen_at": "2025-06-23T00:00:00+00:00",
       "span_start": "2025-01-20T00:00:00+00:00",
       "span_end": "2025-06-23T00:00:00+00:00",
       "resolution": "REACHED_INVALIDATION",
       "resolved_at": "2025-07-07T00:00:00+00:00",
       "bars_to_resolution": 2,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "efa5e40b4af822c5c0eccf97",
+      "family": "REVERSAL",
+      "lifecycle_state": "INVALIDATED",
+      "breakout": {
+        "level": 74508.0,
+        "state": "FAILED"
+      },
+      "invalidation": {
+        "level": 111980.0,
+        "rule": "a 1w close above 111980.00 would break both highs and invalidate the double top"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
       "noise_ratio": 1.08,
       "noise_verdict": "INDISTINGUISHABLE_FROM_NOISE"
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 82.4,
+      "detected_at": "2025-12-22T00:00:00+00:00",
+      "confirmation_time": "2025-12-22T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 126199.63,
+        "pole_end": 80600.0
+      },
+      "invalidation_level": 126199.63,
+      "invalidation_rule": "a close beyond the start of the pole at 126199.63 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -4.94,
+        "flag_atr": 0.12,
+        "pole_bars": 6,
+        "flag_bars": 5,
+        "pole_straightness": 0.704
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 4.9 ATR move over 6 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2025-10-06T00:00:00+00:00",
+            "price": 126199.63,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2025-11-17T00:00:00+00:00",
+            "price": 80600.0,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2025-10-06T00:00:00+00:00",
+              "price": 126199.63,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2025-11-17T00:00:00+00:00",
+              "price": 80600.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2025-11-17T00:00:00+00:00",
+            "end_time": "2025-12-22T00:00:00+00:00",
+            "low": 80600.0,
+            "high": 96043.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 11,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2025-12-22T00:00:00+00:00",
+      "span_start": "2025-10-06T00:00:00+00:00",
+      "span_end": "2025-12-22T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "36c2caea7af31975bb896a07",
+      "family": "CONTINUATION",
+      "lifecycle_state": "DETECTED",
+      "breakout": {
+        "level": null,
+        "state": "NO_TRIGGER_DEFINED"
+      },
+      "invalidation": {
+        "level": 126199.63,
+        "rule": "a close beyond the start of the pole at 126199.63 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 70.7,
+      "detected_at": "2026-03-09T00:00:00+00:00",
+      "confirmation_time": "2026-03-09T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 97924.49,
+        "pole_end": 60000.0
+      },
+      "invalidation_level": 97924.49,
+      "invalidation_rule": "a close beyond the start of the pole at 97924.49 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -4.24,
+        "flag_atr": 0.28,
+        "pole_bars": 3,
+        "flag_bars": 5,
+        "pole_straightness": 1.0
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 4.2 ATR move over 3 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2026-01-12T00:00:00+00:00",
+            "price": 97924.49,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-02-02T00:00:00+00:00",
+            "price": 60000.0,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2026-01-12T00:00:00+00:00",
+              "price": 97924.49,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2026-02-02T00:00:00+00:00",
+              "price": 60000.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2026-02-02T00:00:00+00:00",
+            "end_time": "2026-03-09T00:00:00+00:00",
+            "low": 60000.0,
+            "high": 79360.0,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 8,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2026-03-09T00:00:00+00:00",
+      "span_start": "2026-01-12T00:00:00+00:00",
+      "span_end": "2026-03-09T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "c228fd7576d5ae14486376cd",
+      "family": "CONTINUATION",
+      "lifecycle_state": "DETECTED",
+      "breakout": {
+        "level": null,
+        "state": "NO_TRIGGER_DEFINED"
+      },
+      "invalidation": {
+        "level": 97924.49,
+        "rule": "a close beyond the start of the pole at 97924.49 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
+    },
+    {
+      "name": "bear_flag",
+      "pattern_class": "EXPERIMENTAL",
+      "state": "CANDIDATE",
+      "recognition_confidence": 68.8,
+      "detected_at": "2026-08-03T00:00:00+00:00",
+      "confirmation_time": "2026-08-03T00:00:00+00:00",
+      "direction_if_textbook": "BEARISH",
+      "key_levels": {
+        "pole_start": 82850.0,
+        "pole_end": 57800.19
+      },
+      "invalidation_level": 82850.0,
+      "invalidation_rule": "a close beyond the start of the pole at 82850.00 invalidates the continuation reading",
+      "components": {
+        "pole_atr": -4.13,
+        "flag_atr": 0.21,
+        "pole_bars": 8,
+        "flag_bars": 5,
+        "pole_straightness": 0.589
+      },
+      "edge_state": "NOT_YET_TESTED",
+      "edge_note": "",
+      "notes": "a 4.1 ATR move over 8 bars, then 5 bars drifting the other way",
+      "geometry": {
+        "points": [
+          {
+            "time": "2026-05-04T00:00:00+00:00",
+            "price": 82850.0,
+            "role": "pole_start",
+            "kind": "pivot"
+          },
+          {
+            "time": "2026-06-29T00:00:00+00:00",
+            "price": 57800.19,
+            "role": "pole_end",
+            "kind": "pivot"
+          }
+        ],
+        "trend_lines": [
+          {
+            "start": {
+              "time": "2026-05-04T00:00:00+00:00",
+              "price": 82850.0,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "end": {
+              "time": "2026-06-29T00:00:00+00:00",
+              "price": 57800.19,
+              "role": "pole",
+              "kind": "pivot"
+            },
+            "role": "pole",
+            "extend": false
+          }
+        ],
+        "zones": [
+          {
+            "start_time": "2026-06-29T00:00:00+00:00",
+            "end_time": "2026-08-03T00:00:00+00:00",
+            "low": 57800.19,
+            "high": 66956.15,
+            "role": "consolidation"
+          }
+        ],
+        "neckline": null,
+        "breakout_area": null
+      },
+      "bars_span": 13,
+      "detector_version": "flag_v3",
+      "first_seen_at": "2026-08-03T00:00:00+00:00",
+      "span_start": "2026-05-04T00:00:00+00:00",
+      "span_end": "2026-08-03T00:00:00+00:00",
+      "resolution": "UNRESOLVED",
+      "resolved_at": null,
+      "bars_to_resolution": null,
+      "geometry_validation": {
+        "valid": true,
+        "score": 100.0,
+        "checks_passed": 13,
+        "checks_total": 13,
+        "rejection_reasons": [],
+        "warnings": [],
+        "note": "Level 1 only: whether the drawing is consistent with the candles. Says nothing about whether the figure predicts anything, nor whether the shape is more common than noise."
+      },
+      "id": "0f6efd41a958a8126079fedc",
+      "family": "CONTINUATION",
+      "lifecycle_state": "DETECTED",
+      "breakout": {
+        "level": null,
+        "state": "NO_TRIGGER_DEFINED"
+      },
+      "invalidation": {
+        "level": 82850.0,
+        "rule": "a close beyond the start of the pole at 82850.00 invalidates the continuation reading"
+      },
+      "target": {
+        "level": null,
+        "type": "NONE"
+      },
+      "noise_ratio": 0.55,
+      "noise_verdict": "LESS_THAN_NOISE"
     }
   ],
-  "figures_in_history": 11,
+  "figures_in_history": 21,
   "figures_window_bars": 600,
   "noise_benchmark": {
     "available": true,
-    "measured_at": "2026-09-08T21:36:38.849983+00:00",
+    "measured_at": "2026-09-08T22:08:44.156056+00:00",
     "timeframe": "1d",
     "real_bars": 8840,
     "noise_bars": 29460,

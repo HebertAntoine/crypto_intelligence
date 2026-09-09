@@ -115,11 +115,23 @@ class GeometryValidation:
     rejection_reasons: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
+    @property
+    def checks_passed(self) -> int:
+        return self.checks_run - len(self.rejection_reasons)
+
     def to_dict(self) -> dict[str, Any]:
+        """La forme publiée.
+
+        Les noms disent ce qui est vérifié: `valid` sous la clé
+        `geometry_validation`, jamais `pattern_validated`. Le premier dit que
+        le dessin est cohérent avec les bougies; le second laisserait entendre
+        que la figure est juste, ce qui n'a pas été mesuré.
+        """
         return {
-            "geometry_valid": self.valid,
-            "geometry_score": self.score,
-            "checks_run": self.checks_run,
+            "valid": self.valid,
+            "score": self.score,
+            "checks_passed": self.checks_passed,
+            "checks_total": self.checks_run,
             "rejection_reasons": self.rejection_reasons,
             "warnings": self.warnings,
             "note": (

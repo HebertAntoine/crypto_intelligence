@@ -390,6 +390,11 @@ async def chart(
             figure_window[0].to_pydatetime(),
             figure_window[-1].to_pydatetime(),
         )
+        # Migration additive: chaque figure garde ses champs historiques et
+        # reçoit ceux du contrat riche — identité stable, famille, cycle de
+        # vie, cassure, invalidation, objectif. Un consommateur qui ne lit que
+        # les anciens champs ne voit aucune différence.
+        structural = history_scan.enrich_with_detection(structural, asset.value, tf)
         figures_total = len(all_figures)
         # Deux phrases constantes voyageaient sur chaque figure: à cent
         # soixante-dix figures par vue, cela fait quarante kilo-octets de

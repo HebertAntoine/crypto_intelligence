@@ -107,7 +107,9 @@ class HistoricalPattern:
         )
         payload["bars_to_resolution"] = self.bars_to_resolution
         payload["detector_version"] = self.pattern.detector_version
-        payload["validation"] = self.validation
+        # `geometry_validation` et non `validation`: le contrôle porte sur la
+        # cohérence du dessin, pas sur la justesse de la figure.
+        payload["geometry_validation"] = self.validation
         payload["resolution_note"] = (
             "Whether this one figure reached its trigger or its invalidation "
             "first. It describes this instance only and is not an edge."
@@ -197,6 +199,87 @@ def _resolve(
             if broke:
                 return Resolution.REACHED_INVALIDATION, when, offset
     return Resolution.UNRESOLVED, None, None
+
+
+def enrich_with_detection(
+    figures: list[dict[str, Any]],
+    asset: str,
+    timeframe: Timeframe,
+) -> list[dict[str, Any]]:
+    """Ajoute le contrat riche aux figures déjà publiées, sans rien retirer.
+
+    Migration additive: chaque objet garde ses champs historiques et reçoit en
+    plus ceux de `PatternDetection` — identité stable, famille, cycle de vie à
+    six états, niveaux de cassure et d'objectif.
+
+    La conversion passe par `from_structural()`, l'unique pont existant. Écrire
+    une seconde conversion ici créerait deux vérités qui divergeraient au
+    premier changement de détecteur.
+    """
+    from .detection import family_for, make_pattern_id
+
+    enriched = []
+    for figure in figures:
+        item = dict(figure)
+        try:
+            start = figure["span_start"]
+            end = figure["span_end"]
+            item["id"] = make_pattern_id(
+                asset, timeframe.value, figure["name"], start, end
+            )
+            item["family"] = family_for(figure["name"]).value
+            item["lifecycle_state"] = _lifecycle_from_payload(figure).value
+            item["breakout"] = {
+                "level": (figure.get("key_levels") or {}).get("neckline"),
+                "state": _breakout_state_from_payload(figure),
+            }
+            item["invalidation"] = {
+                "level": figure.get("invalidation_level"),
+                "rule": figure.get("invalidation_rule", ""),
+            }
+            # Aucun détecteur ne produit encore d'objectif théorique. Le champ
+            # est présent et explicitement nul plutôt qu'absent: un consommateur
+            # doit pouvoir distinguer « pas d'objectif » de « champ oublié ».
+            item["target"] = {"level": None, "type": "NONE"}
+        except (KeyError, ValueError, TypeError) as exc:
+            log.debug("enrichment_skipped", pattern=figure.get("name"), error=str(exc))
+        enriched.append(item)
+    return enriched
+
+
+def _lifecycle_from_payload(figure: dict[str, Any]) -> Any:
+    """Le cycle de vie à six états, déduit de ce qui est déjà publié.
+
+    On réutilise `PatternStatus` plutôt que d'inventer une énumération: elle
+    existe, elle est documentée, et une seconde enum divergerait.
+    """
+    from .detection import PatternStatus
+
+    resolution = figure.get("resolution")
+    state = figure.get("state")
+    if resolution == Resolution.REACHED_TRIGGER.value:
+        return PatternStatus.CONFIRMED
+    if resolution == Resolution.REACHED_INVALIDATION.value:
+        return PatternStatus.INVALIDATED
+    if state == "CONFIRMED":
+        return PatternStatus.CONFIRMED
+    if state == "FAILED":
+        return PatternStatus.INVALIDATED
+    return PatternStatus.DETECTED
+
+
+def _breakout_state_from_payload(figure: dict[str, Any]) -> str:
+    """Où en est la cassure, sans la confondre avec l'état de la figure."""
+    resolution = figure.get("resolution")
+    if resolution == Resolution.REACHED_TRIGGER.value:
+        return "CLOSE_CONFIRMED"
+    if resolution == Resolution.REACHED_INVALIDATION.value:
+        return "FAILED"
+    if (figure.get("key_levels") or {}).get("neckline") is None:
+        # Sans niveau, il n'y a rien à casser. C'est le cas des drapeaux, des
+        # biseaux et des triangles aujourd'hui — corrigé en PHASE C.
+        return "NO_TRIGGER_DEFINED"
+    return "PENDING"
 
 
 def scan_history(

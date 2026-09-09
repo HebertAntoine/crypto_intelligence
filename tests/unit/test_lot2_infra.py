@@ -48,7 +48,13 @@ class TestSnapshots:
 
 class TestHistoryStore:
     def _candles(self, n: int = 10, start_price: float = 100.0) -> list[Candle]:
-        base = datetime(2026, 1, 1, tzinfo=UTC)
+        # Une base lointaine, hors de portée des jeux semés par les autres
+        # modules. `test_analysis_identity` écrit 120 bougies hebdo SOL
+        # espacées de 168 h à partir de l'heure COURANTE: selon l'heure de la
+        # journée, l'une d'elles tombait sur 2026-01-0X et le premier
+        # enregistrement n'était plus entièrement nouveau. Le test échouait
+        # donc certaines heures et passait les autres.
+        base = datetime(2001, 1, 1, tzinfo=UTC)
         return [
             Candle(
                 timestamp=base + timedelta(days=i),

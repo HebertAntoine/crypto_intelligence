@@ -123,12 +123,25 @@ class ConfirmationSignal:
 # --- the published record --------------------------------------------------
 
 
+def _instant(value: datetime | str) -> str:
+    """Un instant sous une seule forme, quelle que soit celle reçue.
+
+    Les appelants tiennent tantôt un `datetime`, tantôt la chaîne ISO déjà
+    sérialisée. Sans normalisation, la même occurrence recevrait deux
+    identités selon l'endroit d'où on la demande — exactement ce que l'id est
+    censé empêcher.
+    """
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return datetime.fromisoformat(value).isoformat()
+
+
 def make_pattern_id(
     symbol: str,
     timeframe: str,
     pattern_type: str,
-    start_time: datetime,
-    end_time: datetime,
+    start_time: datetime | str,
+    end_time: datetime | str,
 ) -> str:
     """A stable id for one occurrence of one figure.
 
@@ -136,7 +149,10 @@ def make_pattern_id(
     computed, so re-running the detector on the same bars yields the same id and
     the frontend can keep a pattern selected across a refresh.
     """
-    parts = (symbol, timeframe, pattern_type, start_time.isoformat(), end_time.isoformat())
+    parts = (
+        symbol, timeframe, pattern_type,
+        _instant(start_time), _instant(end_time),
+    )
     return hashlib.sha1("|".join(parts).encode()).hexdigest()[:24]
 
 
@@ -168,6 +184,16 @@ class PatternDetection:
     invalidation_rule: str = ""
 
     geometry: PatternGeometry = field(default_factory=PatternGeometry)
+    #: Quelles règles ont produit cette figure. Sans version, « le détecteur
+    #: s'est amélioré » reste une affirmation invérifiable, et un résultat de
+    #: benchmark ne peut être rattaché à rien.
+    detector_version: str = "unversioned"
+    #: Le verdict du contrôle géométrique indépendant (niveau 1).
+    #:
+    #: Nommé `geometry_validation` et jamais `validated`: il dit que le DESSIN
+    #: est cohérent avec les bougies, pas que la figure est juste. Confondre
+    #: les deux serait exactement l'erreur que ce champ existe pour éviter.
+    geometry_validation: dict[str, Any] | None = None
     confirmation_signals: list[ConfirmationSignal] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
     notes: str = ""
@@ -215,6 +241,8 @@ class PatternDetection:
         explained = self.components_explain_confidence()
         return {
             "id": self.id,
+            "detector_version": self.detector_version,
+            "geometry_validation": self.geometry_validation,
             "symbol": self.symbol,
             "timeframe": self.timeframe.value,
             "pattern_type": self.pattern_type,
@@ -333,6 +361,7 @@ def from_structural(
     target_level: float | None = None,
     last_close: float | None = None,
     atr: float | None = None,
+    geometry_validation: dict[str, Any] | None = None,
 ) -> PatternDetection:
     """Publish a detector's finding, without reinterpreting it.
 
@@ -398,6 +427,10 @@ def from_structural(
         target_level=target_level,
         invalidation_rule=pattern.invalidation_rule,
         geometry=geometry or PatternGeometry(),
+        # Repris du détecteur, jamais recalculé ici: deux endroits qui
+        # décident de la version divergeraient.
+        detector_version=pattern.detector_version,
+        geometry_validation=geometry_validation,
         metadata={**raw_measurements, "key_levels": pattern.key_levels},
         notes=pattern.notes,
     )
