@@ -281,3 +281,64 @@ class TestTheBlockBootstrapPreservesLocalMemory:
             f"blocs de 50 preservent {kept[50]:.2%} des enchainements, "
             f"blocs de 5 en preservent {kept[5]:.2%}"
         )
+
+
+class TestCandlesticksDecideNothing:
+    """`DESCRIPTIVE_ONLY` doit vivre dans les tests, pas dans un commentaire.
+
+    La PHASE 37B n'a trouve aucun avantage. Tant que c'est le cas, ces figures
+    peuvent etre affichees et stockees, mais ne doivent toucher ni un sens
+    d'achat ou de vente, ni un timing, ni un score d'opportunite, ni une
+    conviction directionnelle.
+    """
+
+    def test_the_package_declares_its_usage_and_the_reason(self):
+        from crypto_intel.candlesticks import USAGE, USAGE_EVIDENCE
+
+        assert USAGE == "DESCRIPTIVE_ONLY"
+        assert "0 POSITIVE_EDGE" in USAGE_EVIDENCE, (
+            "la contrainte doit porter la mesure qui la justifie, sinon elle "
+            "sera levee un jour sans qu'on sache pourquoi elle existait"
+        )
+
+    def test_no_decision_module_imports_the_candlesticks(self):
+        """La garde qui compte: elle echouera le jour ou quelqu'un branche.
+
+        Elle ne verifie pas une intention mais un fait — quels fichiers
+        importent ce paquet.
+        """
+        import pathlib
+
+        root = pathlib.Path(__file__).resolve().parents[2] / "backend" / "crypto_intel"
+        decision_areas = ("engines", "analysts", "pipeline", "api", "reports")
+        offenders = []
+        for area in decision_areas:
+            for path in (root / area).rglob("*.py"):
+                text = path.read_text(encoding="utf-8", errors="replace")
+                if "candlestick" in text.lower():
+                    offenders.append(str(path.relative_to(root)))
+        assert not offenders, (
+            "les chandeliers sont DESCRIPTIVE_ONLY et n'ont montre aucun "
+            f"avantage; ces modules de decision les importent: {offenders}"
+        )
+
+    def test_every_detection_carries_not_yet_tested(self):
+        """Aucune detection ne doit sortir en pretendant un avantage."""
+        from crypto_intel.candlesticks import scan_candlesticks
+
+        rng = np.random.default_rng(11)
+        closes = 100 * np.exp(np.cumsum(rng.normal(0, 0.02, 300)))
+        opens = np.concatenate([[closes[0]], closes[:-1]])
+        spread = np.abs(rng.normal(0.02, 0.01, 300)) * closes
+        frame = pd.DataFrame(
+            {
+                "open": opens,
+                "high": np.maximum(opens, closes) + spread * 0.5,
+                "low": np.minimum(opens, closes) - spread * 0.5,
+                "close": closes,
+                "volume": np.full(300, 1000.0),
+            },
+            index=pd.date_range(datetime(2020, 1, 1, tzinfo=UTC), periods=300, freq="D"),
+        )
+        for detection in scan_candlesticks(frame)[:50]:
+            assert detection.to_dict()["edge_state"] == "NOT_YET_TESTED"

@@ -171,6 +171,28 @@ EXPECTED_DIRECTION: dict[CandlestickPattern, int] = {
     CandlestickPattern.THREE_BLACK_CROWS: -1,
 }
 
+#: Ce que ce module a le droit d'influencer.
+#:
+#: `DESCRIPTIVE_ONLY` est une **conclusion mesurée**, pas une précaution de
+#: principe: la PHASE 37B a produit 216 dossiers, 1 040 tests, zéro avantage
+#: démontré, et 87 signes sur 116 qui s'inversent hors échantillon.
+#:
+#: Ces figures peuvent donc être affichées et stockées. Elles ne doivent
+#: toucher ni un sens d'achat ou de vente, ni un timing, ni un score
+#: d'opportunité, ni une conviction directionnelle. Un test de garde échoue si
+#: un module de décision importe ce paquet — la contrainte vit dans la suite de
+#: tests, pas seulement dans ce commentaire.
+USAGE = "DESCRIPTIVE_ONLY"
+
+#: Ce que la mesure a réellement établi, pour que la raison voyage avec la
+#: contrainte et ne se perde pas au prochain refactor.
+USAGE_EVIDENCE = (
+    "PHASE 37B, candlestick_v1: 216 dossiers, 1 040 tests, 0 POSITIVE_EDGE, "
+    "0 NEGATIVE_EDGE, 1 seul test survivant au FDR global sur un échantillon "
+    "trop mince pour compter, et 87 signes sur 116 qui s'inversent entre "
+    "fenêtres chronologiques."
+)
+
 #: Version des règles, comme pour les détecteurs structurels.
 #:
 #: **Gelée pour la phase de validation.** Mesurer v1 telle quelle, puis
