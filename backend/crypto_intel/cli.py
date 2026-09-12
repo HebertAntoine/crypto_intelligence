@@ -627,7 +627,7 @@ def cmd_research_patterns(args) -> int:
     from .research.pattern_validation import run_all
 
     assets = [_asset(args.asset)] if args.asset else None
-    result = run_all(assets)
+    result = run_all(assets, confirmed_only=args.confirmed_only)
 
     for key, res in result["results"].items():
         if res.get("status") != "OK":
@@ -645,10 +645,68 @@ def cmd_research_patterns(args) -> int:
             if entry.get("verdict") == "MEASURABLE_EDGE":
                 print(f"      {entry.get('note')}")
 
-    out = _pathlib.Path("data/research/pattern_validation.json")
+    filename = (
+        "pattern_validation_confirmed.json"
+        if args.confirmed_only
+        else "pattern_validation.json"
+    )
+    out = _pathlib.Path("data/research") / filename
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2, default=str))
     print(f"\nWritten to {out}")
+    return 0
+
+
+def cmd_pattern_consensus(args) -> int:
+    """Compare our structural detector with the independent LMW baseline."""
+    from .pattern_learning.quality_gate import (
+        save_quality_gate_audit,
+        train_and_audit_quality_gate,
+    )
+    from .pattern_learning.runner import run_consensus_study, save_consensus_study
+    from .pattern_learning.validation import (
+        run_consensus_validation,
+        save_consensus_validation,
+    )
+
+    assets = [_asset(args.asset)] if args.asset else None
+    timeframes = [Timeframe(args.timeframe)] if args.timeframe else None
+    result = run_consensus_study(assets=assets, timeframes=timeframes)
+    for key, entry in result["results"].items():
+        if entry.get("status") != "OK":
+            print(f"{key}: {entry.get('status')}")
+            continue
+        summary = entry["summary"]
+        print(
+            f"{key}: {summary['independent_agreements']} independent agreements / "
+            f"{summary['comparable_ours']} comparable detections "
+            f"({summary['agreement_rate_pct']}%)"
+        )
+    output = save_consensus_study(
+        result,
+        args.out or "data/research/pattern_consensus.json",
+    )
+    print(f"\nWritten to {output}")
+    if not args.timeframe or args.timeframe == Timeframe.H1.value:
+        validation = run_consensus_validation(result)
+        validation_output = save_consensus_validation(validation)
+        h72 = validation["horizons"].get("72h", {})
+        print(
+            f"72h strict audit: {h72.get('settled_observations', 0)} independent "
+            f"windows, {h72.get('win_rate_pct')}% textbook-direction wins, "
+            f"{h72.get('verdict')}"
+        )
+        print(f"Written to {validation_output}")
+        quality = train_and_audit_quality_gate(result)
+        quality_output = save_quality_gate_audit(quality)
+        final_test = quality.get("untouched_final_test", {})
+        print(
+            f"Learned quality gate holdout: {final_test.get('independent_agreements', 0)}/"
+            f"{final_test.get('promoted', 0)} = {final_test.get('precision_pct')}%, "
+            f"{quality.get('verdict')} (shadow only)"
+        )
+        print(f"Written to {quality_output}")
+    print("Recognition agreement only; predictive claims require prospective evidence.")
     return 0
 
 
@@ -1115,7 +1173,21 @@ def main() -> int:
 
     p = sub.add_parser("research-patterns", help="Do chart patterns carry information?")
     p.add_argument("--asset")
+    p.add_argument(
+        "--confirmed-only",
+        action="store_true",
+        help="Evaluate only detections whose breakout/confirmation gate fired",
+    )
     p.set_defaults(func=cmd_research_patterns, is_async=False)
+
+    p = sub.add_parser(
+        "pattern-consensus",
+        help="Compare structural patterns with the independent LMW baseline",
+    )
+    p.add_argument("--asset")
+    p.add_argument("--timeframe", choices=["1d", "4h", "1h"])
+    p.add_argument("--out")
+    p.set_defaults(func=cmd_pattern_consensus, is_async=False)
 
     p = sub.add_parser("baselines", help="Trivial strategies every signal must beat")
     p.add_argument("--asset")

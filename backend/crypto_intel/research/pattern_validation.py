@@ -129,7 +129,12 @@ def validate(
 
     tests: list[tuple[str, float | None]] = []
     for pattern in sorted(detections["pattern"].unique()):
-        subset = detections[detections["pattern"] == pattern]
+        all_occurrences = detections[detections["pattern"] == pattern]
+        confirmed_share = (
+            round(float(all_occurrences["confirmed"].mean() * 100), 1)
+            if len(all_occurrences) else None
+        )
+        subset = all_occurrences
         if confirmed_only:
             subset = subset[subset["confirmed"]]
 
@@ -137,9 +142,11 @@ def validate(
         entry: dict[str, Any] = {
             "raw_occurrences": len(timestamps),
             "mean_confidence": round(float(subset["confidence"].mean()), 1) if len(subset) else None,
-            "confirmed_share_pct": (
-                round(float(subset["confirmed"].mean() * 100), 1) if len(subset) else None
-            ),
+            # Share in the original detector output. Computing this after a
+            # confirmed-only filter made it tautologically 100% and hid how
+            # selective the confirmation gate really was.
+            "confirmed_share_pct": confirmed_share,
+            "detections_before_confirmation_filter": len(all_occurrences),
             "horizons": {},
         }
 
@@ -313,7 +320,10 @@ def _assign_verdicts(out: dict[str, Any], survivors: set[str]) -> None:
 
 
 def run_all(
-    assets: list[Asset] | None = None, timeframes: list[Timeframe] | None = None
+    assets: list[Asset] | None = None,
+    timeframes: list[Timeframe] | None = None,
+    *,
+    confirmed_only: bool = False,
 ) -> dict[str, Any]:
     assets = assets or Asset.tradables()
     timeframes = timeframes or [Timeframe.D1]
@@ -322,16 +332,78 @@ def run_all(
         for timeframe in timeframes:
             key = f"{asset.value}_{timeframe.value}"
             try:
-                results[key] = validate(asset, timeframe)
+                results[key] = validate(
+                    asset,
+                    timeframe,
+                    confirmed_only=confirmed_only,
+                )
             except Exception as exc:
                 log.warning("pattern_validation_failed", key=key, error=str(exc))
                 results[key] = {"status": "ERROR", "error": str(exc)[:200]}
+    _apply_global_multiple_testing(results)
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "horizons_days": HORIZONS,
+        "confirmed_only": confirmed_only,
         "results": results,
         "note": (
             "Recognition confidence and predictive edge are different quantities. A "
             "pattern can be detected cleanly and carry no forward information."
         ),
     }
+
+
+def _apply_global_multiple_testing(results: dict[str, dict[str, Any]]) -> None:
+    """Correct the complete asset/pattern/horizon family in one operation.
+
+    ``validate`` remains useful on one asset and therefore reports its local
+    diagnostic.  ``run_all`` is the published multi-asset study: correcting
+    each asset separately there would silently grant every asset its own 5%
+    false-discovery budget.
+    """
+    tests: list[tuple[str, str, float]] = []
+    for series_key, result in results.items():
+        if result.get("status") != "OK":
+            continue
+        for pattern, entry in result.get("patterns", {}).items():
+            for horizon, cell in entry.get("horizons", {}).items():
+                p_value = cell.get("p_value")
+                if p_value is not None:
+                    tests.append((series_key, f"{pattern}|{horizon}", float(p_value)))
+
+    decisions = benjamini_hochberg([item[2] for item in tests], alpha=0.05)
+    global_survivors = {
+        (series_key, label)
+        for (series_key, label, _), survives in zip(tests, decisions, strict=True)
+        if survives
+    }
+    global_labels = [
+        f"{series_key}|{label}"
+        for series_key, label in sorted(global_survivors)
+    ]
+    hypotheses = len(tests)
+    raw_significant = sum(p_value < 0.05 for _, _, p_value in tests)
+
+    for series_key, result in results.items():
+        if result.get("status") != "OK":
+            continue
+        previous = dict(result.get("multiple_testing") or {})
+        local_survivors = {
+            label for candidate_key, label in global_survivors
+            if candidate_key == series_key
+        }
+        result["multiple_testing"] = {
+            "hypotheses_tested": hypotheses,
+            "raw_significant": raw_significant,
+            "survives_fdr": len(global_survivors),
+            "expected_false_positives": round(hypotheses * 0.05, 1),
+            "survivors": global_labels,
+            "series_survivors": sorted(local_survivors),
+            "method": (
+                "Benjamini-Hochberg alpha=0.05 across every asset, pattern, "
+                "timeframe and horizon in this run"
+            ),
+            "scope": "GLOBAL_RUN",
+            "within_series_diagnostic": previous,
+        }
+        _assign_verdicts(result, local_survivors)

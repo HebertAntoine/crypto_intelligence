@@ -11,6 +11,7 @@ capabilities:
   derivatives.oi:      [binance_futures]
   derivatives.ratio:   [binance_futures]
   derivatives.liquidations: [coinglass]        # cle requise
+  options.dvol:          [deribit_volatility]
 
   etf.flows:           [etf_csv, coinglass_etf, sosovalue, farside]
 
@@ -26,14 +27,58 @@ capabilities:
 
   macro.series:        [fred]
   macro.indices:       [yahoo_finance, stooq]
-  macro.calendar:      [macro_calendar]
+  # Each official calendar has its own capability so one successful source
+  # cannot mask another source's outage.
+  events.macro.fed:      [fed_calendar]
+  events.macro.bls:      [bls_calendar]
+  events.macro.bea:      [bea_calendar]
+  events.macro.treasury: [treasury_auctions]
+  events.regulation.feeds:  [official_regulatory_feeds]
+  events.regulation.cftc:   [cftc_calendar]
+  events.regulation.house:  [house_financial_services_calendar]
+  events.regulation.senate: [senate_committees_calendar]
+  events.expectations.fed: [cme_fedwatch]
+  events.geopolitical: [geopolitical_feeds]
 
   news.feed:           [rss_news]
   regulation.feed:     [rss_regulation]
 
   whales.flows:        [glassnode, cryptoquant, nansen, arkham]
+  whales.transfers:    [whale_alert]
 
 providers:
+  deribit_volatility:
+    base_url: https://www.deribit.com/api/v2
+    cache_ttl: {default: 3600}
+  fed_calendar:
+    source_url: https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
+    cache_ttl: {default: 21600}
+  bls_calendar:
+    source_url: https://www.bls.gov/schedule/news_release/bls.ics
+    cache_ttl: {default: 21600}
+  bea_calendar:
+    source_url: https://www.bea.gov/news/schedule/full
+    cache_ttl: {default: 21600}
+  treasury_auctions:
+    source_url: https://www.treasurydirect.gov/TA_WS/securities/announced?format=json
+    cache_ttl: {default: 21600}
+  official_regulatory_feeds:
+    cache_ttl: {default: 900}
+  cftc_calendar:
+    source_url: https://www.cftc.gov/PressRoom/Events
+    cache_ttl: {default: 10800}
+  house_financial_services_calendar:
+    source_url: https://financialservices.house.gov/calendar/
+    cache_ttl: {default: 10800}
+  senate_committees_calendar:
+    source_url: https://www.banking.senate.gov/hearings
+    cache_ttl: {default: 10800}
+  cme_fedwatch:
+    base_url: ${CME_FEDWATCH_API_URL}
+    requires_key: CME_FEDWATCH_API_KEY
+    cache_ttl: {default: 60}
+  geopolitical_feeds:
+    cache_ttl: {default: 900}
   binance_spot:
     base_url: https://api.binance.com
     cache_ttl: {15m: 120, 1h: 300, 4h: 900, 1d: 3600, 1w: 7200, ticker: 60}
@@ -131,6 +176,10 @@ providers:
   arkham:
     base_url: https://api.arkhamintelligence.com
     requires_key: ARKHAM_API_KEY
+  whale_alert:
+    base_url: https://api.whale-alert.io/v1/transactions
+    requires_key: WHALE_ALERT_API_KEY
+    min_value_usd: 1000000
 
 # --- Flux RSS -------------------------------------------------------------
 # Uniquement des flux publics. Aucun scraping d'article, aucun paywall.

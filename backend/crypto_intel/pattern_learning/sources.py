@@ -322,7 +322,7 @@ _register(DatasetSource(
     licence_verified=True,
     licence_evidence="référence bibliographique vérifiée (NBER, Wiley, IDEAS)",
     status=LicenceStatus.REFERENCE_ONLY,
-    method_family=MethodFamily.KERNEL_SMOOTHING,
+    method_family=MethodFamily.KERNEL_TEMPLATE_MATCHING,
     caveats=("méthodologie à réimplémenter; aucun code à copier.",),
     notes=(
         "Régression à noyau non paramétrique, puis extraction d'extrema, puis "

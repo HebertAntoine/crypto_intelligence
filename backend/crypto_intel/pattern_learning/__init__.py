@@ -12,6 +12,15 @@ Rien n'entre dans l'entraînement ou dans la production sans provenance établie
 Un dépôt public n'est pas un dépôt libre.
 """
 
+from .consensus import (
+    ConsensusItem,
+    ConsensusReport,
+    ConsensusState,
+    compare_with_lmw,
+    methods_are_independent,
+    production_detection_id,
+    temporal_iou,
+)
 from .ontology import (
     METHOD_FAMILIES,
     STRUCTURAL_PATTERNS,
@@ -26,11 +35,18 @@ __all__ = [
     "METHOD_FAMILIES",
     "SOURCES",
     "STRUCTURAL_PATTERNS",
+    "ConsensusItem",
+    "ConsensusReport",
+    "ConsensusState",
     "DatasetSource",
     "LicenceStatus",
     "MethodFamily",
     "SourceKind",
     "StructuralPatternName",
     "canonical",
+    "compare_with_lmw",
     "is_candlestick_name",
+    "methods_are_independent",
+    "production_detection_id",
+    "temporal_iou",
 ]

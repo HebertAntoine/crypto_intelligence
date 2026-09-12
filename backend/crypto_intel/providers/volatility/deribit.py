@@ -19,8 +19,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from ...core.enums import Asset
+from ...core.enums import Asset, DataQuality, FetchStatus, ProviderCategory
+from ...core.freshness import compute_freshness
+from ...core.models import Observation
 from ...logging_setup import get_logger
+from ..base import BaseProvider, FetchRequest, FetchResult
 from ..http import get_http
 
 log = get_logger("providers.deribit")
@@ -132,3 +135,43 @@ async def backfill_dvol(
 async def backfill_all(assets: list[Asset] | None = None) -> dict[str, Any]:
     assets = assets or Asset.tradables()
     return {a.value: await backfill_dvol(a) for a in assets}
+
+
+class DeribitVolatilityProvider(BaseProvider):
+    name = "deribit_volatility"
+    source = "Deribit"
+    category = ProviderCategory.DERIVATIVES
+    capabilities = ("options.dvol",)
+    source_url = "https://www.deribit.com/api/v2/public/get_volatility_index_data"
+    base_confidence = 90.0
+
+    async def fetch(self, request: FetchRequest) -> FetchResult:
+        if request.asset is None or request.asset.value not in SUPPORTED:
+            return FetchResult.failure(
+                FetchStatus.NO_DATA,
+                self.name,
+                "UNAVAILABLE - Deribit DVOL exists for BTC and ETH only; no proxy is used",
+            )
+        end = datetime.now(UTC)
+        start = end.timestamp() * 1000 - max(2, request.limit) * 86400_000
+        points = await fetch_window(
+            SUPPORTED[request.asset.value], int(start), int(end.timestamp() * 1000)
+        )
+        if not points:
+            return FetchResult.failure(FetchStatus.NO_DATA, self.name)
+        provenance = self.provenance(self.source_url)
+        observations = [
+            Observation(
+                asset=request.asset,
+                metric="options.dvol",
+                value=value,
+                unit="volatility_index",
+                timestamp=timestamp,
+                provenance=provenance,
+                freshness=compute_freshness(timestamp, "derivatives"),
+                confidence=self.base_confidence,
+                quality=DataQuality.MEASURED,
+            )
+            for timestamp, value in points
+        ]
+        return FetchResult.success(observations, self.name)

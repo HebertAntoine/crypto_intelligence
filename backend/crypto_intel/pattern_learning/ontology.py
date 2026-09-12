@@ -171,8 +171,8 @@ class MethodFamily(StrEnum):
     SMOOTHED_EXTREMA = "SMOOTHED_EXTREMA"
     #: Droites ajustées par régression sur des points.
     LINE_REGRESSION = "LINE_REGRESSION"
-    #: Régression à noyau puis appariement de formes — Lo, Mamaysky & Wang.
-    KERNEL_SMOOTHING = "KERNEL_SMOOTHING"
+    #: Régression à noyau, extrema puis appariement explicite de templates.
+    KERNEL_TEMPLATE_MATCHING = "KERNEL_TEMPLATE_MATCHING"
     #: Reconnaissance d'image.
     VISION_MODEL = "VISION_MODEL"
     #: Règles sur les seules valeurs OHLC d'une à trois barres.
@@ -182,7 +182,10 @@ class MethodFamily(StrEnum):
 #: Quelle famille pour quel moteur, d'après le code réellement lu.
 METHOD_FAMILIES: dict[str, MethodFamily] = {
     "ours": MethodFamily.CAUSAL_PIVOTS,
+    "OUR_ENGINE": MethodFamily.CAUSAL_PIVOTS,
     "tysoncung/crypto-chart-patterns": MethodFamily.SMOOTHED_EXTREMA,
+    "CURRENT_EXTERNAL_COMPARATOR": MethodFamily.SMOOTHED_EXTREMA,
+    "LMW": MethodFamily.KERNEL_TEMPLATE_MATCHING,
     "michaelsboost/CandleEdge": MethodFamily.CANDLE_RULES,
     "przemyslawbak/OHLC_Candlestick_Patterns": MethodFamily.CANDLE_RULES,
     "zeta-zetra/chart_patterns": MethodFamily.CAUSAL_PIVOTS,

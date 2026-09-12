@@ -213,6 +213,24 @@ async def job_ohlcv_sync() -> None:
     _record("ohlcv_sync", not errors, "; ".join(errors))
 
 
+async def job_pattern_experiments() -> None:
+    """Accumulate prospective pattern evidence without blocking the event loop."""
+    try:
+        from .pattern_learning.prospective import update_pattern_experiment
+
+        result = await asyncio.to_thread(update_pattern_experiment)
+        maturity = result["maturity"]
+        _record(
+            "pattern_experiments",
+            True,
+            f"{maturity['observations_settled']}/"
+            f"{maturity['observations_required']} observations settled",
+        )
+    except Exception as exc:
+        log.warning("pattern_experiment_failed", error=str(exc))
+        _record("pattern_experiments", False, str(exc))
+
+
 async def job_derivatives_sync() -> None:
     """Keep funding, open interest and DVOL current.
 
@@ -291,6 +309,21 @@ async def job_etf_sync() -> None:
     _record("etf_sync", not errors, "; ".join(errors))
 
 
+async def job_future_events_sync() -> None:
+    """Refresh primary-source calendars; partial outages stay visible."""
+    from .future_events.collector import FutureEventCollector
+
+    try:
+        report = await FutureEventCollector().collect()
+        detail = f"{report.saved} events; {len(report.failures)} source failures"
+        _record("future_events_sync", not report.failures, detail)
+        if report.failures:
+            log.warning("future_event_sources_unavailable", failures=report.failures)
+    except Exception as exc:
+        log.warning("future_events_sync_failed", error=str(exc))
+        _record("future_events_sync", False, str(exc))
+
+
 async def job_evaluate() -> None:
     """Score past reports against prices that have since been realised."""
     from .evaluation.outcomes import OutcomeEvaluator
@@ -348,8 +381,10 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
         ("analysis", job_analysis, 30),
         ("decision_track", job_decision_track, 30),
         ("ohlcv_sync", job_ohlcv_sync, 60),
+        ("pattern_experiments", job_pattern_experiments, 60),
         ("derivatives_sync", job_derivatives_sync, 60),
         ("etf_sync", job_etf_sync, 240),
+        ("future_events_sync", job_future_events_sync, 360),
         ("evaluate", job_evaluate, 60),
         ("purge", job_purge, 1440),
     ]
@@ -358,7 +393,9 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
     for job_id, func, minutes in jobs:
         # Stagger first runs so startup does not fire every job at once.
         offset = {"market": 1, "analysis": 2, "decision_track": 3,
-                  "ohlcv_sync": 5, "derivatives_sync": 6, "etf_sync": 8,
+                  "ohlcv_sync": 5, "pattern_experiments": 7,
+                  "derivatives_sync": 6, "etf_sync": 8,
+                  "future_events_sync": 9,
                   "evaluate": 11, "purge": 20}[job_id]
         scheduler.add_job(
             func,

@@ -14,6 +14,8 @@ Two rules govern this module:
 
 from __future__ import annotations
 
+from enum import StrEnum
+
 import numpy as np
 from pydantic import BaseModel, Field
 
@@ -177,4 +179,185 @@ class WhaleAnalyzer:
             freshness=worst_freshness([o.freshness for o in observations]),
             evidence_ids=[o.id for o in observations[:30]],
             findings=findings, configured_providers=configured_providers or [],
+        )
+
+
+class WhaleTransferKind(StrEnum):
+    WALLET_TO_EXCHANGE = "WALLET_TO_EXCHANGE"
+    EXCHANGE_TO_WALLET = "EXCHANGE_TO_WALLET"
+    EXCHANGE_TO_EXCHANGE = "EXCHANGE_TO_EXCHANGE"
+    WALLET_TO_WALLET = "WALLET_TO_WALLET"
+    MINT = "MINT"
+    BURN = "BURN"
+    UNKNOWN = "UNKNOWN"
+
+
+class WhaleState(StrEnum):
+    STRONG_ACCUMULATION = "STRONG_ACCUMULATION"
+    ACCUMULATION = "ACCUMULATION"
+    NEUTRAL = "NEUTRAL"
+    DISTRIBUTION = "DISTRIBUTION"
+    STRONG_DISTRIBUTION = "STRONG_DISTRIBUTION"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+
+
+class WhaleTransfer(BaseModel):
+    id: str
+    asset: Asset
+    timestamp: str
+    amount_usd: float = Field(gt=0)
+    from_entity: str | None = None
+    from_entity_type: str = "unknown"
+    to_entity: str | None = None
+    to_entity_type: str = "unknown"
+    transaction_type: str = "transfer"
+    source: str
+    source_url: str
+    evidence_ids: list[str] = Field(default_factory=list)
+
+    @property
+    def kind(self) -> WhaleTransferKind:
+        tx_type = self.transaction_type.lower()
+        if tx_type == "mint":
+            return WhaleTransferKind.MINT
+        if tx_type == "burn":
+            return WhaleTransferKind.BURN
+
+        def group(value: str) -> str:
+            lowered = value.lower()
+            if "exchange" in lowered:
+                return "exchange"
+            if any(word in lowered for word in ("wallet", "custody", "custodian", "unknown")):
+                return "wallet"
+            return "unknown"
+
+        origin = group(self.from_entity_type)
+        destination = group(self.to_entity_type)
+        mapping = {
+            ("wallet", "exchange"): WhaleTransferKind.WALLET_TO_EXCHANGE,
+            ("exchange", "wallet"): WhaleTransferKind.EXCHANGE_TO_WALLET,
+            ("exchange", "exchange"): WhaleTransferKind.EXCHANGE_TO_EXCHANGE,
+            ("wallet", "wallet"): WhaleTransferKind.WALLET_TO_WALLET,
+        }
+        return mapping.get((origin, destination), WhaleTransferKind.UNKNOWN)
+
+
+class WhaleIntelligenceAnalysis(BaseModel):
+    available: bool
+    asset: Asset
+    state: WhaleState = WhaleState.INSUFFICIENT_DATA
+    exchange_deposits_usd: float = 0.0
+    exchange_withdrawals_usd: float = 0.0
+    classified_transfers: int = 0
+    unknown_transfers: int = 0
+    potential_sell_pressure: float | None = None
+    confidence: float = 0.0
+    is_certainty: bool = False
+    factors: list[str] = Field(default_factory=list)
+    evidence_ids: list[str] = Field(default_factory=list)
+    provenance: list[dict[str, str]] = Field(default_factory=list)
+    unavailable_reason: str | None = None
+    explanation: str = ""
+
+
+class WhaleIntelligenceEngine:
+    """Classify transfer direction before assigning any pressure signal."""
+
+    def analyze(self, asset: Asset, transfers: list[WhaleTransfer]) -> WhaleIntelligenceAnalysis:
+        relevant = [transfer for transfer in transfers if transfer.asset is asset]
+        if not relevant:
+            return WhaleIntelligenceAnalysis(
+                available=False,
+                asset=asset,
+                unavailable_reason="UNAVAILABLE - no attributed whale transfer source",
+                explanation="No whale state is inferred from missing transfers.",
+            )
+
+        deposits = sum(
+            transfer.amount_usd
+            for transfer in relevant
+            if transfer.kind is WhaleTransferKind.WALLET_TO_EXCHANGE
+        )
+        withdrawals = sum(
+            transfer.amount_usd
+            for transfer in relevant
+            if transfer.kind is WhaleTransferKind.EXCHANGE_TO_WALLET
+        )
+        classified = [
+            transfer
+            for transfer in relevant
+            if transfer.kind in {
+                WhaleTransferKind.WALLET_TO_EXCHANGE,
+                WhaleTransferKind.EXCHANGE_TO_WALLET,
+            }
+        ]
+        unknown = sum(
+            transfer.kind
+            in {
+                WhaleTransferKind.UNKNOWN,
+                WhaleTransferKind.WALLET_TO_WALLET,
+                WhaleTransferKind.EXCHANGE_TO_EXCHANGE,
+            }
+            for transfer in relevant
+        )
+        directional_total = deposits + withdrawals
+        pressure = (
+            (deposits - withdrawals) / directional_total if directional_total > 0 else None
+        )
+        if pressure is None:
+            state = WhaleState.NEUTRAL
+        elif pressure >= 0.6 and len(classified) >= 3:
+            state = WhaleState.STRONG_DISTRIBUTION
+        elif pressure > 0.15:
+            state = WhaleState.DISTRIBUTION
+        elif pressure <= -0.6 and len(classified) >= 3:
+            state = WhaleState.STRONG_ACCUMULATION
+        elif pressure < -0.15:
+            state = WhaleState.ACCUMULATION
+        else:
+            state = WhaleState.NEUTRAL
+
+        factors: list[str] = []
+        if deposits:
+            factors.append(
+                "Des portefeuilles ont envoyé des actifs vers des exchanges : "
+                "pression vendeuse potentielle, sans preuve de vente."
+            )
+        if withdrawals:
+            factors.append(
+                "Des exchanges ont envoyé des actifs vers des portefeuilles/custodies : "
+                "signal compatible avec une accumulation."
+            )
+        if unknown:
+            factors.append(
+                f"{unknown} transfert(s) interne(s) ou non attribué(s) restent directionnellement neutres."
+            )
+        confidence = min(0.9, len(classified) / max(3, len(relevant))) if classified else 0.25
+        return WhaleIntelligenceAnalysis(
+            available=True,
+            asset=asset,
+            state=state,
+            exchange_deposits_usd=deposits,
+            exchange_withdrawals_usd=withdrawals,
+            classified_transfers=len(classified),
+            unknown_transfers=unknown,
+            potential_sell_pressure=pressure,
+            confidence=confidence,
+            is_certainty=False,
+            factors=factors,
+            evidence_ids=sorted(
+                {
+                    evidence
+                    for transfer in relevant
+                    for evidence in [transfer.id, *transfer.evidence_ids]
+                }
+            ),
+            provenance=[
+                {"source": source, "source_url": url}
+                for source, url in sorted({(item.source, item.source_url) for item in relevant})
+            ],
+            explanation=(
+                "Only wallet→exchange and exchange→wallet transfers contribute direction. "
+                "The state describes potential pressure and is never proof of a trade."
+            ),
         )

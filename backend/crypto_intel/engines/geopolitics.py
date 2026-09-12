@@ -15,6 +15,12 @@ from datetime import UTC, datetime, timedelta
 from pydantic import BaseModel, Field
 
 from ..core.enums import Direction, RiskLevel
+from ..future_events.models import (
+    DirectionalBias,
+    ExpectedMovement,
+    FutureEvent,
+    FutureEventCategory,
+)
 
 _THEMES: dict[str, tuple[re.Pattern[str], float, list[str]]] = {
     "armed_conflict": (
@@ -169,4 +175,109 @@ class GeopoliticalRiskAnalyzer:
         return (
             f"{level.value} geopolitical risk: {detail}. Effect on crypto is real but not dominant.",
             Direction.NEUTRAL,
+        )
+
+
+class ProspectiveGeopoliticalRisk(BaseModel):
+    available: bool
+    unavailable_reason: str | None = None
+    event_count: int = 0
+    level: RiskLevel = RiskLevel.LOW
+    directional_bias: DirectionalBias = DirectionalBias.NEUTRAL
+    expected_movement: ExpectedMovement = ExpectedMovement.NORMAL
+    causal_chains: list[list[str]] = Field(default_factory=list)
+    event_ids: list[str] = Field(default_factory=list)
+    provenance: list[dict[str, str | None]] = Field(default_factory=list)
+    explanation: str = ""
+
+
+_CONCRETE_EVENT_TYPES = {
+    "ENERGY_INFRASTRUCTURE_ATTACK",
+    "CHOKEPOINT_CLOSURE",
+    "SANCTIONS",
+    "ARMED_CONFLICT",
+    "CEASEFIRE",
+    "OPEC_PRODUCTION_CHANGE",
+    "STRATEGIC_RESERVE_RELEASE",
+    "PIPELINE_DISRUPTION",
+}
+
+
+class GeopoliticalRiskEngine:
+    """Prospective view over concrete, source-backed events only.
+
+    It deliberately refuses a bag-of-words sentiment score. Providers must
+    identify a concrete event type and preserve its source before it reaches
+    this engine.
+    """
+
+    def analyze(self, events: list[FutureEvent]) -> ProspectiveGeopoliticalRisk:
+        concrete = [
+            event
+            for event in events
+            if event.category in {FutureEventCategory.GEOPOLITICAL, FutureEventCategory.ENERGY}
+            and str(event.metadata.get("concrete_type") or event.event_type)
+            in _CONCRETE_EVENT_TYPES
+        ]
+        if not concrete:
+            return ProspectiveGeopoliticalRisk(
+                available=False,
+                unavailable_reason="UNAVAILABLE - no source-backed concrete geopolitical event",
+                explanation="No direction is inferred from generic geopolitical headlines.",
+            )
+
+        movement_rank = {
+            ExpectedMovement.LOW: 0,
+            ExpectedMovement.NORMAL: 1,
+            ExpectedMovement.HIGH: 2,
+            ExpectedMovement.EXTREME: 3,
+        }
+        movement = max(concrete, key=lambda event: movement_rank[event.magnitude_effect]).magnitude_effect
+        bearish = sum(
+            1
+            for event in concrete
+            if event.directional_effect in {
+                DirectionalBias.BEARISH,
+                DirectionalBias.STRONGLY_BEARISH,
+            }
+        )
+        bullish = sum(
+            1
+            for event in concrete
+            if event.directional_effect in {
+                DirectionalBias.BULLISH,
+                DirectionalBias.STRONGLY_BULLISH,
+            }
+        )
+        direction = (
+            DirectionalBias.BEARISH if bearish > bullish
+            else DirectionalBias.BULLISH if bullish > bearish
+            else DirectionalBias.NEUTRAL
+        )
+        if movement is ExpectedMovement.EXTREME:
+            level = RiskLevel.EXTREME
+        elif movement is ExpectedMovement.HIGH:
+            level = RiskLevel.HIGH
+        else:
+            level = RiskLevel.MODERATE
+        return ProspectiveGeopoliticalRisk(
+            available=True,
+            event_count=len(concrete),
+            level=level,
+            directional_bias=direction,
+            expected_movement=movement,
+            causal_chains=[event.causal_chain for event in concrete if event.causal_chain],
+            event_ids=[event.canonical_event_id for event in concrete],
+            provenance=[
+                {
+                    "source": event.source,
+                    "source_url": event.source_url,
+                    "source_tier": event.source_tier.value,
+                }
+                for event in concrete
+            ],
+            explanation=(
+                "Concrete events are mapped through explicit transmission channels; "
+                "the result is a risk contribution, never a certain price forecast."
+            ),
         )

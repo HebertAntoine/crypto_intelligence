@@ -107,7 +107,135 @@ export const api = {
   sourceHierarchy: () => request<any>("/sources/hierarchy"),
   snapshotsIntegrity: () => request<any>("/research/snapshots/integrity"),
   assetEmpirical: (symbol: string) => request<any>(`/assets/${symbol}/empirical`),
+
+  // Future-first decision contract. All interpretation remains server-side.
+  future: (symbol: string, horizon: DecisionHorizon = "7d") =>
+    request<FutureDecision>(`/future/${symbol}?horizon=${horizon}`),
+  futureWhy: (symbol: string, horizon: DecisionHorizon = "7d") =>
+    request<FutureWhy>(`/future/${symbol}/why?horizon=${horizon}`),
+  futureTimeline: (symbol: string, days = 30) =>
+    request<FutureTimeline>(`/future/${symbol}/timeline?days=${days}`),
 };
+
+export type DecisionHorizon = "24h" | "7d" | "30d";
+
+export interface FutureSource {
+  source?: string | null;
+  tier?: string;
+  url?: string | null;
+  reference?: string | null;
+  as_of?: string;
+  last_updated?: string;
+  evidence_ids?: string[];
+}
+
+export interface FutureReason {
+  icon: string;
+  title: string;
+  date_time: string | null;
+  impact: string | null;
+  explanation: string;
+  source?: string | null;
+  source_url?: string | null;
+  evidence_ids: string[];
+}
+
+export interface FutureFamilyRead {
+  family: string;
+  label: string;
+  status: "AVAILABLE" | "UNAVAILABLE";
+  available: boolean;
+  directional_bias: string | null;
+  expected_movement: string | null;
+  confidence: number;
+  summary: string;
+  reasons: string[];
+  sources: FutureSource[];
+  as_of: string | null;
+  freshness: string;
+  unavailable_reason: string | null;
+}
+
+export interface FutureEventRead {
+  id: string;
+  title: string;
+  event_type: string;
+  scheduled_at: string | null;
+  detected_at: string;
+  countdown_seconds: number | null;
+  importance: string;
+  directional_bias: string;
+  expected_movement: string;
+  uncertainty: string;
+  assets: string[];
+  source: string;
+  source_tier: string;
+  source_url: string | null;
+  freshness: string;
+  sort_time: string;
+}
+
+export interface FutureScenarioRead {
+  id: string;
+  probability: number | null;
+  probability_source: string | null;
+  probability_observed_at: string | null;
+  event_chain: string[];
+  directional_bias: string;
+  expected_movement: string;
+  confidence: number;
+  invalidation_conditions: string[];
+}
+
+export interface FutureDecision {
+  asset: string;
+  analysis_id: string;
+  as_of: string;
+  price_at_analysis: number | null;
+  horizon: DecisionHorizon;
+  decision: "BUY" | "WAIT" | "SELL" | "INSUFFICIENT_DATA";
+  directional_bias: string;
+  expected_movement: string;
+  decision_confidence: number;
+  event_risk: {
+    active: boolean; level: string; reasons: string[]; event_ids: string[]; bypassed: boolean;
+  };
+  next_major_event: Record<string, any> | null;
+  reasons: FutureReason[];
+  counter_signals: { family: string; directional_bias: string; explanation: string; sources: FutureSource[] }[];
+  scenarios: FutureScenarioRead[];
+  what_could_change_decision: string[];
+  families: {
+    coverage: string; available_count: number; total_count: 5; unavailable: string[];
+    items: Record<string, FutureFamilyRead>;
+  };
+  horizons: Record<DecisionHorizon, {
+    decision: string; directional_bias: string; expected_movement: string;
+    decision_confidence: number; event_risk: string;
+  }>;
+  provenance: FutureSource[];
+}
+
+export interface FutureWhy {
+  asset: string;
+  analysis_id: string;
+  as_of: string;
+  horizon: DecisionHorizon;
+  decision: string;
+  title: string;
+  reasons: FutureReason[];
+  counter_signals: FutureDecision["counter_signals"];
+  what_could_change_decision: string[];
+  provenance: FutureSource[];
+}
+
+export interface FutureTimeline {
+  asset: string;
+  analysis_id: string;
+  as_of: string;
+  days: number;
+  events: FutureEventRead[];
+}
 
 export interface AuditData {
   assets: Record<string, {

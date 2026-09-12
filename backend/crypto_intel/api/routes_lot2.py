@@ -687,30 +687,45 @@ async def calendar(days: int = Query(30, le=180)) -> dict[str, Any]:
     planning around an event.
     """
     now = datetime.now(UTC)
-    upcoming = repo.upcoming_events(days=days, limit=100)
+    future_events = repo.list_future_events(
+        start=now,
+        end=now + timedelta(days=days),
+        include_expired=False,
+        limit=100,
+    )
 
     entries: list[dict[str, Any]] = []
-    for event in upcoming:
-        kind = event["kind"]
+    for event in future_events:
+        kind = event.event_type
         category = (
-            "FED" if kind == "FOMC"
-            else "MACRO" if kind in ("CPI", "PCE", "NFP", "GDP")
-            else "REGULATION" if kind in ("REGULATION", "SEC", "CFTC")
-            else "OTHER"
+            "FED" if kind == "FOMC_DECISION"
+            else "MACRO" if event.category.value in ("MACRO", "MONETARY_POLICY")
+            else "REGULATION" if event.category.value == "REGULATION"
+            else event.category.value
         )
+        scheduled = event.scheduled_at
+        if scheduled is None:
+            continue
+        hours_until = (scheduled - now).total_seconds() / 3600.0
         entries.append({
-            "id": event["id"],
-            "name": event["name"],
+            "id": event.canonical_event_id,
+            "name": event.title,
             "category": category,
             "kind": kind,
-            "scheduled_at": event["scheduled_at"].isoformat(),
-            "hours_until": event["hours_until"],
-            "importance": event["importance"],
-            "assets": event["assets"] or ["BTC", "ETH", "SOL"],
-            # Calendar entries come from officially published schedules.
+            "scheduled_at": scheduled.isoformat(),
+            "hours_until": hours_until,
+            "importance": event.importance.value,
+            "assets": [asset.value for asset in event.affected_assets],
+            # Preserve the established API enum while making the basis
+            # explicit in an additive field.
             "certainty": "KNOWN",
-            "source_name": event.get("source_name") or "config/macro_calendar.yaml",
-            "source_url": event.get("source_url"),
+            "date_basis": "OFFICIAL_SOURCE" if event.source_tier.value == "A" else "SOURCED",
+            "source_name": event.source,
+            "source_url": event.source_url,
+            "source_tier": event.source_tier.value,
+            "directional_effect": event.directional_effect.value,
+            "magnitude_effect": event.magnitude_effect.value,
+            "freshness": event.to_public_dict(now=now)["freshness"],
         })
 
     # Regulatory items already published are context, not upcoming catalysts,
@@ -739,9 +754,8 @@ async def calendar(days: int = Query(30, le=180)) -> dict[str, Any]:
         "all_upcoming": entries,
         "recent_regulation": recent_regulation,
         "note": (
-            "Macro dates come from config/macro_calendar.yaml, maintained from official "
-            "publication schedules. Protocol and token events are not yet tracked - "
-            "they are absent rather than estimated."
+            "Dates come from primary-source collectors. A source outage is never replaced "
+            "with an estimated date."
         ),
     }
 

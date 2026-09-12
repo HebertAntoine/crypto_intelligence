@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .api.routes import router
 from .api.routes_analysis import router as analysis_router
+from .api.routes_future import router as future_router
 from .api.routes_lot2 import router as lot2_router
 from .api.routes_lot3 import router as lot3_router
 from .api.routes_lot4 import router as lot4_router
@@ -37,7 +38,9 @@ async def lifespan(app: FastAPI):
     )
 
     scheduler = None
-    if settings.scheduler_enabled:
+    # Fixture mode is intentionally inert: it must never launch background
+    # jobs that look like live collection or outlive an API test client.
+    if settings.scheduler_enabled and not settings.mock_mode:
         from .scheduler import start_scheduler
 
         scheduler = start_scheduler()
@@ -76,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(lot5_router, prefix="/api")
     app.include_router(lot6b_router, prefix="/api")
     app.include_router(analysis_router, prefix="/api")
+    app.include_router(future_router, prefix="/api")
 
     @app.exception_handler(Exception)
     async def unhandled(request, exc: Exception):

@@ -23,14 +23,23 @@ apparent — et ce serait un mensonge, parce que ces extrema n'auraient pas pu
 from __future__ import annotations
 
 import numpy as np
+from numpy.typing import NDArray
+
+# Beyond six standard deviations a Gaussian weight is below 1.6e-8. Keeping
+# those terms made the causal filter O(n²) without changing a quoted score.
+GAUSSIAN_CUTOFF_SIGMAS = 6.0
 
 
-def _gaussian_weights(distance: np.ndarray, bandwidth: float) -> np.ndarray:
+def _gaussian_weights(
+    distance: NDArray[np.float64], bandwidth: float
+) -> NDArray[np.float64]:
     """Noyau gaussien. Le facteur constant se simplifie dans la normalisation."""
     return np.exp(-0.5 * (distance / bandwidth) ** 2)
 
 
-def kernel_smooth(values: np.ndarray, bandwidth: float) -> np.ndarray:
+def kernel_smooth(
+    values: NDArray[np.float64], bandwidth: float
+) -> NDArray[np.float64]:
     """Régression à noyau de Nadaraya-Watson, noyau **symétrique**.
 
     Chaque point lissé est une moyenne pondérée de toute la série, les poids
@@ -40,16 +49,19 @@ def kernel_smooth(values: np.ndarray, bandwidth: float) -> np.ndarray:
     n = len(values)
     if n == 0 or bandwidth <= 0:
         return values.astype(float)
-    positions = np.arange(n, dtype=float)
-    smoothed = np.empty(n, dtype=float)
-    for i in range(n):
-        weights = _gaussian_weights(positions - positions[i], bandwidth)
-        total = weights.sum()
-        smoothed[i] = float(values @ weights / total) if total > 0 else values[i]
-    return smoothed
+    radius = min(n - 1, int(np.ceil(GAUSSIAN_CUTOFF_SIGMAS * bandwidth)))
+    distance: NDArray[np.float64] = np.arange(-radius, radius + 1, dtype=float)
+    weights = _gaussian_weights(distance, bandwidth)
+    numerator_full = np.convolve(values, weights, mode="full")
+    denominator_full = np.convolve(np.ones(n, dtype=float), weights, mode="full")
+    numerator = numerator_full[radius:radius + n]
+    denominator = denominator_full[radius:radius + n]
+    return np.asarray(numerator / denominator, dtype=float)
 
 
-def causal_kernel_smooth(values: np.ndarray, bandwidth: float) -> np.ndarray:
+def causal_kernel_smooth(
+    values: NDArray[np.float64], bandwidth: float
+) -> NDArray[np.float64]:
     """Le même lissage, mais borné au passé.
 
     Seules les observations `s ≤ t` pèsent. Le résultat est un filtre
@@ -59,16 +71,15 @@ def causal_kernel_smooth(values: np.ndarray, bandwidth: float) -> np.ndarray:
     n = len(values)
     if n == 0 or bandwidth <= 0:
         return values.astype(float)
-    positions = np.arange(n, dtype=float)
-    smoothed = np.empty(n, dtype=float)
-    for i in range(n):
-        distance = positions[: i + 1] - positions[i]
-        weights = _gaussian_weights(distance, bandwidth)
-        total = weights.sum()
-        smoothed[i] = (
-            float(values[: i + 1] @ weights / total) if total > 0 else values[i]
-        )
-    return smoothed
+    max_lag = min(n - 1, int(np.ceil(GAUSSIAN_CUTOFF_SIGMAS * bandwidth)))
+    lags: NDArray[np.float64] = np.arange(max_lag + 1, dtype=float)
+    weights = _gaussian_weights(lags, bandwidth)
+    # Convolution with weights ordered by lag implements
+    # y[t] = sum_lag price[t-lag] * weight[lag].  The denominator handles the
+    # shorter history available near the left boundary.
+    numerator = np.convolve(values, weights, mode="full")[:n]
+    denominator = np.convolve(np.ones(n, dtype=float), weights, mode="full")[:n]
+    return np.asarray(numerator / denominator, dtype=float)
 
 
 def bandwidth_for(n_bars: int, fraction: float) -> float:

@@ -34,13 +34,19 @@ class FetchResult:
 
     status: FetchStatus
     observations: list[Observation] = field(default_factory=list)
+    # Rich future catalysts are deliberately separate from numeric
+    # observations.  ``Any`` avoids importing the future-events package from
+    # the provider interface and creating an import cycle at startup.
+    events: list[Any] = field(default_factory=list)
     raw: Any = None
     message: str = ""
     provider: str = ""
 
     @property
     def ok(self) -> bool:
-        return self.status is FetchStatus.OK and bool(self.observations)
+        return self.status is FetchStatus.OK and bool(
+            self.observations or self.events or self.raw is not None
+        )
 
     @property
     def user_message(self) -> str:
@@ -51,6 +57,12 @@ class FetchResult:
         if not observations:
             return cls(status=FetchStatus.NO_DATA, provider=provider)
         return cls(status=FetchStatus.OK, observations=observations, provider=provider, raw=raw)
+
+    @classmethod
+    def success_events(cls, events: list[Any], provider: str, raw: Any = None) -> FetchResult:
+        if not events:
+            return cls(status=FetchStatus.NO_DATA, provider=provider)
+        return cls(status=FetchStatus.OK, events=events, provider=provider, raw=raw)
 
     @classmethod
     def failure(cls, status: FetchStatus, provider: str, message: str = "") -> FetchResult:

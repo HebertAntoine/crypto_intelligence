@@ -318,41 +318,44 @@ def technical_snapshots(asset: Asset) -> dict[Timeframe, Any]:
 def upcoming_macro(asset: Asset, days: int = 14, now: datetime | None = None) -> list[dict[str, Any]]:
     """Scheduled macro events that touch this asset.
 
-    The calendar is maintained in `config/macro_calendar.yaml`: dates published
-    in advance, not an estimate. A near deadline predicts nothing, but it
-    explains why waiting can be reasonable.
+    Events come from the rich store populated by primary-source collectors. A
+    near deadline predicts nothing, but it explains why waiting can be
+    reasonable.
     """
-    from ..engines.macro import MacroAnalyzer
+    from ..db import repo
+    from ..future_events.models import FutureEventCategory
 
     reference = now or datetime.now(UTC)
     out: list[dict[str, Any]] = []
-    # Read the maintained source of truth directly. The DB is only a pipeline
-    # mirror and may still hold a superseded date after a calendar revision.
-    for event in MacroAnalyzer().load_calendar():
-        if event.is_past:
+    events = repo.list_future_events(
+        asset=asset,
+        start=reference,
+        end=reference + timedelta(days=days),
+        limit=100,
+    )
+    for event in events:
+        if event.category not in {
+            FutureEventCategory.MACRO,
+            FutureEventCategory.MONETARY_POLICY,
+        } or event.scheduled_at is None:
             continue
-        assets = [item.value for item in event.assets_impact]
-        if assets and asset.value not in assets:
-            continue
+        assets = [item.value for item in event.affected_assets]
         scheduled = event.scheduled_at
-        if scheduled is not None and scheduled.tzinfo is None:
-            scheduled = scheduled.replace(tzinfo=UTC)
-        hours = (
-            (scheduled - reference).total_seconds() / 3600.0
-            if scheduled is not None else float(event.hours_until or 0.0)
-        )
-        if hours > days * 24:
-            continue
+        hours = (scheduled - reference).total_seconds() / 3600.0
         out.append({
-            "kind": event.kind,
-            "name": event.name,
-            "scheduled_at": str(event.scheduled_at),
-            "importance": event.importance,
+            "id": event.id,
+            "kind": event.event_type,
+            "name": event.title,
+            "scheduled_at": scheduled.isoformat(),
+            "importance": event.importance.value,
             "hours_until": round(hours, 1),
             "days_until": round(hours / 24.0, 1),
             "assets": assets,
-            "source": "config/macro_calendar.yaml (Fed/BLS/BEA)",
-            "source_url": None,
+            "source": event.source,
+            "source_tier": event.source_tier.value,
+            "source_url": event.source_url,
+            "directional_effect": event.directional_effect.value,
+            "magnitude_effect": event.magnitude_effect.value,
         })
     out.sort(key=lambda event: event["hours_until"])
     return out[:5]
@@ -424,6 +427,7 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     from ..engines.onchain import OnChainAnalyzer
     from ..engines.whales import WhaleAnalyzer
     from ..history import store
+    from ..pattern_learning.quality_gate import apply_independent_live_gate
     from ..research.structural_shadow import live_track_record
     from ..structure.market_structure import MarketStructureEngine
     from ..structure.patterns import build_context, detect_all
@@ -501,8 +505,14 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     h4_candles = store.load_candles(asset, Timeframe.H4)
     pattern_context = build_context(h4_candles, Timeframe.H4)
     patterns = detect_all(pattern_context) if pattern_context is not None else []
-    if patterns:
-        pattern = patterns[0]
+    pattern_gate = apply_independent_live_gate(patterns, h4_candles["close"])
+    promoted_patterns = pattern_gate["accepted"]
+    if promoted_patterns:
+        pattern = promoted_patterns[0]
+        gate_decision = next(
+            decision for decision in pattern_gate["decisions"]
+            if decision["pattern"] == pattern.name and decision["promoted"]
+        )
         factors.append(DecisionFactor(
             id="structure.pattern", category=Category.STRUCTURE,
             title=f"Figure reconnue: {pattern.name}",
@@ -515,11 +525,14 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
             ),
             raw_value={"recognition_confidence": pattern.recognition_confidence,
                        "state": pattern.state.value,
-                       "edge_state": pattern.edge_state.value},
+                       "edge_state": pattern.edge_state.value,
+                       "independent_agreement": 1.0,
+                       "temporal_iou": gate_decision["temporal_iou"],
+                       "lmw_score": gate_decision["lmw_score"]},
             normalized_value=pattern.recognition_confidence,
             polarity=Polarity.WAIT, importance=48, confidence=.7,
             evidence_level="COMPUTATION", timeframe="4H",
-            source="StructuralPatternDetector", as_of=pattern.detected_at.isoformat(),
+            source="StructuralPatternConsensus", as_of=pattern.detected_at.isoformat(),
             freshness="RECENT",
         ))
 
@@ -630,7 +643,17 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     return {
         "factors": factors, "multi_timeframe": mtf,
         "breakout": breakout.model_dump(mode="json"),
-        "patterns": [pattern.to_dict() for pattern in patterns[:3]],
+        "patterns": [
+            {
+                **pattern.to_dict(),
+                "independent_quality_gate": pattern_gate["decisions"][index],
+            }
+            for index, pattern in enumerate(patterns[:3])
+        ],
+        "pattern_quality_gate": {
+            **pattern_gate["summary"],
+            "edge_claim": pattern_gate["edge_claim"],
+        },
         "onchain": onchain.model_dump(mode="json"),
         "liquidity": liquidity.model_dump(mode="json"),
         "macro": macro.model_dump(mode="json"),
@@ -697,6 +720,10 @@ class AnalysisContextSnapshot:
     whales: Any = None
     factors: list[Any] = field(default_factory=list)
     technical: dict[str, Any] = field(default_factory=dict)
+    future_events: list[Any] = field(default_factory=list)
+    future_families: Any = None
+    future_decision: Any = None
+    future_horizons: dict[str, Any] = field(default_factory=dict)
 
     @property
     def provenance(self) -> dict[str, Any]:
@@ -768,6 +795,8 @@ def build_context(
     from ..engines.edge import EdgeEngine, UncertaintyEngine, build_decision_summary
     from ..engines.entry_opportunity import EntryOpportunityEngine
     from ..engines.entry_timing import EntryTimingEngine
+    from ..engines.future_context import build_five_family_snapshot
+    from ..engines.future_decision import FutureDecisionEngine, horizon_decisions
     from ..engines.leverage import LeverageCrowdingEngine
     from ..engines.market_pressure import assess_pressure
     from ..engines.volatility import VolatilityRegimeEngine
@@ -828,6 +857,54 @@ def build_context(
     entry = EntryOpportunityEngine().assess(asset, Timeframe.H4)
     macro_events = upcoming_macro(asset, now=reference)
 
+    from ..db import repo
+    from ..future_events.models import FutureEventStatus
+
+    future_events = [
+        event
+        for event in repo.list_future_events(
+            asset=asset,
+            start=reference - timedelta(days=7),
+            end=reference + timedelta(days=30),
+            limit=250,
+        )
+        if (
+            (event.scheduled_at is not None and event.scheduled_at >= reference)
+            or event.runtime_status(reference)
+            in {FutureEventStatus.ACTIVE, FutureEventStatus.SURPRISE, FutureEventStatus.DECAYING}
+        )
+    ]
+    future_families = build_five_family_snapshot(
+        analysis_id=analysis_id,
+        as_of=reference,
+        states=families,
+        events=future_events,
+        macro_context=evidence["macro"],
+        liquidity=evidence["liquidity"],
+        pressure=pressure,
+        structure=evidence["multi_timeframe"],
+        regime=regime,
+        volatility=volatility,
+        implied_volatility=evidence["implied_volatility"],
+    )
+    uncertainty_fraction = min(1.0, max(0.0, float(uncertainty.score or 0) / 100.0))
+    future_engine = FutureDecisionEngine()
+    future_decision = future_engine.decide(
+        asset,
+        future_events,
+        future_families,
+        as_of=reference,
+        analysis_uncertainty=uncertainty_fraction,
+    )
+    future_horizon_views = horizon_decisions(
+        future_engine,
+        asset,
+        future_events,
+        future_families,
+        as_of=reference,
+        analysis_uncertainty=uncertainty_fraction,
+    )
+
     from ..engines.buy_opportunity import decide
 
     opportunity = decide(
@@ -845,6 +922,7 @@ def build_context(
         live_track_record=evidence["live_track_record"],
         extra_factors=evidence["factors"],
         location=location,
+        future_decision=future_decision.to_dict(),
     )
 
     h4 = snapshots.get(Timeframe.H4)
@@ -893,6 +971,10 @@ def build_context(
             timeframe.value: snapshot_value
             for timeframe, snapshot_value in snapshots.items()
         },
+        future_events=future_events,
+        future_families=future_families,
+        future_decision=future_decision,
+        future_horizons=future_horizon_views,
     )
     log.info(
         "analysis_built", asset=asset.value, analysis_id=analysis_id,

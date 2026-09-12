@@ -16,6 +16,7 @@ from .base import (
     AlertRow,
     ETFFlowRow,
     EventRow,
+    FutureEventRow,
     ObservationRow,
     ReportOutcomeRow,
     ReportRow,
@@ -132,8 +133,16 @@ def save_observations(observations: list[Observation]) -> int:
                 s.add(row)
             else:
                 for field in (
-                    "value_num", "value_text", "value_json", "unit", "freshness",
-                    "confidence", "quality", "fetched_at", "meta", "source_url",
+                    "value_num",
+                    "value_text",
+                    "value_json",
+                    "unit",
+                    "freshness",
+                    "confidence",
+                    "quality",
+                    "fetched_at",
+                    "meta",
+                    "source_url",
                 ):
                     setattr(existing, field, getattr(row, field))
             saved += 1
@@ -143,9 +152,7 @@ def save_observations(observations: list[Observation]) -> int:
 def latest_observation(asset: Asset | None, metric: str) -> Observation | None:
     with session_scope() as s:
         stmt = select(ObservationRow).where(ObservationRow.metric == metric)
-        stmt = stmt.where(
-            ObservationRow.asset == (asset.value if asset else None)
-        )
+        stmt = stmt.where(ObservationRow.asset == (asset.value if asset else None))
         stmt = stmt.order_by(ObservationRow.timestamp.desc()).limit(1)
         row = s.execute(stmt).scalar_one_or_none()
         return row_to_observation(row) if row else None
@@ -175,6 +182,7 @@ def observations_by_ids(ids: list[str]) -> list[Observation]:
 
 
 # --- ETF flows ------------------------------------------------------------
+
 
 def save_etf_flows(rows: list[dict[str, Any]]) -> int:
     """Upsert daily ETF flows. Key is asset|ticker|date so re-importing the
@@ -231,12 +239,11 @@ def get_etf_flows(asset: Asset, days: int = 90) -> list[dict[str, Any]]:
 
 def etf_flow_count(asset: Asset) -> int:
     with session_scope() as s:
-        return len(
-            s.execute(select(ETFFlowRow.id).where(ETFFlowRow.asset == asset.value)).all()
-        )
+        return len(s.execute(select(ETFFlowRow.id).where(ETFFlowRow.asset == asset.value)).all())
 
 
 # --- reports --------------------------------------------------------------
+
 
 def save_report(
     report_id: str,
@@ -398,6 +405,7 @@ def has_outcome(report_id: str, horizon: str) -> bool:
 
 # --- alerts ---------------------------------------------------------------
 
+
 def save_alerts(alerts: list[dict[str, Any]]) -> int:
     if not alerts:
         return 0
@@ -439,6 +447,7 @@ def recent_alerts(limit: int = 50, asset: Asset | None = None) -> list[dict[str,
 
 
 # --- events ---------------------------------------------------------------
+
 
 def save_events(events: list[dict[str, Any]]) -> int:
     if not events:
@@ -518,6 +527,184 @@ def _event_dict(r: EventRow, now: datetime) -> dict[str, Any]:
     }
 
 
+# --- future events --------------------------------------------------------
+
+
+def save_future_events(events: list[Any]) -> int:
+    """Upsert canonical FutureEvent objects without persisting freshness."""
+    if not events:
+        return 0
+    from ..future_events.models import FutureEvent
+
+    saved = 0
+    with session_scope() as s:
+        for event in events:
+            if not isinstance(event, FutureEvent):
+                event = FutureEvent.model_validate(event)
+            row = _future_event_to_row(event)
+            existing = s.get(FutureEventRow, event.canonical_event_id)
+            if existing is None:
+                s.add(row)
+            else:
+                for column in FutureEventRow.__table__.columns:
+                    if column.name == "id":
+                        continue
+                    attr = "metadata_json" if column.name == "metadata" else column.name
+                    setattr(existing, attr, getattr(row, attr))
+            saved += 1
+    return saved
+
+
+def _future_event_to_row(event: Any) -> FutureEventRow:
+    return FutureEventRow(
+        id=event.canonical_event_id,
+        canonical_event_id=event.canonical_event_id,
+        event_signature=event.event_signature,
+        event_type=event.event_type,
+        category=event.category.value,
+        schedule_type=event.schedule_type.value,
+        title=event.title,
+        normalized_title=event.normalized_title,
+        source=event.source,
+        source_tier=event.source_tier.value,
+        source_url=event.source_url,
+        source_reference=event.source_reference,
+        source_published_at=event.source_published_at,
+        detected_at=event.detected_at,
+        scheduled_at=event.scheduled_at,
+        timezone=event.timezone,
+        expected_end_at=event.expected_end_at,
+        status=event.status.value,
+        affected_assets=[asset.value for asset in event.affected_assets] or None,
+        affected_markets=event.affected_markets or None,
+        importance=event.importance.value,
+        consensus=event.consensus,
+        outcome_space=event.outcome_space or None,
+        market_probabilities=[
+            probability.model_dump(mode="json") for probability in event.market_probabilities
+        ]
+        or None,
+        probability_timestamp=event.probability_timestamp,
+        expected_value=event.expected_value,
+        previous_value=event.previous_value,
+        actual_value=event.actual_value,
+        surprise=event.surprise,
+        directional_effect=event.directional_effect.value,
+        magnitude_effect=event.magnitude_effect.value,
+        time_horizon=event.time_horizon.value,
+        confidence=event.confidence,
+        causal_chain=event.causal_chain or None,
+        evidence_ids=event.evidence_ids or None,
+        last_updated=event.last_updated,
+        expires_at=event.expires_at,
+        source_references=[
+            reference.model_dump(mode="json") for reference in event.source_references
+        ]
+        or None,
+        metadata_json=event.metadata or None,
+    )
+
+
+def _row_to_future_event(row: FutureEventRow) -> Any:
+    from ..future_events.models import FutureEvent
+
+    return FutureEvent.model_validate(
+        {
+            "id": row.id,
+            "canonical_event_id": row.canonical_event_id,
+            "event_signature": row.event_signature,
+            "event_type": row.event_type,
+            "category": row.category,
+            "schedule_type": row.schedule_type,
+            "title": row.title,
+            "normalized_title": row.normalized_title,
+            "source": row.source,
+            "source_tier": row.source_tier,
+            "source_url": row.source_url,
+            "source_reference": row.source_reference,
+            "source_published_at": _as_utc(row.source_published_at),
+            "detected_at": _as_utc(row.detected_at),
+            "scheduled_at": _as_utc(row.scheduled_at),
+            "timezone": row.timezone,
+            "expected_end_at": _as_utc(row.expected_end_at),
+            "status": row.status,
+            "affected_assets": row.affected_assets or [],
+            "affected_markets": row.affected_markets or [],
+            "importance": row.importance,
+            "consensus": row.consensus,
+            "outcome_space": row.outcome_space or [],
+            "market_probabilities": row.market_probabilities or [],
+            "probability_timestamp": _as_utc(row.probability_timestamp),
+            "expected_value": row.expected_value,
+            "previous_value": row.previous_value,
+            "actual_value": row.actual_value,
+            "surprise": row.surprise,
+            "directional_effect": row.directional_effect,
+            "magnitude_effect": row.magnitude_effect,
+            "time_horizon": row.time_horizon,
+            "confidence": row.confidence,
+            "causal_chain": row.causal_chain or [],
+            "evidence_ids": row.evidence_ids or [],
+            "last_updated": _as_utc(row.last_updated),
+            "expires_at": _as_utc(row.expires_at),
+            "source_references": row.source_references or [],
+            "metadata": row.metadata_json or {},
+        }
+    )
+
+
+def future_event(event_id: str) -> Any | None:
+    with session_scope() as s:
+        row = s.get(FutureEventRow, event_id)
+        return _row_to_future_event(row) if row else None
+
+
+def list_future_events(
+    *,
+    asset: Asset | None = None,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    include_expired: bool = False,
+    limit: int = 200,
+) -> list[Any]:
+    """Read rich events; asset filtering stays portable across JSON dialects."""
+    from ..future_events.models import FutureEventStatus
+
+    with session_scope() as s:
+        stmt = select(FutureEventRow)
+        if start is not None:
+            stmt = stmt.where(
+                (FutureEventRow.scheduled_at >= start)
+                | ((FutureEventRow.scheduled_at.is_(None)) & (FutureEventRow.detected_at >= start))
+            )
+        if end is not None:
+            stmt = stmt.where(
+                (FutureEventRow.scheduled_at <= end)
+                | ((FutureEventRow.scheduled_at.is_(None)) & (FutureEventRow.detected_at <= end))
+            )
+        rows = (
+            s.execute(
+                stmt.order_by(
+                    FutureEventRow.scheduled_at.asc(), FutureEventRow.detected_at.desc()
+                ).limit(limit * 3)
+            )
+            .scalars()
+            .all()
+        )
+
+    events = [_row_to_future_event(row) for row in rows]
+    if asset is not None:
+        events = [
+            event for event in events if not event.affected_assets or asset in event.affected_assets
+        ]
+    if not include_expired:
+        now = datetime.now(UTC)
+        events = [
+            event for event in events if event.runtime_status(now) is not FutureEventStatus.EXPIRED
+        ]
+    return events[:limit]
+
+
 def purge_old_observations(days: int = 400) -> int:
     cutoff = datetime.now(UTC) - timedelta(days=days)
     with session_scope() as s:
@@ -541,19 +728,20 @@ def observation_fingerprint(
             # Asset-scoped families are stored against the asset; market-wide
             # ones (stablecoins, macro) carry no asset at all.
             rows, last = s.execute(
-                select(func.count(ObservationRow.id), func.max(ObservationRow.timestamp))
-                .where(
+                select(func.count(ObservationRow.id), func.max(ObservationRow.timestamp)).where(
                     ObservationRow.metric.like(f"{prefix}%"),
                     or_(ObservationRow.asset == asset.value, ObservationRow.asset.is_(None)),
                 )
             ).one()
             observed = _as_utc(last)
             out[f"observations:{prefix}"] = [
-                int(rows or 0), observed.isoformat() if observed else None
+                int(rows or 0),
+                observed.isoformat() if observed else None,
             ]
         rows, last = s.execute(
-            select(func.count(ETFFlowRow.id), func.max(ETFFlowRow.date))
-            .where(ETFFlowRow.asset == asset.value)
+            select(func.count(ETFFlowRow.id), func.max(ETFFlowRow.date)).where(
+                ETFFlowRow.asset == asset.value
+            )
         ).one()
         observed = _as_utc(last)
         out["etf_flows"] = [int(rows or 0), observed.isoformat() if observed else None]

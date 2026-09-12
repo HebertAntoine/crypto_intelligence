@@ -66,6 +66,10 @@ class TechnicalSnapshot(BaseModel):
     bb_middle: float | None = None
     bb_lower: float | None = None
     bb_bandwidth: float | None = None
+    bb_bandwidth_percentile: float | None = None
+    bollinger_squeeze: bool | None = None
+    bollinger_direction_contribution: float = 0.0
+    bollinger_expected_movement: str = "UNKNOWN"
     bb_position: float | None = None
     atr: float | None = None
     atr_pct: float | None = None
@@ -192,6 +196,15 @@ class TechnicalAnalysisEngine:
         rvol = ind.last_valid(ind.realized_volatility(close, 20, periods_per_year))
 
         bb_u, bb_m, bb_l = ind.last_valid(bb_up), ind.last_valid(bb_mid), ind.last_valid(bb_low)
+        clean_bandwidth = bandwidth.dropna()
+        bandwidth_percentile = None
+        bollinger_squeeze = None
+        if len(clean_bandwidth) >= 60:
+            current_bandwidth = float(clean_bandwidth.iloc[-1])
+            bandwidth_percentile = float(
+                (clean_bandwidth.iloc[:-1].to_numpy() < current_bandwidth).mean() * 100.0
+            )
+            bollinger_squeeze = bandwidth_percentile <= 10.0
         price = float(close.iloc[-1])
         bb_pos = None
         if bb_u is not None and bb_l is not None and bb_u > bb_l:
@@ -284,6 +297,14 @@ class TechnicalAnalysisEngine:
             stoch_k=ind.last_valid(stoch_k), adx=ind.last_valid(adx_series),
             bb_upper=bb_u, bb_middle=bb_m, bb_lower=bb_l,
             bb_bandwidth=ind.last_valid(bandwidth), bb_position=bb_pos,
+            bb_bandwidth_percentile=bandwidth_percentile,
+            bollinger_squeeze=bollinger_squeeze,
+            bollinger_direction_contribution=0.0,
+            bollinger_expected_movement=(
+                "HIGH" if bollinger_squeeze is True
+                else "NORMAL" if bollinger_squeeze is False
+                else "UNKNOWN"
+            ),
             atr=atr_val, atr_pct=atr_pct_val, realized_vol=rvol,
             volume=float(volume.iloc[-1]), volume_avg=vol_avg,
             relative_volume=rel_vol, volume_acceleration=vol_accel, obv_slope=obv_slope,

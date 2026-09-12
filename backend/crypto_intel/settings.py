@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     # --- free keys --------------------------------------------------------
     fred_api_key: str = ""
     congress_api_key: str = ""
+    cme_fedwatch_api_key: str = ""
+    cme_fedwatch_api_url: str = ""
     etherscan_api_key: str = ""
     sec_user_agent: str = "CryptoIntelligence/0.1 (personal research)"
 
@@ -63,6 +65,7 @@ class Settings(BaseSettings):
     arkham_api_key: str = ""
     coinglass_api_key: str = ""
     sosovalue_api_key: str = ""
+    whale_alert_api_key: str = ""
 
     # --- rpc --------------------------------------------------------------
     solana_rpc_url: str = "https://api.mainnet-beta.solana.com"

@@ -188,6 +188,7 @@ class BuyOpportunityExplanation:
     factors: list[DecisionFactor] = field(default_factory=list)
     guard_rails_applied: list[str] = field(default_factory=list)
     measured_edge_state: str = "NO_MEASURABLE_EDGE"
+    future_decision: dict[str, Any] | None = None
 
     @property
     def headline(self) -> str:
@@ -237,6 +238,7 @@ class BuyOpportunityExplanation:
             "measured_edge_state": self.measured_edge_state,
             "score": self.score, "as_of": self.as_of,
             "provenance": self.provenance,
+            "future_decision": self.future_decision,
             "disclaimer": (
                 "Évaluation déterministe du contexte, pas une garantie de "
                 "performance ni un conseil. L’application ne passe aucun ordre."
@@ -360,6 +362,7 @@ def decide(
     extra_factors: list[DecisionFactor] | None = None,
     critical_missing_families: list[str] | None = None,
     location: Any = None,
+    future_decision: dict[str, Any] | None = None,
 ) -> BuyOpportunityExplanation:
     """Assemble the state and explanation exclusively from structured inputs."""
     now = datetime.now(UTC).isoformat()
@@ -608,6 +611,21 @@ def decide(
         state = BuyOpportunityState.INSUFFICIENT_DATA
         guards.append("Au moins une famille indispensable (prix ou structure) manque.")
 
+    # The future-first engine is the final decision authority when supplied.
+    # Keeping this adapter inside the existing engine preserves its API while
+    # preventing the legacy card from contradicting the new decision.
+    if future_decision is not None:
+        future_action = str(future_decision.get("decision", "INSUFFICIENT_DATA"))
+        state = {
+            "BUY": BuyOpportunityState.OPPORTUNITY,
+            "WAIT": BuyOpportunityState.WAIT,
+            "SELL": BuyOpportunityState.UNFAVORABLE,
+            "INSUFFICIENT_DATA": BuyOpportunityState.INSUFFICIENT_DATA,
+        }.get(future_action, BuyOpportunityState.INSUFFICIENT_DATA)
+        event_risk = future_decision.get("event_risk") or {}
+        if bool(event_risk.get("active")):
+            guards.append("EventRiskGate actif: le risque Tier 1 prime sur la technique.")
+
     ranker = DecisionFactorRanker()
     positives = ranker.rank(factors, Polarity.POSITIVE)
     waits = ranker.rank(factors, Polarity.WAIT)
@@ -629,12 +647,13 @@ def decide(
         improvement_conditions=improve,
         deterioration_conditions=deteriorate,
         structure_change_conditions=structure_change, as_of=now,
-        provenance={"decision_engine": "BuyOpportunityDecisionEngine/v2",
+        provenance={"decision_engine": "BuyOpportunityDecisionEngine/v3",
                     "factor_ranker": "DecisionFactorRanker/v1",
                     "llm_used": False, "factors_considered": len(factors),
                     "selected_factor_ids": selected},
         score=getattr(entry, "score", None), factors=factors,
         guard_rails_applied=guards, measured_edge_state=edge_state,
+        future_decision=future_decision,
     )
 
 

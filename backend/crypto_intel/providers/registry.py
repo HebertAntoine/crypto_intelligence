@@ -149,6 +149,18 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     from .etf.coinglass_etf import CoinglassETFProvider, SoSoValueProvider
     from .etf.csv_import import ETFCSVProvider
     from .etf.farside import FarsideProvider
+    from .events import (
+        BeaCalendarProvider,
+        BlsCalendarProvider,
+        CftcCalendarProvider,
+        CmeFedWatchProvider,
+        FederalReserveCalendarProvider,
+        GeopoliticalFeedProvider,
+        HouseCalendarProvider,
+        OfficialRegulatoryFeedProvider,
+        SenateCalendarProvider,
+        TreasuryAuctionProvider,
+    )
     from .macro.fred import FredProvider
     from .macro.stooq import StooqProvider
     from .macro.yahoo import YahooFinanceProvider
@@ -161,12 +173,14 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     from .onchain.blockchair import BlockchairBTCProvider, BlockchairETHProvider
     from .onchain.solana_rpc import SolanaRPCProvider
     from .stablecoins.defillama_stables import DefiLlamaStablecoinsProvider
+    from .volatility.deribit import DeribitVolatilityProvider
     from .whales.optional_whales import (
         ArkhamProvider,
         CryptoQuantProvider,
         GlassnodeProvider,
         NansenProvider,
     )
+    from .whales.whale_alert import WhaleAlertProvider
 
     classes: list[type[BaseProvider]] = [
         BinanceSpotProvider, CoinbaseSpotProvider, KrakenSpotProvider, CoinGeckoProvider,
@@ -175,8 +189,16 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         BlockchainInfoProvider, BlockchairBTCProvider, BlockchairETHProvider, SolanaRPCProvider,
         DefiLlamaProvider, DefiLlamaRWAProvider, DefiLlamaStablecoinsProvider,
         FredProvider, YahooFinanceProvider, StooqProvider,
+        FederalReserveCalendarProvider, BlsCalendarProvider,
+        BeaCalendarProvider, TreasuryAuctionProvider,
+        OfficialRegulatoryFeedProvider, CftcCalendarProvider,
+        HouseCalendarProvider, SenateCalendarProvider,
+        CmeFedWatchProvider,
+        GeopoliticalFeedProvider,
         RSSNewsProvider, RSSRegulationProvider,
         GlassnodeProvider, CryptoQuantProvider, NansenProvider, ArkhamProvider,
+        WhaleAlertProvider,
+        DeribitVolatilityProvider,
     ]
     return {c.name: c for c in classes}
 

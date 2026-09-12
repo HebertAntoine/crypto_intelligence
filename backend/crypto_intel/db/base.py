@@ -90,7 +90,9 @@ class ReportRow(Base):
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
     asset: Mapped[str] = mapped_column(String(16), index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, index=True
+    )
     price_at_report: Mapped[float | None] = mapped_column(Float)
     conviction_short: Mapped[float | None] = mapped_column(Float)
     conviction_medium: Mapped[float | None] = mapped_column(Float)
@@ -112,7 +114,7 @@ class ReportOutcomeRow(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     report_id: Mapped[str] = mapped_column(String(40), index=True)
     asset: Mapped[str] = mapped_column(String(16), index=True)
-    horizon: Mapped[str] = mapped_column(String(8))          # 1h, 4h, 24h, 3d, 7d, 30d
+    horizon: Mapped[str] = mapped_column(String(8))  # 1h, 4h, 24h, 3d, 7d, 30d
     price_then: Mapped[float | None] = mapped_column(Float)
     price_now: Mapped[float | None] = mapped_column(Float)
     return_pct: Mapped[float | None] = mapped_column(Float)
@@ -166,7 +168,9 @@ class AlertRow(Base):
     asset: Mapped[str | None] = mapped_column(String(16), index=True)
     title: Mapped[str] = mapped_column(String(256))
     detail: Mapped[str] = mapped_column(Text, default="")
-    triggered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, index=True)
+    triggered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, index=True
+    )
     evidence_ids: Mapped[list[str] | None] = mapped_column(JSON)
     acknowledged: Mapped[bool] = mapped_column(Boolean, default=False)
     # Stable identity of "the same alert", used for cooldown so a persistent
@@ -183,7 +187,7 @@ class EventRow(Base):
     __tablename__ = "events"
 
     id: Mapped[str] = mapped_column(String(40), primary_key=True)
-    kind: Mapped[str] = mapped_column(String(32), index=True)     # FOMC, CPI, REGULATION...
+    kind: Mapped[str] = mapped_column(String(32), index=True)  # FOMC, CPI, REGULATION...
     name: Mapped[str] = mapped_column(String(256))
     institution: Mapped[str | None] = mapped_column(String(64))
     legal_status: Mapped[str | None] = mapped_column(String(32))
@@ -194,6 +198,69 @@ class EventRow(Base):
     source_name: Mapped[str | None] = mapped_column(String(96))
     assets: Mapped[list[str] | None] = mapped_column(JSON)
     meta: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+
+
+class FutureEventRow(Base):
+    """Canonical future catalyst.
+
+    This is additive beside the legacy ``events`` calendar.  The old table has
+    a non-null scheduled timestamp and therefore cannot honestly represent an
+    unscheduled shock.  Keeping it during migration preserves every existing
+    API contract while this richer table becomes the source of truth.
+    """
+
+    __tablename__ = "future_events"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    canonical_event_id: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    event_signature: Mapped[str] = mapped_column(String(512), index=True)
+    event_type: Mapped[str] = mapped_column(String(64), index=True)
+    category: Mapped[str] = mapped_column(String(32), index=True)
+    schedule_type: Mapped[str] = mapped_column(String(16), index=True)
+    title: Mapped[str] = mapped_column(String(512))
+    normalized_title: Mapped[str] = mapped_column(String(512), index=True)
+
+    source: Mapped[str] = mapped_column(String(128))
+    source_tier: Mapped[str] = mapped_column(String(1), index=True)
+    source_url: Mapped[str | None] = mapped_column(String(1024))
+    source_reference: Mapped[str | None] = mapped_column(String(512))
+    source_published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), index=True
+    )
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    timezone: Mapped[str] = mapped_column(String(64), default="UTC")
+    expected_end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(16), index=True)
+
+    affected_assets: Mapped[list[str] | None] = mapped_column(JSON)
+    affected_markets: Mapped[list[str] | None] = mapped_column(JSON)
+    importance: Mapped[str] = mapped_column(String(16), index=True)
+    consensus: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    outcome_space: Mapped[list[str] | None] = mapped_column(JSON)
+    market_probabilities: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+    probability_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    expected_value: Mapped[Any | None] = mapped_column(JSON)
+    previous_value: Mapped[Any | None] = mapped_column(JSON)
+    actual_value: Mapped[Any | None] = mapped_column(JSON)
+    surprise: Mapped[float | None] = mapped_column(Float)
+
+    directional_effect: Mapped[str] = mapped_column(String(24), default="NEUTRAL")
+    magnitude_effect: Mapped[str] = mapped_column(String(16), default="NORMAL")
+    time_horizon: Mapped[str] = mapped_column(String(8), default="7d")
+    confidence: Mapped[float] = mapped_column(Float, default=0.0)
+    causal_chain: Mapped[list[str] | None] = mapped_column(JSON)
+    evidence_ids: Mapped[list[str] | None] = mapped_column(JSON)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    source_references: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+    metadata_json: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSON)
+
+    __table_args__ = (
+        Index("ix_future_event_schedule", "status", "scheduled_at"),
+        Index("ix_future_event_category_time", "category", "scheduled_at"),
+    )
 
 
 class ETFFlowRow(Base):
@@ -230,7 +297,9 @@ class MarketSnapshotRow(Base):
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     asset: Mapped[str | None] = mapped_column(String(16), index=True)
-    kind: Mapped[str] = mapped_column(String(24), index=True)   # market|derivatives|etf|onchain|defi|macro|news|analysis
+    kind: Mapped[str] = mapped_column(
+        String(24), index=True
+    )  # market|derivatives|etf|onchain|defi|macro|news|analysis
     captured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     bucket: Mapped[str] = mapped_column(String(32), index=True)
     price: Mapped[float | None] = mapped_column(Float)
@@ -375,7 +444,7 @@ class ResearchResultRow(Base):
     __tablename__ = "research_results"
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    study: Mapped[str] = mapped_column(String(48), index=True)   # etf_lag|event_study|calibration
+    study: Mapped[str] = mapped_column(String(48), index=True)  # etf_lag|event_study|calibration
     asset: Mapped[str | None] = mapped_column(String(16), index=True)
     signal: Mapped[str] = mapped_column(String(96), index=True)
     horizon: Mapped[str] = mapped_column(String(16), index=True)
@@ -386,9 +455,7 @@ class ResearchResultRow(Base):
     data_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     data_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    __table_args__ = (
-        Index("ix_research_lookup", "study", "asset", "signal", "horizon", "split"),
-    )
+    __table_args__ = (Index("ix_research_lookup", "study", "asset", "signal", "horizon", "split"),)
 
 
 class BackfillStateRow(Base):

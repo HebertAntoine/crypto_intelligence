@@ -8,12 +8,12 @@ engine weights them accordingly.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from pydantic import BaseModel, Field
 
-from ..config_loader import macro_calendar_config, threshold
-from ..core.enums import Asset, Direction, Freshness
+from ..config_loader import threshold
+from ..core.enums import Direction, Freshness
 from ..core.freshness import worst_freshness
 from ..core.models import MacroEvent, Observation
 
@@ -44,36 +44,33 @@ class MacroAnalyzer:
         self.prox = self.t.get("event_proximity", {})
 
     def load_calendar(self, now: datetime | None = None) -> list[MacroEvent]:
-        """Read the maintained calendar. A YAML file beats scraping here: it is
-        verifiable, and it cannot invent a date."""
+        """Read primary-source events already normalised by the collector."""
+        from ..db import repo
+
         now = now or datetime.now(UTC)
-        cfg = macro_calendar_config()
-        kinds = cfg.get("kinds", {})
         events: list[MacroEvent] = []
-        for e in cfg.get("events", []):
-            try:
-                dt = datetime.strptime(
-                    f"{e['date']} {e.get('time', '00:00')}", "%Y-%m-%d %H:%M"
-                ).replace(tzinfo=UTC)
-            except (KeyError, ValueError):
+        for event in repo.list_future_events(
+            start=now - timedelta(days=7),
+            end=now + timedelta(days=365),
+            include_expired=True,
+            limit=500,
+        ):
+            if event.category.value not in ("MACRO", "MONETARY_POLICY"):
                 continue
-            impact = [Asset(a) for a in kinds.get(e.get("kind", ""), {}).get("assets_impact", [])
-                      if a in ("BTC", "ETH", "SOL")]
+            dt = event.scheduled_at
+            if dt is None:
+                continue
             events.append(MacroEvent(
-                name=e["name"], kind=e.get("kind", "OTHER"), scheduled_at=dt,
-                importance=e.get("importance", "INFO"),
+                name=event.title, kind=event.event_type, scheduled_at=dt,
+                importance=event.importance.value,
                 hours_until=(dt - now).total_seconds() / 3600.0,
-                is_past=dt < now, assets_impact=impact,
+                is_past=dt < now, assets_impact=event.affected_assets,
             ))
         events.sort(key=lambda ev: ev.scheduled_at)
         return events
 
     def sync_calendar_to_db(self, now: datetime | None = None) -> int:
-        """Mirror the YAML calendar into the events table.
-
-        The YAML file is the source of truth (verifiable, cannot invent a date);
-        the table is what the API and the dashboard read.
-        """
+        """Compatibility mirror from rich official events to the legacy table."""
         import hashlib
 
         from ..db import repo
@@ -86,7 +83,7 @@ class MacroAnalyzer:
             rows.append({
                 "id": eid, "kind": ev.kind, "name": ev.name,
                 "scheduled_at": ev.scheduled_at, "importance": ev.importance,
-                "summary": "", "source_name": "config/macro_calendar.yaml",
+                "summary": "", "source_name": "future_events",
                 "assets": [a.value for a in ev.assets_impact],
             })
         return repo.save_events(rows)

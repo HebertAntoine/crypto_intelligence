@@ -190,12 +190,17 @@ class LiveExperimentRegistry:
         occurred_at: str,
         signal_value: float | None = None,
         outcome_pct: float | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         experiment = self._experiments.get(experiment_id)
         if experiment is None:
             raise KeyError(f"{experiment_id} is not registered")
         for observation in experiment.observations:
-            if observation.get("occurred_at") == occurred_at:
+            same_time = observation.get("occurred_at") == occurred_at
+            same_identity = (
+                metadata is None or observation.get("metadata") == metadata
+            )
+            if same_time and same_identity:
                 if outcome_pct is not None:
                     observation["outcome_pct"] = outcome_pct
                     observation["settled_at"] = datetime.now(UTC).isoformat()
@@ -204,6 +209,7 @@ class LiveExperimentRegistry:
             "occurred_at": occurred_at,
             "signal_value": signal_value,
             "outcome_pct": outcome_pct,
+            "metadata": metadata or {},
             "recorded_at": datetime.now(UTC).isoformat(),
             "settled_at": (
                 datetime.now(UTC).isoformat() if outcome_pct is not None else None

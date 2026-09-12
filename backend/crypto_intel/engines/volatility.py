@@ -19,6 +19,7 @@ from pydantic import BaseModel
 
 from ..core.enums import Asset, Timeframe
 from ..engines.technical import indicators as ind
+from ..future_events.models import DirectionalBias, ExpectedMovement
 from ..history import store
 from ..logging_setup import get_logger
 
@@ -130,3 +131,48 @@ class VolatilityRegimeEngine:
         for i in range(MIN_HISTORY, len(values)):
             ranks[i] = float((values[:i] < values[i]).mean() * 100)
         return pd.Series(ranks, index=atr_pct.index)
+
+
+class ProspectiveVolatilitySignal(BaseModel):
+    available: bool
+    squeeze: bool | None = None
+    bandwidth: float | None = None
+    bandwidth_percentile: float | None = None
+    directional_bias: DirectionalBias = DirectionalBias.NEUTRAL
+    direction_contribution: float = 0.0
+    expected_movement: ExpectedMovement = ExpectedMovement.NORMAL
+    explanation: str = ""
+
+
+class ExpectedVolatilityEngine:
+    """Translate compression into amplitude only, never price direction."""
+
+    def assess_bollinger(self, closes: pd.Series, *, min_history: int = 60) -> ProspectiveVolatilitySignal:
+        bandwidth = ind.bollinger_bandwidth(closes.astype(float), 20, 2.0).dropna()
+        if len(bandwidth) < min_history:
+            return ProspectiveVolatilitySignal(
+                available=False,
+                explanation=(
+                    f"UNAVAILABLE - {len(bandwidth)} bandwidth observations; "
+                    f"{min_history} required for a trailing percentile."
+                ),
+            )
+        current = float(bandwidth.iloc[-1])
+        prior = bandwidth.iloc[:-1].to_numpy()
+        percentile = float((prior < current).mean() * 100.0)
+        squeeze = percentile <= 10.0
+        return ProspectiveVolatilitySignal(
+            available=True,
+            squeeze=squeeze,
+            bandwidth=current,
+            bandwidth_percentile=percentile,
+            directional_bias=DirectionalBias.NEUTRAL,
+            direction_contribution=0.0,
+            expected_movement=ExpectedMovement.HIGH if squeeze else ExpectedMovement.NORMAL,
+            explanation=(
+                "Bollinger compression raises the risk of volatility expansion. "
+                "It contains no information about the direction of the next move."
+                if squeeze
+                else "No extreme Bollinger compression is present; no direction is inferred."
+            ),
+        )

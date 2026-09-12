@@ -57,6 +57,7 @@ async def structure(symbol: str, timeframe: str = "4h") -> dict[str, Any]:
     """
     from ..engines.analysis_context import context_for
     from ..history import store
+    from ..pattern_learning.quality_gate import apply_independent_live_gate
     from ..structure.location import StructuralLocationEngine
     from ..structure.market_structure import MarketStructureEngine
     from ..structure.patterns import build_context, detect_all
@@ -67,7 +68,12 @@ async def structure(symbol: str, timeframe: str = "4h") -> dict[str, Any]:
 
     df = store.load_candles(asset, tf)
     ctx = build_context(df, tf)
-    patterns = [p.to_dict() for p in detect_all(ctx)] if ctx is not None else []
+    detected = detect_all(ctx) if ctx is not None else []
+    gate = apply_independent_live_gate(detected, df["close"])
+    patterns = [
+        {**pattern.to_dict(), "independent_quality_gate": gate["decisions"][index]}
+        for index, pattern in enumerate(detected)
+    ]
 
     covered = (
         (snapshot.location_by_timeframe.get("timeframes") or {}).get(tf.value) is not None
@@ -89,6 +95,10 @@ async def structure(symbol: str, timeframe: str = "4h") -> dict[str, Any]:
         "location": location,
         "market_structure": structure_reading,
         "patterns": patterns,
+        "pattern_quality_gate": {
+            **gate["summary"],
+            "edge_claim": gate["edge_claim"],
+        },
         "separation_note": (
             "recognition_confidence measures shape match only. Read edge_state "
             "for whether the pattern predicts anything."
