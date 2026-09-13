@@ -67,6 +67,9 @@ void main() {
       expect(find.byKey(const ValueKey('nav-logo-BTC')), findsOneWidget);
       expect(find.byKey(const ValueKey('nav-logo-ETH')), findsOneWidget);
       expect(find.byKey(const ValueKey('nav-logo-SOL')), findsOneWidget);
+      // Platform views are too expensive for repeated emoji in Safari and can
+      // crash a long PWA page while scrolling.
+      expect(find.byType(HtmlElementView), findsNothing);
       expect(find.text('Bitcoin'), findsOneWidget);
       expect(
         find.text('EST-CE LE BON MOMENT POUR ACHETER ?'),
