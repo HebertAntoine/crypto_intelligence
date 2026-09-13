@@ -5,13 +5,18 @@ from __future__ import annotations
 import hashlib
 import re
 import unicodedata
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ..core.enums import Asset
+
+# Scheduled sources do not all publish an explicit end time.  Keep those
+# events active for a bounded observation window instead of allowing a past
+# calendar entry to remain ACTIVE forever.
+DEFAULT_SCHEDULED_ACTIVE_WINDOW = timedelta(hours=6)
 
 
 def _utc(value: datetime | None) -> datetime | None:
@@ -291,9 +296,12 @@ class FutureEvent(BaseModel):
             return FutureEventStatus.ACTIVE
         if self.scheduled_at is None:
             return self.status
-        if self.expected_end_at and self.scheduled_at <= reference <= self.expected_end_at:
-            return FutureEventStatus.ACTIVE
-        if reference >= self.scheduled_at:
+        active_until = self.expected_end_at or (
+            self.scheduled_at + DEFAULT_SCHEDULED_ACTIVE_WINDOW
+        )
+        if reference > active_until:
+            return FutureEventStatus.EXPIRED
+        if self.scheduled_at <= reference <= active_until:
             return FutureEventStatus.ACTIVE
         if (self.scheduled_at - reference).total_seconds() <= 7 * 86400:
             return FutureEventStatus.UPCOMING

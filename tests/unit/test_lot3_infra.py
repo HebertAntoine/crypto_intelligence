@@ -19,6 +19,11 @@ class TestCandidateWeights:
 
         champion_path = get_settings().config_dir / "scoring.yaml"
         before = champion_path.read_bytes()
+        monkeypatch.setattr(
+            candidate_weights,
+            "get_settings",
+            lambda: type("TestSettings", (), {"config_dir": tmp_path})(),
+        )
 
         proposals = {
             "BTC": {

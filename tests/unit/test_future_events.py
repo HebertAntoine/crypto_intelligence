@@ -132,6 +132,23 @@ def test_unscheduled_event_does_not_require_a_fake_schedule() -> None:
     assert event.runtime_status(NOW) is FutureEventStatus.ACTIVE
 
 
+def test_scheduled_event_expires_after_its_explicit_end() -> None:
+    event = _event(
+        scheduled_at=NOW - timedelta(hours=2),
+        expected_end_at=NOW - timedelta(hours=1),
+    )
+
+    assert event.runtime_status(NOW - timedelta(hours=1, minutes=30)) is FutureEventStatus.ACTIVE
+    assert event.runtime_status(NOW) is FutureEventStatus.EXPIRED
+
+
+def test_scheduled_event_without_an_end_has_a_bounded_active_window() -> None:
+    event = _event(scheduled_at=NOW - timedelta(hours=7))
+
+    assert event.runtime_status(NOW - timedelta(hours=6)) is FutureEventStatus.ACTIVE
+    assert event.runtime_status(NOW) is FutureEventStatus.EXPIRED
+
+
 def test_three_articles_about_one_decision_make_one_canonical_event() -> None:
     shared = {
         "entities": ["Federal Reserve"],

@@ -24,6 +24,9 @@ cycle de vie, source et tier, dates UTC, actifs touchés, importance, consensus,
 distribution de marché horodatée, résultat/surprise, direction, amplitude,
 chaîne causale et preuves. La fraîcheur et l'âge sont calculés à la lecture ;
 ils ne sont jamais persistés comme `LIVE` ou `age_seconds=0`.
+Un événement planifié expire après sa fin officielle ; lorsqu'une source ne
+fournit aucune fin, une fenêtre d'observation bornée à six heures empêche un
+ancien rendez-vous de rester `ACTIVE` indéfiniment.
 
 L'identité d'une analyse inclut un digest de tous les événements futurs. Une
 modification de date, statut, importance, consensus, probabilité ou surprise
@@ -102,8 +105,8 @@ Commandes de référence :
   backend/crypto_intel/providers/events
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
-flutter analyze app
-flutter test app
+(cd app && flutter analyze)
+(cd app && flutter test)
 ```
 
 La suite vérifie notamment la séparation direction/amplitude, le gate 48 h,
