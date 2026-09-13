@@ -131,6 +131,58 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
     if (selected != null) _selectHorizon(selected);
   }
 
+  /// Everything that left the main page. Nothing is removed from the app: the
+  /// scenarios, the per-timeframe reading, implied volatility and the five
+  /// families all live here, one tap away.
+  Future<void> _showFullDetails(
+    FutureDecisionRead decision,
+    _FutureBundle bundle,
+  ) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: const Color(0xFF061525),
+        builder: (sheetContext) => SafeArea(
+          top: false,
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: .86,
+            maxChildSize: .96,
+            builder: (context, controller) => ListView(
+              controller: controller,
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+              children: [
+                const Text(
+                  'Détails complets',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                _Scenarios(
+                  scenarios: decision.scenarios,
+                  horizon: decision.horizon,
+                ),
+                if (bundle.market != null ||
+                    bundle.timeframes != null ||
+                    bundle.impliedVolatility != null) ...[
+                  const SizedBox(height: 14),
+                  _MarketContextCard(
+                    market: bundle.market,
+                    timeframes: bundle.timeframes,
+                    impliedVolatility: bundle.impliedVolatility,
+                  ),
+                ],
+                const SizedBox(height: 14),
+                _Families(decision: decision),
+              ],
+            ),
+          ),
+        ),
+      );
+
   Future<void> _showReasonDetails(
     FutureDecisionRead decision,
     _FutureBundle bundle,
@@ -236,6 +288,10 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   horizon: _horizon,
                   onHorizonTap: _chooseHorizon,
                 ),
+                if (_coherenceNote(decision) != null) ...[
+                  const SizedBox(height: 10),
+                  _CoherenceNote(text: _coherenceNote(decision)!),
+                ],
                 const SizedBox(height: 14),
                 _WhyDecisionCard(
                   decision: decision,
@@ -249,22 +305,9 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   events: bundle.timeline?.events ?? const [],
                 ),
                 const SizedBox(height: 14),
-                _Scenarios(
-                  scenarios: decision.scenarios,
-                  horizon: _horizon,
+                _SeeDetailsButton(
+                  onTap: () => _showFullDetails(decision, bundle),
                 ),
-                if (bundle.market != null ||
-                    bundle.timeframes != null ||
-                    bundle.impliedVolatility != null) ...[
-                  const SizedBox(height: 14),
-                  _MarketContextCard(
-                    market: bundle.market,
-                    timeframes: bundle.timeframes,
-                    impliedVolatility: bundle.impliedVolatility,
-                  ),
-                ],
-                const SizedBox(height: 14),
-                _Families(decision: decision),
               ],
             );
           },
@@ -680,7 +723,7 @@ class _DecisionCard extends StatelessWidget {
                       child: _DecisionMetric(
                         icon: Icons.shield_outlined,
                         label: 'Risque',
-                        value: _impactLabel(decision.eventRisk),
+                        value: _riskLevelLabel(decision.eventRisk),
                         tone: _impactColor(decision.eventRisk),
                       ),
                     ),
@@ -699,8 +742,8 @@ class _DecisionCard extends StatelessWidget {
                     Expanded(
                       child: _DecisionMetric(
                         icon: Icons.show_chart_rounded,
-                        label: 'Volatilité',
-                        value: _movementLabel(decision.movement),
+                        label: 'Mouvement',
+                        value: _expectedMovementLabel(decision.movement),
                         tone: visual.accent,
                       ),
                     ),
@@ -709,7 +752,7 @@ class _DecisionCard extends StatelessWidget {
                       child: _DecisionMetric(
                         icon: Icons.bar_chart_rounded,
                         label: 'Confiance',
-                        value: '${(decision.confidence * 100).round()} %',
+                        value: _confidenceLevelLabel(decision.confidence),
                         tone: mobileBlue,
                       ),
                     ),
@@ -863,8 +906,11 @@ class _ReasonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tone = _reasonTone(index);
-    return Padding(
+    return InkWell(
       key: ValueKey('decision-reason-${index + 1}'),
+      onTap: () => _showReasonDetail(context, reason),
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -936,7 +982,7 @@ class _ReasonRow extends StatelessWidget {
           ),
           const SizedBox(width: 7),
           Container(
-            constraints: const BoxConstraints(minWidth: 55, maxWidth: 68),
+            constraints: const BoxConstraints(minWidth: 58, maxWidth: 72),
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
             decoration: BoxDecoration(
               color: tone.withValues(alpha: .1),
@@ -957,21 +1003,320 @@ class _ReasonRow extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  _impactLabel(reason.impact),
+                  _reasonImpactLabel(reason.direction),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: tone,
-                    fontSize: 9,
+                    color: _reasonImpactColor(reason.direction),
+                    fontSize: 8.5,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
             ),
           ),
+          const Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: Color(0xFF55749B),
+          ),
         ],
+      ),
       ),
     );
   }
+}
+
+/// One factor, explained end to end: what it is, what the market had priced,
+/// why it transmits to the price, what it may cause, and what would reverse it.
+void _showReasonDetail(BuildContext context, _DecisionReasonItem reason) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: const Color(0xFF061525),
+    builder: (sheetContext) => SafeArea(
+      top: false,
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: .74,
+        maxChildSize: .94,
+        builder: (context, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  reason.emoji,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontFamilyFallback: _emojiFontFallback,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    reason.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+              decoration: BoxDecoration(
+                color: _reasonImpactColor(reason.direction).withValues(alpha: .12),
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(
+                  color: _reasonImpactColor(reason.direction).withValues(alpha: .36),
+                ),
+              ),
+              child: Text(
+                'STATUT · ${_reasonImpactLabel(reason.direction)}',
+                style: TextStyle(
+                  color: _reasonImpactColor(reason.direction),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            _ReasonDetailBlock(title: 'CE QUI ARRIVE', body: reason.whatHappens),
+            _ReasonDetailBlock(
+              title: 'CE QUE LE MARCHÉ ATTEND',
+              body: reason.marketExpectation ??
+                  'Anticipations de marché actuellement indisponibles.',
+              muted: reason.marketExpectation == null,
+            ),
+            _ReasonDetailBlock(
+              title: 'POURQUOI CELA COMPTE',
+              body: reason.whyItMatters,
+            ),
+            if (reason.caveat.isNotEmpty)
+              _ReasonDetailBlock(title: 'À GARDER EN TÊTE', body: reason.caveat),
+            _ReasonDetailBlock(
+              title: 'CE QUE ÇA PEUT ENGENDRER',
+              body: reason.consequence,
+            ),
+            _ReasonDetailBlock(
+              title: 'CE QUI INVERSERAIT LE SIGNAL',
+              body: reason.reversal,
+            ),
+            const SizedBox(height: 18),
+            const Divider(height: 1, color: Color(0xFF16304A)),
+            const SizedBox(height: 12),
+            Text(
+              'SOURCE',
+              style: TextStyle(
+                color: mobileMuted.withValues(alpha: .8),
+                fontSize: 10,
+                letterSpacing: .8,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              [
+                if (reason.source != null && reason.source!.isNotEmpty)
+                  reason.source!,
+                if (reason.when.isNotEmpty) reason.when,
+              ].join(' · '),
+              style: const TextStyle(
+                color: Color(0xFF7E93AD),
+                fontSize: 11,
+                height: 1.35,
+              ),
+            ),
+            if (reason.sourceUrl != null && reason.sourceUrl!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  reason.sourceUrl!,
+                  style: const TextStyle(
+                    color: Color(0xFF5C7A9C),
+                    fontSize: 10.5,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _ReasonDetailBlock extends StatelessWidget {
+  final String title;
+  final String body;
+  final bool muted;
+
+  const _ReasonDetailBlock({
+    required this.title,
+    required this.body,
+    this.muted = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: mobileMuted.withValues(alpha: .85),
+                fontSize: 10.5,
+                letterSpacing: .9,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              body,
+              style: TextStyle(
+                color: muted ? const Color(0xFF8FA4BD) : const Color(0xFFE6EEFA),
+                fontSize: 13.5,
+                height: 1.42,
+                fontStyle: muted ? FontStyle.italic : FontStyle.normal,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+/// Explain a decision that disagrees with the underlying reading.
+///
+/// Showing "ATTENDRE" next to a bullish bias without a word of explanation
+/// reads as a contradiction. The sentence is built from the payload only, so it
+/// states why the two differ and never invents a third opinion.
+String? _coherenceNote(FutureDecisionRead decision) {
+  final bullish = decision.direction.contains('BULLISH');
+  final bearish = decision.direction.contains('BEARISH');
+  final horizon = _horizonLongLabel(decision.horizon);
+
+  if (decision.decision == 'WAIT' && decision.eventRiskActive) {
+    final event = decision.nextEvent?.title;
+    final trigger = event == null
+        ? 'un événement majeur non encore publié'
+        : '« $event »';
+    if (bullish) {
+      return 'La lecture de fond reste haussière, mais $trigger tombe dans les '
+          '$horizon et son issue n’est pas connue : l’analyse préfère ne pas '
+          's’engager par-dessus.';
+    }
+    if (bearish) {
+      return 'La lecture de fond est baissière, mais $trigger tombe dans les '
+          '$horizon : vendre maintenant reviendrait à parier sur une issue '
+          'que l’analyse ne connaît pas.';
+    }
+    return 'Aucune direction ne se dégage et $trigger tombe dans les $horizon.';
+  }
+  if (decision.decision == 'SELL' && bullish) {
+    return 'Le marché reste haussier sur le fond, mais les risques à court '
+        'terme justifient actuellement VENDRE sur $horizon.';
+  }
+  if (decision.decision == 'BUY' && bearish) {
+    return 'Le fond reste baissier, mais la configuration actuelle justifie '
+        'ACHETER sur $horizon.';
+  }
+  return null;
+}
+
+class _CoherenceNote extends StatelessWidget {
+  final String text;
+
+  const _CoherenceNote({required this.text});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('decision-coherence-note'),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0x22285F8C),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF24506F)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.info_outline_rounded,
+              size: 17,
+              color: Color(0xFF6FA8DA),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Color(0xFFD7E5F6),
+                  fontSize: 12.5,
+                  height: 1.38,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _SeeDetailsButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _SeeDetailsButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        borderColor: const Color(0xFF24506F),
+        child: InkWell(
+          key: const ValueKey('see-full-details'),
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                const Icon(Icons.tune_rounded, size: 20, color: mobileBlue),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'VOIR LES DÉTAILS',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.5,
+                      letterSpacing: .6,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    'scénarios · familles',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      color: mobileMuted.withValues(alpha: .9),
+                      fontSize: 9.5,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: Color(0xFF55749B),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
 }
 
 class _ChangeAndRiskSection extends StatelessWidget {
@@ -1132,7 +1477,7 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
   @override
   Widget build(BuildContext context) {
     final displayed =
-        _expanded ? widget.events : widget.events.take(4).toList();
+        _expanded ? widget.events : widget.events.take(3).toList();
     return GlassPanel(
       borderColor: const Color(0xFF245E90),
       child: Column(
@@ -1148,9 +1493,11 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              const Flexible(
                 child: Text(
                   'Ce qui arrive',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -1158,7 +1505,8 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
                   ),
                 ),
               ),
-              if (widget.events.length > 4)
+              const Spacer(),
+              if (widget.events.length > 3)
                 TextButton(
                   key: const ValueKey('events-see-all'),
                   onPressed: () => setState(() => _expanded = !_expanded),
@@ -1170,7 +1518,13 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(_expanded ? 'Réduire' : 'Voir tout'),
+                      Flexible(
+                        child: Text(
+                          _expanded ? 'Réduire' : 'Voir tous',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                       Icon(
                         _expanded
                             ? Icons.expand_less_rounded
@@ -1940,17 +2294,121 @@ class _FutureBundle {
 class _DecisionReasonItem {
   final String title;
   final String explanation;
-  final String impact;
+
+  /// Directional bias of this factor. Drives the impact badge, which used to
+  /// show event importance under a label that promised a direction.
+  final String? direction;
   final String when;
   final String emoji;
+
+  /// Drill-down content. Everything here is either sourced data or a plain
+  /// mechanism explanation; no figure is invented at display time.
+  final String whatHappens;
+  final String? marketExpectation;
+  final String whyItMatters;
+  final String caveat;
+  final String consequence;
+  final String reversal;
+  final String? source;
+  final String? sourceUrl;
 
   const _DecisionReasonItem({
     required this.title,
     required this.explanation,
-    required this.impact,
+    required this.direction,
     required this.when,
     required this.emoji,
+    required this.whatHappens,
+    required this.whyItMatters,
+    required this.consequence,
+    required this.reversal,
+    this.marketExpectation,
+    this.caveat = '',
+    this.source,
+    this.sourceUrl,
   });
+}
+
+/// Plain-language mechanism for one family of factors.
+///
+/// These texts explain *how* a factor transmits to the price. They carry no
+/// measured value, so they never state anything the data has not established;
+/// the measured part always comes from the decision payload next to them.
+class _TopicGuidance {
+  final String why;
+  final String caveat;
+
+  const _TopicGuidance(this.why, [this.caveat = '']);
+}
+
+const _TopicGuidance _guidanceFallback = _TopicGuidance(
+  'Ce facteur fait partie des éléments suivis par l’analyse pour cet horizon.',
+);
+
+_TopicGuidance _topicGuidance(String title) {
+  final value = title.toLowerCase();
+  if (value.contains('fed') ||
+      value.contains('fomc') ||
+      value.contains('macro') ||
+      value.contains('taux') ||
+      value.contains('liquidité')) {
+    return const _TopicGuidance(
+      'Des taux plus élevés rendent le crédit plus cher, ce qui réduit la '
+      'liquidité disponible, donc l’appétit pour les actifs risqués, et peut '
+      'peser sur les cryptomonnaies.',
+      'Le sens dépend de l’écart avec ce qui était déjà anticipé, pas de la '
+      'décision elle-même.',
+    );
+  }
+  if (value.contains('baleine') || value.contains('whale')) {
+    return const _TopicGuidance(
+      'Davantage de crypto disponible sur les plateformes d’échange peut '
+      'augmenter la pression vendeuse.',
+      'Un transfert ne signifie pas automatiquement qu’une vente aura lieu.',
+    );
+  }
+  if (value.contains('flux') ||
+      value.contains('etf') ||
+      value.contains('institution')) {
+    return const _TopicGuidance(
+      'Une demande institutionnelle plus faible réduit une source importante '
+      'd’achat régulier.',
+      'Les flux sont publiés avec un jour de décalage : ils décrivent les '
+      'séances passées.',
+    );
+  }
+  if (value.contains('dériv') ||
+      value.contains('position') ||
+      value.contains('levier') ||
+      value.contains('intérêt ouvert')) {
+    return const _TopicGuidance(
+      'Quand les positions à levier se ferment pendant que le prix recule, '
+      'des acheteurs abandonnent : cela confirme une faiblesse à court terme.',
+      'Le levier amplifie les mouvements dans les deux sens.',
+    );
+  }
+  if (value.contains('volatil') ||
+      value.contains('technique') ||
+      value.contains('bollinger')) {
+    return const _TopicGuidance(
+      'Une période de faible volatilité précède parfois un mouvement beaucoup '
+      'plus important.',
+      'Cette lecture n’indique jamais la direction du mouvement à venir.',
+    );
+  }
+  if (value.contains('réglement') || value.contains('regulat')) {
+    return const _TopicGuidance(
+      'Une décision réglementaire modifie qui peut acheter, vendre ou '
+      'conserver l’actif, et à quelles conditions.',
+    );
+  }
+  if (value.contains('unité')) {
+    return const _TopicGuidance(
+      'Quand les différentes échelles de temps racontent la même histoire, la '
+      'lecture est plus fiable que lorsqu’elles se contredisent.',
+    );
+  }
+  return _guidanceFallback;
 }
 
 class _DecisionVisual {
@@ -1994,68 +2452,122 @@ _DecisionVisual _decisionVisual(String decision) => switch (decision) {
         ),
     };
 
+/// Build at most five reasons, ordered by how much they carry the decision.
+///
+/// The payload already lists the gate reason first and the family that actually
+/// set the direction next, so payload order is kept; families only fill the
+/// remaining slots. Timeframes and implied volatility are no longer pushed into
+/// the summary - they live behind "Voir les détails".
 List<_DecisionReasonItem> _decisionReasons(
   FutureDecisionRead decision,
   _FutureBundle bundle,
 ) {
   final items = <_DecisionReasonItem>[];
-  for (final reason in decision.reasons.take(4)) {
+  final horizon = _horizonLongLabel(decision.horizon);
+  final asset = decision.asset;
+  final nextEvent = decision.nextEvent;
+
+  String consequenceFor(String? direction) {
+    final label = switch (direction?.toUpperCase()) {
+      'STRONGLY_BULLISH' || 'BULLISH' => 'un soutien à la hausse',
+      'BEARISH' || 'STRONGLY_BEARISH' => 'une pression à la baisse',
+      'NEUTRAL' => 'un effet neutre',
+      _ => 'un effet de direction inconnue',
+    };
+    return 'Si cette lecture se confirme, ce facteur exerce $label sur $asset '
+        'sur $horizon.';
+  }
+
+  String reversalFor(String title, String? direction) {
+    for (final change in decision.changes) {
+      final words = title.toLowerCase().split(RegExp(r'[^a-zà-ÿ]+'));
+      if (words.any((word) => word.length > 4 && change.toLowerCase().contains(word))) {
+        return change;
+      }
+    }
+    return switch (direction?.toUpperCase()) {
+      'BEARISH' || 'STRONGLY_BEARISH' =>
+        'Un retournement durable de ce facteur dans le sens inverse.',
+      'BULLISH' || 'STRONGLY_BULLISH' =>
+        'Une dégradation durable de ce facteur.',
+      _ => 'Une donnée nouvelle qui donnerait une direction à ce facteur.',
+    };
+  }
+
+  void add({
+    required String title,
+    required String explanation,
+    required String? direction,
+    required String when,
+    required String whatHappens,
+    String? source,
+    String? sourceUrl,
+  }) {
+    if (items.length >= 5) return;
+    if (items.any((item) => item.title.toLowerCase() == title.toLowerCase())) {
+      return;
+    }
+    final guidance = _topicGuidance(title);
     items.add(_DecisionReasonItem(
+      title: title,
+      explanation: _cleanExplanation(explanation),
+      direction: direction,
+      when: when,
+      emoji: _reasonEmoji(title),
+      whatHappens: whatHappens,
+      marketExpectation: decision.marketExpectation,
+      whyItMatters: guidance.why,
+      caveat: guidance.caveat,
+      consequence: consequenceFor(direction),
+      reversal: reversalFor(title, direction),
+      source: source,
+      sourceUrl: sourceUrl,
+    ));
+  }
+
+  for (final reason in decision.reasons) {
+    // A payload reason carries an event importance, not a direction. The family
+    // sharing its name is what actually holds the directional reading.
+    final family = decision.families
+        .where((item) => item.label.toLowerCase() == reason.title.toLowerCase())
+        .firstOrNull;
+    add(
       title: reason.title,
       explanation: reason.explanation,
-      impact: reason.impact ?? 'UNKNOWN',
+      direction: family?.direction,
       when: _dateBadge(reason.dateTime),
-      emoji: _reasonEmoji(reason.title),
-    ));
+      whatHappens: reason.dateTime != null && reason.dateTime!.isNotEmpty
+          ? '${reason.title} — ${_dateSentence(reason.dateTime)}.'
+          : _cleanExplanation(reason.explanation),
+      source: reason.source,
+      sourceUrl: reason.sourceUrl,
+    );
   }
 
   for (final family in decision.families) {
-    if (items.length >= 4 ||
-        items.any(
-            (item) => item.title.toLowerCase() == family.label.toLowerCase())) {
-      continue;
-    }
-    final explanation = family.available
-        ? family.summary
-        : family.unavailableReason ??
-            'Famille indisponible pour cette analyse.';
-    items.add(_DecisionReasonItem(
+    if (!family.available) continue;
+    add(
       title: family.label,
-      explanation: explanation,
-      impact: family.movement ?? 'UNKNOWN',
+      explanation: family.summary,
+      direction: family.direction,
       when: family.freshness,
-      emoji: _reasonEmoji(family.label),
-    ));
+      whatHappens: nextEvent != null && _topicGuidance(family.label) == _topicGuidance('fed')
+          ? '${nextEvent.title} — ${_dateSentence(nextEvent.scheduledAt?.toIso8601String())}.'
+          : _cleanExplanation(family.summary),
+    );
   }
 
-  final frames = bundle.timeframes;
-  items.add(_DecisionReasonItem(
-    title: 'Unités de temps',
-    explanation: frames == null
-        ? 'Lecture multi-unités indisponible pour cette analyse.'
-        : frames.narrative.isNotEmpty
-            ? frames.narrative
-            : '${frames.alignmentLabel}. ${frames.caveat}',
-    impact: frames?.conflicts.isNotEmpty == true ? 'HIGH' : 'NORMAL',
-    when: 'ACTUEL',
-    emoji: '🧭',
-  ));
+  return items;
+}
 
-  final implied = bundle.impliedVolatility;
-  items.add(_DecisionReasonItem(
-    title: 'Volatilité implicite',
-    explanation: implied == null
-        ? 'Lecture des options indisponible pour cette analyse.'
-        : implied.available
-            ? _impliedVolatilitySentence(implied)
-            : (implied.unavailableReason.isEmpty
-                ? 'Indisponible pour cet actif.'
-                : implied.unavailableReason),
-    impact: implied?.pricing.contains('EXPENSIVE') == true ? 'HIGH' : 'NORMAL',
-    when: 'ACTUEL',
-    emoji: '〰️',
-  ));
-  return items.take(6).toList();
+/// Turn an ISO timestamp into a readable French sentence fragment.
+String _dateSentence(String? value) {
+  final parsed = value == null ? null : DateTime.tryParse(value)?.toLocal();
+  if (parsed == null) return 'date non planifiée';
+  final month = _monthLabel(parsed).toLowerCase().replaceAll('.', '');
+  return 'le ${parsed.day} $month à '
+      '${parsed.hour.toString().padLeft(2, '0')} h '
+      '${parsed.minute.toString().padLeft(2, '0')}';
 }
 
 List<String> _decisionRisks(FutureDecisionRead decision) {
@@ -2161,6 +2673,57 @@ String _movementLabel(String value) => switch (value.toUpperCase()) {
       _ => _plainLabel(value).toUpperCase(),
     };
 
+/// Risk is its own four-step scale; it is not the event-importance scale.
+String _riskLevelLabel(String? value) => switch (value?.toUpperCase()) {
+      'EXTREME' => 'CRITIQUE',
+      'HIGH' => 'ÉLEVÉ',
+      'MODERATE' || 'MEDIUM' => 'MODÉRÉ',
+      'LOW' => 'FAIBLE',
+      _ => 'INDISPONIBLE',
+    };
+
+/// Amplitude of the move. It says how much, never which way.
+String _expectedMovementLabel(String? value) => switch (value?.toUpperCase()) {
+      'EXTREME' => 'EXTRÊME',
+      'HIGH' => 'ÉLEVÉ',
+      'NORMAL' => 'NORMAL',
+      'LOW' => 'FAIBLE',
+      _ => 'INDISPONIBLE',
+    };
+
+/// Confidence is shown as a coarse level, never as a percentage.
+///
+/// The backend figure is a coverage-weighted average of family confidences. It
+/// has never been calibrated against outcomes, so rendering it as "56 %" claims
+/// a precision that does not exist. Three buckets carry what the number can
+/// honestly support.
+String _confidenceLevelLabel(double? value) {
+  if (value == null) return 'INDISPONIBLE';
+  if (value >= 0.66) return 'ÉLEVÉE';
+  if (value >= 0.40) return 'MOYENNE';
+  return 'FAIBLE';
+}
+
+/// Impact is the direction a factor pushes, not how large the move may be.
+///
+/// The previous badge reused the event-importance scale (CRITIQUE/ÉLEVÉ), which
+/// answered "how big" under a label that promised "which way".
+String _reasonImpactLabel(String? direction) => switch (direction?.toUpperCase()) {
+      'STRONGLY_BULLISH' => 'FORTEMENT POSITIF',
+      'BULLISH' => 'POSITIF',
+      'BEARISH' => 'NÉGATIF',
+      'STRONGLY_BEARISH' => 'FORTEMENT NÉGATIF',
+      'NEUTRAL' => 'NEUTRE',
+      _ => 'DIRECTION INCONNUE',
+    };
+
+Color _reasonImpactColor(String? direction) => switch (direction?.toUpperCase()) {
+      'STRONGLY_BULLISH' || 'BULLISH' => const Color(0xFF55DD8B),
+      'BEARISH' || 'STRONGLY_BEARISH' => const Color(0xFFFF6676),
+      'NEUTRAL' => const Color(0xFF94A8C2),
+      _ => const Color(0xFF94A8C2),
+    };
+
 String _impactLabel(String? value) => switch (value?.toUpperCase()) {
       'CRITICAL' => 'CRITIQUE',
       'HIGH' => 'ÉLEVÉ',
@@ -2207,8 +2770,37 @@ String _reasonEmoji(String title) {
   return '🔎';
 }
 
+/// Turn engine wording into plain French for the summary.
+///
+/// The technical values are not lost: they stay visible in "Voir les détails".
+/// What is removed here is vocabulary the reader cannot act on - percentile
+/// ranks, index names and raw flags that read as noise on the main page.
 String _cleanExplanation(String value) {
   var cleaned = value
+      .replaceAllMapped(
+        RegExp(r'Structure \w+\s*:?\s*haussière sur (\d+) unité\(s\),?\s*'
+            r'baissière sur (\d+)'),
+        (match) => 'Tendance haussière sur ${match.group(1)} échelle(s) de '
+            'temps contre ${match.group(2)}',
+      )
+      .replaceAllMapped(
+        RegExp(r'\bp(\d{1,3})\b'),
+        (match) => 'niveau ${match.group(1)} sur 100 de son historique',
+      )
+      .replaceAllMapped(
+        RegExp(r'(\d{1,3})(?:e|th|ème)? percentile'),
+        (match) => 'niveau ${match.group(1)} sur 100 de son historique',
+      )
+      .replaceAll('traversent le spread', 'acceptent de payer le prix demandé')
+      .replaceAll('spread crossing', 'ordres qui paient le prix demandé')
+      .replaceAll('open interest', 'positions à levier ouvertes')
+      .replaceAll("L'open interest", 'Le nombre de positions à levier')
+      .replaceAll('upper third', 'tiers haut de sa zone')
+      .replaceAll('mid range', 'milieu de sa zone')
+      .replaceAll('des longs sortent', 'des acheteurs ferment leurs positions')
+      .replaceAll('DVOL', 'volatilité attendue par le marché des options')
+      .replaceAll('basis', 'écart au comptant')
+      .replaceAll('edge mesurable', 'avantage statistique démontré')
       .replaceAll('strong_inflow', 'entrées nettes fortes')
       .replaceAll('strong_outflow', 'sorties nettes fortes')
       .replaceAll('inflow', 'entrées nettes')

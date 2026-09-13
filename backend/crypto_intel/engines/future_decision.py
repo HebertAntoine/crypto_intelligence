@@ -12,7 +12,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
-from typing import Any
+from typing import Any, ClassVar
 
 from ..core.enums import Asset
 from ..future_events.models import (
@@ -377,7 +377,7 @@ def _delay_phrase(event: FutureEvent, now: datetime) -> str:
     if hours < 0:
         return "déjà publié"
     if hours < 24:
-        return f"dans {int(round(hours))} h"
+        return f"dans {round(hours)} h"
     days = hours / 24
     return f"dans {days:.1f} j".replace(".", ",")
 
@@ -393,13 +393,13 @@ class EventRiskGate:
 
     window = timedelta(hours=48)
 
-    _HORIZON_WINDOW = {
+    _HORIZON_WINDOW: ClassVar[dict[DecisionHorizon, timedelta]] = {
         DecisionHorizon.H24: timedelta(hours=48),
         DecisionHorizon.D7: timedelta(days=7),
         DecisionHorizon.D30: timedelta(days=30),
     }
 
-    def _window_for(self, horizon: "DecisionHorizon | None") -> timedelta:
+    def _window_for(self, horizon: DecisionHorizon | None) -> timedelta:
         if horizon is None:
             return self.window
         return max(self.window, self._HORIZON_WINDOW[horizon])

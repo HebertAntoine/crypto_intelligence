@@ -72,10 +72,27 @@ void main() {
         find.text('EST-CE LE BON MOMENT POUR ACHETER ?'),
         findsOneWidget,
       );
-      expect(find.text('CONTEXTE ACTUEL'), findsOneWidget);
-      for (var index = 1; index <= 6; index++) {
-        expect(find.byKey(ValueKey('decision-reason-$index')), findsOneWidget);
-      }
+      // The main page now answers the decision in one screen: the market
+      // context, the scenarios and the five families moved behind "Voir les
+      // détails" instead of being stacked under the decision.
+      expect(find.text('CONTEXTE ACTUEL'), findsNothing);
+      expect(find.byKey(const ValueKey('see-full-details')), findsOneWidget);
+
+      // At most five reasons, so the "why" stays readable at a glance. The
+      // exact count follows the data: duplicated families are not repeated.
+      expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('decision-reason-4')), findsOneWidget);
+      expect(find.byKey(const ValueKey('decision-reason-6')), findsNothing);
+
+      // Confidence is a coarse level, never an uncalibrated percentage. The
+      // 24 h price change keeps its own percent sign, which is a measurement.
+      expect(find.text('Confiance'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Text &&
+            const {'FAIBLE', 'MOYENNE', 'ÉLEVÉE'}.contains(widget.data)),
+        findsWidgets,
+      );
 
       final firstReasonEmoji = tester.widget<Text>(find.text('🏛️').first);
       expect(
@@ -88,7 +105,10 @@ void main() {
       expect(find.byKey(const ValueKey('horizon-30d')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('horizon-24h')).last);
       await tester.pumpAndSettle();
-      expect(find.byKey(const ValueKey('decision-reason-6')), findsOneWidget);
+      // Switching horizon rebuilds the reasons; the five-reason cap holds on
+      // every horizon, not only the one the page opened on.
+      expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('decision-reason-6')), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('decision-horizon')));
       await tester.pumpAndSettle();
@@ -123,15 +143,18 @@ void main() {
       await tester.tap(find.byTooltip('Fermer'));
       await tester.pumpAndSettle();
 
+      // Scenarios, market context and the five families left the main page.
+      // They are still in the app, one tap behind "Voir les détails".
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('scenarios-see-details')),
+        find.byKey(const ValueKey('see-full-details')),
         450,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.byKey(const ValueKey('scenarios-see-details')));
+      await tester.tap(find.byKey(const ValueKey('see-full-details')));
       await tester.pumpAndSettle();
-      expect(find.text('Scénarios · 24 heures'), findsOneWidget);
-      await tester.tap(find.byTooltip('Fermer'));
+      expect(find.text('Détails complets'), findsOneWidget);
+      expect(find.byKey(const ValueKey('scenarios-see-details')), findsWidgets);
+      await tester.tapAt(const Offset(200, 20));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('ETH'));

@@ -203,6 +203,11 @@ class FutureDecisionRead {
   final List<FutureScenarioRead> scenarios;
   final FutureEventRead? nextEvent;
 
+  /// What the market has priced for the next major event, when a licensed
+  /// source actually provided it. Null means no expectation is available, and
+  /// the UI must say so rather than imply one.
+  final String? marketExpectation;
+
   const FutureDecisionRead({
     required this.asset,
     required this.analysisId,
@@ -221,7 +226,22 @@ class FutureDecisionRead {
     required this.scenarios,
     this.asOf,
     this.nextEvent,
+    this.marketExpectation,
   });
+
+  /// Build the sentence only from an AVAILABLE, priced expectation.
+  static String? _readExpectation(dynamic raw) {
+    for (final item in (raw as List? ?? const []).whereType<Map>()) {
+      if (item['status']?.toString() != 'AVAILABLE') continue;
+      final outcome = item['expected_outcome'];
+      final label = outcome is Map ? outcome['outcome']?.toString() : null;
+      final probability = outcome is Map ? _number(outcome['probability']) : null;
+      if (label == null || label.isEmpty) continue;
+      if (probability == null) return label;
+      return '$label (${(probability * 100).round()} % implicite)';
+    }
+    return null;
+  }
 
   factory FutureDecisionRead.fromJson(Map<String, dynamic> json) {
     final familyBlock = json['families'] as Map? ?? const {};
@@ -239,6 +259,7 @@ class FutureDecisionRead {
       confidence: _number(json['decision_confidence']) ?? 0,
       eventRisk: eventRisk['level']?.toString() ?? 'UNKNOWN',
       eventRiskActive: eventRisk['active'] == true,
+      marketExpectation: _readExpectation(json['market_expectations']),
       coverage: familyBlock['coverage']?.toString() ?? '0/5 disponibles',
       reasons: (json['reasons'] as List? ?? const [])
           .whereType<Map>()

@@ -1,5 +1,7 @@
 """LOT 2 phases 5-10: the four contracts must be computable without being wired."""
 
+from pathlib import Path
+
 import pytest
 
 from crypto_intel.engines.contradiction_resolver import ContradictionState
@@ -312,7 +314,7 @@ def test_contracts_are_not_wired_into_the_production_decision() -> None:
 
     from crypto_intel.engines import future_decision
 
-    source = open(future_decision.__file__, encoding="utf-8").read()
+    source = Path(future_decision.__file__).read_text(encoding="utf-8")
     assert "decision_contracts" not in source
 
 
