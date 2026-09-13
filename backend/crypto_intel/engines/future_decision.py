@@ -179,12 +179,192 @@ class EventRiskGateResult:
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "status": "TRIGGERED" if self.active else "NOT_TRIGGERED",
             "active": self.active,
             "level": self.level.value,
             "reasons": self.reasons,
             "event_ids": self.event_ids,
             "bypassed": self.bypassed,
         }
+
+
+@dataclass(slots=True)
+class EventRiskContribution:
+    """Auditable contribution of one event to one horizon's risk amount."""
+
+    event_id: str
+    title: str
+    proximity: float
+    importance: EventImportance
+    expected_movement: ExpectedMovement
+    uncertainty: float
+    contribution: float
+    scheduled_at: str | None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "event_id": self.event_id,
+            "title": self.title,
+            "proximity": round(self.proximity, 3),
+            "importance": self.importance.value,
+            "expected_movement": self.expected_movement.value,
+            "uncertainty": round(self.uncertainty, 3),
+            "contribution": round(self.contribution, 3),
+            "scheduled_at": self.scheduled_at,
+        }
+
+
+@dataclass(slots=True)
+class EventRiskAssessment:
+    """Amount of event risk inside a horizon; it never forces an action."""
+
+    horizon: DecisionHorizon
+    level: EventRiskLevel
+    materiality: float
+    contributions: list[EventRiskContribution] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "status": "NO_EVENTS" if not self.contributions else "AVAILABLE",
+            "horizon": self.horizon.value,
+            "level": self.level.value,
+            "materiality": round(self.materiality, 3),
+            "event_count": len(self.contributions),
+            "contributions": [item.to_dict() for item in self.contributions],
+            "methodology": (
+                "Horizon-relative linear proximity × transparent event severity; "
+                "listed event contributions are combined as 1-Π(1-c). This "
+                "describes risk quantity and does not trigger WAIT."
+            ),
+        }
+
+
+_EVENT_RISK_HORIZONS = {
+    DecisionHorizon.H24: timedelta(hours=24),
+    DecisionHorizon.D7: timedelta(days=7),
+    DecisionHorizon.D30: timedelta(days=30),
+}
+
+_IMPORTANCE_RISK = {
+    EventImportance.LOW: 0.20,
+    EventImportance.MEDIUM: 0.45,
+    EventImportance.HIGH: 0.75,
+    EventImportance.CRITICAL: 1.00,
+}
+
+_MOVEMENT_RISK = {
+    ExpectedMovement.LOW: 0.20,
+    ExpectedMovement.NORMAL: 0.45,
+    ExpectedMovement.HIGH: 0.75,
+    ExpectedMovement.EXTREME: 1.00,
+}
+
+
+def event_proximity(
+    event: FutureEvent,
+    horizon: DecisionHorizon,
+    *,
+    as_of: datetime,
+) -> float:
+    """Return a general [0, 1] horizon-relative proximity/decay weight.
+
+    Scheduled events decay towards zero at the far edge of the selected
+    horizon. Unscheduled/released events decay from their publication or
+    detection time. An event outside the horizon contributes nothing.
+    """
+
+    now = as_of.replace(tzinfo=UTC) if as_of.tzinfo is None else as_of.astimezone(UTC)
+    window = _EVENT_RISK_HORIZONS[horizon]
+    if event.scheduled_at is not None:
+        distance = event.scheduled_at - now
+        if distance < timedelta(0):
+            origin = event.source_published_at or event.detected_at
+            distance = now - origin
+        if distance < timedelta(0) or distance > window:
+            return 0.0
+    else:
+        origin = event.source_published_at or event.detected_at
+        distance = now - origin
+        if distance < timedelta(0) or distance > window:
+            return 0.0
+    return max(0.0, min(1.0, 1.0 - distance.total_seconds() / window.total_seconds()))
+
+
+def _event_uncertainty(event: FutureEvent, *, as_of: datetime) -> float:
+    """Use a supplied distribution only; missing pricing means unknown (1)."""
+
+    from .market_expectation import MarketExpectationEngine
+
+    expectation = MarketExpectationEngine().analyze(event, as_of=as_of)
+    if not expectation.available or expectation.uncertainty is None:
+        return 1.0
+    return expectation.uncertainty
+
+
+class EventRiskEngine:
+    """Measure event risk over 24h/7d/30d independently of the 48h gate."""
+
+    def assess(
+        self,
+        events: Iterable[FutureEvent],
+        *,
+        horizon: DecisionHorizon,
+        as_of: datetime | None = None,
+    ) -> EventRiskAssessment:
+        now = as_of or datetime.now(UTC)
+        now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
+        contributions: list[EventRiskContribution] = []
+        for event in events:
+            proximity = event_proximity(event, horizon, as_of=now)
+            if proximity <= 0:
+                continue
+            uncertainty = _event_uncertainty(event, as_of=now)
+            severity = (
+                0.50 * _IMPORTANCE_RISK[event.importance]
+                + 0.35 * _MOVEMENT_RISK[event.magnitude_effect]
+                + 0.15 * uncertainty
+            )
+            contribution = proximity * severity
+            contributions.append(
+                EventRiskContribution(
+                    event_id=event.id,
+                    title=event.title,
+                    proximity=proximity,
+                    importance=event.importance,
+                    expected_movement=event.magnitude_effect,
+                    uncertainty=uncertainty,
+                    contribution=contribution,
+                    scheduled_at=(
+                        event.scheduled_at.isoformat() if event.scheduled_at else None
+                    ),
+                )
+            )
+
+        # Bounded aggregation lets several exposures matter without summing
+        # past one. Causal de-duplication is deliberately a Phase-10 concern.
+        residual = 1.0
+        for item in contributions:
+            residual *= 1.0 - item.contribution
+        materiality = 1.0 - residual if contributions else 0.0
+
+        has_extreme = any(
+            item.expected_movement is ExpectedMovement.EXTREME for item in contributions
+        )
+        if has_extreme and materiality >= 0.75:
+            level = EventRiskLevel.EXTREME
+        elif materiality >= 0.45:
+            level = EventRiskLevel.HIGH
+        elif materiality >= 0.20:
+            level = EventRiskLevel.MODERATE
+        else:
+            level = EventRiskLevel.LOW
+        contributions.sort(key=lambda item: item.contribution, reverse=True)
+        return EventRiskAssessment(
+            horizon=horizon,
+            level=level,
+            materiality=materiality,
+            contributions=contributions,
+        )
 
 
 class EventRiskGate:
@@ -458,7 +638,12 @@ class FutureDecision:
     directional_bias: DirectionalBias
     expected_movement: ExpectedMovement
     decision_confidence: float
-    event_risk: EventRiskGateResult
+    event_risk: EventRiskAssessment
+    event_risk_gate: EventRiskGateResult
+    market_expectations: list[dict[str, Any]]
+    causal_graph: dict[str, Any]
+    signal_convergence: dict[str, Any]
+    contradiction_resolution: dict[str, Any]
     next_major_event: FutureEvent | None
     reasons: list[dict[str, Any]]
     counter_signals: list[dict[str, Any]]
@@ -478,6 +663,11 @@ class FutureDecision:
             "expected_movement": self.expected_movement.value,
             "decision_confidence": round(self.decision_confidence, 3),
             "event_risk": self.event_risk.to_dict(),
+            "event_risk_gate": self.event_risk_gate.to_dict(),
+            "market_expectations": self.market_expectations,
+            "causal_graph": self.causal_graph,
+            "signal_convergence": self.signal_convergence,
+            "contradiction_resolution": self.contradiction_resolution,
             "next_major_event": (
                 self.next_major_event.to_public_dict(self.as_of) if self.next_major_event else None
             ),
@@ -524,6 +714,56 @@ class FutureDecisionEngine:
             as_of=now,
             analysis_uncertainty=analysis_uncertainty,
         )
+        event_risk = EventRiskEngine().assess(
+            event_list,
+            horizon=horizon,
+            as_of=now,
+        )
+        from .market_expectation import MarketExpectationEngine
+
+        expectation_engine = MarketExpectationEngine()
+        market_expectations = [
+            expectation_engine.analyze(event, as_of=now).model_dump(mode="json")
+            for event in event_list
+        ]
+        from .contradiction_resolver import ContradictionResolver
+        from .market_causal_graph import CausalFactor, MarketCausalGraph
+        from .signal_convergence import SignalConvergenceEngine
+
+        causal_factors: list[CausalFactor] = []
+        for family, assessment in families.assessments.items():
+            if not assessment.available or assessment.directional_bias is None:
+                continue
+            try:
+                observed_at = datetime.fromisoformat(assessment.as_of) if assessment.as_of else now
+            except ValueError:
+                observed_at = now
+            source_ids = sorted(
+                {
+                    str(identifier)
+                    for source in assessment.sources
+                    for identifier in (
+                        source.get("evidence_ids")
+                        or [source.get("reference") or source.get("source")]
+                    )
+                    if identifier
+                }
+            ) or [f"family:{family.value}"]
+            causal_factors.append(
+                CausalFactor(
+                    id=f"family:{family.value}",
+                    type=family.value,
+                    observed_at=observed_at,
+                    direction=assessment.directional_bias,
+                    strength=1.0,
+                    confidence=assessment.confidence,
+                    source_ids=source_ids,
+                    affected_assets=[asset],
+                )
+            )
+        causal_graph = MarketCausalGraph(causal_factors)
+        convergence = SignalConvergenceEngine().analyze(causal_factors, causal_graph)
+        contradiction = ContradictionResolver().resolve(causal_factors, causal_graph)
         scenarios = FutureScenarioEngine().build(event_list, families, horizon=horizon, as_of=now)
         dominant = _dominant_family(families)
         direction = (
@@ -629,6 +869,8 @@ class FutureDecisionEngine:
 
         counter_signals = []
         for item in ordered:
+            if item.confidence <= 0:
+                continue
             if (_is_bullish(direction) and _is_bearish(item.directional_bias)) or (
                 _is_bearish(direction) and _is_bullish(item.directional_bias)
             ):
@@ -702,7 +944,12 @@ class FutureDecisionEngine:
             directional_bias=direction,
             expected_movement=expected_movement,
             decision_confidence=confidence,
-            event_risk=gate,
+            event_risk=event_risk,
+            event_risk_gate=gate,
+            market_expectations=market_expectations,
+            causal_graph=causal_graph.to_dict(),
+            signal_convergence=convergence.model_dump(mode="json"),
+            contradiction_resolution=contradiction.model_dump(mode="json"),
             next_major_event=next_event,
             reasons=reasons,
             counter_signals=counter_signals,
@@ -758,6 +1005,7 @@ def horizon_decisions(
             "expected_movement": result.expected_movement.value,
             "decision_confidence": round(result.decision_confidence, 3),
             "event_risk": result.event_risk.level.value,
+            "event_risk_gate": result.event_risk_gate.to_dict(),
             "data_quality": (
                 result.data_quality.to_dict() if result.data_quality is not None else None
             ),

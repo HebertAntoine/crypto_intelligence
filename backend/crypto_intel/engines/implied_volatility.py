@@ -30,6 +30,7 @@ from pydantic import BaseModel, Field
 
 from ..core.enums import Asset, Timeframe
 from ..core.usability import Freshness, freshness_for
+from ..future_events.models import DirectionalBias, ExpectedMovement
 from ..history import store
 from ..logging_setup import get_logger
 
@@ -62,6 +63,11 @@ class ImpliedVolatilityReading(BaseModel):
     dvol: float | None = None
     dvol_percentile: float | None = None
     dvol_change_30d: float | None = None
+    directional_bias: DirectionalBias | None = None
+    direction_contribution: float | None = None
+    expected_movement: ExpectedMovement | None = None
+    options_skew: float | None = None
+    term_structure: str | None = None
     realised_vol_annualised: float | None = None
     variance_premium: float | None = Field(
         default=None,
@@ -153,7 +159,14 @@ class ImpliedVolatilityEngine:
         out.decision_status = "FRESH" if freshness.is_fresh else "STALE"
         out.history_days = len(dvol)
         out.dvol = round(float(dvol.iloc[-1]), 3)
+        out.directional_bias = DirectionalBias.NEUTRAL
+        out.direction_contribution = 0.0
         out.dvol_percentile = _trailing_percentile(dvol)
+        out.expected_movement = (
+            ExpectedMovement.HIGH
+            if out.dvol_percentile is not None and out.dvol_percentile >= 70
+            else ExpectedMovement.NORMAL
+        )
         if len(dvol) >= 31:
             out.dvol_change_30d = round(
                 float(dvol.iloc[-1] - dvol.iloc[-31]), 3

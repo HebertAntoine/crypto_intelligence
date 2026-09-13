@@ -199,8 +199,18 @@ export interface FutureDecision {
   expected_movement: string;
   decision_confidence: number;
   event_risk: {
-    active: boolean; level: string; reasons: string[]; event_ids: string[]; bypassed: boolean;
+    status: "AVAILABLE" | "NO_EVENTS"; horizon: DecisionHorizon; level: string;
+    materiality: number; event_count: number; contributions: Record<string, any>[];
+    methodology: string;
   };
+  event_risk_gate: {
+    status: "TRIGGERED" | "NOT_TRIGGERED"; active: boolean; level: string;
+    reasons: string[]; event_ids: string[]; bypassed: boolean;
+  };
+  market_expectations: Record<string, any>[];
+  causal_graph: Record<string, any>;
+  signal_convergence: Record<string, any>;
+  contradiction_resolution: Record<string, any>;
   next_major_event: Record<string, any> | null;
   reasons: FutureReason[];
   counter_signals: { family: string; directional_bias: string; explanation: string; sources: FutureSource[] }[];
@@ -213,6 +223,7 @@ export interface FutureDecision {
   horizons: Record<DecisionHorizon, {
     decision: string; directional_bias: string; expected_movement: string;
     decision_confidence: number; event_risk: string;
+    event_risk_gate: FutureDecision["event_risk_gate"];
   }>;
   provenance: FutureSource[];
 }

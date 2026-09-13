@@ -622,8 +622,8 @@ def decide(
             "SELL": BuyOpportunityState.UNFAVORABLE,
             "INSUFFICIENT_DATA": BuyOpportunityState.INSUFFICIENT_DATA,
         }.get(future_action, BuyOpportunityState.INSUFFICIENT_DATA)
-        event_risk = future_decision.get("event_risk") or {}
-        if bool(event_risk.get("active")):
+        event_risk_gate = future_decision.get("event_risk_gate") or {}
+        if bool(event_risk_gate.get("active")):
             guards.append("EventRiskGate actif: le risque Tier 1 prime sur la technique.")
 
     ranker = DecisionFactorRanker()

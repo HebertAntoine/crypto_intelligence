@@ -101,7 +101,8 @@ def test_future_decision_endpoint_contract(monkeypatch) -> None:
     result = routes_future.future_decision("BTC", "7d")
 
     assert result["decision"] == "WAIT"
-    assert result["event_risk"]["active"] is True
+    assert result["event_risk_gate"]["active"] is True
+    assert result["event_risk"]["horizon"] == "7d"
     assert result["families"]["total_count"] == 5
     assert len(result["scenarios"]) == 4
     assert result["reasons"][0]["source"] == "Federal Reserve"

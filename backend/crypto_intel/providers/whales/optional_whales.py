@@ -99,11 +99,83 @@ class _UnconfiguredPaidProvider(BaseProvider):
         )
 
 
-class CryptoQuantProvider(_UnconfiguredPaidProvider):
+class CryptoQuantProvider(BaseProvider):
     name = "cryptoquant"
     source = "CryptoQuant"
+    category = ProviderCategory.WHALES
+    capabilities = ("whales.flows",)
     requires_key = "CRYPTOQUANT_API_KEY"
-    source_url = "https://cryptoquant.com"
+    source_url = "https://api.cryptoquant.com/v1"
+    base_confidence = 88.0
+
+    async def fetch(self, request: FetchRequest) -> FetchResult:
+        settings = get_settings()
+        if not settings.cryptoquant_api_key.strip():
+            return FetchResult.failure(FetchStatus.NOT_CONFIGURED, self.name)
+        if request.asset is None:
+            return FetchResult.failure(FetchStatus.NO_DATA, self.name)
+        asset_slug = request.asset.value.lower()
+        endpoint = f"{self.source_url}/{asset_slug}/flow-indicator/exchange-whale-ratio"
+        result = await get_http().get_json(
+            endpoint,
+            provider=self.name,
+            headers={"Authorization": f"Bearer {settings.cryptoquant_api_key}"},
+            params={
+                "exchange": "all_exchange",
+                "window": "hour",
+                "limit": min(720, request.limit),
+                "format": "json",
+            },
+            cache_ttl=1800,
+            rate_limit_per_min=20,
+            retries=1,
+        )
+        if not result.ok or not isinstance(result.data, dict):
+            return FetchResult.failure(result.status, self.name, result.message)
+        result_node = result.data.get("result")
+        rows = result_node.get("data") if isinstance(result_node, dict) else None
+        if not isinstance(rows, list):
+            return FetchResult.failure(
+                FetchStatus.PARSE_ERROR,
+                self.name,
+                "CryptoQuant response lacks result.data",
+            )
+        observations: list[Observation] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            try:
+                value = float(row["exchange_whale_ratio"])
+                raw_time = str(row["date"])
+                timestamp = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+                timestamp = (
+                    timestamp.replace(tzinfo=UTC)
+                    if timestamp.tzinfo is None
+                    else timestamp.astimezone(UTC)
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+            observations.append(
+                Observation(
+                    asset=request.asset,
+                    metric="whale.exchange_whale_ratio",
+                    value=value,
+                    unit="ratio",
+                    timestamp=timestamp,
+                    provenance=self.provenance(endpoint),
+                    freshness=compute_freshness(timestamp, "whale"),
+                    confidence=self.base_confidence,
+                    quality=DataQuality.MEASURED,
+                    meta={
+                        "reliability": "HIGH",
+                        "methodology": "top ten exchange inflows / total exchange inflows",
+                        "point_in_time_caveat": (
+                            "historical values can revise when address clustering changes"
+                        ),
+                    },
+                )
+            )
+        return FetchResult.success(observations, self.name)
 
 
 class NansenProvider(_UnconfiguredPaidProvider):
@@ -117,4 +189,4 @@ class ArkhamProvider(_UnconfiguredPaidProvider):
     name = "arkham"
     source = "Arkham Intelligence"
     requires_key = "ARKHAM_API_KEY"
-    source_url = "https://arkhamintelligence.com"
+    source_url = "https://arkm.com/api/"

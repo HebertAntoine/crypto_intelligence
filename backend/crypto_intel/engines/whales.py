@@ -14,10 +14,13 @@ Two rules govern this module:
 
 from __future__ import annotations
 
+import hashlib
+from datetime import UTC, datetime
 from enum import StrEnum
+from typing import Any
 
 import numpy as np
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from ..config_loader import asset_meta
 from ..core.enums import Asset, Direction, Freshness, Reliability
@@ -151,6 +154,13 @@ class WhaleAnalyzer:
                     findings.append(f"Exchange-held supply up {change:.2f}%")
                     score -= 12
 
+        whale_ratio = latest("whale.exchange_whale_ratio")
+        if whale_ratio is not None:
+            findings.append(
+                f"Exchange whale ratio {whale_ratio:.3f}: concentration mesurée des dix "
+                "plus gros dépôts, sans direction de prix déduite isolément."
+            )
+
         if not signals and not findings:
             return WhaleAnalysis(
                 asset=asset, available=False,
@@ -198,13 +208,170 @@ class WhaleState(StrEnum):
     NEUTRAL = "NEUTRAL"
     DISTRIBUTION = "DISTRIBUTION"
     STRONG_DISTRIBUTION = "STRONG_DISTRIBUTION"
-    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    UNAVAILABLE = "UNAVAILABLE"
+    INSUFFICIENT_DATA = "UNAVAILABLE"  # backwards-compatible enum alias
+
+
+class WhaleEntityType(StrEnum):
+    WALLET = "WALLET"
+    EXCHANGE = "EXCHANGE"
+    CUSTODY = "CUSTODY"
+    ETF = "ETF"
+    MINER = "MINER"
+    PROTOCOL = "PROTOCOL"
+    UNKNOWN = "UNKNOWN"
+
+
+class WhaleProvenance(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    source: str
+    source_url: str | None = None
+    transaction_hash: str | None = None
+    evidence_ids: list[str] = Field(default_factory=list)
+
+
+def normalize_entity_type(value: str | WhaleEntityType | None) -> WhaleEntityType:
+    if isinstance(value, WhaleEntityType):
+        return value
+    raw = str(value or "").strip().lower()
+    if not raw or raw == "unknown":
+        return WhaleEntityType.UNKNOWN
+    if "exchange" in raw:
+        return WhaleEntityType.EXCHANGE
+    if any(word in raw for word in ("custody", "custodian", "cold storage")):
+        return WhaleEntityType.CUSTODY
+    if "etf" in raw or "fund" in raw:
+        return WhaleEntityType.ETF
+    if "miner" in raw or "mining" in raw:
+        return WhaleEntityType.MINER
+    if any(word in raw for word in ("protocol", "bridge", "defi", "contract")):
+        return WhaleEntityType.PROTOCOL
+    if "wallet" in raw or "address" in raw:
+        return WhaleEntityType.WALLET
+    return WhaleEntityType.UNKNOWN
+
+
+class WhaleObservation(BaseModel):
+    """Provider-neutral attributed transfer. Interpretation remains potential."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str
+    asset: Asset
+    observed_at: datetime
+    amount_asset: float | None = Field(default=None, gt=0)
+    amount_usd: float | None = Field(default=None, gt=0)
+    from_entity: str | None = None
+    to_entity: str | None = None
+    from_type: WhaleEntityType = WhaleEntityType.UNKNOWN
+    to_type: WhaleEntityType = WhaleEntityType.UNKNOWN
+    transaction_type: str = "transfer"
+    provider: str
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    provenance: list[WhaleProvenance] = Field(default_factory=list)
+
+    @field_validator("observed_at")
+    @classmethod
+    def ensure_utc(cls, value: datetime) -> datetime:
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+    @property
+    def transaction_hash(self) -> str | None:
+        return next(
+            (item.transaction_hash for item in self.provenance if item.transaction_hash),
+            None,
+        )
+
+    @property
+    def timestamp(self) -> str:
+        return self.observed_at.isoformat()
+
+    @property
+    def source(self) -> str:
+        return self.provider
+
+    @property
+    def source_url(self) -> str:
+        return next((item.source_url for item in self.provenance if item.source_url), "") or ""
+
+    @property
+    def from_entity_type(self) -> str:
+        return self.from_type.value
+
+    @property
+    def to_entity_type(self) -> str:
+        return self.to_type.value
+
+    @property
+    def evidence_ids(self) -> list[str]:
+        return list(
+            dict.fromkeys(
+                evidence
+                for item in self.provenance
+                for evidence in item.evidence_ids
+            )
+        )
+
+    @property
+    def kind(self) -> WhaleTransferKind:
+        tx_type = self.transaction_type.lower()
+        if tx_type == "mint":
+            return WhaleTransferKind.MINT
+        if tx_type == "burn":
+            return WhaleTransferKind.BURN
+        mapping = {
+            (WhaleEntityType.WALLET, WhaleEntityType.EXCHANGE): (
+                WhaleTransferKind.WALLET_TO_EXCHANGE
+            ),
+            (WhaleEntityType.EXCHANGE, WhaleEntityType.WALLET): (
+                WhaleTransferKind.EXCHANGE_TO_WALLET
+            ),
+            (WhaleEntityType.EXCHANGE, WhaleEntityType.CUSTODY): (
+                WhaleTransferKind.EXCHANGE_TO_WALLET
+            ),
+            (WhaleEntityType.EXCHANGE, WhaleEntityType.EXCHANGE): (
+                WhaleTransferKind.EXCHANGE_TO_EXCHANGE
+            ),
+            (WhaleEntityType.WALLET, WhaleEntityType.WALLET): (
+                WhaleTransferKind.WALLET_TO_WALLET
+            ),
+            (WhaleEntityType.WALLET, WhaleEntityType.CUSTODY): (
+                WhaleTransferKind.WALLET_TO_WALLET
+            ),
+        }
+        return mapping.get((self.from_type, self.to_type), WhaleTransferKind.UNKNOWN)
+
+    @property
+    def deduplication_key(self) -> str:
+        transaction_hash = self.transaction_hash
+        if transaction_hash:
+            return f"{self.asset.value}:{transaction_hash.lower()}:{self.transaction_type.lower()}"
+        minute = self.observed_at.replace(second=0, microsecond=0).isoformat()
+        raw = "|".join(
+            (
+                self.asset.value,
+                minute,
+                (
+                    f"{self.amount_asset:.8f}"
+                    if self.amount_asset is not None
+                    else "UNAVAILABLE"
+                ),
+                (self.from_entity or self.from_type.value).strip().lower(),
+                (self.to_entity or self.to_type.value).strip().lower(),
+                self.transaction_type.lower(),
+            )
+        )
+        return "whale:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
 
 
 class WhaleTransfer(BaseModel):
+    """Legacy provider adapter; new integrations emit ``WhaleObservation``."""
+
     id: str
     asset: Asset
     timestamp: str
+    amount_asset: float | None = Field(default=None, gt=0)
     amount_usd: float = Field(gt=0)
     from_entity: str | None = None
     from_entity_type: str = "unknown"
@@ -223,39 +390,52 @@ class WhaleTransfer(BaseModel):
         if tx_type == "burn":
             return WhaleTransferKind.BURN
 
-        def group(value: str) -> str:
-            lowered = value.lower()
-            if "exchange" in lowered:
-                return "exchange"
-            if any(word in lowered for word in ("wallet", "custody", "custodian", "unknown")):
-                return "wallet"
-            return "unknown"
+        return self.to_observation().kind
 
-        origin = group(self.from_entity_type)
-        destination = group(self.to_entity_type)
-        mapping = {
-            ("wallet", "exchange"): WhaleTransferKind.WALLET_TO_EXCHANGE,
-            ("exchange", "wallet"): WhaleTransferKind.EXCHANGE_TO_WALLET,
-            ("exchange", "exchange"): WhaleTransferKind.EXCHANGE_TO_EXCHANGE,
-            ("wallet", "wallet"): WhaleTransferKind.WALLET_TO_WALLET,
-        }
-        return mapping.get((origin, destination), WhaleTransferKind.UNKNOWN)
+    def to_observation(self) -> WhaleObservation:
+        observed = datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
+        return WhaleObservation(
+            id=self.id,
+            asset=self.asset,
+            observed_at=observed,
+            # Legacy rows did not retain native amount. Null is the only
+            # honest value: a USD amount must never masquerade as native units.
+            amount_asset=self.amount_asset,
+            amount_usd=self.amount_usd,
+            from_entity=self.from_entity,
+            to_entity=self.to_entity,
+            from_type=normalize_entity_type(self.from_entity_type),
+            to_type=normalize_entity_type(self.to_entity_type),
+            transaction_type=self.transaction_type,
+            provider=self.source,
+            confidence=0.85,
+            provenance=[
+                WhaleProvenance(
+                    source=self.source,
+                    source_url=self.source_url,
+                    transaction_hash=self.id,
+                    evidence_ids=self.evidence_ids,
+                )
+            ],
+        )
 
 
 class WhaleIntelligenceAnalysis(BaseModel):
     available: bool
     asset: Asset
-    state: WhaleState = WhaleState.INSUFFICIENT_DATA
+    state: WhaleState = WhaleState.UNAVAILABLE
     exchange_deposits_usd: float = 0.0
     exchange_withdrawals_usd: float = 0.0
     classified_transfers: int = 0
     unknown_transfers: int = 0
+    duplicate_transfers: int = 0
+    provider_count: int = 0
     potential_sell_pressure: float | None = None
     confidence: float = 0.0
     is_certainty: bool = False
     factors: list[str] = Field(default_factory=list)
     evidence_ids: list[str] = Field(default_factory=list)
-    provenance: list[dict[str, str]] = Field(default_factory=list)
+    provenance: list[dict[str, Any]] = Field(default_factory=list)
     unavailable_reason: str | None = None
     explanation: str = ""
 
@@ -263,8 +443,40 @@ class WhaleIntelligenceAnalysis(BaseModel):
 class WhaleIntelligenceEngine:
     """Classify transfer direction before assigning any pressure signal."""
 
-    def analyze(self, asset: Asset, transfers: list[WhaleTransfer]) -> WhaleIntelligenceAnalysis:
-        relevant = [transfer for transfer in transfers if transfer.asset is asset]
+    @staticmethod
+    def deduplicate(observations: list[WhaleObservation]) -> tuple[list[WhaleObservation], int]:
+        grouped: dict[str, list[WhaleObservation]] = {}
+        for observation in observations:
+            grouped.setdefault(observation.deduplication_key, []).append(observation)
+        merged: list[WhaleObservation] = []
+        for duplicates in grouped.values():
+            primary = max(duplicates, key=lambda item: item.confidence)
+            provenance: dict[tuple[str, str | None, str | None], WhaleProvenance] = {}
+            for item in duplicates:
+                for source in item.provenance:
+                    provenance[(source.source, source.source_url, source.transaction_hash)] = source
+            merged.append(
+                primary.model_copy(
+                    update={
+                        "provenance": list(provenance.values()),
+                        "confidence": max(item.confidence for item in duplicates),
+                    }
+                )
+            )
+        return merged, len(observations) - len(merged)
+
+    def analyze(
+        self,
+        asset: Asset,
+        transfers: list[WhaleObservation | WhaleTransfer],
+    ) -> WhaleIntelligenceAnalysis:
+        normalized = [
+            item.to_observation() if isinstance(item, WhaleTransfer) else item
+            for item in transfers
+        ]
+        asset_observations = [item for item in normalized if item.asset is asset]
+        provider_count = len({item.provider for item in asset_observations})
+        relevant, duplicate_count = self.deduplicate(asset_observations)
         if not relevant:
             return WhaleIntelligenceAnalysis(
                 available=False,
@@ -274,12 +486,12 @@ class WhaleIntelligenceEngine:
             )
 
         deposits = sum(
-            transfer.amount_usd
+            transfer.amount_usd or 0.0
             for transfer in relevant
             if transfer.kind is WhaleTransferKind.WALLET_TO_EXCHANGE
         )
         withdrawals = sum(
-            transfer.amount_usd
+            transfer.amount_usd or 0.0
             for transfer in relevant
             if transfer.kind is WhaleTransferKind.EXCHANGE_TO_WALLET
         )
@@ -290,6 +502,7 @@ class WhaleIntelligenceEngine:
                 WhaleTransferKind.WALLET_TO_EXCHANGE,
                 WhaleTransferKind.EXCHANGE_TO_WALLET,
             }
+            and transfer.amount_usd is not None
         ]
         unknown = sum(
             transfer.kind
@@ -332,7 +545,12 @@ class WhaleIntelligenceEngine:
             factors.append(
                 f"{unknown} transfert(s) interne(s) ou non attribué(s) restent directionnellement neutres."
             )
-        confidence = min(0.9, len(classified) / max(3, len(relevant))) if classified else 0.25
+        mean_source_confidence = sum(item.confidence for item in relevant) / len(relevant)
+        confidence = (
+            min(0.9, mean_source_confidence * len(classified) / max(3, len(relevant)))
+            if classified
+            else min(0.25, mean_source_confidence)
+        )
         return WhaleIntelligenceAnalysis(
             available=True,
             asset=asset,
@@ -341,6 +559,8 @@ class WhaleIntelligenceEngine:
             exchange_withdrawals_usd=withdrawals,
             classified_transfers=len(classified),
             unknown_transfers=unknown,
+            duplicate_transfers=duplicate_count,
+            provider_count=provider_count,
             potential_sell_pressure=pressure,
             confidence=confidence,
             is_certainty=False,
@@ -349,12 +569,23 @@ class WhaleIntelligenceEngine:
                 {
                     evidence
                     for transfer in relevant
-                    for evidence in [transfer.id, *transfer.evidence_ids]
+                    for evidence in [
+                        transfer.id,
+                        *(
+                            evidence_id
+                            for source in transfer.provenance
+                            for evidence_id in source.evidence_ids
+                        ),
+                    ]
                 }
             ),
             provenance=[
-                {"source": source, "source_url": url}
-                for source, url in sorted({(item.source, item.source_url) for item in relevant})
+                source.model_dump(mode="json")
+                for source in {
+                    (entry.source, entry.source_url, entry.transaction_hash): entry
+                    for item in relevant
+                    for entry in item.provenance
+                }.values()
             ],
             explanation=(
                 "Only wallet→exchange and exchange→wallet transfers contribute direction. "

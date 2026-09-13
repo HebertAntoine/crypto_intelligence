@@ -193,6 +193,28 @@ void main() {
       expect(health['status'], 'ok');
       expect(health['source'], 'static');
     });
+
+    test('HTML without a snapshot explains the deployment mismatch', () async {
+      final client = ApiClient(
+        baseUrl: 'https://wrong.example.com',
+        client: StubClient(
+            (_) async => http.Response('<html>app shell</html>', 200)),
+        loadAsset: (_) async => throw Exception('snapshot absent'),
+      );
+
+      expect(
+        () => client.futureDecision('BTC'),
+        throwsA(
+          isA<ApiException>()
+              .having((error) => error.message, 'message', contains('HTML'))
+              .having(
+                (error) => error.message,
+                'path',
+                contains('/future/BTC'),
+              ),
+        ),
+      );
+    });
   });
 
   _provenanceTests();

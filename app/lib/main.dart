@@ -14,7 +14,6 @@ import 'config.dart';
 import 'live_prices/live_price_service.dart';
 import 'screens/chart_screen.dart';
 import 'screens/future_analysis_screen.dart';
-import 'screens/markets_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/mobile_kit.dart';
 
@@ -71,36 +70,71 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
-  String _analysisAsset = 'BTC';
+  late final List<Widget?> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    // Only load the first asset at startup. The other analytical pages are
+    // created on first visit, then kept alive by the IndexedStack so their
+    // selected horizon and scroll position do not disappear between tabs.
+    _screens = [_screenFor(0), null, null, null];
+  }
+
+  Widget _screenFor(int index) => switch (index) {
+        0 => FutureAnalysisScreen(
+            key: const ValueKey('btc-page'),
+            client: widget.client,
+            livePrices: widget.livePrices,
+            initialAsset: 'BTC',
+            lockAsset: true,
+          ),
+        1 => FutureAnalysisScreen(
+            key: const ValueKey('eth-page'),
+            client: widget.client,
+            livePrices: widget.livePrices,
+            initialAsset: 'ETH',
+            lockAsset: true,
+          ),
+        2 => FutureAnalysisScreen(
+            key: const ValueKey('sol-page'),
+            client: widget.client,
+            livePrices: widget.livePrices,
+            initialAsset: 'SOL',
+            lockAsset: true,
+          ),
+        _ => ChartScreen(
+            key: const ValueKey('chart-page'),
+            client: widget.client,
+          ),
+      };
+
+  void _selectPage(int value) {
+    if (value == _index) return;
+    setState(() {
+      _screens[value] ??= _screenFor(value);
+      _index = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final screens = [
-      MarketsScreen(
-        client: widget.client,
-        livePrices: widget.livePrices,
-        onAssetSelected: (asset) => setState(() {
-          _analysisAsset = asset;
-          _index = 1;
-        }),
-      ),
-      FutureAnalysisScreen(
-        client: widget.client,
-        livePrices: widget.livePrices,
-        initialAsset: _analysisAsset,
-      ),
-      ChartScreen(client: widget.client),
-    ];
-
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: _index, children: screens),
+      body: IndexedStack(
+        index: _index,
+        children: _screens
+            .map((screen) => screen ?? const SizedBox.shrink())
+            .toList(),
+      ),
       bottomNavigationBar: MobileBottomNav(
         selectedIndex: _index,
-        onSelected: (value) => setState(() => _index = value),
+        onSelected: _selectPage,
         destinations: const [
-          MobileNavDestination(icon: Icons.bar_chart_rounded, label: 'Marchés'),
-          MobileNavDestination(icon: Icons.radar_rounded, label: 'Analyse'),
+          MobileNavDestination(
+              icon: Icons.currency_bitcoin_rounded, label: 'BTC'),
+          MobileNavDestination(icon: Icons.diamond_outlined, label: 'ETH'),
+          MobileNavDestination(icon: Icons.blur_on_rounded, label: 'SOL'),
           MobileNavDestination(
               icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
         ],

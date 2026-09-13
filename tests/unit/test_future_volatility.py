@@ -8,7 +8,7 @@ from crypto_intel.engines.implied_volatility import ImpliedVolatilityEngine
 from crypto_intel.engines.volatility import ExpectedVolatilityEngine
 
 
-def test_bollinger_squeeze_raises_amplitude_and_contributes_zero_direction():
+def test_bollinger_direction_zero():
     # Broad oscillation followed by an almost flat 30-bar compression.
     broad = 100 + np.sin(np.arange(100) / 2) * 8
     compressed = np.full(20, 100.0)
@@ -77,3 +77,46 @@ def test_stale_dvol_is_available_for_history_but_not_for_decision(monkeypatch):
     assert result.usable_for_decision is False
     assert result.freshness.value == "STALE"
     assert result.observed_at == now - timedelta(days=5)
+
+
+def test_dvol_not_directional(monkeypatch):
+    from datetime import UTC, datetime, timedelta
+
+    from crypto_intel.engines import implied_volatility
+
+    now = datetime(2028, 9, 30, tzinfo=UTC)
+    index = pd.date_range(now - timedelta(days=399), now, periods=400, tz=UTC)
+    dvol = pd.Series(np.linspace(35.0, 95.0, 400), index=index)
+    monkeypatch.setattr(
+        implied_volatility.store,
+        "load_derivatives",
+        lambda *_args, **_kwargs: dvol,
+    )
+    monkeypatch.setattr(
+        ImpliedVolatilityEngine,
+        "realised_trailing",
+        lambda *_args, **_kwargs: pd.Series(dtype=float),
+    )
+
+    result = ImpliedVolatilityEngine().assess(Asset.BTC, as_of=now)
+
+    assert result.dvol_percentile >= 90
+    assert result.expected_movement.value == "HIGH"
+    assert result.directional_bias.value == "NEUTRAL"
+    assert result.direction_contribution == 0.0
+
+
+def test_sol_dvol_na(monkeypatch):
+    from crypto_intel.engines import implied_volatility
+
+    monkeypatch.setattr(
+        implied_volatility.store,
+        "load_derivatives",
+        lambda *_args, **_kwargs: pd.Series(dtype=float),
+    )
+    result = ImpliedVolatilityEngine().assess(Asset.SOL)
+
+    assert result.available is False
+    assert result.decision_status == "UNAVAILABLE"
+    assert result.directional_bias is None
+    assert result.direction_contribution is None

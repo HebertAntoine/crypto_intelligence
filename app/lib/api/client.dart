@@ -145,6 +145,12 @@ class ApiClient {
     } catch (error) {
       final snapshot = await _tryStaticSnapshot(path, query);
       if (snapshot != null) return snapshot;
+      if (response.body.trimLeft().startsWith('<')) {
+        throw ApiException(
+          'L’API a renvoyé une page HTML au lieu de données JSON pour $path. '
+          'Vérifiez API_BASE_URL ou l’instantané embarqué correspondant.',
+        );
+      }
       throw ApiException('The backend returned invalid JSON: $error');
     }
   }

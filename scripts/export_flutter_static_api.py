@@ -18,6 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUT_DIR = PROJECT_ROOT / "app" / "assets" / "api_snapshots"
 ASSETS = ("BTC", "ETH", "SOL")
 TIMEFRAMES = ("15m", "1h", "4h", "1d", "1w")
+DECISION_HORIZONS = ("24h", "7d", "30d")
 
 
 def _chart_period(timeframe: str) -> str:
@@ -81,6 +82,9 @@ def _endpoints() -> list[tuple[str, dict[str, str] | None]]:
     for asset in ASSETS:
         endpoints.append((f"/market/price/{asset}", None))
         endpoints.append((f"/today/{asset}", None))
+        for horizon in DECISION_HORIZONS:
+            endpoints.append((f"/future/{asset}", {"horizon": horizon}))
+        endpoints.append((f"/future/{asset}/timeline", {"days": "30"}))
         endpoints.append((f"/derivatives/aggregate/{asset}", None))
         endpoints.append((f"/cross-asset/{asset}", None))
         endpoints.append((f"/multi-timeframe/{asset}", None))
@@ -127,13 +131,29 @@ def _in_process_fetcher():
     import sys
 
     sys.path.insert(0, str(PROJECT_ROOT / "backend"))
-    from fastapi.testclient import TestClient
+    from crypto_intel.api.routes_future import future_decision, future_timeline
 
-    from crypto_intel.main import app
-
-    client = TestClient(app)
+    client = None
 
     def fetch(_base_url: str, path: str, query: dict[str, str] | None) -> dict:
+        # These routes are pure synchronous composers over the same local
+        # analysis context. Calling them directly avoids starting a server and
+        # also avoids the TestClient/AnyIO incompatibility seen with recent
+        # dependency combinations during static builds.
+        if path.startswith("/future/"):
+            parts = path.strip("/").split("/")
+            symbol = parts[1]
+            if len(parts) == 3 and parts[2] == "timeline":
+                return future_timeline(symbol, int((query or {}).get("days", "30")))
+            return future_decision(symbol, (query or {}).get("horizon", "7d"))
+
+        nonlocal client
+        if client is None:
+            from fastapi.testclient import TestClient
+
+            from crypto_intel.main import app
+
+            client = TestClient(app)
         response = client.get(f"/api{path}", params=query or {})
         if response.status_code != 200:
             raise RuntimeError(
@@ -154,6 +174,11 @@ def main() -> None:
         help="Refresh only the three first-page payloads.",
     )
     parser.add_argument(
+        "--only-future",
+        action="store_true",
+        help="Refresh only decision and timeline payloads for the asset tabs.",
+    )
+    parser.add_argument(
         "--in-process",
         action="store_true",
         help="Build the payloads in this process instead of over HTTP.",
@@ -168,6 +193,8 @@ def main() -> None:
     endpoints = _endpoints()
     if args.only_today:
         endpoints = [item for item in endpoints if item[0].startswith("/today/")]
+    elif args.only_future:
+        endpoints = [item for item in endpoints if item[0].startswith("/future/")]
 
     for path, query in endpoints:
         data = fetch(args.base_url, path, query)

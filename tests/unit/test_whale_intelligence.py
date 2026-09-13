@@ -1,8 +1,13 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from crypto_intel.core.enums import Asset
 from crypto_intel.engines.whales import (
+    WhaleEntityType,
     WhaleIntelligenceEngine,
+    WhaleObservation,
+    WhaleProvenance,
     WhaleState,
     WhaleTransfer,
     WhaleTransferKind,
@@ -100,4 +105,92 @@ def test_whale_alert_parser_preserves_entity_direction_and_provenance():
     assert transfer.kind is WhaleTransferKind.WALLET_TO_EXCHANGE
     assert transfer.from_entity == "Fund A"
     assert transfer.to_entity == "Exchange B"
+    assert transfer.amount_asset is None
+    assert transfer.amount_usd == 50_000_000
     assert transfer.source_url.endswith("api-tx")
+
+
+def _observation(
+    from_type: WhaleEntityType,
+    to_type: WhaleEntityType,
+    *,
+    provider: str = "provider-a",
+    transaction_hash: str = "0xabc",
+) -> WhaleObservation:
+    return WhaleObservation(
+        id=f"{provider}:{transaction_hash}",
+        asset=Asset.BTC,
+        observed_at=datetime(2028, 9, 10, 10, tzinfo=UTC),
+        amount_asset=100.0,
+        amount_usd=10_000_000.0,
+        from_entity="origin",
+        to_entity="destination",
+        from_type=from_type,
+        to_type=to_type,
+        provider=provider,
+        confidence=0.8,
+        provenance=[
+            WhaleProvenance(
+                source=provider,
+                source_url=f"https://{provider}.test/{transaction_hash}",
+                transaction_hash=transaction_hash,
+            )
+        ],
+    )
+
+
+def test_whale_wallet_to_exchange():
+    result = WhaleIntelligenceEngine().analyze(
+        Asset.BTC,
+        [_observation(WhaleEntityType.WALLET, WhaleEntityType.EXCHANGE)],
+    )
+    assert result.state is WhaleState.DISTRIBUTION
+    assert result.potential_sell_pressure == 1.0
+
+
+def test_whale_exchange_to_wallet():
+    result = WhaleIntelligenceEngine().analyze(
+        Asset.BTC,
+        [_observation(WhaleEntityType.EXCHANGE, WhaleEntityType.WALLET)],
+    )
+    assert result.state is WhaleState.ACCUMULATION
+    assert result.potential_sell_pressure == -1.0
+
+
+def test_whale_exchange_to_exchange():
+    result = WhaleIntelligenceEngine().analyze(
+        Asset.BTC,
+        [_observation(WhaleEntityType.EXCHANGE, WhaleEntityType.EXCHANGE)],
+    )
+    assert result.state is WhaleState.NEUTRAL
+    assert result.potential_sell_pressure is None
+
+
+def test_whale_unknown_transfer():
+    result = WhaleIntelligenceEngine().analyze(
+        Asset.BTC,
+        [_observation(WhaleEntityType.UNKNOWN, WhaleEntityType.UNKNOWN)],
+    )
+    assert result.state is WhaleState.NEUTRAL
+    assert result.potential_sell_pressure is None
+
+
+def test_whale_duplicate_provider_transaction():
+    duplicate_a = _observation(
+        WhaleEntityType.WALLET,
+        WhaleEntityType.EXCHANGE,
+        provider="provider-a",
+    )
+    duplicate_b = _observation(
+        WhaleEntityType.WALLET,
+        WhaleEntityType.EXCHANGE,
+        provider="provider-b",
+    )
+    result = WhaleIntelligenceEngine().analyze(
+        Asset.BTC,
+        [duplicate_a, duplicate_b],
+    )
+    assert result.exchange_deposits_usd == 10_000_000.0
+    assert result.classified_transfers == 1
+    assert result.duplicate_transfers == 1
+    assert result.provider_count == 2

@@ -5,6 +5,7 @@ import pytest
 from crypto_intel.core.enums import Asset
 from crypto_intel.engines.future_decision import (
     DecisionAction,
+    EventRiskEngine,
     EventRiskGate,
     FamilyAssessment,
     FiveFamilySnapshot,
@@ -12,6 +13,7 @@ from crypto_intel.engines.future_decision import (
     FutureFamily,
     FutureScenarioEngine,
     ScenarioKind,
+    event_proximity,
 )
 from crypto_intel.future_events.models import (
     DecisionHorizon,
@@ -94,7 +96,7 @@ def test_bullish_technical_cannot_override_tier_one_event_gate() -> None:
         analysis_uncertainty=0.8,
     )
     assert result.decision is DecisionAction.WAIT
-    assert result.event_risk.active is True
+    assert result.event_risk_gate.active is True
     assert result.reasons[0]["source"] == "Federal Reserve"
 
 
@@ -145,6 +147,60 @@ def test_event_outside_gate_window_does_not_block() -> None:
     assert result.active is False
 
 
+def test_critical_event_72h_gate_not_triggered() -> None:
+    assert EventRiskGate().assess([event(hours=72)], as_of=NOW).active is False
+
+
+def test_critical_event_72h_risk_not_low_if_material() -> None:
+    result = EventRiskEngine().assess(
+        [event(hours=72)], horizon=DecisionHorizon.D7, as_of=NOW
+    )
+    assert result.level.value in {"MODERATE", "HIGH", "EXTREME"}
+
+
+def test_critical_event_36h_gate_triggered() -> None:
+    assert EventRiskGate().assess([event(hours=36)], as_of=NOW).active is True
+
+
+def test_low_importance_event_36h_does_not_force_wait() -> None:
+    low = event(hours=36).model_copy(update={"importance": EventImportance.LOW})
+    assert EventRiskGate().assess([low], as_of=NOW).active is False
+
+
+def test_event_risk_vs_gate() -> None:
+    future_event = event(hours=72)
+    gate = EventRiskGate().assess([future_event], as_of=NOW)
+    risk = EventRiskEngine().assess(
+        [future_event], horizon=DecisionHorizon.D7, as_of=NOW
+    )
+    assert gate.to_dict()["status"] == "NOT_TRIGGERED"
+    assert risk.level.value != "LOW"
+
+
+def test_event_proximity_decay() -> None:
+    close = event(hours=24)
+    far = event(hours=72)
+    close_weight = event_proximity(close, DecisionHorizon.D7, as_of=NOW)
+    far_weight = event_proximity(far, DecisionHorizon.D7, as_of=NOW)
+    assert 0.0 < far_weight < close_weight < 1.0
+
+
+def test_event_risk_horizon_specific() -> None:
+    future_event = event(hours=72)
+    risk_24h = EventRiskEngine().assess(
+        [future_event], horizon=DecisionHorizon.H24, as_of=NOW
+    )
+    risk_7d = EventRiskEngine().assess(
+        [future_event], horizon=DecisionHorizon.D7, as_of=NOW
+    )
+    risk_30d = EventRiskEngine().assess(
+        [future_event], horizon=DecisionHorizon.D30, as_of=NOW
+    )
+    assert risk_24h.level.value == "LOW"
+    assert risk_7d.level.value != "LOW"
+    assert risk_7d.materiality != risk_30d.materiality
+
+
 def test_low_amplitude_event_does_not_block() -> None:
     result = EventRiskGate().assess(
         [event(movement=ExpectedMovement.NORMAL)], as_of=NOW, analysis_uncertainty=0.9
@@ -178,3 +234,16 @@ def test_available_family_never_keeps_an_unavailable_reason() -> None:
     item.__post_init__()
 
     assert item.to_dict()["unavailable_reason"] is None
+
+
+def test_zero_confidence_direction_is_not_a_counter_signal() -> None:
+    families = five(technical=DirectionalBias.BULLISH)
+    families.assessments[FutureFamily.FLOWS_WHALES].directional_bias = (
+        DirectionalBias.BEARISH
+    )
+    families.assessments[FutureFamily.TECHNICAL_VOLATILITY].confidence = 0.0
+
+    result = FutureDecisionEngine().decide(Asset.BTC, [], families, as_of=NOW)
+
+    assert result.decision is DecisionAction.SELL
+    assert result.counter_signals == []

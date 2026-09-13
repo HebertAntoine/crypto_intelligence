@@ -7,6 +7,7 @@ import pytest
 from crypto_intel.core.enums import Asset, Freshness
 from crypto_intel.core.models import Observation, Provenance
 from crypto_intel.engines.institutional_flow import (
+    FlowReversal,
     InstitutionalFlowEngine,
     InstitutionalFlowState,
 )
@@ -47,7 +48,7 @@ def test_rolling_windows_use_reported_sessions_not_calendar_fill():
     assert result.acceleration_musd_per_session == pytest.approx(3.0)
 
 
-def test_one_negative_day_does_not_overwrite_twenty_session_inflow():
+def test_single_negative_day_not_strong_outflow():
     values = [100.0] * 19 + [-50.0]
     result = InstitutionalFlowEngine().analyze(Asset.BTC, _flows(values), now=NOW)
 
@@ -56,14 +57,33 @@ def test_one_negative_day_does_not_overwrite_twenty_session_inflow():
         InstitutionalFlowState.INFLOW,
         InstitutionalFlowState.STRONG_INFLOW,
     }
+    assert result.rolling_1_session_musd == -50.0
+    assert result.persistence_sessions == 1
+    assert result.deterioration is False
 
 
-def test_reversal_compares_recent_three_with_prior_five():
+def test_institutional_flow_reversal():
     values = [-80.0] * 5 + [120.0, 130.0, 140.0]
     result = InstitutionalFlowEngine().analyze(Asset.BTC, _flows(values), now=NOW)
 
     assert result.reversal is True
+    assert result.flow_reversal is FlowReversal.OUTFLOW_TO_INFLOW
+    assert result.persistence_direction == "INFLOW"
+    assert result.persistence_sessions == 3
     assert result.acceleration_musd_per_session > 0
+
+
+def test_successive_negative_sessions_flag_deterioration():
+    values = [100.0] * 17 + [-20.0, -30.0, -40.0]
+    result = InstitutionalFlowEngine().analyze(Asset.BTC, _flows(values), now=NOW)
+
+    assert result.state in {
+        InstitutionalFlowState.INFLOW,
+        InstitutionalFlowState.STRONG_INFLOW,
+    }
+    assert result.flow_reversal is FlowReversal.INFLOW_TO_OUTFLOW
+    assert result.persistence_sessions == 3
+    assert result.deterioration is True
 
 
 def test_missing_sol_flow_is_unavailable_not_neutral():

@@ -23,16 +23,28 @@ class InstitutionalFlowState(StrEnum):
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
 
 
+class FlowReversal(StrEnum):
+    NONE = "NONE"
+    INFLOW_TO_OUTFLOW = "INFLOW_TO_OUTFLOW"
+    OUTFLOW_TO_INFLOW = "OUTFLOW_TO_INFLOW"
+    UNAVAILABLE = "UNAVAILABLE"
+
+
 class InstitutionalFlowAnalysis(BaseModel):
     available: bool
     asset: Asset
     state: InstitutionalFlowState = InstitutionalFlowState.INSUFFICIENT_DATA
     latest_flow_musd: float | None = None
+    rolling_1_session_musd: float | None = None
     rolling_3_sessions_musd: float | None = None
     rolling_5_sessions_musd: float | None = None
     rolling_20_sessions_musd: float | None = None
     acceleration_musd_per_session: float | None = None
     reversal: bool | None = None
+    flow_reversal: FlowReversal = FlowReversal.UNAVAILABLE
+    persistence_direction: str | None = None
+    persistence_sessions: int = 0
+    deterioration: bool | None = None
     sessions_available: int = 0
     observed_at: datetime | None = None
     age_seconds: float | None = None
@@ -121,7 +133,9 @@ class InstitutionalFlowEngine:
         for item in rows:
             stamp = item.timestamp if item.timestamp.tzinfo else item.timestamp.replace(tzinfo=UTC)
             day = stamp.astimezone(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
-            daily[day] += float(item.numeric_value)
+            numeric_value = item.numeric_value
+            if numeric_value is not None:
+                daily[day] += float(numeric_value)
         ordered = sorted(daily.items())
         dates = [date for date, _value in ordered]
         values = [value for _date, value in ordered]
@@ -133,6 +147,7 @@ class InstitutionalFlowEngine:
                 available=False,
                 asset=asset,
                 latest_flow_musd=values[-1],
+                rolling_1_session_musd=values[-1],
                 sessions_available=len(values),
                 observed_at=observed_at,
                 age_seconds=age,
@@ -165,11 +180,32 @@ class InstitutionalFlowEngine:
         acceleration = None
         if len(values) >= 6:
             acceleration = sum(values[-3:]) / 3 - sum(values[-6:-3]) / 3
+        latest_sign = 1 if values[-1] > 0 else -1 if values[-1] < 0 else 0
+        persistence = 0
+        if latest_sign:
+            for value in reversed(values):
+                sign = 1 if value > 0 else -1 if value < 0 else 0
+                if sign != latest_sign:
+                    break
+                persistence += 1
+        persistence_direction = (
+            "INFLOW" if latest_sign > 0 else "OUTFLOW" if latest_sign < 0 else "FLAT"
+        )
+
         reversal = None
+        flow_reversal = FlowReversal.UNAVAILABLE
+        deterioration = None
         if len(values) >= 8:
             recent = sum(values[-3:])
             prior = sum(values[-8:-3])
             reversal = (recent > 0 > prior) or (recent < 0 < prior)
+            if recent < 0 < prior:
+                flow_reversal = FlowReversal.INFLOW_TO_OUTFLOW
+            elif recent > 0 > prior:
+                flow_reversal = FlowReversal.OUTFLOW_TO_INFLOW
+            else:
+                flow_reversal = FlowReversal.NONE
+            deterioration = prior > 0 and latest_sign < 0 and persistence >= 3
 
         provenance = {
             (
@@ -184,11 +220,16 @@ class InstitutionalFlowEngine:
             asset=asset,
             state=state,
             latest_flow_musd=values[-1],
+            rolling_1_session_musd=values[-1],
             rolling_3_sessions_musd=_window(values, 3),
             rolling_5_sessions_musd=_window(values, 5),
             rolling_20_sessions_musd=_window(values, 20),
             acceleration_musd_per_session=acceleration,
             reversal=reversal,
+            flow_reversal=flow_reversal,
+            persistence_direction=persistence_direction,
+            persistence_sessions=persistence,
+            deterioration=deterioration,
             sessions_available=len(values),
             observed_at=observed_at,
             age_seconds=age,
@@ -200,6 +241,8 @@ class InstitutionalFlowEngine:
             ],
             explanation=(
                 f"State uses the last {regime_length} reported trading sessions; "
-                "the latest day is shown separately and cannot overwrite that regime alone."
+                "the latest day is shown separately and cannot overwrite that regime alone. "
+                "FLOW_REVERSAL compares three recent sessions with the prior five; "
+                "persistence counts consecutive same-sign sessions."
             ),
         )

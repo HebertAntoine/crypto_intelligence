@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../api/client.dart';
 import '../api/future_models.dart';
+import '../api/models.dart';
 import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/live_price_builder.dart';
@@ -14,12 +15,14 @@ class FutureAnalysisScreen extends StatefulWidget {
   final ApiClient client;
   final LivePriceSource? livePrices;
   final String initialAsset;
+  final bool lockAsset;
 
   const FutureAnalysisScreen({
     super.key,
     required this.client,
     required this.initialAsset,
     this.livePrices,
+    this.lockAsset = false,
   });
 
   @override
@@ -52,13 +55,27 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
   }
 
   Future<_FutureBundle> _load() async {
+    Future<T?> safe<T>(Future<T> request) async {
+      try {
+        return await request;
+      } catch (_) {
+        return null;
+      }
+    }
+
     final responses = await Future.wait([
       widget.client.futureDecision(_asset, horizon: _horizon),
-      widget.client.futureTimeline(_asset),
+      safe(widget.client.futureTimeline(_asset)),
+      safe(widget.client.today(_asset)),
+      safe(widget.client.multiTimeframeRead(_asset)),
+      safe(widget.client.impliedVolatility(_asset)),
     ]);
     return _FutureBundle(
       decision: responses[0] as FutureDecisionRead,
-      timeline: responses[1] as FutureTimelineRead,
+      timeline: responses[1] as FutureTimelineRead?,
+      market: responses[2] as TodayRead?,
+      timeframes: responses[3] as MultiTimeframeRead?,
+      impliedVolatility: responses[4] as ImpliedVolatilityRead?,
     );
   }
 
@@ -108,15 +125,17 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
               padding: const EdgeInsets.fromLTRB(24, 26, 24, 170),
               children: [
                 MobileHeader(
-                  title: 'Analyse',
-                  subtitle: 'Catalyseurs futurs et décision sourcée',
+                  title: _assetName(_asset),
+                  subtitle: '$_asset · décision, contexte et catalyseurs',
                 ),
-                const SizedBox(height: 18),
-                _Selector(
-                  values: _assets,
-                  selected: _asset,
-                  onSelected: _selectAsset,
-                ),
+                if (!widget.lockAsset) ...[
+                  const SizedBox(height: 18),
+                  _Selector(
+                    values: _assets,
+                    selected: _asset,
+                    onSelected: _selectAsset,
+                  ),
+                ],
                 const SizedBox(height: 14),
                 _LiveHeader(
                   asset: _asset,
@@ -135,12 +154,22 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   selected: _horizon,
                   onSelected: _selectHorizon,
                 ),
+                if (bundle.market != null ||
+                    bundle.timeframes != null ||
+                    bundle.impliedVolatility != null) ...[
+                  const SizedBox(height: 18),
+                  _MarketContextCard(
+                    market: bundle.market,
+                    timeframes: bundle.timeframes,
+                    impliedVolatility: bundle.impliedVolatility,
+                  ),
+                ],
                 const SizedBox(height: 18),
                 _NextEvent(event: decision.nextEvent),
                 const SizedBox(height: 18),
                 _Families(decision: decision),
                 const SizedBox(height: 18),
-                _Timeline(events: bundle.timeline.events),
+                _Timeline(events: bundle.timeline?.events ?? const []),
                 const SizedBox(height: 18),
                 _Scenarios(scenarios: decision.scenarios),
               ],
@@ -339,6 +368,136 @@ class _DecisionCard extends StatelessWidget {
   }
 }
 
+class _MarketContextCard extends StatelessWidget {
+  final TodayRead? market;
+  final MultiTimeframeRead? timeframes;
+  final ImpliedVolatilityRead? impliedVolatility;
+
+  const _MarketContextCard({
+    required this.market,
+    required this.timeframes,
+    required this.impliedVolatility,
+  });
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'CONTEXTE ACTUEL',
+              style: TextStyle(
+                color: mobileMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (market != null) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  MobilePill(
+                    label: _directionLabel(market!.summary.marketDirection),
+                    color: mobileBlue,
+                    dense: true,
+                  ),
+                  MobilePill(
+                    label: market!.edgeState.label,
+                    color: market!.edgeState.isMeasured
+                        ? AppColors.measured
+                        : AppColors.warn,
+                    dense: true,
+                  ),
+                  MobilePill(
+                    label: 'Volatilité ${_plainLabel(market!.volatilityRegime)}',
+                    color: mobileBlue,
+                    dense: true,
+                  ),
+                ],
+              ),
+            ],
+            if (timeframes != null) ...[
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'UNITÉS DE TEMPS',
+                    style: TextStyle(
+                      color: mobileMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    timeframes!.alignmentLabel,
+                    style: const TextStyle(
+                      color: mobileBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 9),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final frame in timeframes!.timeframes)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: mobileBlue.withValues(alpha: .06),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: mobileBlue.withValues(alpha: .55),
+                        ),
+                      ),
+                      child: Text(
+                        frame.available
+                            ? '${frame.timeframe} · ${frame.structureLabel}'
+                            : '${frame.timeframe} · indisponible',
+                        style: const TextStyle(
+                          color: mobileMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            if (impliedVolatility != null) ...[
+              const SizedBox(height: 16),
+              const Text(
+                'VOLATILITÉ IMPLICITE',
+                style: TextStyle(
+                  color: mobileMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                impliedVolatility!.available
+                    ? _impliedVolatilitySentence(impliedVolatility!)
+                    : (impliedVolatility!.unavailableReason.isEmpty
+                        ? 'Indisponible pour cet actif.'
+                        : impliedVolatility!.unavailableReason),
+                style: const TextStyle(color: mobileMuted, height: 1.35),
+              ),
+            ],
+          ],
+        ),
+      );
+}
+
 class _NextEvent extends StatelessWidget {
   final FutureEventRead? event;
 
@@ -525,9 +684,41 @@ class _Scenarios extends StatelessWidget {
 
 class _FutureBundle {
   final FutureDecisionRead decision;
-  final FutureTimelineRead timeline;
+  final FutureTimelineRead? timeline;
+  final TodayRead? market;
+  final MultiTimeframeRead? timeframes;
+  final ImpliedVolatilityRead? impliedVolatility;
 
-  const _FutureBundle({required this.decision, required this.timeline});
+  const _FutureBundle({
+    required this.decision,
+    required this.timeline,
+    required this.market,
+    required this.timeframes,
+    required this.impliedVolatility,
+  });
+}
+
+String _assetName(String asset) => switch (asset) {
+      'BTC' => 'Bitcoin',
+      'ETH' => 'Ethereum',
+      'SOL' => 'Solana',
+      _ => asset,
+    };
+
+String _plainLabel(String value) => value
+    .toLowerCase()
+    .replaceAll('_', ' ')
+    .replaceFirstMapped(RegExp(r'^.'), (match) => match[0]!.toUpperCase());
+
+String _impliedVolatilitySentence(ImpliedVolatilityRead read) {
+  final dvol = read.dvol?.toStringAsFixed(1) ?? '—';
+  final realised = read.realisedVolAnnualised?.toStringAsFixed(1) ?? '—';
+  final premium = read.variancePremium;
+  final premiumLabel = premium == null
+      ? 'prime indisponible'
+      : 'prime ${premium >= 0 ? '+' : ''}${premium.toStringAsFixed(1)} pts';
+  return 'DVOL $dvol contre $realised réalisé · $premiumLabel · '
+      'options ${read.pricingLabel}.';
 }
 
 String _decisionLabel(String value) => switch (value) {
