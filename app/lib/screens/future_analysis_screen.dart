@@ -676,7 +676,7 @@ class _DecisionCard extends StatelessWidget {
             ),
           ),
           Container(
-            height: 268,
+            height: 250,
             padding: const EdgeInsets.fromLTRB(17, 18, 17, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

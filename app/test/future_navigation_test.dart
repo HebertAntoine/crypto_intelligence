@@ -102,6 +102,10 @@ void main() {
       expect(find.byKey(const ValueKey('horizon-30d')), findsOneWidget);
       final decisionBottom =
           tester.getBottomRight(find.byKey(const ValueKey('decision-card'))).dy;
+      expect(
+        tester.getSize(find.byKey(const ValueKey('decision-card'))).height,
+        250,
+      );
       final metricsBottom = tester
           .getBottomRight(find.byKey(const ValueKey('decision-horizon')))
           .dy;
