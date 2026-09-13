@@ -82,11 +82,20 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('decision-reason-1')));
     await tester.pumpAndSettle();
 
-    expect(find.text('CE QUI ARRIVE'), findsOneWidget);
+    // Factor 1 is the ranked top catalyst, so it uses the event vocabulary.
+    expect(find.text('CE QUI VA SE PASSER'), findsOneWidget);
     expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsOneWidget);
     expect(find.text('POURQUOI CELA COMPTE'), findsOneWidget);
+    // A dated event never carries the observation vocabulary.
+    expect(find.text('CE QU’ON OBSERVE'), findsNothing);
+
+    await tester.scrollUntilVisible(
+      find.text('SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU'), findsOneWidget);
     expect(find.text('CE QUE ÇA PEUT ENGENDRER'), findsOneWidget);
-    expect(find.text('CE QUI INVERSERAIT LE SIGNAL'), findsOneWidget);
 
     // Sources sit at the bottom so they inform without crowding the summary.
     await tester.scrollUntilVisible(
@@ -107,7 +116,7 @@ void main() {
     // Every shipped expectation is UNAVAILABLE, so the sheet must say so
     // rather than leave the section blank or invent a probability.
     expect(
-      find.text('Anticipations de marché actuellement indisponibles.'),
+      find.text('Anticipations actuellement indisponibles.'),
       findsOneWidget,
     );
   });
@@ -182,5 +191,56 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Détails complets'), findsOneWidget);
+  });
+
+  testWidgets('an analytical family is never rendered as a dated event',
+      (tester) async {
+    await _openBtc(tester);
+
+    // The regression this replaces showed "Macro & liquidité — le 13 sept. à
+    // 17h39", where the date was the analysis timestamp, not an event.
+    for (final family in const [
+      'Macro & liquidité',
+      'Technique & volatilité',
+      'Flux institutionnels & baleines',
+      'Positionnement & dérivés',
+    ]) {
+      expect(
+        find.textContaining(RegExp('$family\\s*—')),
+        findsNothing,
+        reason: '"$family" is a family, not something that happens on a date',
+      );
+    }
+
+    // And the count-of-events phrasing is not an explanation a reader can use.
+    expect(find.textContaining('événement(s) macro'), findsNothing);
+    expect(find.textContaining('sourcé(s) dans la fenêtre'), findsNothing);
+  });
+
+  testWidgets('a measured signal uses observation wording, not event wording',
+      (tester) async {
+    await _openBtc(tester);
+
+    // Two catalysts lead, so factor three onwards are measured signals.
+    final row = find.byKey(const ValueKey('decision-reason-3'));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    expect(find.text('CE QU’ON OBSERVE'), findsOneWidget);
+    expect(find.text('CE QUI INVALIDERAIT CE SIGNAL'), findsOneWidget);
+    expect(find.text('CE QUI VA SE PASSER'), findsNothing);
+    // A signal already measured has no market expectation to quote.
+    expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsNothing);
+  });
+
+  testWidgets('the top catalyst is ranked by importance, not by date',
+      (tester) async {
+    await _openBtc(tester);
+
+    // The 30-day window holds three Treasury bill auctions before the FOMC.
+    // Chronological order buried the only CRITICAL event.
+    expect(find.textContaining('Décision de la Fed'), findsWidgets);
   });
 }

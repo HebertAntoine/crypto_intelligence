@@ -142,6 +142,27 @@ def _institutional_summary(institutional_flow: Any, state: str) -> str:
         if sessions
         else f"Flux institutionnels: {label}"
     )
+    # A regime measured over twenty sessions can stay positive while the most
+    # recent sessions have already turned. The engine detects that reversal and
+    # used to drop it, so the summary announced net inflows next to a negative
+    # five-session figure. The reversal is now stated instead of discarded.
+    reversal = _value(getattr(institutional_flow, "flow_reversal", None), "UNAVAILABLE")
+    streak = int(getattr(institutional_flow, "persistence_sessions", 0) or 0)
+    streak_side = _value(getattr(institutional_flow, "persistence_direction", None), "")
+    if reversal == "INFLOW_TO_OUTFLOW" and streak:
+        head += (
+            f", mais le sens s'est inversé: {streak} séance(s) consécutives "
+            "de sorties"
+        )
+    elif reversal == "OUTFLOW_TO_INFLOW" and streak:
+        head += (
+            f", mais le sens s'est inversé: {streak} séance(s) consécutives "
+            "d'entrées"
+        )
+    elif streak >= 3 and streak_side in {"INFLOW", "OUTFLOW"}:
+        side = "entrées" if streak_side == "INFLOW" else "sorties"
+        head += f", dont {streak} séance(s) consécutives de {side}"
+
     recent = getattr(institutional_flow, "rolling_5_sessions_musd", None)
     if recent is None or sessions == 5:
         return head + "."

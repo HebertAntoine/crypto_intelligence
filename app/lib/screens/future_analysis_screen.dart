@@ -192,7 +192,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
         isScrollControlled: true,
         backgroundColor: const Color(0xFF061525),
         builder: (sheetContext) {
-          final reasons = _decisionReasons(decision, bundle);
+          final reasons = _decisionFactors(decision, bundle);
           return DraggableScrollableSheet(
             expand: false,
             initialChildSize: .72,
@@ -285,6 +285,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                 const SizedBox(height: 16),
                 _DecisionCard(
                   decision: decision,
+                  bundle: bundle,
                   horizon: _horizon,
                   onHorizonTap: _chooseHorizon,
                 ),
@@ -627,11 +628,13 @@ class _AssetHeader extends StatelessWidget {
 
 class _DecisionCard extends StatelessWidget {
   final FutureDecisionRead decision;
+  final _FutureBundle bundle;
   final String horizon;
   final VoidCallback onHorizonTap;
 
   const _DecisionCard({
     required this.decision,
+    required this.bundle,
     required this.horizon,
     required this.onHorizonTap,
   });
@@ -705,7 +708,7 @@ class _DecisionCard extends StatelessWidget {
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 300),
                   child: Text(
-                    _decisionHeadline(decision),
+                    _decisionHeadline(decision, bundle),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -849,7 +852,7 @@ class _WhyDecisionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reasons = _decisionReasons(decision, bundle);
+    final reasons = _decisionFactors(decision, bundle);
     return GlassPanel(
       borderColor: const Color(0xFF2B669B),
       child: Column(
@@ -899,7 +902,7 @@ class _WhyDecisionCard extends StatelessWidget {
 
 class _ReasonRow extends StatelessWidget {
   final int index;
-  final _DecisionReasonItem reason;
+  final _DecisionFactor reason;
 
   const _ReasonRow({required this.index, required this.reason});
 
@@ -970,7 +973,9 @@ class _ReasonRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _cleanExplanation(reason.explanation),
+                  reason.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: mobileMuted,
                     fontSize: 11.5,
@@ -1011,6 +1016,15 @@ class _ReasonRow extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                Text(
+                  'IMPACT ${reason.impact}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: tone,
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1028,7 +1042,7 @@ class _ReasonRow extends StatelessWidget {
 
 /// One factor, explained end to end: what it is, what the market had priced,
 /// why it transmits to the price, what it may cause, and what would reverse it.
-void _showReasonDetail(BuildContext context, _DecisionReasonItem reason) {
+void _showReasonDetail(BuildContext context, _DecisionFactor reason) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -1085,13 +1099,24 @@ void _showReasonDetail(BuildContext context, _DecisionReasonItem reason) {
                 ),
               ),
             ),
-            _ReasonDetailBlock(title: 'CE QUI ARRIVE', body: reason.whatHappens),
-            _ReasonDetailBlock(
-              title: 'CE QUE LE MARCHÉ ATTEND',
-              body: reason.marketExpectation ??
-                  'Anticipations de marché actuellement indisponibles.',
-              muted: reason.marketExpectation == null,
-            ),
+            if (reason.kind == _FactorKind.futureCatalyst)
+              _ReasonDetailBlock(
+                title: 'CE QUI VA SE PASSER',
+                body: reason.description,
+              )
+            else
+              // An already-measured signal is not something that "arrives".
+              _ReasonDetailBlock(
+                title: 'CE QU’ON OBSERVE',
+                body: reason.observation,
+              ),
+            if (reason.kind == _FactorKind.futureCatalyst)
+              _ReasonDetailBlock(
+                title: 'CE QUE LE MARCHÉ ATTEND',
+                body: reason.marketExpectation ??
+                    'Anticipations actuellement indisponibles.',
+                muted: reason.marketExpectation == null,
+              ),
             _ReasonDetailBlock(
               title: 'POURQUOI CELA COMPTE',
               body: reason.whyItMatters,
@@ -1102,10 +1127,20 @@ void _showReasonDetail(BuildContext context, _DecisionReasonItem reason) {
               title: 'CE QUE ÇA PEUT ENGENDRER',
               body: reason.consequence,
             ),
-            _ReasonDetailBlock(
-              title: 'CE QUI INVERSERAIT LE SIGNAL',
-              body: reason.reversal,
-            ),
+            if (reason.kind == _FactorKind.futureCatalyst) ...[
+              _ReasonDetailBlock(
+                title: 'SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU',
+                body: reason.upsideCase,
+              ),
+              _ReasonDetailBlock(
+                title: 'SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU',
+                body: reason.downsideCase,
+              ),
+            ] else
+              _ReasonDetailBlock(
+                title: 'CE QUI INVALIDERAIT CE SIGNAL',
+                body: reason.invalidation,
+              ),
             const SizedBox(height: 18),
             const Divider(height: 1, color: Color(0xFF16304A)),
             const SizedBox(height: 12),
@@ -1476,8 +1511,18 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
 
   @override
   Widget build(BuildContext context) {
+    // Chronological order buried the FOMC behind three Treasury bill auctions.
+    // The three shown are the three that matter most; expanding restores the
+    // full calendar in date order.
+    const rank = {'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0};
+    final byImportance = [...widget.events]..sort((left, right) {
+        final byRank = (rank[right.importance.toUpperCase()] ?? 0)
+            .compareTo(rank[left.importance.toUpperCase()] ?? 0);
+        if (byRank != 0) return byRank;
+        return (left.countdownSeconds ?? 0).compareTo(right.countdownSeconds ?? 0);
+      });
     final displayed =
-        _expanded ? widget.events : widget.events.take(3).toList();
+        _expanded ? widget.events : byImportance.take(3).toList();
     return GlassPanel(
       borderColor: const Color(0xFF245E90),
       child: Column(
@@ -1495,7 +1540,7 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
               const SizedBox(width: 8),
               const Flexible(
                 child: Text(
-                  'Ce qui arrive',
+                  'À surveiller',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -2291,43 +2336,113 @@ class _FutureBundle {
   });
 }
 
-class _DecisionReasonItem {
+/// What kind of thing a factor is. The three are never interchangeable.
+///
+/// A family such as "Macro & liquidité" is an analytical grouping, not an event
+/// and not an observation. Rendering one as "Macro & liquidité — le 13 sept. à
+/// 17h39" invented an event that does not exist; the date was the analysis
+/// timestamp. Catalysts are dated things that will happen; signals are things
+/// already measured now.
+enum _FactorKind { futureCatalyst, currentSignal }
+
+class _DecisionFactor {
+  final _FactorKind kind;
+
+  /// A concrete thing, never a family name: "Décision de la Fed — 16 sept.",
+  /// "Sorties nettes des ETF", "Compression de Bollinger".
   final String title;
-  final String explanation;
-
-  /// Directional bias of this factor. Drives the impact badge, which used to
-  /// show event importance under a label that promised a direction.
+  final String description;
   final String? direction;
-  final String when;
+  final String impact;
   final String emoji;
+  final String when;
 
-  /// Drill-down content. Everything here is either sourced data or a plain
-  /// mechanism explanation; no figure is invented at display time.
-  final String whatHappens;
+  /// Catalyst only.
+  final DateTime? scheduledAt;
   final String? marketExpectation;
+  final String upsideCase;
+  final String downsideCase;
+
+  /// Signal only.
+  final String observation;
+  final String invalidation;
+
   final String whyItMatters;
   final String caveat;
   final String consequence;
-  final String reversal;
   final String? source;
   final String? sourceUrl;
 
-  const _DecisionReasonItem({
+  const _DecisionFactor({
+    required this.kind,
     required this.title,
-    required this.explanation,
+    required this.description,
     required this.direction,
-    required this.when,
+    required this.impact,
     required this.emoji,
-    required this.whatHappens,
+    required this.when,
     required this.whyItMatters,
     required this.consequence,
-    required this.reversal,
+    this.scheduledAt,
     this.marketExpectation,
+    this.upsideCase = '',
+    this.downsideCase = '',
+    this.observation = '',
+    this.invalidation = '',
     this.caveat = '',
     this.source,
     this.sourceUrl,
   });
 }
+
+/// Event titles arrive in English from the official calendars.
+String _eventTitleFr(String title) {
+  final value = title.toLowerCase();
+  if (value.contains('fomc') || value.contains('monetary policy')) {
+    return 'Décision de la Fed sur les taux';
+  }
+  if (value.contains('personal income')) {
+    return 'Revenus et dépenses des ménages américains';
+  }
+  if (value.contains('gdp')) return 'PIB américain';
+  if (value.contains('cpi') || value.contains('consumer price')) {
+    return 'Inflation américaine';
+  }
+  if (value.contains('employment') || value.contains('nonfarm')) {
+    return 'Emploi américain';
+  }
+  if (value.contains('treasury auction')) {
+    final match = RegExp(r'(\d+)[- ](week|year|month)').firstMatch(value);
+    if (match == null) return 'Adjudication du Trésor américain';
+    final unit = switch (match.group(2)) {
+      'week' => 'semaines',
+      'month' => 'mois',
+      _ => 'ans',
+    };
+    return 'Adjudication du Trésor américain '
+        '(${match.group(1)} $unit)';
+  }
+  if (value.contains('vote') || value.contains('markup')) {
+    return 'Vote réglementaire crypto';
+  }
+  return title;
+}
+
+String _importanceImpact(String importance) => switch (importance.toUpperCase()) {
+      'CRITICAL' => 'TRÈS ÉLEVÉ',
+      'HIGH' => 'ÉLEVÉ',
+      'MEDIUM' => 'MODÉRÉ',
+      'LOW' => 'FAIBLE',
+      _ => 'MODÉRÉ',
+    };
+
+String _movementImpact(String? movement) => switch (movement?.toUpperCase()) {
+      'EXTREME' => 'TRÈS ÉLEVÉ',
+      'HIGH' => 'ÉLEVÉ',
+      'NORMAL' => 'MODÉRÉ',
+      'LOW' => 'FAIBLE',
+      _ => 'MODÉRÉ',
+    };
 
 /// Plain-language mechanism for one family of factors.
 ///
@@ -2458,112 +2573,184 @@ _DecisionVisual _decisionVisual(String decision) => switch (decision) {
 /// set the direction next, so payload order is kept; families only fill the
 /// remaining slots. Timeframes and implied volatility are no longer pushed into
 /// the summary - they live behind "Voir les détails".
-List<_DecisionReasonItem> _decisionReasons(
+/// Rank the future catalysts that sit inside the decision horizon.
+///
+/// The backend ships `family.reasons` with the first three macro events in
+/// chronological order, which surfaced three Treasury bill auctions and buried
+/// the FOMC. Ranking happens here on importance first, proximity second.
+List<FutureEventRead> _rankedCatalysts(
   FutureDecisionRead decision,
   _FutureBundle bundle,
 ) {
-  final items = <_DecisionReasonItem>[];
-  final horizon = _horizonLongLabel(decision.horizon);
-  final asset = decision.asset;
-  final nextEvent = decision.nextEvent;
-
-  String consequenceFor(String? direction) {
-    final label = switch (direction?.toUpperCase()) {
-      'STRONGLY_BULLISH' || 'BULLISH' => 'un soutien à la hausse',
-      'BEARISH' || 'STRONGLY_BEARISH' => 'une pression à la baisse',
-      'NEUTRAL' => 'un effet neutre',
-      _ => 'un effet de direction inconnue',
-    };
-    return 'Si cette lecture se confirme, ce facteur exerce $label sur $asset '
-        'sur $horizon.';
+  const rank = {'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0};
+  final window = switch (decision.horizon) {
+    '24h' => const Duration(hours: 24),
+    '30d' => const Duration(days: 30),
+    _ => const Duration(days: 7),
+  };
+  final events = [
+    ...?bundle.timeline?.events,
+    if (decision.nextEvent != null) decision.nextEvent!,
+  ];
+  final seen = <String>{};
+  final inWindow = <FutureEventRead>[];
+  for (final event in events) {
+    if (!seen.add(event.id)) continue;
+    final seconds = event.countdownSeconds;
+    if (seconds == null || seconds < 0) continue;
+    if (Duration(seconds: seconds) > window) continue;
+    inWindow.add(event);
   }
+  inWindow.sort((left, right) {
+    final byRank = (rank[right.importance.toUpperCase()] ?? 0)
+        .compareTo(rank[left.importance.toUpperCase()] ?? 0);
+    if (byRank != 0) return byRank;
+    return (left.countdownSeconds ?? 0).compareTo(right.countdownSeconds ?? 0);
+  });
+  return inWindow;
+}
 
-  String reversalFor(String title, String? direction) {
-    for (final change in decision.changes) {
-      final words = title.toLowerCase().split(RegExp(r'[^a-zà-ÿ]+'));
-      if (words.any((word) => word.length > 4 && change.toLowerCase().contains(word))) {
-        return change;
+/// A concrete, readable name for what one family is currently measuring.
+///
+/// "Flux institutionnels & baleines" is the family; "Sorties nettes des ETF" is
+/// what a reader can actually picture.
+String? _signalTitle(FutureFamilyRead family) {
+  final summary = family.summary.toLowerCase();
+  final bearish = family.direction?.contains('BEARISH') ?? false;
+  switch (family.id) {
+    case 'flows_whales':
+      if (summary.contains('inversé') || summary.contains('sorties')) {
+        return bearish ? 'Sorties nettes des ETF' : 'Flux ETF en train de s’inverser';
       }
-    }
-    return switch (direction?.toUpperCase()) {
-      'BEARISH' || 'STRONGLY_BEARISH' =>
-        'Un retournement durable de ce facteur dans le sens inverse.',
-      'BULLISH' || 'STRONGLY_BULLISH' =>
-        'Une dégradation durable de ce facteur.',
-      _ => 'Une donnée nouvelle qui donnerait une direction à ce facteur.',
-    };
+      return bearish ? 'Sorties nettes des ETF' : 'Entrées nettes sur les ETF';
+    case 'positioning_derivatives':
+      if (summary.contains('recule') || summary.contains('baisse')) {
+        return 'Positions à levier en baisse';
+      }
+      return 'Positionnement sur les dérivés';
+    case 'technical_volatility':
+      if (summary.contains('compression')) return 'Compression de Bollinger';
+      return bearish ? 'Tendance court terme fragile' : 'Tendance court terme porteuse';
+    case 'catalysts_regulation':
+      return 'Contexte réglementaire';
+    case 'macro_liquidity':
+      // Its content is the dated events, which are surfaced as catalysts. A
+      // neutral macro family has nothing of its own to show the reader.
+      return family.direction == null || family.direction == 'NEUTRAL'
+          ? null
+          : 'Conditions de liquidité';
   }
+  return family.label;
+}
 
-  void add({
-    required String title,
-    required String explanation,
-    required String? direction,
-    required String when,
-    required String whatHappens,
-    String? source,
-    String? sourceUrl,
-  }) {
-    if (items.length >= 5) return;
-    if (items.any((item) => item.title.toLowerCase() == title.toLowerCase())) {
-      return;
-    }
-    final guidance = _topicGuidance(title);
-    items.add(_DecisionReasonItem(
-      title: title,
-      explanation: _cleanExplanation(explanation),
-      direction: direction,
-      when: when,
-      emoji: _reasonEmoji(title),
-      whatHappens: whatHappens,
+/// Build three to five concrete causes: dated catalysts and measured signals.
+List<_DecisionFactor> _decisionFactors(
+  FutureDecisionRead decision,
+  _FutureBundle bundle,
+) {
+  final factors = <_DecisionFactor>[];
+  final horizon = _horizonLongLabel(decision.horizon);
+  final asset = _assetName(decision.asset);
+
+  for (final event in _rankedCatalysts(decision, bundle).take(2)) {
+    final guidance = _topicGuidance(event.title);
+    final title = _eventTitleFr(event.title);
+    factors.add(_DecisionFactor(
+      kind: _FactorKind.futureCatalyst,
+      title: '$title — ${_dateShort(event.scheduledAt)}',
+      description: 'Publication prévue ${_dateSentence(
+        event.scheduledAt?.toIso8601String(),
+      )}. Son issue n’est pas encore connue.',
+      // An unresolved event has no direction until it lands. Claiming one would
+      // mean deciding that a hike is bearish, which the engine refuses to do.
+      direction: 'UNCERTAIN',
+      impact: _importanceImpact(event.importance),
+      emoji: _reasonEmoji(event.title),
+      when: _dateShort(event.scheduledAt),
+      scheduledAt: event.scheduledAt,
       marketExpectation: decision.marketExpectation,
+      upsideCase: 'Une issue plus favorable qu’anticipé peut soutenir $asset.',
+      downsideCase: 'Une issue moins favorable qu’anticipé peut peser sur $asset.',
       whyItMatters: guidance.why,
       caveat: guidance.caveat,
-      consequence: consequenceFor(direction),
-      reversal: reversalFor(title, direction),
-      source: source,
-      sourceUrl: sourceUrl,
+      consequence: 'Mouvement possible dans les deux sens sur $horizon; '
+          'la direction dépend de l’écart avec ce qui était anticipé.',
+      source: event.source,
+      sourceUrl: event.sourceUrl,
     ));
   }
 
-  for (final reason in decision.reasons) {
-    // A payload reason carries an event importance, not a direction. The family
-    // sharing its name is what actually holds the directional reading.
-    final family = decision.families
-        .where((item) => item.label.toLowerCase() == reason.title.toLowerCase())
-        .firstOrNull;
-    add(
-      title: reason.title,
-      explanation: reason.explanation,
-      direction: family?.direction,
-      when: _dateBadge(reason.dateTime),
-      whatHappens: reason.dateTime != null && reason.dateTime!.isNotEmpty
-          ? '${reason.title} — ${_dateSentence(reason.dateTime)}.'
-          : _cleanExplanation(reason.explanation),
-      source: reason.source,
-      sourceUrl: reason.sourceUrl,
-    );
-  }
-
   for (final family in decision.families) {
+    if (factors.length >= 5) break;
     if (!family.available) continue;
-    add(
-      title: family.label,
-      explanation: family.summary,
+    final title = _signalTitle(family);
+    if (title == null) continue;
+    final guidance = _topicGuidance('${family.label} ${family.summary}');
+    final summary = _cleanExplanation(family.summary);
+    factors.add(_DecisionFactor(
+      kind: _FactorKind.currentSignal,
+      title: title,
+      description: summary,
       direction: family.direction,
-      when: family.freshness,
-      whatHappens: nextEvent != null && _topicGuidance(family.label) == _topicGuidance('fed')
-          ? '${nextEvent.title} — ${_dateSentence(nextEvent.scheduledAt?.toIso8601String())}.'
-          : _cleanExplanation(family.summary),
-    );
+      impact: _movementImpact(family.movement),
+      emoji: _reasonEmoji('${family.label} $title'),
+      when: 'ACTUEL',
+      observation: summary,
+      invalidation: _signalInvalidation(family),
+      whyItMatters: guidance.why,
+      caveat: guidance.caveat,
+      consequence: _signalConsequence(family, horizon, asset),
+      source: family.label,
+    ));
   }
 
-  return items;
+  return factors.take(5).toList();
+}
+
+String _signalConsequence(
+  FutureFamilyRead family,
+  String horizon,
+  String asset,
+) {
+  if (family.id == 'technical_volatility' &&
+      family.summary.toLowerCase().contains('compression')) {
+    return 'Mouvement potentiellement important sur $horizon, '
+        'direction actuellement incertaine.';
+  }
+  return switch (family.direction?.toUpperCase()) {
+    'STRONGLY_BULLISH' || 'BULLISH' =>
+      'Soutien à la hausse pour $asset sur $horizon.',
+    'BEARISH' || 'STRONGLY_BEARISH' =>
+      'Pression à la baisse pour $asset sur $horizon.',
+    _ => 'Pas d’effet directionnel mesuré sur $horizon.',
+  };
+}
+
+String _signalInvalidation(FutureFamilyRead family) => switch (family.id) {
+      'flows_whales' =>
+        'Un retour durable des flux dans le sens inverse sur plusieurs séances.',
+      'positioning_derivatives' =>
+        'Une reprise durable des positions à levier accompagnée d’une reprise '
+            'du prix.',
+      'technical_volatility' =>
+        'Une sortie de compression, qui donnerait enfin une direction.',
+      'macro_liquidity' =>
+        'Un changement des conditions de liquidité mesuré sur les séries '
+            'officielles.',
+      _ => 'Une donnée nouvelle qui renverserait cette lecture.',
+    };
+
+/// Short date badge: "16 sept.".
+String _dateShort(DateTime? value) {
+  if (value == null) return 'à venir';
+  final local = value.toLocal();
+  return '${local.day} ${_monthLabel(local).toLowerCase()}';
 }
 
 /// Turn an ISO timestamp into a readable French sentence fragment.
 String _dateSentence(String? value) {
   final parsed = value == null ? null : DateTime.tryParse(value)?.toLocal();
-  if (parsed == null) return 'date non planifiée';
+  if (parsed == null) return 'à une date non planifiée';
   final month = _monthLabel(parsed).toLowerCase().replaceAll('.', '');
   return 'le ${parsed.day} $month à '
       '${parsed.hour.toString().padLeft(2, '0')} h '
@@ -2596,9 +2783,19 @@ List<String> _decisionRisks(FutureDecisionRead decision) {
   return risks.take(4).toList();
 }
 
-String _decisionHeadline(FutureDecisionRead decision) {
-  if (decision.reasons.isNotEmpty) {
-    return _cleanExplanation(decision.reasons.first.explanation);
+/// One concrete sentence under the decision word.
+///
+/// It used to echo the first payload reason, which on the macro family reads
+/// "8 événement(s) macro/monétaire sourcé(s) dans la fenêtre." - a count of
+/// rows, not something a reader can act on. It now names the single factor that
+/// weighs most, or falls back to the reading itself.
+String _decisionHeadline(FutureDecisionRead decision, _FutureBundle bundle) {
+  final factors = _decisionFactors(decision, bundle);
+  if (factors.isNotEmpty) {
+    final top = factors.first;
+    return top.kind == _FactorKind.futureCatalyst
+        ? '${top.title} · issue encore inconnue.'
+        : '${top.title} · ${_reasonImpactLabel(top.direction).toLowerCase()}.';
   }
   return '${_directionLabel(decision.direction)} · amplitude '
       '${_movementLabel(decision.movement).toLowerCase()}.';
@@ -2750,9 +2947,17 @@ String _reasonEmoji(String title) {
   final value = title.toLowerCase();
   if (value.contains('macro') ||
       value.contains('fed') ||
+      value.contains('fomc') ||
+      value.contains('taux') ||
+      value.contains('trésor') ||
+      value.contains('treasury') ||
+      value.contains('pib') ||
+      value.contains('gdp') ||
       value.contains('liquidité')) {
     return '🏛️';
   }
+  if (value.contains('inflation') || value.contains('cpi')) return '📉';
+  if (value.contains('revenus') || value.contains('emploi')) return '👥';
   if (value.contains('pétrole') || value.contains('inflation')) return '🛢️';
   if (value.contains('baleine') || value.contains('whale')) return '🐋';
   if (value.contains('flux') ||
@@ -2848,11 +3053,6 @@ String _dateCompact(DateTime? value) {
       '${local.minute.toString().padLeft(2, '0')}';
 }
 
-String _dateBadge(String? value) {
-  final parsed = value == null ? null : DateTime.tryParse(value)?.toLocal();
-  if (parsed == null) return 'ACTUEL';
-  return '${parsed.day} ${_monthLabel(parsed).toLowerCase()}';
-}
 
 String _monthLabel(DateTime? value) {
   const months = [
