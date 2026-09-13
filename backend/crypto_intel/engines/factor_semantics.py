@@ -243,6 +243,93 @@ def positioning_assessment(
     )
 
 
+#: The pressure engine already classifies price and open interest jointly. Its
+#: labels are reused rather than recomputed, so thresholds stay in one place.
+_LEVERAGE_STATES = {
+    "NEW_LONGS": (
+        FactorDirection.POSITIVE,
+        FactorTrend.IMPROVING,
+        "Le prix monte pendant que les positions à levier augmentent: "
+        "de nouveaux acheteurs participent au mouvement.",
+    ),
+    "NEW_SHORTS": (
+        FactorDirection.NEGATIVE,
+        FactorTrend.DETERIORATING,
+        "Le prix recule pendant que les positions à levier augmentent: "
+        "de nouvelles positions vendeuses se constituent.",
+    ),
+    "SHORT_COVERING": (
+        FactorDirection.NEUTRAL,
+        FactorTrend.IMPROVING,
+        "Le prix monte pendant que les positions à levier se ferment: "
+        "des vendeurs à découvert se rachètent, ce qui ne confirme pas "
+        "une tendance acheteuse.",
+    ),
+    "LONG_LIQUIDATION": (
+        FactorDirection.NEGATIVE,
+        FactorTrend.DETERIORATING,
+        "Le prix recule pendant que les positions à levier se ferment: "
+        "des acheteurs abandonnent, ce qui confirme la faiblesse à court terme.",
+    ),
+    "DELEVERAGING": (
+        FactorDirection.NEUTRAL,
+        FactorTrend.STABLE,
+        "Le levier se réduit sans côté dominant.",
+    ),
+    "QUIET": (
+        FactorDirection.NEUTRAL,
+        FactorTrend.STABLE,
+        "Aucun changement de positionnement marqué.",
+    ),
+    "BALANCED": (
+        FactorDirection.NEUTRAL,
+        FactorTrend.STABLE,
+        "Les composantes mesurées se compensent.",
+    ),
+}
+
+
+def positioning_from_leverage_state(
+    state: str | None,
+    *,
+    funding_state: str | None = None,
+    freshness: str = "UNAVAILABLE",
+    confidence: float = 0.8,
+    label: str = "Positionnement & dérivés",
+) -> FactorAssessment:
+    """Normalise the pressure engine's joint price/open-interest label.
+
+    Short covering is deliberately NEUTRAL rather than positive: buyers are not
+    stepping in, sellers are stepping out, and reading that as a bullish
+    confirmation is the mistake section 7 asks to avoid.
+    """
+
+    entry = _LEVERAGE_STATES.get((state or "").upper())
+    if entry is None:
+        return FactorAssessment(
+            key="positioning",
+            label=label,
+            direction=FactorDirection.UNKNOWN,
+            impact=FactorImpact.MODERATE,
+            freshness=freshness,
+            rationale=f"État de positionnement « {state or 'inconnu'} » non interprétable.",
+        )
+    direction, trend, rationale = entry
+    extreme = (funding_state or "").upper() in {"EXTREME_POSITIVE", "EXTREME_NEGATIVE"}
+    if extreme:
+        rationale += " Le coût du levier est extrême, ce qui rend un dénouement plus brutal."
+    return FactorAssessment(
+        key="positioning",
+        label=label,
+        direction=direction,
+        impact=FactorImpact.HIGH if extreme else FactorImpact.MODERATE,
+        trend=trend,
+        confidence=confidence,
+        freshness=freshness,
+        rationale=rationale,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Technical structure
 # ---------------------------------------------------------------------------

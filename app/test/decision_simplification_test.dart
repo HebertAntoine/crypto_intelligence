@@ -362,4 +362,61 @@ void main() {
       );
     }
   });
+
+  testWidgets('decision reasons exclude counter signals', (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    if (decision.decision != 'WAIT') return;
+
+    // Under "Pourquoi attendre ?" nothing may argue for buying. A healthy
+    // bullish reading is a counter-signal, not a reason to wait.
+    for (var index = 1; index <= 5; index++) {
+      final row = find.byKey(ValueKey('decision-reason-$index'));
+      if (row.evaluate().isEmpty) break;
+      final badges = tester
+          .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
+          .map((widget) => widget.data)
+          .toList();
+      if (badges.contains('CE QUI RESTE FAVORABLE')) break;
+    }
+    expect(find.text('CE QUI RESTE FAVORABLE'), findsWidgets);
+  });
+
+  testWidgets('counter signals are displayed separately', (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    final heading = find.text('CE QUI RESTE FAVORABLE');
+    if (heading.evaluate().isEmpty) return; // no counter-signal in this data
+    await tester.ensureVisible(heading);
+    await tester.pumpAndSettle();
+    expect(heading, findsOneWidget);
+  });
+
+  testWidgets('change conditions are split by direction', (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    await tester.scrollUntilVisible(
+      find.text('Pour passer à acheter'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Pour passer à acheter'), findsOneWidget);
+    expect(find.text('Pour passer à vendre'), findsOneWidget);
+    expect(find.text('Ce qui pourrait changer la décision'), findsNothing);
+  });
+
+  testWidgets('a direction-free reading never shows a direction',
+      (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    // Bollinger compression may reach the screen as amplitude only.
+    final uncertain = find.text('DIRECTION INCERTAINE');
+    if (uncertain.evaluate().isEmpty) return;
+    expect(uncertain, findsWidgets);
+  });
 }

@@ -857,6 +857,13 @@ class _WhyDecisionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reasons = _decisionFactors(decision, bundle);
+    // Section 13: a factor pointing against the decision is not a reason for
+    // it. Listing "tendance court terme porteuse" under "Pourquoi attendre ?"
+    // asked the reader to accept an argument that argues the other way.
+    final supporting =
+        reasons.where((item) => _supportsDecision(item, decision)).toList();
+    final counter =
+        reasons.where((item) => !_supportsDecision(item, decision)).toList();
     return GlassPanel(
       borderColor: const Color(0xFF2B669B),
       child: Column(
@@ -893,10 +900,29 @@ class _WhyDecisionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          for (var index = 0; index < reasons.length; index++) ...[
-            _ReasonRow(index: index, reason: reasons[index]),
-            if (index < reasons.length - 1)
+          for (var index = 0; index < supporting.length; index++) ...[
+            _ReasonRow(index: index, reason: supporting[index]),
+            if (index < supporting.length - 1)
               const Divider(height: 1, color: Color(0xFF1D3853)),
+          ],
+          if (counter.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Divider(height: 1, color: Color(0xFF1D3853)),
+            const SizedBox(height: 12),
+            const Text(
+              'CE QUI RESTE FAVORABLE',
+              style: TextStyle(
+                color: Color(0xFF55DD8B),
+                fontSize: 11,
+                letterSpacing: .8,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            for (var index = 0; index < counter.length; index++)
+              _ReasonRow(
+                index: supporting.length + index,
+                reason: counter[index],
+              ),
           ],
         ],
       ),
@@ -1004,7 +1030,9 @@ class _ReasonRow extends StatelessWidget {
                       ),
                     ),
                   Text(
-                    _reasonImpactLabel(reason.direction),
+                    reason.impactOnDirection == 'NONE'
+                        ? 'DIRECTION INCERTAINE'
+                        : _reasonImpactLabel(reason.direction),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: _reasonImpactColor(reason.direction),
@@ -1012,6 +1040,17 @@ class _ReasonRow extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
+                  if (_trendLabelFr(reason.trend) != null &&
+                      reason.trend != 'STABLE')
+                    Text(
+                      _trendLabelFr(reason.trend)!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFFFB34F),
+                        fontSize: 7.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   Text(
                     'IMPACT ${reason.impact}',
                     textAlign: TextAlign.center,
@@ -1376,10 +1415,17 @@ class _ChangeAndRiskSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
+              // Section 14: which way each condition pushes is part of the
+              // information. One undifferentiated list made the reader work it
+              // out for themselves.
               child: _SignalListCard(
-                icon: '⬆️',
-                title: 'Ce qui pourrait changer la décision',
-                items: decision.changes.map(_frenchifyEventNames).toList(),
+                icon: '🟢',
+                title: 'Pour passer à acheter',
+                items: (decision.conditionsToBuy.isNotEmpty
+                        ? decision.conditionsToBuy
+                        : decision.changes)
+                    .map(_frenchifyEventNames)
+                    .toList(),
                 tone: const Color(0xFF55DD8B),
                 bullet: '✓',
               ),
@@ -1387,9 +1433,13 @@ class _ChangeAndRiskSection extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: _SignalListCard(
-                icon: '⚠️',
-                title: 'Risques à surveiller',
-                items: _decisionRisks(decision),
+                icon: '🔴',
+                title: 'Pour passer à vendre',
+                items: (decision.conditionsToSell.isNotEmpty
+                        ? decision.conditionsToSell
+                        : _decisionRisks(decision))
+                    .map(_frenchifyEventNames)
+                    .toList(),
                 tone: const Color(0xFFFF6676),
                 bullet: '!',
               ),
@@ -2353,6 +2403,12 @@ class _DecisionFactor {
   /// How well the engine could measure this factor, in [0, 1].
   final double confidence;
 
+  /// IMPROVING / STABLE / DETERIORATING / REVERSING / UNKNOWN.
+  final String trend;
+
+  /// "NONE" when the reading cannot speak about direction at all.
+  final String impactOnDirection;
+
   /// Catalyst only.
   final DateTime? scheduledAt;
   final String? marketExpectation;
@@ -2379,6 +2435,8 @@ class _DecisionFactor {
     required this.when,
     required this.whyItMatters,
     this.confidence = 1.0,
+    this.trend = 'UNKNOWN',
+    this.impactOnDirection = 'MEASURED',
     required this.consequence,
     this.scheduledAt,
     this.marketExpectation,
@@ -2445,6 +2503,60 @@ String _frenchifyEventNames(String text) {
   }
   return result;
 }
+
+/// Does this factor argue *for* the decision that was taken?
+///
+/// Waiting is supported by anything negative or unresolved; it is not supported
+/// by a healthy bullish reading, which is precisely the counter-argument.
+bool _supportsDecision(_DecisionFactor factor, FutureDecisionRead decision) {
+  final positive = factor.direction?.contains('BULLISH') ?? false;
+  final negative = factor.direction?.contains('BEARISH') ?? false;
+  return switch (decision.decision) {
+    'BUY' => positive,
+    'SELL' => negative,
+    'WAIT' => !positive,
+    _ => true,
+  };
+}
+
+/// Match a family to its normalised reading, when the engine published one.
+FutureFactorRead? _factorFor(FutureDecisionRead decision, String familyId) {
+  const mapping = {
+    'flows_whales': 'flows',
+    'positioning_derivatives': 'positioning',
+    'technical_volatility': 'technical',
+  };
+  final key = mapping[familyId];
+  if (key == null) return null;
+  for (final factor in decision.factors) {
+    if (factor.key == key) return factor;
+  }
+  return null;
+}
+
+/// UNKNOWN is kept distinct from NEUTRAL all the way to the badge.
+String? _normalisedDirection(String direction) => switch (direction) {
+      'POSITIVE' => 'BULLISH',
+      'NEGATIVE' => 'BEARISH',
+      'NEUTRAL' => 'NEUTRAL',
+      _ => null,
+    };
+
+String _impactLabelFr(String impact) => switch (impact) {
+      'VERY_HIGH' => 'TRÈS ÉLEVÉ',
+      'HIGH' => 'ÉLEVÉ',
+      'MODERATE' => 'MODÉRÉ',
+      'LOW' => 'FAIBLE',
+      _ => 'MODÉRÉ',
+    };
+
+String? _trendLabelFr(String trend) => switch (trend) {
+      'IMPROVING' => 'EN AMÉLIORATION',
+      'DETERIORATING' => 'EN DÉGRADATION',
+      'REVERSING' => 'EN RETOURNEMENT',
+      'STABLE' => 'STABLE',
+      _ => null,
+    };
 
 String _importanceImpact(String importance) =>
     switch (importance.toUpperCase()) {
@@ -2717,15 +2829,25 @@ List<_DecisionFactor> _decisionFactors(
     if (title == null) continue;
     final guidance = _topicGuidance('${family.label} ${family.summary}');
     final summary = _cleanExplanation(family.summary);
+    // Prefer the normalised reading when the engine published one: it keeps
+    // direction, impact and trend apart, where the family carries a bias and an
+    // amplitude that the screen used to conflate.
+    final normalised = _factorFor(decision, family.id);
     factors.add(_DecisionFactor(
       kind: _FactorKind.currentSignal,
       title: title,
       description: summary,
-      direction: family.direction,
-      impact: _movementImpact(family.movement),
+      direction: normalised != null
+          ? _normalisedDirection(normalised.direction)
+          : family.direction,
+      impact: normalised != null
+          ? _impactLabelFr(normalised.impact)
+          : _movementImpact(family.movement),
       emoji: _reasonEmoji('${family.label} $title'),
       when: 'ACTUEL',
-      confidence: family.confidence,
+      confidence: normalised?.confidence ?? family.confidence,
+      trend: normalised?.trend ?? 'UNKNOWN',
+      impactOnDirection: normalised?.impactOnDirection ?? 'MEASURED',
       observation: summary,
       invalidation: _signalInvalidation(family),
       whyItMatters: guidance.why,

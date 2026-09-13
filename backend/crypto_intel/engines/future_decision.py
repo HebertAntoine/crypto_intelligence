@@ -116,6 +116,10 @@ class FamilyAssessment:
 class FiveFamilySnapshot:
     assessments: dict[FutureFamily, FamilyAssessment]
 
+    #: Normalised factor semantics published beside the families: direction,
+    #: impact, trend and confidence kept as four separate readings.
+    normalised_factors: list[dict[str, Any]] = field(default_factory=list)
+
     def __post_init__(self) -> None:
         required = set(FutureFamily)
         if set(self.assessments) != required:
@@ -166,6 +170,9 @@ class FiveFamilySnapshot:
             "total_count": 5,
             "unavailable": unavailable,
             "items": {family.value: self.assessments[family].to_dict() for family in FutureFamily},
+            # Additive: the five families are unchanged, and each normalised
+            # factor publishes direction, impact, trend and confidence apart.
+            "factors": self.normalised_factors,
         }
 
 
@@ -731,6 +738,8 @@ class FutureDecision:
     provenance: list[dict[str, Any]]
     data_quality: Any = None
     consistency: Any = None
+    conditions_to_buy: list[str] = field(default_factory=list)
+    conditions_to_sell: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -744,6 +753,8 @@ class FutureDecision:
             "event_risk": self.event_risk.to_dict(),
             "event_risk_gate": self.event_risk_gate.to_dict(),
             "market_expectations": self.market_expectations,
+            "conditions_to_buy": self.conditions_to_buy,
+            "conditions_to_sell": self.conditions_to_sell,
             "consistency": self.consistency.to_dict() if self.consistency else None,
             "causal_graph": self.causal_graph,
             "signal_convergence": self.signal_convergence,
@@ -1029,10 +1040,30 @@ class FutureDecisionEngine:
                 f"{_delay_phrase(next_event, now)}: la surprise mesurée par rapport "
                 "à ce qui était valorisé donnera la direction."
             )
+        # Section 14: the reader needs to know which way each condition pushes.
+        # A single undifferentiated list forced them to work out whether a line
+        # argued for buying or for selling.
+        to_buy: list[str] = []
+        to_sell: list[str] = []
         for item in ordered:
             condition = _family_flip_condition(item)
-            if condition:
-                changes.append(condition)
+            if not condition:
+                continue
+            changes.append(condition)
+            if item.directional_bias in {
+                DirectionalBias.BEARISH,
+                DirectionalBias.STRONGLY_BEARISH,
+            }:
+                to_buy.append(condition)
+            else:
+                to_sell.append(condition)
+        if next_event is not None and next_event.scheduled_at is not None:
+            to_buy.append(
+                f"« {next_event.title} » : issue plus favorable que ce qui était valorisé."
+            )
+            to_sell.append(
+                f"« {next_event.title} » : issue moins favorable que ce qui était valorisé."
+            )
         for item in families.assessments.values():
             if not item.available and item.unavailable_reason:
                 changes.append(
@@ -1089,6 +1120,8 @@ class FutureDecisionEngine:
             provenance=provenance,
             data_quality=data_quality,
             consistency=consistency,
+            conditions_to_buy=list(dict.fromkeys(to_buy)),
+            conditions_to_sell=list(dict.fromkeys(to_sell)),
         )
 
 

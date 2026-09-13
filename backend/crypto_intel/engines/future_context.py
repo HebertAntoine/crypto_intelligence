@@ -269,6 +269,8 @@ def build_five_family_snapshot(
     volatility: Any,
     implied_volatility: Any,
     expected_volatility: Any = None,
+    leverage_state: str | None = None,
+    funding_state: str | None = None,
     horizon: DecisionHorizon = DecisionHorizon.D7,
 ) -> FiveFamilySnapshot:
     """Create all five slots from one immutable analysis context."""
@@ -610,4 +612,43 @@ def build_five_family_snapshot(
             unavailable_reason="Historique OHLCV insuffisant pour structure et volatilité.",
         ),
     }
-    return FiveFamilySnapshot.from_partial(partial)
+    # Normalised semantics, published alongside the families. Direction, impact,
+    # trend and confidence are kept apart here so the UI never has to infer one
+    # from another - and so UNKNOWN stays distinct from NEUTRAL.
+    from .factor_semantics import (
+        flow_assessment,
+        positioning_from_leverage_state,
+        technical_assessment,
+        volatility_assessment,
+    )
+
+    normalised: list[dict[str, Any]] = []
+    if institutional_usable:
+        normalised.append(
+            flow_assessment(
+                institutional_flow, label="Flux institutionnels & baleines"
+            ).to_dict()
+        )
+    if positioning_available:
+        normalised.append(
+            positioning_from_leverage_state(
+                leverage_state,
+                funding_state=funding_state,
+                freshness=_freshness(states, ("open_interest", "funding")),
+            ).to_dict()
+        )
+    if technical_available:
+        normalised.append(
+            technical_assessment(
+                bullish_timeframes=bullish,
+                bearish_timeframes=bearish,
+                freshness=_freshness(states, technical_state_names),
+            ).to_dict()
+        )
+    squeeze = bool(getattr(expected_volatility, "squeeze", False))
+    if getattr(expected_volatility, "available", False):
+        normalised.append(volatility_assessment(squeeze=squeeze).to_dict())
+
+    snapshot = FiveFamilySnapshot.from_partial(partial)
+    snapshot.normalised_factors = normalised
+    return snapshot

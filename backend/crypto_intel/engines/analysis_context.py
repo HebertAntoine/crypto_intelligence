@@ -1057,6 +1057,9 @@ def build_context(
             volatility=volatility,
             implied_volatility=evidence["implied_volatility"],
             expected_volatility=expected_volatility,
+            # Funding state is not part of this context; it is left unset rather
+            # than guessed, which only means positioning impact stays MODERATE.
+            leverage_state=str(getattr(leverage_state, "state", "") or ""),
             horizon=horizon,
         )
     future_families = future_families_by_horizon[DecisionHorizon.D7.value]

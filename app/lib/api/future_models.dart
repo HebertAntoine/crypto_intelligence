@@ -103,6 +103,50 @@ class FutureFamilyRead {
       );
 }
 
+/// Normalised semantics for one factor.
+///
+/// Direction, impact, trend and confidence are four separate readings. The
+/// screen must never infer one from another, and UNKNOWN is not NEUTRAL: an
+/// event that has not happened is unknown, a measured balance is neutral.
+class FutureFactorRead {
+  final String key;
+  final String label;
+  final String direction;
+  final String impact;
+  final String trend;
+  final double confidence;
+  final String freshness;
+  final String rationale;
+
+  /// "NONE" when the instrument cannot speak about direction at all, as for
+  /// Bollinger compression. It bounds what the reading may be used for.
+  final String impactOnDirection;
+
+  const FutureFactorRead({
+    required this.key,
+    required this.label,
+    required this.direction,
+    required this.impact,
+    required this.trend,
+    required this.confidence,
+    required this.freshness,
+    required this.rationale,
+    required this.impactOnDirection,
+  });
+
+  factory FutureFactorRead.fromJson(Map<String, dynamic> json) => FutureFactorRead(
+        key: json['key']?.toString() ?? '',
+        label: json['label']?.toString() ?? '',
+        direction: json['direction']?.toString() ?? 'UNKNOWN',
+        impact: json['impact']?.toString() ?? 'MODERATE',
+        trend: json['trend']?.toString() ?? 'UNKNOWN',
+        confidence: _number(json['confidence']) ?? 0,
+        freshness: json['freshness']?.toString() ?? 'UNAVAILABLE',
+        rationale: json['rationale']?.toString() ?? '',
+        impactOnDirection: json['impact_on_direction']?.toString() ?? 'MEASURED',
+      );
+}
+
 class FutureEventRead {
   final String id;
   final String title;
@@ -214,6 +258,13 @@ class FutureDecisionRead {
   /// the UI must say so rather than imply one.
   final String? marketExpectation;
 
+  /// Normalised factor semantics, published beside the five families.
+  final List<FutureFactorRead> factors;
+
+  /// What would have to happen to move the decision each way (section 14).
+  final List<String> conditionsToBuy;
+  final List<String> conditionsToSell;
+
   const FutureDecisionRead({
     required this.asset,
     required this.analysisId,
@@ -233,6 +284,9 @@ class FutureDecisionRead {
     this.asOf,
     this.nextEvent,
     this.marketExpectation,
+    this.factors = const [],
+    this.conditionsToBuy = const [],
+    this.conditionsToSell = const [],
   });
 
   /// Build the sentence only from an AVAILABLE, priced expectation.
@@ -266,6 +320,17 @@ class FutureDecisionRead {
       eventRisk: eventRisk['level']?.toString() ?? 'UNKNOWN',
       eventRiskActive: eventRisk['active'] == true,
       marketExpectation: _readExpectation(json['market_expectations']),
+      factors: (familyBlock['factors'] as List? ?? const [])
+          .whereType<Map>()
+          .map((value) =>
+              FutureFactorRead.fromJson(Map<String, dynamic>.from(value)))
+          .toList(),
+      conditionsToBuy: (json['conditions_to_buy'] as List? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
+      conditionsToSell: (json['conditions_to_sell'] as List? ?? const [])
+          .map((value) => value.toString())
+          .toList(),
       coverage: familyBlock['coverage']?.toString() ?? '0/5 disponibles',
       reasons: (json['reasons'] as List? ?? const [])
           .whereType<Map>()
