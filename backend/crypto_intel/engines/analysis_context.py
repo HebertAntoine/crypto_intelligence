@@ -34,6 +34,7 @@ from enum import StrEnum
 from typing import Any
 
 from ..core import labels_fr
+from ..core.data_integrity import is_production_label
 from ..core.enums import Asset, Timeframe
 from ..core.usability import (
     DataCoverage,
@@ -48,7 +49,7 @@ log = get_logger("engines.analysis_context")
 
 # Bumped whenever the meaning of a snapshot field changes, so a deployed
 # version never serves an id that names a differently-computed analysis.
-ANALYSIS_SCHEMA_VERSION = "2026-09-13.1"
+ANALYSIS_SCHEMA_VERSION = "2026-09-13.2"
 
 # The clock granularity of an analysis. Long enough that the id is stable
 # across the several requests one screen makes; short enough that a macro
@@ -128,6 +129,8 @@ def family_states(asset: Asset, now: datetime | None = None) -> dict[str, Family
 
     states["ohlcv_daily"] = candles("ohlcv_daily", Timeframe.D1, 200)
     states["ohlcv_4h"] = candles("ohlcv_4h", Timeframe.H4, 60)
+    states["ohlcv_h1"] = candles("ohlcv_h1", Timeframe.H1, 60)
+    states["ohlcv_weekly"] = candles("ohlcv_weekly", Timeframe.W1, 52)
 
     # Structure and realised volatility are computations, not sources: they are
     # exactly as fresh as the bars they read and no fresher.
@@ -185,6 +188,21 @@ def family_states(asset: Asset, now: datetime | None = None) -> dict[str, Family
             points=entry["rows"],
         )
 
+    spot_entry = derivatives.get("spot.taker_buy_ratio")
+    states["spot"] = FamilyState(
+        family="spot",
+        available=bool(spot_entry and spot_entry["rows"] > 0),
+        valid=bool(spot_entry and spot_entry["rows"] >= 30),
+        freshness=(
+            freshness_for("spot", spot_entry["end"], reference)
+            if spot_entry else Freshness.UNAVAILABLE
+        ),
+        observed_at=spot_entry["end"] if spot_entry else None,
+        source="spot.taker_buy_ratio (Binance)",
+        points=spot_entry["rows"] if spot_entry else 0,
+        reason="" if spot_entry else "aucune série d'agressivité spot stockée",
+    )
+
     observations = repo.observation_fingerprint(asset)
 
     def from_observations(family: str, key: str, source: str, minimum: int = 1) -> FamilyState:
@@ -200,10 +218,16 @@ def family_states(asset: Asset, now: datetime | None = None) -> dict[str, Family
             points=rows,
         )
 
+    states["price"] = from_observations(
+        "price", "observations:price.", "ticker spot persisté"
+    )
     states["etf"] = from_observations("etf", "etf_flows", "Farside Investors, flux par émetteur")
     states["macro"] = from_observations("macro", "observations:macro.", "séries macro FRED/Stooq")
     states["onchain"] = from_observations(
         "onchain", "observations:onchain.", "fournisseurs on-chain"
+    )
+    states["liquidity"] = from_observations(
+        "liquidity", "observations:stablecoin.", "DefiLlama stablecoins"
     )
     states["whales"] = FamilyState(
         family="whales",
@@ -423,20 +447,23 @@ def breakout_sentence(breakout: Any) -> str:
     )
 
 
-def _is_synthetic(observations: list[Any]) -> bool:
-    """An observation from the fixtures must never carry weight.
+def _is_synthetic(observation: Any) -> bool:
+    """Whether one observation is explicitly development-only evidence.
 
     The database holds observations recorded with the fixtures' source,
-    ingested while MOCK_MODE was on. They then present themselves like any
-    other measurement: without this filter, "Liquidité stablecoin: expansion"
-    appeared among the positive factors of a production decision, sourced
-    "MOCK FIXTURES (synthetic)".
+    ingested while MOCK_MODE was on.  Filtering the whole result set when one
+    such row was present also discarded every real DefiLlama/Yahoo/on-chain
+    observation beside it.  Classification is therefore row-local.
     """
-    for observation in observations:
-        source = (getattr(observation.provenance, "source", "") or "").upper()
-        if "MOCK" in source or "SYNTHETIC" in source or "FIXTURE" in source:
-            return True
-    return False
+    provenance = getattr(observation, "provenance", None)
+    source = getattr(provenance, "source", "") or ""
+    provider = getattr(provenance, "provider", "") or ""
+    return not is_production_label(source) or not is_production_label(provider)
+
+
+def _without_synthetic(observations: list[Any]) -> list[Any]:
+    """Keep real rows even when legacy fixture rows share the same metric."""
+    return [observation for observation in observations if not _is_synthetic(observation)]
 
 
 def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
@@ -604,8 +631,7 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
         )
 
     onchain_observations = repo.observations_since(asset, "onchain.", since)
-    if _is_synthetic(onchain_observations):
-        onchain_observations = []
+    onchain_observations = _without_synthetic(onchain_observations)
     onchain = OnChainAnalyzer().analyze(asset, onchain_observations)
     if onchain.available and abs(onchain.strength) > 12:
         source, observed_at, freshness = latest_meta(onchain_observations, "on-chain provider")
@@ -631,8 +657,7 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
         )
 
     liquidity_observations = repo.observations_since(None, "stablecoin.", since)
-    if _is_synthetic(liquidity_observations):
-        liquidity_observations = []
+    liquidity_observations = _without_synthetic(liquidity_observations)
     liquidity = StablecoinLiquidityAnalyzer().analyze(liquidity_observations)
     if liquidity.available and abs(liquidity.strength) > 12:
         source, observed_at, freshness = latest_meta(
@@ -660,8 +685,7 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
         )
 
     macro_observations = repo.observations_since(None, "macro.", since)
-    if _is_synthetic(macro_observations):
-        macro_observations = []
+    macro_observations = _without_synthetic(macro_observations)
     macro = MacroAnalyzer().analyze(macro_observations, now=now)
     if macro.available and abs(macro.strength) > 12:
         source, observed_at, freshness = latest_meta(macro_observations, "macro providers")
@@ -735,8 +759,7 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
         track_summary["status"] = "MATURE"
 
     whale_observations = repo.observations_since(asset, "whale.", since)
-    if _is_synthetic(whale_observations):
-        whale_observations = []
+    whale_observations = _without_synthetic(whale_observations)
     whales = WhaleAnalyzer().analyze(
         asset,
         whale_observations,
@@ -832,6 +855,8 @@ class AnalysisContextSnapshot:
     technical: dict[str, Any] = field(default_factory=dict)
     future_events: list[Any] = field(default_factory=list)
     future_families: Any = None
+    future_families_by_horizon: dict[str, Any] = field(default_factory=dict)
+    future_data_quality_by_horizon: dict[str, Any] = field(default_factory=dict)
     future_decision: Any = None
     future_horizons: dict[str, Any] = field(default_factory=dict)
 
@@ -903,15 +928,16 @@ def build_context(
 ) -> AnalysisContextSnapshot:
     """Run every engine one decision needs, once, in one consistent moment."""
     from ..db import repo
+    from ..engines.decision_data_quality import DecisionDataQualityEngine
     from ..engines.edge import EdgeEngine, UncertaintyEngine, build_decision_summary
     from ..engines.entry_opportunity import EntryOpportunityEngine
     from ..engines.entry_timing import EntryTimingEngine
-    from ..engines.future_context import build_five_family_snapshot
+    from ..engines.future_context import build_five_family_snapshot, events_for_horizon
     from ..engines.future_decision import FutureDecisionEngine, horizon_decisions
     from ..engines.institutional_flow import InstitutionalFlowEngine
     from ..engines.leverage import LeverageCrowdingEngine
     from ..engines.market_pressure import assess_pressure
-    from ..engines.volatility import VolatilityRegimeEngine
+    from ..engines.volatility import ExpectedVolatilityEngine, VolatilityRegimeEngine
     from ..history import store
     from ..structure.location import StructuralLocationEngine
 
@@ -982,7 +1008,7 @@ def build_context(
     entry = EntryOpportunityEngine().assess(asset, Timeframe.H4)
     macro_events = upcoming_macro(asset, now=reference)
 
-    from ..future_events.models import FutureEventStatus
+    from ..future_events.models import DecisionHorizon, FutureEventStatus
 
     future_events = [
         event
@@ -1003,36 +1029,68 @@ def build_context(
             }
         )
     ]
-    future_families = build_five_family_snapshot(
-        analysis_id=analysis_id,
-        as_of=reference,
-        states=families,
-        events=future_events,
-        macro_context=evidence["macro"],
-        liquidity=evidence["liquidity"],
-        pressure=pressure,
-        institutional_flow=institutional_flow,
-        structure=evidence["multi_timeframe"],
-        regime=regime,
-        volatility=volatility,
-        implied_volatility=evidence["implied_volatility"],
-    )
+    horizon_timeframes = {
+        DecisionHorizon.H24: Timeframe.H1,
+        DecisionHorizon.D7: Timeframe.H4,
+        DecisionHorizon.D30: Timeframe.D1,
+    }
+    future_families_by_horizon: dict[str, Any] = {}
+    horizon_events: dict[str, list[Any]] = {}
+    for horizon, timeframe in horizon_timeframes.items():
+        horizon_candles = store.load_candles(asset, timeframe)
+        expected_volatility = ExpectedVolatilityEngine().assess_bollinger(
+            horizon_candles["close"] if not horizon_candles.empty else horizon_candles
+        )
+        relevant_events = events_for_horizon(future_events, horizon, reference)
+        horizon_events[horizon.value] = relevant_events
+        future_families_by_horizon[horizon.value] = build_five_family_snapshot(
+            analysis_id=analysis_id,
+            as_of=reference,
+            states=families,
+            events=relevant_events,
+            macro_context=evidence["macro"],
+            liquidity=evidence["liquidity"],
+            pressure=pressure,
+            institutional_flow=institutional_flow,
+            structure=evidence["multi_timeframe"],
+            regime=regime,
+            volatility=volatility,
+            implied_volatility=evidence["implied_volatility"],
+            expected_volatility=expected_volatility,
+            horizon=horizon,
+        )
+    future_families = future_families_by_horizon[DecisionHorizon.D7.value]
+    quality_engine = DecisionDataQualityEngine()
+    future_data_quality_by_horizon = {
+        horizon.value: quality_engine.assess(
+            asset,
+            horizon,
+            families,
+            horizon_events[horizon.value],
+            future_families_by_horizon[horizon.value],
+            as_of=reference,
+            calendar_events=future_events,
+        )
+        for horizon in DecisionHorizon
+    }
     uncertainty_fraction = min(1.0, max(0.0, float(uncertainty.score or 0) / 100.0))
     future_engine = FutureDecisionEngine()
     future_decision = future_engine.decide(
         asset,
-        future_events,
+        horizon_events[DecisionHorizon.D7.value],
         future_families,
         as_of=reference,
         analysis_uncertainty=uncertainty_fraction,
+        data_quality=future_data_quality_by_horizon[DecisionHorizon.D7.value],
     )
     future_horizon_views = horizon_decisions(
         future_engine,
         asset,
         future_events,
-        future_families,
+        future_families_by_horizon,
         as_of=reference,
         analysis_uncertainty=uncertainty_fraction,
+        data_quality=future_data_quality_by_horizon,
     )
 
     from ..engines.buy_opportunity import decide
@@ -1108,6 +1166,8 @@ def build_context(
         },
         future_events=future_events,
         future_families=future_families,
+        future_families_by_horizon=future_families_by_horizon,
+        future_data_quality_by_horizon=future_data_quality_by_horizon,
         future_decision=future_decision,
         future_horizons=future_horizon_views,
     )

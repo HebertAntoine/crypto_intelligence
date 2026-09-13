@@ -79,7 +79,10 @@ CADENCE: dict[str, dict[str, int]] = {
     # Implied volatility index, published continuously but consumed daily.
     "dvol": {"live": 3600, "recent": 93600, "delayed": 259200},
     # Four-hour candles close six times a day.
+    "ohlcv_h1": {"live": 7200, "recent": 14400, "delayed": 43200},
     "ohlcv_4h": {"live": 18000, "recent": 43200, "delayed": 172800},
+    # Weekly candles remain current across the following trading week.
+    "ohlcv_weekly": {"live": 691200, "recent": 1209600, "delayed": 1814400},
     # Structure and realised volatility are read off those candles, so they
     # cannot be fresher than the bars they are computed from.
     "structure": {"live": 18000, "recent": 43200, "delayed": 172800},
@@ -91,6 +94,7 @@ CADENCE: dict[str, dict[str, int]] = {
     "cross_asset": {"live": 93600, "recent": 345600, "delayed": 1209600},
     # On-chain aggregates are polled hourly and meaningful daily.
     "onchain": {"live": 7200, "recent": 93600, "delayed": 259200},
+    "liquidity": {"live": 7200, "recent": 93600, "delayed": 259200},
     # Aggressive spot volume is read off daily klines: today's bar is the
     # freshest that exists.
     "spot": {"live": 93600, "recent": 172800, "delayed": 345600},

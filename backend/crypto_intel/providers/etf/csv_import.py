@@ -19,6 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ...core.data_integrity import is_production_etf_source, is_production_label
 from ...core.enums import Asset, DataQuality, FetchStatus, ProviderCategory
 from ...core.freshness import compute_freshness
 from ...core.models import Observation
@@ -60,6 +61,10 @@ def import_csv_file(path: Path) -> tuple[int, list[str]]:
     errors: list[str] = []
     if not path.exists():
         return 0, [f"File not found: {path}"]
+    if not is_production_label(path.name):
+        return 0, [
+            f"{path.name}: rejected from production ETF imports (example/fixture/mock/sample/test)"
+        ]
 
     rows: list[dict[str, Any]] = []
     with path.open(newline="", encoding="utf-8-sig") as fh:
@@ -128,7 +133,16 @@ class ETFCSVProvider(BaseProvider):
         import_directory()
 
         days = int(request.params.get("days", 120))
-        flows = repo.get_etf_flows(request.asset, days=days)
+        # This provider represents manually vouched CSVs only.  Returning
+        # Farside rows already present in the shared table used to make this
+        # provider report success before the registry could try the actual
+        # live provider, while relabelling those rows as "Manual CSV import".
+        flows = [
+            row
+            for row in repo.get_etf_flows(request.asset, days=days)
+            if str(row.get("import_source") or "").startswith("csv:")
+            and is_production_etf_source(str(row.get("import_source") or ""))
+        ]
         if not flows:
             return FetchResult.failure(
                 FetchStatus.NO_DATA,

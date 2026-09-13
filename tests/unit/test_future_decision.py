@@ -170,3 +170,11 @@ def test_recent_unscheduled_critical_release_activates_gate_then_decays() -> Non
 def test_default_decision_horizon_is_seven_days() -> None:
     result = FutureDecisionEngine().decide(Asset.ETH, [], five(), as_of=NOW)
     assert result.horizon is DecisionHorizon.D7
+
+
+def test_available_family_never_keeps_an_unavailable_reason() -> None:
+    item = assessment(FutureFamily.MACRO_LIQUIDITY)
+    item.unavailable_reason = "should be cleared"
+    item.__post_init__()
+
+    assert item.to_dict()["unavailable_reason"] is None

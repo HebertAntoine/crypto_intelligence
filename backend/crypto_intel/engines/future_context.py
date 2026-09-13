@@ -2,16 +2,87 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
+from ..future_events.freshness import EventFreshness, event_freshness
 from ..future_events.models import (
+    DecisionHorizon,
     DirectionalBias,
     ExpectedMovement,
     FutureEvent,
     FutureEventCategory,
 )
 from .future_decision import FamilyAssessment, FiveFamilySnapshot, FutureFamily
+
+_HORIZON_DELTA = {
+    DecisionHorizon.H24: timedelta(hours=24),
+    DecisionHorizon.D7: timedelta(days=7),
+    DecisionHorizon.D30: timedelta(days=30),
+}
+
+_HORIZON_TECHNICAL_STATES = {
+    DecisionHorizon.H24: ("ohlcv_h1", "ohlcv_4h"),
+    DecisionHorizon.D7: ("ohlcv_4h", "ohlcv_daily"),
+    DecisionHorizon.D30: ("ohlcv_daily", "ohlcv_weekly"),
+}
+
+
+def events_for_horizon(
+    events: list[FutureEvent], horizon: DecisionHorizon, as_of: datetime
+) -> list[FutureEvent]:
+    """Select future and still-active recent events for one real horizon."""
+    delta = _HORIZON_DELTA[horizon]
+    cutoff = as_of + delta
+    lower = as_of - delta
+    selected: list[FutureEvent] = []
+    for event in events:
+        moment = event.scheduled_at or event.source_published_at or event.detected_at
+        if (event.scheduled_at is not None and as_of <= event.scheduled_at <= cutoff) or (event.scheduled_at is None and lower <= moment <= as_of):
+            selected.append(event)
+        elif event.scheduled_at is not None and lower <= event.scheduled_at < as_of:
+            # ``analysis_context`` has already lifecycle-filtered these rows;
+            # retaining them only inside the horizon-specific lookback lets a
+            # just-released result decay instead of leaking forever.
+            selected.append(event)
+    return selected
+
+
+def usable_events_for_horizon(
+    events: list[FutureEvent], horizon: DecisionHorizon, as_of: datetime
+) -> list[FutureEvent]:
+    """Return horizon-relevant events fresh enough to affect a decision."""
+    return [
+        event
+        for event in events_for_horizon(events, horizon, as_of)
+        if event_freshness(event, as_of).freshness_status
+        in {EventFreshness.LIVE, EventFreshness.FRESH}
+    ]
+
+
+def structure_for_horizon(
+    structure: dict[str, Any], horizon: DecisionHorizon
+) -> dict[str, Any]:
+    """Project the MTF structure onto the units relevant to one horizon."""
+    units = {
+        DecisionHorizon.H24: ("1h", "4h"),
+        DecisionHorizon.D7: ("4h", "1d"),
+        DecisionHorizon.D30: ("1d", "1w"),
+    }[horizon]
+    readings = structure.get("timeframes") or {}
+    selected = {name: readings[name] for name in units if name in readings}
+    bullish = [
+        name for name, value in selected.items() if value.get("state") == "BULLISH_STRUCTURE"
+    ]
+    bearish = [
+        name for name, value in selected.items() if value.get("state") == "BEARISH_STRUCTURE"
+    ]
+    return {
+        "timeframes": selected,
+        "bullish_timeframes": bullish,
+        "bearish_timeframes": bearish,
+        "conflict": bool(bullish and bearish),
+    }
 
 
 def _value(value: Any, default: str = "") -> str:
@@ -136,8 +207,12 @@ def build_five_family_snapshot(
     regime: Any,
     volatility: Any,
     implied_volatility: Any,
+    expected_volatility: Any = None,
+    horizon: DecisionHorizon = DecisionHorizon.D7,
 ) -> FiveFamilySnapshot:
     """Create all five slots from one immutable analysis context."""
+    events = usable_events_for_horizon(events, horizon, as_of)
+    structure = structure_for_horizon(structure, horizon)
     macro_events = [
         event
         for event in events
@@ -162,14 +237,27 @@ def build_five_family_snapshot(
         }
     ]
 
+    # Stablecoin liquidity is a slow input and cannot drive the 24-hour
+    # family. It becomes relevant at 7d/30d without being duplicated.
+    liquidity_available = (
+        bool(liquidity.get("available"))
+        and _usable(states, "liquidity")
+        and horizon is not DecisionHorizon.H24
+    )
+    macro_context_available = bool(macro_context.get("available")) and _usable(
+        states, "macro"
+    )
     macro_available = (
         bool(macro_events)
-        or bool(macro_context.get("available"))
-        or bool(liquidity.get("available"))
+        or macro_context_available
+        or liquidity_available
     )
     macro_strengths = [
         float(item)
-        for item in (macro_context.get("strength"), liquidity.get("strength"))
+        for item in (
+            macro_context.get("strength"),
+            liquidity.get("strength") if liquidity_available else None,
+        )
         if item is not None
     ]
     macro_strength = max(macro_strengths, key=abs) if macro_strengths else None
@@ -180,17 +268,31 @@ def build_five_family_snapshot(
         else "; ".join((macro_context.get("findings") or liquidity.get("findings") or [])[:2])
     )
     macro_sources = _event_sources(macro_events)
-    if macro_context.get("available"):
+    if macro_context_available:
         macro_sources.append(_derived_source("MacroAnalyzer", analysis_id, as_of))
-    if liquidity.get("available"):
+    if liquidity_available:
         macro_sources.append(_derived_source("StablecoinLiquidityAnalyzer", analysis_id, as_of))
 
-    catalyst_available = bool(catalyst_events)
-    catalyst_direction = _event_direction(catalyst_events) or DirectionalBias.NEUTRAL
+    from .geopolitics import GeopoliticalRiskEngine
 
-    institutional_usable = bool(getattr(institutional_flow, "available", False)) and _value(
-        getattr(institutional_flow, "freshness", None), "UNAVAILABLE"
-    ) not in {"STALE", "UNAVAILABLE"}
+    geopolitical = GeopoliticalRiskEngine().analyze(catalyst_events)
+    catalyst_available = bool(catalyst_events)
+    catalyst_direction = (
+        geopolitical.directional_bias
+        if geopolitical.available
+        else _event_direction(catalyst_events) or DirectionalBias.NEUTRAL
+    )
+    catalyst_sources = _event_sources(catalyst_events)
+    if geopolitical.available:
+        catalyst_sources.append(_derived_source("GeopoliticalRiskEngine", analysis_id, as_of))
+
+    institutional_usable = (
+        horizon is not DecisionHorizon.H24
+        and bool(getattr(institutional_flow, "available", False))
+        and _value(
+            getattr(institutional_flow, "freshness", None), "UNAVAILABLE"
+        ) not in {"STALE", "UNAVAILABLE"}
+    )
     flow_components = _pressure_components(pressure, {"spot", "whales"})
     flow_order = {"whales": 1, "spot": 2}
     flow_components.sort(
@@ -242,9 +344,12 @@ def build_five_family_snapshot(
     )
     volatility_regime = _value(getattr(volatility, "regime", None), "UNKNOWN")
     dvol_available = bool(getattr(implied_volatility, "available", False))
+    dvol_usable = dvol_available and bool(
+        getattr(implied_volatility, "usable_for_decision", False)
+    )
     positioning_available = (
         bool(positioning_components)
-        or dvol_available
+        or dvol_usable
         or _usable(states, "funding", "open_interest", "dvol")
     )
     positioning_movement = (
@@ -263,14 +368,15 @@ def build_five_family_snapshot(
         }
         for item in positioning_components
     ]
-    if dvol_available:
-        positioning_sources.append(
-            _derived_source("ImpliedVolatilityEngine (Deribit)", analysis_id, as_of)
-        )
+    if dvol_usable:
+        dvol_source = _derived_source("ImpliedVolatilityEngine (Deribit)", analysis_id, as_of)
+        dvol_source["as_of"] = _isoformat(getattr(implied_volatility, "observed_at", None))
+        positioning_sources.append(dvol_source)
 
     bullish = list(structure.get("bullish_timeframes") or [])
     bearish = list(structure.get("bearish_timeframes") or [])
-    technical_available = _usable(states, "structure", "volatility")
+    technical_state_names = _HORIZON_TECHNICAL_STATES[horizon]
+    technical_available = _usable(states, *technical_state_names)
     technical_score = (len(bullish) - len(bearish)) * 25 if bullish or bearish else None
     if technical_score is None:
         regime_label = _value(getattr(regime, "regime", None), "UNDETERMINED")
@@ -286,6 +392,10 @@ def build_five_family_snapshot(
         ExpectedMovement.HIGH
         if volatility_regime in {"HIGH", "VERY_HIGH"}
         or _value(getattr(volatility, "direction", None)) == "EXPANDING"
+        or (
+            bool(getattr(expected_volatility, "available", False))
+            and _value(getattr(expected_volatility, "expected_movement", None)) == "HIGH"
+        )
         else ExpectedMovement.NORMAL
     )
 
@@ -311,16 +421,24 @@ def build_five_family_snapshot(
             family=FutureFamily.CATALYSTS_REGULATION,
             available=catalyst_available,
             directional_bias=catalyst_direction if catalyst_available else None,
-            expected_movement=_movement(catalyst_events, ExpectedMovement.NORMAL),
+            expected_movement=(
+                geopolitical.expected_movement
+                if geopolitical.available
+                else _movement(catalyst_events, ExpectedMovement.NORMAL)
+            ),
             confidence=max([event.confidence for event in catalyst_events], default=0.0),
             summary=(
-                f"{len(catalyst_events)} catalyseur(s) réglementaire(s), protocolaire(s) "
-                "ou géopolitique(s) sourcé(s)."
-                if catalyst_events
-                else ""
+                geopolitical.explanation
+                if geopolitical.available
+                else (
+                    f"{len(catalyst_events)} catalyseur(s) réglementaire(s), protocolaire(s) "
+                    "ou géopolitique(s) sourcé(s)."
+                    if catalyst_events
+                    else ""
+                )
             ),
             reasons=[event.title for event in catalyst_events[:3]],
-            sources=_event_sources(catalyst_events),
+            sources=catalyst_sources,
             as_of=as_of.isoformat(),
             freshness="RECENT" if catalyst_events else "UNAVAILABLE",
             unavailable_reason="Aucun catalyseur pertinent remonté par les sources configurées.",
@@ -377,7 +495,7 @@ def build_five_family_snapshot(
             confidence=(
                 max(
                     [float(getattr(item, "confidence", 0.0)) for item in positioning_components]
-                    + ([0.75] if dvol_available else [0.0])
+                    + ([0.75] if dvol_usable else [0.0])
                 )
                 if positioning_available
                 else 0.0
@@ -386,7 +504,7 @@ def build_five_family_snapshot(
                 "; ".join(str(getattr(item, "detail", "")) for item in positioning_components[:2])
                 or (
                     str(getattr(implied_volatility, "interpretation", ""))
-                    if dvol_available
+                    if dvol_usable
                     else "Positionnement disponible sans signal directionnel défendable."
                 )
             ),
@@ -405,8 +523,13 @@ def build_five_family_snapshot(
                 min(0.9, (len(bullish) + len(bearish)) / 4) if technical_available else 0.0
             ),
             summary=(
-                f"Structure haussière sur {len(bullish)} unité(s), baissière sur "
-                f"{len(bearish)}; volatilité {volatility_regime.lower()}."
+                f"Structure {horizon.value}: haussière sur {len(bullish)} unité(s), "
+                f"baissière sur {len(bearish)}; volatilité {volatility_regime.lower()}."
+                + (
+                    f" Bollinger squeeze={getattr(expected_volatility, 'squeeze', None)}."
+                    if bool(getattr(expected_volatility, "available", False))
+                    else ""
+                )
                 if technical_available
                 else ""
             ),
@@ -415,12 +538,16 @@ def build_five_family_snapshot(
                 *(f"Structure baissière {item}" for item in bearish[:2]),
             ],
             sources=[
-                _derived_source(
-                    "MarketStructureEngine + VolatilityRegimeEngine", analysis_id, as_of
-                )
+                _derived_source("MarketStructureEngine", analysis_id, as_of),
+                _derived_source("VolatilityRegimeEngine", analysis_id, as_of),
+                *(
+                    [_derived_source("ExpectedVolatilityEngine", analysis_id, as_of)]
+                    if bool(getattr(expected_volatility, "available", False))
+                    else []
+                ),
             ],
             as_of=as_of.isoformat(),
-            freshness=_freshness(states, ("structure", "volatility")),
+            freshness=_freshness(states, technical_state_names),
             unavailable_reason="Historique OHLCV insuffisant pour structure et volatilité.",
         ),
     }

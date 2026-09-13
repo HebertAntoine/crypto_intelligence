@@ -20,7 +20,7 @@ impossible: `realised_trailing` only ever looks at [t-window, t].
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -29,6 +29,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from ..core.enums import Asset, Timeframe
+from ..core.usability import Freshness, freshness_for
 from ..history import store
 from ..logging_setup import get_logger
 
@@ -52,7 +53,12 @@ class VolatilityPricing(StrEnum):
 class ImpliedVolatilityReading(BaseModel):
     asset: str
     available: bool = False
+    usable_for_decision: bool = False
+    decision_status: str = "UNAVAILABLE"
     unavailable_reason: str = ""
+    observed_at: datetime | None = None
+    age_seconds: float | None = None
+    freshness: Freshness = Freshness.UNAVAILABLE
     dvol: float | None = None
     dvol_percentile: float | None = None
     dvol_change_30d: float | None = None
@@ -126,7 +132,25 @@ class ImpliedVolatilityEngine:
             out.unavailable_reason = "no implied-volatility observation at or before this time"
             return out
 
+        reference = as_of or datetime.now(UTC)
+        if reference.tzinfo is None:
+            reference = reference.replace(tzinfo=UTC)
+        latest_timestamp = dvol.index[-1]
+        observed_at = (
+            latest_timestamp.to_pydatetime()
+            if hasattr(latest_timestamp, "to_pydatetime")
+            else latest_timestamp
+        )
+        if observed_at.tzinfo is None:
+            observed_at = observed_at.replace(tzinfo=UTC)
+        freshness = freshness_for("dvol", observed_at, reference)
+
         out.available = True
+        out.observed_at = observed_at
+        out.age_seconds = max(0.0, (reference - observed_at).total_seconds())
+        out.freshness = freshness
+        out.usable_for_decision = freshness.is_fresh
+        out.decision_status = "FRESH" if freshness.is_fresh else "STALE"
         out.history_days = len(dvol)
         out.dvol = round(float(dvol.iloc[-1]), 3)
         out.dvol_percentile = _trailing_percentile(dvol)

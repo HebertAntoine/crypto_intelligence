@@ -156,6 +156,7 @@ async def job_market_only() -> None:
     Cheap enough to run often, which keeps the market snapshot series dense
     without re-running the whole pipeline.
     """
+    from .db import repo
     from .providers.base import FetchRequest
     from .providers.registry import get_registry
 
@@ -169,6 +170,12 @@ async def job_market_only() -> None:
             )
             if not res.ok:
                 continue
+            # The fast job used to update only ``market_snapshots``.  The
+            # decision layer reads canonical observations, so it continued to
+            # report the price family as missing until the much slower full
+            # analysis ran.  Persist the same sourced observations here; their
+            # deterministic ids keep the operation idempotent.
+            repo.save_observations(res.observations)
             values = {o.metric: o.numeric_value for o in res.observations}
             snapshots.save_snapshot(
                 "market", asset,
@@ -392,10 +399,14 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
     now = datetime.now(UTC)
     for job_id, func, minutes in jobs:
         # Stagger first runs so startup does not fire every job at once.
-        offset = {"market": 1, "analysis": 2, "decision_track": 3,
-                  "ohlcv_sync": 5, "pattern_experiments": 7,
-                  "derivatives_sync": 6, "etf_sync": 8,
-                  "future_events_sync": 9,
+        # On process start, collect the inputs before taking the first
+        # analytical snapshot.  Previously analysis ran at +2 minutes while
+        # OHLCV and derivatives first ran at +5/+6, guaranteeing one stale
+        # baseline after every restart.
+        offset = {"market": 1, "ohlcv_sync": 2, "derivatives_sync": 3,
+                  "etf_sync": 4, "future_events_sync": 5,
+                  "analysis": 6, "decision_track": 7,
+                  "pattern_experiments": 9,
                   "evaluate": 11, "purge": 20}[job_id]
         scheduler.add_job(
             func,

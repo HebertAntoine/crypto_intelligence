@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from ..core.enums import Asset
 from ..engines.analysis_context import context_for
+from ..engines.future_context import usable_events_for_horizon
 from ..engines.future_decision import FutureDecisionEngine
 from ..future_events.models import DecisionHorizon, FutureEventStatus
 
@@ -44,19 +45,20 @@ def _uncertainty(snapshot: Any) -> float | None:
 
 
 def _decision(snapshot: Any, horizon: DecisionHorizon) -> Any:
-    cutoff = snapshot.analysis_time + _HORIZON_DURATION[horizon]
-    events = [
-        event
-        for event in snapshot.future_events
-        if event.scheduled_at is None or event.scheduled_at <= cutoff
-    ]
+    events = usable_events_for_horizon(
+        list(snapshot.future_events), horizon, snapshot.analysis_time
+    )
+    horizon_families = getattr(snapshot, "future_families_by_horizon", {}) or {}
+    families = horizon_families.get(horizon.value, snapshot.future_families)
+    horizon_quality = getattr(snapshot, "future_data_quality_by_horizon", {}) or {}
     return FutureDecisionEngine().decide(
         Asset(snapshot.asset),
         events,
-        snapshot.future_families,
+        families,
         horizon=horizon,
         as_of=snapshot.analysis_time,
         analysis_uncertainty=_uncertainty(snapshot),
+        data_quality=horizon_quality.get(horizon.value),
     )
 
 

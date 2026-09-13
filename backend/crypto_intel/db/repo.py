@@ -12,6 +12,7 @@ from typing import Any
 
 from sqlalchemy import delete, select
 
+from ..core.data_integrity import is_production_etf_source
 from ..core.enums import Asset, DataQuality, Freshness, Timeframe
 from ..core.models import Observation, Provenance
 from .base import (
@@ -194,6 +195,8 @@ def save_etf_flows(rows: list[dict[str, Any]]) -> int:
     n = 0
     with session_scope() as s:
         for r in rows:
+            if not is_production_etf_source(str(r.get("import_source") or "")):
+                continue
             date = _coerce_dt(r["date"])
             if date is None:
                 continue
@@ -202,6 +205,7 @@ def save_etf_flows(rows: list[dict[str, Any]]) -> int:
             if existing:
                 existing.flow_musd = float(r["flow_musd"])
                 existing.import_source = r.get("import_source", "csv")
+                existing.source_url = r.get("source_url")
                 existing.imported_at = datetime.now(UTC)
             else:
                 s.add(
@@ -219,7 +223,9 @@ def save_etf_flows(rows: list[dict[str, Any]]) -> int:
     return n
 
 
-def get_etf_flows(asset: Asset, days: int = 90) -> list[dict[str, Any]]:
+def get_etf_flows(
+    asset: Asset, days: int = 90, *, production_only: bool = True
+) -> list[dict[str, Any]]:
     since = datetime.now(UTC) - timedelta(days=days)
     with session_scope() as s:
         stmt = (
@@ -227,7 +233,7 @@ def get_etf_flows(asset: Asset, days: int = 90) -> list[dict[str, Any]]:
             .where(ETFFlowRow.asset == asset.value, ETFFlowRow.date >= since)
             .order_by(ETFFlowRow.date.asc())
         )
-        return [
+        rows = [
             {
                 "id": r.id,
                 "date": _as_utc(r.date),
@@ -238,11 +244,42 @@ def get_etf_flows(asset: Asset, days: int = 90) -> list[dict[str, Any]]:
             }
             for r in s.execute(stmt).scalars().all()
         ]
+        return (
+            [row for row in rows if is_production_etf_source(row["import_source"])]
+            if production_only
+            else rows
+        )
 
 
-def etf_flow_count(asset: Asset) -> int:
+def etf_flow_count(asset: Asset, *, production_only: bool = True) -> int:
     with session_scope() as s:
-        return len(s.execute(select(ETFFlowRow.id).where(ETFFlowRow.asset == asset.value)).all())
+        rows = s.execute(
+            select(ETFFlowRow.id, ETFFlowRow.import_source).where(
+                ETFFlowRow.asset == asset.value
+            )
+        ).all()
+        return sum(
+            not production_only or is_production_etf_source(source)
+            for _row_id, source in rows
+        )
+
+
+def purge_non_production_etf_flows() -> int:
+    """Delete rows that a fixture/example/mock/sample/test import introduced.
+
+    The source label is persisted with every ETF row, so this cleanup is
+    deterministic and never guesses from a flow value.
+    """
+    with session_scope() as s:
+        rows = s.execute(select(ETFFlowRow.id, ETFFlowRow.import_source)).all()
+        rejected_ids = [
+            row_id
+            for row_id, source in rows
+            if not is_production_etf_source(source)
+        ]
+        if rejected_ids:
+            s.execute(delete(ETFFlowRow).where(ETFFlowRow.id.in_(rejected_ids)))
+        return len(rejected_ids)
 
 
 # --- reports --------------------------------------------------------------
@@ -756,7 +793,14 @@ def purge_old_observations(days: int = 400) -> int:
 
 
 def observation_fingerprint(
-    asset: Asset, prefixes: tuple[str, ...] = ("onchain.", "stablecoin.", "macro.", "whale.")
+    asset: Asset,
+    prefixes: tuple[str, ...] = (
+        "price.",
+        "onchain.",
+        "stablecoin.",
+        "macro.",
+        "whale.",
+    ),
 ) -> dict[str, list[Any]]:
     """Row count and last timestamp per observation family, plus ETF flows.
 
@@ -781,11 +825,16 @@ def observation_fingerprint(
                 int(rows or 0),
                 observed.isoformat() if observed else None,
             ]
-        rows, last = s.execute(
-            select(func.count(ETFFlowRow.id), func.max(ETFFlowRow.date)).where(
+        etf_rows = s.execute(
+            select(ETFFlowRow.date, ETFFlowRow.import_source).where(
                 ETFFlowRow.asset == asset.value
             )
-        ).one()
-        observed = _as_utc(last)
-        out["etf_flows"] = [int(rows or 0), observed.isoformat() if observed else None]
+        ).all()
+        production_dates = [
+            date for date, source in etf_rows if is_production_etf_source(source)
+        ]
+        observed = _as_utc(max(production_dates, default=None))
+        out["etf_flows"] = [
+            len(production_dates), observed.isoformat() if observed else None
+        ]
     return out

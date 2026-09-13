@@ -8,6 +8,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from ..core.data_integrity import is_production_etf_source
 from ..core.enums import Asset
 from ..core.freshness import compute_freshness
 from ..core.models import Observation, Provenance
@@ -64,6 +65,8 @@ class InstitutionalFlowEngine:
             if not isinstance(timestamp, datetime) or not isinstance(value, int | float):
                 continue
             provider = str(record.get("import_source") or "etf_import")
+            if not is_production_etf_source(provider):
+                continue
             observations.append(
                 Observation(
                     id=str(record.get("id") or ""),

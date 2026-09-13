@@ -81,6 +81,10 @@ class FamilyAssessment:
 
     def __post_init__(self) -> None:
         self.confidence = max(0.0, min(1.0, float(self.confidence)))
+        if self.available:
+            # An availability reason on an available family is a contradictory
+            # public contract and previously reached the clients verbatim.
+            self.unavailable_reason = ""
         if not self.available:
             # Do not serialize a fabricated neutral reading for an absent family.
             self.directional_bias = None
@@ -462,6 +466,7 @@ class FutureDecision:
     what_could_change_decision: list[str]
     families: FiveFamilySnapshot
     provenance: list[dict[str, Any]]
+    data_quality: Any = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -481,6 +486,9 @@ class FutureDecision:
             "scenarios": [item.to_dict() for item in self.scenarios],
             "what_could_change_decision": self.what_could_change_decision[:5],
             "families": self.families.to_dict(),
+            "data_quality": (
+                self.data_quality.to_dict() if self.data_quality is not None else None
+            ),
             "provenance": self.provenance,
             "disclaimer": "Analyse de risque déterministe; aucun ordre n'est exécuté.",
         }
@@ -506,6 +514,7 @@ class FutureDecisionEngine:
         horizon: DecisionHorizon = DecisionHorizon.D7,
         as_of: datetime | None = None,
         analysis_uncertainty: float | None = None,
+        data_quality: Any = None,
     ) -> FutureDecision:
         now = as_of or datetime.now(UTC)
         now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
@@ -529,14 +538,27 @@ class FutureDecisionEngine:
             ]
         )
 
-        available = [item for item in families.assessments.values() if item.available]
+        available = [
+            item
+            for item in families.assessments.values()
+            if item.available
+            and item.freshness not in {"STALE", "DELAYED", "AGING", "UNAVAILABLE"}
+        ]
         coverage = len(available) / 5
         confidence = (
             sum(item.confidence for item in available) / len(available) * coverage
             if available
             else 0.0
         )
-        if len(available) < 2:
+        quality_blocks = bool(
+            data_quality is not None
+            and getattr(data_quality, "blocks_directional_decision", False)
+        )
+        if quality_blocks:
+            action = DecisionAction.INSUFFICIENT_DATA
+            direction = DirectionalBias.NEUTRAL
+            confidence = 0.0
+        elif len(available) < 2:
             action = DecisionAction.INSUFFICIENT_DATA
         elif gate.active:
             action = DecisionAction.WAIT
@@ -552,6 +574,22 @@ class FutureDecisionEngine:
             key=lambda item: (FAMILY_PRIORITY[item.family], -item.confidence),
         )
         reasons: list[dict[str, Any]] = []
+        if quality_blocks:
+            missing = list(getattr(data_quality, "critical_missing_inputs", []))
+            reasons.append(
+                {
+                    "icon": "database-alert",
+                    "title": "Données critiques non utilisables",
+                    "date_time": now.isoformat(),
+                    "impact": None,
+                    "explanation": (
+                        "Décision directionnelle bloquée: " + ", ".join(missing) + "."
+                    ),
+                    "source": "DecisionDataQuality",
+                    "source_url": None,
+                    "evidence_ids": [],
+                }
+            )
         if gate.active:
             event_by_id = {event.id: event for event in event_list}
             for event_id, text in zip(gate.event_ids, gate.reasons, strict=False):
@@ -615,6 +653,12 @@ class FutureDecisionEngine:
             default=None,
         )
         changes = []
+        if quality_blocks:
+            changes.append(
+                "Rafraîchir les entrées critiques: "
+                + ", ".join(getattr(data_quality, "critical_missing_inputs", []))
+                + "."
+            )
         if gate.active:
             changes.append("Attendre la publication et réévaluer la surprise observée.")
         changes.extend(scenarios[0].invalidation_conditions)
@@ -666,6 +710,7 @@ class FutureDecisionEngine:
             what_could_change_decision=list(dict.fromkeys(changes)),
             families=families,
             provenance=provenance,
+            data_quality=data_quality,
         )
 
 
@@ -680,28 +725,32 @@ def horizon_decisions(
     engine: FutureDecisionEngine,
     asset: Asset,
     events: Iterable[FutureEvent],
-    families: FiveFamilySnapshot,
+    families: FiveFamilySnapshot | dict[str, FiveFamilySnapshot],
     *,
     as_of: datetime,
     analysis_uncertainty: float | None,
+    data_quality: dict[str, Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Return independent 24h/7d/30d decisions from one timestamp."""
+    # Imported here to avoid a module-load cycle: ``future_context`` builds the
+    # family snapshots and itself imports the decision value objects above.
+    from .future_context import usable_events_for_horizon
+
     event_list = list(events)
     output: dict[str, dict[str, Any]] = {}
-    for horizon, days in _HORIZON_DAYS.items():
-        cutoff = as_of + timedelta(days=days)
-        relevant = [
-            event
-            for event in event_list
-            if event.scheduled_at is None or event.scheduled_at <= cutoff
-        ]
+    for horizon in _HORIZON_DAYS:
+        relevant = usable_events_for_horizon(event_list, horizon, as_of)
+        selected_families = (
+            families[horizon.value] if isinstance(families, dict) else families
+        )
         result = engine.decide(
             asset,
             relevant,
-            families,
+            selected_families,
             horizon=horizon,
             as_of=as_of,
             analysis_uncertainty=analysis_uncertainty,
+            data_quality=(data_quality or {}).get(horizon.value),
         )
         output[horizon.value] = {
             "decision": result.decision.value,
@@ -709,5 +758,8 @@ def horizon_decisions(
             "expected_movement": result.expected_movement.value,
             "decision_confidence": round(result.decision_confidence, 3),
             "event_risk": result.event_risk.level.value,
+            "data_quality": (
+                result.data_quality.to_dict() if result.data_quality is not None else None
+            ),
         }
     return output

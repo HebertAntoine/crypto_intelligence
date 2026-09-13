@@ -254,6 +254,45 @@ async def test_scheduler_tops_up_all_assets_on_all_chart_timeframes(monkeypatch)
     assert state["ok"] is True
 
 
+async def test_fast_market_job_persists_the_observations_it_fetches(monkeypatch):
+    from datetime import UTC, datetime
+
+    from crypto_intel import scheduler
+    from crypto_intel.core.enums import Asset, Freshness
+    from crypto_intel.core.models import Observation, Provenance
+    from crypto_intel.db import repo
+    from crypto_intel.providers import registry as registry_module
+    from crypto_intel.providers.base import FetchResult
+
+    observed = []
+
+    class Registry:
+        async def fetch(self, request):
+            return FetchResult.success(
+                [
+                    Observation(
+                        asset=request.asset,
+                        metric="price.last",
+                        value=100.0,
+                        unit="USD",
+                        timestamp=datetime.now(UTC),
+                        provenance=Provenance(source="test", provider="test"),
+                        freshness=Freshness.LIVE,
+                    )
+                ],
+                "test",
+            )
+
+    monkeypatch.setattr(registry_module, "get_registry", lambda: Registry())
+    monkeypatch.setattr(repo, "save_observations", lambda rows: observed.extend(rows))
+    monkeypatch.setattr(scheduler.snapshots, "save_snapshot", lambda *_args, **_kwargs: True)
+
+    await scheduler.job_market_only()
+
+    assert [item.asset for item in observed] == list(Asset.tradables())
+    assert all(item.metric == "price.last" for item in observed)
+
+
 async def test_scheduler_records_provider_failures_without_raising(monkeypatch):
     from crypto_intel import scheduler
     from crypto_intel.history import backfill

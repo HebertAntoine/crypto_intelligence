@@ -13,7 +13,9 @@ capabilities:
   derivatives.liquidations: [coinglass]        # cle requise
   options.dvol:          [deribit_volatility]
 
-  etf.flows:           [etf_csv, coinglass_etf, sosovalue, farside]
+  # Prefer a current source. Manual CSV remains a last-resort production
+  # import and refuses example/fixture/mock/sample/test filenames.
+  etf.flows:           [farside, coinglass_etf, sosovalue, etf_csv]
 
   onchain.btc:         [blockchain_info, blockchair_btc]
   onchain.eth:         [blockchair_eth, etherscan]
