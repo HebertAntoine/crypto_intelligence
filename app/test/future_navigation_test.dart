@@ -63,7 +63,7 @@ void main() {
       expect(find.text('Graphique'), findsOneWidget);
       expect(find.text('Bitcoin'), findsOneWidget);
       expect(
-        find.text('EST-CE UNE BONNE OPPORTUNITÉ D’ACHAT MAINTENANT ?'),
+        find.text('EST-CE LE BON MOMENT POUR ACHETER ?'),
         findsOneWidget,
       );
       expect(find.text('CONTEXTE ACTUEL'), findsOneWidget);
@@ -71,6 +71,14 @@ void main() {
         expect(find.byKey(ValueKey('decision-reason-$index')), findsOneWidget);
       }
 
+      final firstReasonEmoji = tester.widget<Text>(find.text('🏛️').first);
+      expect(
+        firstReasonEmoji.style?.fontFamilyFallback,
+        contains('Apple Color Emoji'),
+      );
+
+      await tester.tap(find.byKey(const ValueKey('decision-horizon')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('horizon-24h')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('decision-reason-6')), findsOneWidget);
@@ -79,7 +87,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Ethereum'), findsOneWidget);
       expect(
-        find.text('EST-CE UNE BONNE OPPORTUNITÉ D’ACHAT MAINTENANT ?'),
+        find.text('EST-CE LE BON MOMENT POUR ACHETER ?'),
         findsOneWidget,
       );
 

@@ -11,6 +11,12 @@ import '../theme/app_theme.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
 
+const _emojiFontFallback = <String>[
+  'Apple Color Emoji',
+  'Segoe UI Emoji',
+  'Noto Color Emoji',
+];
+
 class FutureAnalysisScreen extends StatefulWidget {
   final ApiClient client;
   final LivePriceSource? livePrices;
@@ -96,6 +102,87 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
 
   void _reload() => setState(() => _future = _load());
 
+  Future<void> _chooseHorizon() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF081727),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 26),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Choisir l’horizon',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 16),
+              _HorizonSelector(
+                selected: _horizon,
+                onSelected: (value) => Navigator.of(sheetContext).pop(value),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected != null) _selectHorizon(selected);
+  }
+
+  Future<void> _showReasonDetails(
+    FutureDecisionRead decision,
+    _FutureBundle bundle,
+  ) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: const Color(0xFF061525),
+        builder: (sheetContext) {
+          final reasons = _decisionReasons(decision, bundle);
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: .72,
+            maxChildSize: .92,
+            builder: (context, controller) => SafeArea(
+              top: false,
+              child: ListView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Détails des facteurs',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Fermer',
+                        onPressed: () => Navigator.of(sheetContext).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  for (var index = 0; index < reasons.length; index++) ...[
+                    _ReasonRow(index: index, reason: reasons[index]),
+                    if (index < reasons.length - 1)
+                      const Divider(height: 1, color: Color(0xFF1D3853)),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
     return _FutureVisualFrame(
@@ -138,15 +225,18 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   asOf: decision.asOf,
                   market: bundle.market?.marketData,
                 ),
-                const SizedBox(height: 12),
-                _HorizonSelector(
-                  selected: _horizon,
-                  onSelected: _selectHorizon,
+                const SizedBox(height: 16),
+                _DecisionCard(
+                  decision: decision,
+                  horizon: _horizon,
+                  onHorizonTap: _chooseHorizon,
                 ),
                 const SizedBox(height: 14),
-                _DecisionCard(decision: decision, horizon: _horizon),
-                const SizedBox(height: 14),
-                _WhyDecisionCard(decision: decision, bundle: bundle),
+                _WhyDecisionCard(
+                  decision: decision,
+                  bundle: bundle,
+                  onSeeAll: () => _showReasonDetails(decision, bundle),
+                ),
                 const SizedBox(height: 14),
                 _ChangeAndRiskSection(decision: decision),
                 const SizedBox(height: 14),
@@ -360,105 +450,120 @@ class _AssetHeader extends StatelessWidget {
           final unit = tick != null ? 'EUR' : market?.displayUnit;
           final change = tick?.change24hPct ?? market?.change24hPct;
           final isLive = tick != null && connection == LivePriceConnection.live;
-          return Row(
+          return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _assetName(asset),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        height: 1,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -.7,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '$asset · ${_assetName(asset)}',
-                      style: const TextStyle(
-                        color: mobileMuted,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      _priceLabel(price, unit),
-                      key: ValueKey('asset-price-$asset'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        height: 1,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: .4,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Row(
+              Row(
+                children: [
+                  CryptoLogo(asset: asset, size: 68),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _changeLabel(change),
-                          style: TextStyle(
-                            color: change == null
-                                ? mobileMuted
-                                : change >= 0
-                                    ? AppColors.measured
-                                    : AppColors.bad,
-                            fontSize: 19,
+                          _assetName(asset),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 30,
                             height: 1,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -.7,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          '(24 h)',
-                          style: TextStyle(color: mobileMuted, fontSize: 12),
+                        const SizedBox(height: 6),
+                        Text(
+                          asset,
+                          style: const TextStyle(
+                            color: mobileMuted,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  CryptoLogo(asset: asset, size: 62),
-                  const SizedBox(height: 7),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Container(
-                        width: 8,
-                        height: 8,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 7,
+                        ),
                         decoration: BoxDecoration(
-                          color:
-                              isLive ? const Color(0xFF55E592) : AppColors.warn,
-                          shape: BoxShape.circle,
+                          color: const Color(0xB9050B13),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                color: isLive
+                                    ? const Color(0xFF55E592)
+                                    : AppColors.warn,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              isLive ? 'Live' : 'Analyse',
+                              style: const TextStyle(
+                                color: Color(0xFFEAF2FF),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(height: 5),
                       Text(
-                        isLive ? 'Live' : 'Analyse',
+                        'MAJ ${_dateCompact(asOf)}',
                         style: const TextStyle(
-                          color: Color(0xFFEAF2FF),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                          color: mobileMuted,
+                          fontSize: 9.5,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 3),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Text(
+                _priceLabel(price, unit),
+                key: ValueKey('asset-price-$asset'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: .4,
+                ),
+              ),
+              const SizedBox(height: 9),
+              Row(
+                children: [
                   Text(
-                    'MAJ ${_dateCompact(asOf)}',
-                    style: const TextStyle(
-                      color: mobileMuted,
-                      fontSize: 9.5,
+                    _changeLabel(change),
+                    style: TextStyle(
+                      color: change == null
+                          ? mobileMuted
+                          : change >= 0
+                              ? AppColors.measured
+                              : AppColors.bad,
+                      fontSize: 19,
+                      height: 1,
+                      fontWeight: FontWeight.w800,
                     ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    '(24 h)',
+                    style: TextStyle(color: mobileMuted, fontSize: 12),
                   ),
                 ],
               ),
@@ -471,8 +576,13 @@ class _AssetHeader extends StatelessWidget {
 class _DecisionCard extends StatelessWidget {
   final FutureDecisionRead decision;
   final String horizon;
+  final VoidCallback onHorizonTap;
 
-  const _DecisionCard({required this.decision, required this.horizon});
+  const _DecisionCard({
+    required this.decision,
+    required this.horizon,
+    required this.onHorizonTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -531,7 +641,7 @@ class _DecisionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'EST-CE UNE BONNE OPPORTUNITÉ D’ACHAT MAINTENANT ?',
+                    'EST-CE LE BON MOMENT POUR ACHETER ?',
                     style: TextStyle(
                       color: Color(0xFFE7F0FF),
                       fontSize: 12.5,
@@ -586,10 +696,12 @@ class _DecisionCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: _DecisionMetric(
+                          key: const ValueKey('decision-horizon'),
                           icon: Icons.schedule_rounded,
                           label: 'Horizon',
                           value: _horizonLongLabel(horizon),
                           tone: mobileBlue,
+                          onTap: onHorizonTap,
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -627,56 +739,66 @@ class _DecisionMetric extends StatelessWidget {
   final String label;
   final String value;
   final Color tone;
+  final VoidCallback? onTap;
 
   const _DecisionMetric({
+    super.key,
     required this.icon,
     required this.label,
     required this.value,
     required this.tone,
+    this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xC20A1726),
+  Widget build(BuildContext context) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF314861)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: tone, size: 19),
-            const SizedBox(width: 5),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: mobileMuted, fontSize: 9),
-                  ),
-                  const SizedBox(height: 2),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: tone,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          child: Container(
+            height: 64,
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xC20A1726),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF314861)),
             ),
-          ],
+            child: Row(
+              children: [
+                Icon(icon, color: tone, size: 19),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: mobileMuted, fontSize: 9),
+                      ),
+                      const SizedBox(height: 2),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          value,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: tone,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
 }
@@ -684,8 +806,13 @@ class _DecisionMetric extends StatelessWidget {
 class _WhyDecisionCard extends StatelessWidget {
   final FutureDecisionRead decision;
   final _FutureBundle bundle;
+  final VoidCallback onSeeAll;
 
-  const _WhyDecisionCard({required this.decision, required this.bundle});
+  const _WhyDecisionCard({
+    required this.decision,
+    required this.bundle,
+    required this.onSeeAll,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -707,10 +834,20 @@ class _WhyDecisionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFFBFD9F7),
-                size: 25,
+              TextButton(
+                onPressed: onSeeAll,
+                style: TextButton.styleFrom(
+                  foregroundColor: mobileBlue,
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  minimumSize: const Size(0, 36),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Voir tout'),
+                    Icon(Icons.chevron_right_rounded, size: 20),
+                  ],
+                ),
               ),
             ],
           ),
@@ -774,7 +911,11 @@ class _ReasonRow extends StatelessWidget {
             child: Text(
               reason.emoji,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 23, height: 1.2),
+              style: const TextStyle(
+                fontSize: 23,
+                height: 1.2,
+                fontFamilyFallback: _emojiFontFallback,
+              ),
             ),
           ),
           const SizedBox(width: 9),
@@ -911,7 +1052,13 @@ class _SignalListCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(icon, style: const TextStyle(fontSize: 18)),
+                Text(
+                  icon,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontFamilyFallback: _emojiFontFallback,
+                  ),
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -979,48 +1126,86 @@ class _SignalListCard extends StatelessWidget {
       );
 }
 
-class _UpcomingEventsCard extends StatelessWidget {
+class _UpcomingEventsCard extends StatefulWidget {
   final List<FutureEventRead> events;
 
   const _UpcomingEventsCard({required this.events});
 
   @override
-  Widget build(BuildContext context) => GlassPanel(
-        borderColor: const Color(0xFF245E90),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Text('🗓️', style: TextStyle(fontSize: 19)),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Ce qui arrive',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
+  State<_UpcomingEventsCard> createState() => _UpcomingEventsCardState();
+}
+
+class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
+  var _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayed =
+        _expanded ? widget.events : widget.events.take(4).toList();
+    return GlassPanel(
+      borderColor: const Color(0xFF245E90),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                '🗓️',
+                style: TextStyle(
+                  fontSize: 19,
+                  fontFamilyFallback: _emojiFontFallback,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Ce qui arrive',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (events.isEmpty)
-              const Text(
-                'Aucun événement sourcé dans les 30 prochains jours.',
-                style: TextStyle(color: mobileMuted),
-              )
-            else
-              for (final event in events.take(4)) ...[
-                _UpcomingEventRow(event: event),
-                if (event != events.take(4).last)
-                  const Divider(height: 1, color: Color(0xFF1D3853)),
-              ],
-          ],
-        ),
-      );
+              ),
+              if (widget.events.length > 4)
+                TextButton(
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                  style: TextButton.styleFrom(
+                    foregroundColor: mobileBlue,
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    minimumSize: const Size(0, 36),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_expanded ? 'Réduire' : 'Voir tout'),
+                      Icon(
+                        _expanded
+                            ? Icons.expand_less_rounded
+                            : Icons.chevron_right_rounded,
+                        size: 19,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (widget.events.isEmpty)
+            const Text(
+              'Aucun événement sourcé dans les 30 prochains jours.',
+              style: TextStyle(color: mobileMuted),
+            )
+          else
+            for (var index = 0; index < displayed.length; index++) ...[
+              _UpcomingEventRow(event: displayed[index]),
+              if (index < displayed.length - 1)
+                const Divider(height: 1, color: Color(0xFF1D3853)),
+            ],
+        ],
+      ),
+    );
+  }
 }
 
 class _UpcomingEventRow extends StatelessWidget {
@@ -1107,6 +1292,12 @@ class _UpcomingEventRow extends StatelessWidget {
                 fontWeight: FontWeight.w900,
               ),
             ),
+          ),
+          const SizedBox(width: 2),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: Color(0xFF6FA9E8),
+            size: 17,
           ),
         ],
       ),
@@ -1587,7 +1778,7 @@ List<_DecisionReasonItem> _decisionReasons(
                 : implied.unavailableReason),
     impact: implied?.pricing.contains('EXPENSIVE') == true ? 'HIGH' : 'NORMAL',
     when: 'ACTUEL',
-    emoji: '🌊',
+    emoji: '〰️',
   ));
   return items.take(6).toList();
 }
@@ -1736,7 +1927,7 @@ String _reasonEmoji(String title) {
       value.contains('levier')) {
     return '📊';
   }
-  if (value.contains('volatil') || value.contains('technique')) return '🌊';
+  if (value.contains('volatil') || value.contains('technique')) return '〰️';
   if (value.contains('réglement') || value.contains('regulat')) return '⚖️';
   return '🔎';
 }
