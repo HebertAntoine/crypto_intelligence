@@ -31,6 +31,14 @@ ApiClient _shippedClient() => ApiClient(
     );
 
 void main() {
+  test('the shipped decision exposes reasons and counter-signals', () async {
+    final decision = await _shippedClient().futureDecision('BTC');
+
+    expect(decision.reasons, hasLength(greaterThanOrEqualTo(4)));
+    expect(decision.counterSignals, isNotEmpty);
+    expect(decision.counterSignals.first.explanation, isNotEmpty);
+  });
+
   testWidgets(
     'BTC, ETH, SOL keep their full decision page and Graphique is last',
     (tester) async {
@@ -59,6 +67,13 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('CONTEXTE ACTUEL'), findsOneWidget);
+      for (var index = 1; index <= 6; index++) {
+        expect(find.byKey(ValueKey('decision-reason-$index')), findsOneWidget);
+      }
+
+      await tester.tap(find.byKey(const ValueKey('horizon-24h')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('decision-reason-6')), findsOneWidget);
 
       await tester.tap(find.text('ETH'));
       await tester.pumpAndSettle();
@@ -79,4 +94,28 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('the asset pages do not overflow on a 360 px phone',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: HomeShell(
+          client: _shippedClient(),
+          livePrices: _SilentLivePrices(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('ETH'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SOL'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
 }
