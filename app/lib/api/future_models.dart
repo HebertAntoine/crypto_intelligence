@@ -44,6 +44,25 @@ class FutureReasonRead {
       );
 }
 
+class FutureCounterSignalRead {
+  final String family;
+  final String direction;
+  final String explanation;
+
+  const FutureCounterSignalRead({
+    required this.family,
+    required this.direction,
+    required this.explanation,
+  });
+
+  factory FutureCounterSignalRead.fromJson(Map<String, dynamic> json) =>
+      FutureCounterSignalRead(
+        family: json['family']?.toString() ?? '',
+        direction: json['directional_bias']?.toString() ?? 'NEUTRAL',
+        explanation: json['explanation']?.toString() ?? '',
+      );
+}
+
 class FutureFamilyRead {
   final String id;
   final String label;
@@ -178,6 +197,7 @@ class FutureDecisionRead {
   final bool eventRiskActive;
   final String coverage;
   final List<FutureReasonRead> reasons;
+  final List<FutureCounterSignalRead> counterSignals;
   final List<String> changes;
   final List<FutureFamilyRead> families;
   final List<FutureScenarioRead> scenarios;
@@ -195,6 +215,7 @@ class FutureDecisionRead {
     required this.eventRiskActive,
     required this.coverage,
     required this.reasons,
+    required this.counterSignals,
     required this.changes,
     required this.families,
     required this.scenarios,
@@ -223,6 +244,11 @@ class FutureDecisionRead {
           .whereType<Map>()
           .map((value) =>
               FutureReasonRead.fromJson(Map<String, dynamic>.from(value)))
+          .toList(),
+      counterSignals: (json['counter_signals'] as List? ?? const [])
+          .whereType<Map>()
+          .map((value) => FutureCounterSignalRead.fromJson(
+              Map<String, dynamic>.from(value)))
           .toList(),
       changes: (json['what_could_change_decision'] as List? ?? const [])
           .map((value) => value.toString())

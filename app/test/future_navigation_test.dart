@@ -54,13 +54,19 @@ void main() {
       expect(find.text('SOL'), findsOneWidget);
       expect(find.text('Graphique'), findsOneWidget);
       expect(find.text('Bitcoin'), findsOneWidget);
-      expect(find.text('EST-CE LE BON MOMENT POUR ACHETER ?'), findsOneWidget);
+      expect(
+        find.text('EST-CE UNE BONNE OPPORTUNITÉ D’ACHAT MAINTENANT ?'),
+        findsOneWidget,
+      );
       expect(find.text('CONTEXTE ACTUEL'), findsOneWidget);
 
       await tester.tap(find.text('ETH'));
       await tester.pumpAndSettle();
       expect(find.text('Ethereum'), findsOneWidget);
-      expect(find.text('EST-CE LE BON MOMENT POUR ACHETER ?'), findsOneWidget);
+      expect(
+        find.text('EST-CE UNE BONNE OPPORTUNITÉ D’ACHAT MAINTENANT ?'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('SOL'));
       await tester.pumpAndSettle();
