@@ -94,11 +94,8 @@ void main() {
         findsWidgets,
       );
 
-      final firstReasonEmoji = tester.widget<Text>(find.text('🏛️').first);
-      expect(
-        firstReasonEmoji.style?.fontFamilyFallback,
-        contains('Apple Color Emoji'),
-      );
+      final firstReasonEmoji = tester.widget<Text>(find.text('🏦').first);
+      expect(firstReasonEmoji.style?.fontFamily, 'Apple Color Emoji');
 
       expect(find.byKey(const ValueKey('horizon-24h')), findsOneWidget);
       expect(find.byKey(const ValueKey('horizon-7d')), findsOneWidget);

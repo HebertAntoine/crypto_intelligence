@@ -11,8 +11,8 @@ import '../theme/app_theme.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
 
+const _emojiFontFamily = 'Apple Color Emoji';
 const _emojiFontFallback = <String>[
-  'Apple Color Emoji',
   'Segoe UI Emoji',
   'Noto Color Emoji',
 ];
@@ -647,12 +647,20 @@ class _DecisionCard extends StatelessWidget {
       child: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              visual.asset,
-              key: ValueKey(visual.asset),
-              fit: BoxFit.cover,
-              alignment: Alignment.centerRight,
-              filterQuality: FilterQuality.high,
+            child: Transform.scale(
+              // The supplied visual already contains its luminous frame and
+              // a transparent export margin. Stretching the full artwork,
+              // then cropping only that margin, prevents both the former
+              // nested-card effect and the horizontal crop caused by cover.
+              alignment: const Alignment(0, -.18),
+              scaleX: 1.045,
+              scaleY: 1.155,
+              child: Image.asset(
+                visual.asset,
+                key: ValueKey(visual.asset),
+                fit: BoxFit.fill,
+                filterQuality: FilterQuality.high,
+              ),
             ),
           ),
           Positioned.fill(
@@ -914,127 +922,128 @@ class _ReasonRow extends StatelessWidget {
       onTap: () => _showReasonDetail(context, reason),
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 31,
-            height: 31,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [tone, tone.withValues(alpha: .64)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: tone.withValues(alpha: .26),
-                  blurRadius: 10,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 31,
+              height: 31,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [tone, tone.withValues(alpha: .64)],
                 ),
-              ],
-            ),
-            child: Text(
-              '${index + 1}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 9),
-          SizedBox(
-            width: 30,
-            child: Text(
-              reason.emoji,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 23,
-                height: 1.2,
-                fontFamilyFallback: _emojiFontFallback,
-              ),
-            ),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  reason.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
+                boxShadow: [
+                  BoxShadow(
+                    color: tone.withValues(alpha: .26),
+                    blurRadius: 10,
                   ),
+                ],
+              ),
+              child: Text(
+                '${index + 1}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  reason.description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: mobileMuted,
-                    fontSize: 11.5,
-                    height: 1.28,
-                  ),
+              ),
+            ),
+            const SizedBox(width: 9),
+            SizedBox(
+              width: 30,
+              child: Text(
+                reason.emoji,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 23,
+                  height: 1.2,
+                  fontFamily: _emojiFontFamily,
+                  fontFamilyFallback: _emojiFontFallback,
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 7),
-          Container(
-            constraints: const BoxConstraints(minWidth: 58, maxWidth: 72),
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            decoration: BoxDecoration(
-              color: tone.withValues(alpha: .1),
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(color: tone.withValues(alpha: .34)),
-            ),
-            child: Column(
-              children: [
-                if (reason.when.isNotEmpty)
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    reason.when,
-                    maxLines: 1,
+                    reason.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    reason.description,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: mobileMuted,
+                      fontSize: 11.5,
+                      height: 1.28,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 7),
+            Container(
+              constraints: const BoxConstraints(minWidth: 58, maxWidth: 72),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              decoration: BoxDecoration(
+                color: tone.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: tone.withValues(alpha: .34)),
+              ),
+              child: Column(
+                children: [
+                  if (reason.when.isNotEmpty)
+                    Text(
+                      reason.when,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: tone,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  Text(
+                    _reasonImpactLabel(reason.direction),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _reasonImpactColor(reason.direction),
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    'IMPACT ${reason.impact}',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: tone,
-                      fontSize: 8.5,
+                      fontSize: 7.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                Text(
-                  _reasonImpactLabel(reason.direction),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _reasonImpactColor(reason.direction),
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  'IMPACT ${reason.impact}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: tone,
-                    fontSize: 7.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            size: 18,
-            color: Color(0xFF55749B),
-          ),
-        ],
-      ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: Color(0xFF55749B),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1064,6 +1073,7 @@ void _showReasonDetail(BuildContext context, _DecisionFactor reason) {
                   reason.emoji,
                   style: const TextStyle(
                     fontSize: 26,
+                    fontFamily: _emojiFontFamily,
                     fontFamilyFallback: _emojiFontFallback,
                   ),
                 ),
@@ -1084,10 +1094,12 @@ void _showReasonDetail(BuildContext context, _DecisionFactor reason) {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
               decoration: BoxDecoration(
-                color: _reasonImpactColor(reason.direction).withValues(alpha: .12),
+                color:
+                    _reasonImpactColor(reason.direction).withValues(alpha: .12),
                 borderRadius: BorderRadius.circular(9),
                 border: Border.all(
-                  color: _reasonImpactColor(reason.direction).withValues(alpha: .36),
+                  color: _reasonImpactColor(reason.direction)
+                      .withValues(alpha: .36),
                 ),
               ),
               child: Text(
@@ -1122,7 +1134,8 @@ void _showReasonDetail(BuildContext context, _DecisionFactor reason) {
               body: reason.whyItMatters,
             ),
             if (reason.caveat.isNotEmpty)
-              _ReasonDetailBlock(title: '⚠️ À GARDER EN TÊTE', body: reason.caveat),
+              _ReasonDetailBlock(
+                  title: '⚠️ À GARDER EN TÊTE', body: reason.caveat),
             _ReasonDetailBlock(
               title: '📈 CE QUE ÇA PEUT ENGENDRER',
               body: reason.consequence,
@@ -1201,32 +1214,32 @@ class _ReasonDetailBlock extends StatelessWidget {
     // there. Nothing is rendered rather than an empty block.
     if (body.trim().isEmpty) return const SizedBox.shrink();
     return Padding(
-        padding: const EdgeInsets.only(top: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: mobileMuted.withValues(alpha: .85),
-                fontSize: 10.5,
-                letterSpacing: .9,
-                fontWeight: FontWeight.w800,
-              ),
+      padding: const EdgeInsets.only(top: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: mobileMuted.withValues(alpha: .85),
+              fontSize: 10.5,
+              letterSpacing: .9,
+              fontWeight: FontWeight.w800,
             ),
-            const SizedBox(height: 6),
-            Text(
-              body,
-              style: TextStyle(
-                color: muted ? const Color(0xFF8FA4BD) : const Color(0xFFE6EEFA),
-                fontSize: 13.5,
-                height: 1.42,
-                fontStyle: muted ? FontStyle.italic : FontStyle.normal,
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            body,
+            style: TextStyle(
+              color: muted ? const Color(0xFF8FA4BD) : const Color(0xFFE6EEFA),
+              fontSize: 13.5,
+              height: 1.42,
+              fontStyle: muted ? FontStyle.italic : FontStyle.normal,
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1242,9 +1255,8 @@ String? _coherenceNote(FutureDecisionRead decision) {
 
   if (decision.decision == 'WAIT' && decision.eventRiskActive) {
     final event = decision.nextEvent?.title;
-    final trigger = event == null
-        ? 'un événement majeur non encore publié'
-        : '« $event »';
+    final trigger =
+        event == null ? 'un événement majeur non encore publié' : '« $event »';
     if (bullish) {
       return 'La lecture de fond reste haussière, mais $trigger tombe dans les '
           '$horizon et son issue n’est pas connue : l’analyse préfère ne pas '
@@ -1432,6 +1444,7 @@ class _SignalListCard extends StatelessWidget {
                   icon,
                   style: const TextStyle(
                     fontSize: 18,
+                    fontFamily: _emojiFontFamily,
                     fontFamilyFallback: _emojiFontFallback,
                   ),
                 ),
@@ -1524,10 +1537,10 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
         final byRank = (rank[right.importance.toUpperCase()] ?? 0)
             .compareTo(rank[left.importance.toUpperCase()] ?? 0);
         if (byRank != 0) return byRank;
-        return (left.countdownSeconds ?? 0).compareTo(right.countdownSeconds ?? 0);
+        return (left.countdownSeconds ?? 0)
+            .compareTo(right.countdownSeconds ?? 0);
       });
-    final displayed =
-        _expanded ? widget.events : byImportance.take(3).toList();
+    final displayed = _expanded ? widget.events : byImportance.take(3).toList();
     return GlassPanel(
       borderColor: const Color(0xFF245E90),
       child: Column(
@@ -1539,6 +1552,7 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
                 '🗓️',
                 style: TextStyle(
                   fontSize: 19,
+                  fontFamily: _emojiFontFamily,
                   fontFamilyFallback: _emojiFontFallback,
                 ),
               ),
@@ -1731,6 +1745,7 @@ Future<void> _showEventDetails(
                     '🗓️',
                     style: TextStyle(
                       fontSize: 24,
+                      fontFamily: _emojiFontFamily,
                       fontFamilyFallback: _emojiFontFallback,
                     ),
                   ),
@@ -2458,7 +2473,8 @@ String _frenchifyEventNames(String text) {
   return result;
 }
 
-String _importanceImpact(String importance) => switch (importance.toUpperCase()) {
+String _importanceImpact(String importance) =>
+    switch (importance.toUpperCase()) {
       'CRITICAL' => 'TRÈS ÉLEVÉ',
       'HIGH' => 'ÉLEVÉ',
       'MEDIUM' => 'MODÉRÉ',
@@ -2499,16 +2515,16 @@ _TopicGuidance _topicGuidance(String title) {
       value.contains('liquidité')) {
     return const _TopicGuidance(
       'Des taux plus élevés rendent le crédit plus cher, ce qui réduit la '
-      'liquidité disponible, donc l’appétit pour les actifs risqués, et peut '
-      'peser sur les cryptomonnaies.',
+          'liquidité disponible, donc l’appétit pour les actifs risqués, et peut '
+          'peser sur les cryptomonnaies.',
       'Le sens dépend de l’écart avec ce qui était déjà anticipé, pas de la '
-      'décision elle-même.',
+          'décision elle-même.',
     );
   }
   if (value.contains('baleine') || value.contains('whale')) {
     return const _TopicGuidance(
       'Davantage de crypto disponible sur les plateformes d’échange peut '
-      'augmenter la pression vendeuse.',
+          'augmenter la pression vendeuse.',
       'Un transfert ne signifie pas automatiquement qu’une vente aura lieu.',
     );
   }
@@ -2517,9 +2533,9 @@ _TopicGuidance _topicGuidance(String title) {
       value.contains('institution')) {
     return const _TopicGuidance(
       'Une demande institutionnelle plus faible réduit une source importante '
-      'd’achat régulier.',
+          'd’achat régulier.',
       'Les flux sont publiés avec un jour de décalage : ils décrivent les '
-      'séances passées.',
+          'séances passées.',
     );
   }
   if (value.contains('dériv') ||
@@ -2528,7 +2544,7 @@ _TopicGuidance _topicGuidance(String title) {
       value.contains('intérêt ouvert')) {
     return const _TopicGuidance(
       'Quand les positions à levier se ferment pendant que le prix recule, '
-      'des acheteurs abandonnent : cela confirme une faiblesse à court terme.',
+          'des acheteurs abandonnent : cela confirme une faiblesse à court terme.',
       'Le levier amplifie les mouvements dans les deux sens.',
     );
   }
@@ -2537,7 +2553,7 @@ _TopicGuidance _topicGuidance(String title) {
       value.contains('bollinger')) {
     return const _TopicGuidance(
       'Une période de faible volatilité précède parfois un mouvement beaucoup '
-      'plus important.',
+          'plus important.',
       'Cette lecture n’indique jamais la direction du mouvement à venir.',
     );
   }
@@ -2650,7 +2666,9 @@ String? _signalTitle(FutureFamilyRead family) {
   switch (family.id) {
     case 'flows_whales':
       if (summary.contains('inversé') || summary.contains('sorties')) {
-        return bearish ? 'Sorties nettes des ETF' : 'Flux ETF en train de s’inverser';
+        return bearish
+            ? 'Sorties nettes des ETF'
+            : 'Flux ETF en train de s’inverser';
       }
       return bearish ? 'Sorties nettes des ETF' : 'Entrées nettes sur les ETF';
     case 'positioning_derivatives':
@@ -2660,7 +2678,9 @@ String? _signalTitle(FutureFamilyRead family) {
       return 'Positionnement sur les dérivés';
     case 'technical_volatility':
       if (summary.contains('compression')) return 'Compression de Bollinger';
-      return bearish ? 'Tendance court terme fragile' : 'Tendance court terme porteuse';
+      return bearish
+          ? 'Tendance court terme fragile'
+          : 'Tendance court terme porteuse';
     case 'catalysts_regulation':
       return 'Contexte réglementaire';
     case 'macro_liquidity':
@@ -2706,7 +2726,8 @@ List<_DecisionFactor> _decisionFactors(
       scheduledAt: event.scheduledAt,
       marketExpectation: decision.marketExpectation,
       upsideCase: 'Une issue plus favorable qu’anticipé peut soutenir $asset.',
-      downsideCase: 'Une issue moins favorable qu’anticipé peut peser sur $asset.',
+      downsideCase:
+          'Une issue moins favorable qu’anticipé peut peser sur $asset.',
       whyItMatters: guidance.why,
       caveat: guidance.caveat,
       consequence: 'Mouvement possible dans les deux sens sur $horizon; '
@@ -2774,7 +2795,8 @@ double _contribution(_DecisionFactor factor, FutureDecisionRead decision) {
     };
     // Closer means more decisive: a catalyst at the far edge of the window has
     // most of the horizon before it, not after it.
-    final proximity = seconds == null ? 0.5 : 1.0 - (seconds / window).clamp(0.0, 1.0);
+    final proximity =
+        seconds == null ? 0.5 : 1.0 - (seconds / window).clamp(0.0, 1.0);
     score *= 0.6 + 0.4 * proximity;
     // Unresolved outcome is itself a contribution: it is what makes the
     // decision fragile, even though it points neither way.
@@ -2807,9 +2829,11 @@ String _signalConsequence(
         'direction actuellement incertaine.';
   }
   return switch (family.direction?.toUpperCase()) {
-    'STRONGLY_BULLISH' || 'BULLISH' =>
+    'STRONGLY_BULLISH' ||
+    'BULLISH' =>
       'Soutien à la hausse pour $asset sur $horizon.',
-    'BEARISH' || 'STRONGLY_BEARISH' =>
+    'BEARISH' ||
+    'STRONGLY_BEARISH' =>
       'Pression à la baisse pour $asset sur $horizon.',
     _ => 'Pas d’effet directionnel mesuré sur $horizon.',
   };
@@ -2994,7 +3018,8 @@ String _confidenceLevelLabel(double? value) {
 ///
 /// The previous badge reused the event-importance scale (CRITIQUE/ÉLEVÉ), which
 /// answered "how big" under a label that promised "which way".
-String _reasonImpactLabel(String? direction) => switch (direction?.toUpperCase()) {
+String _reasonImpactLabel(String? direction) =>
+    switch (direction?.toUpperCase()) {
       'STRONGLY_BULLISH' => 'FORTEMENT POSITIF',
       'BULLISH' => 'POSITIF',
       'BEARISH' => 'NÉGATIF',
@@ -3003,7 +3028,8 @@ String _reasonImpactLabel(String? direction) => switch (direction?.toUpperCase()
       _ => 'DIRECTION INCONNUE',
     };
 
-Color _reasonImpactColor(String? direction) => switch (direction?.toUpperCase()) {
+Color _reasonImpactColor(String? direction) =>
+    switch (direction?.toUpperCase()) {
       'STRONGLY_BULLISH' || 'BULLISH' => const Color(0xFF55DD8B),
       'BEARISH' || 'STRONGLY_BEARISH' => const Color(0xFFFF6676),
       'NEUTRAL' => const Color(0xFF94A8C2),
@@ -3043,7 +3069,7 @@ String _reasonEmoji(String title) {
       value.contains('pib') ||
       value.contains('gdp') ||
       value.contains('liquidité')) {
-    return '🏛️';
+    return '🏦';
   }
   if (value.contains('inflation') || value.contains('cpi')) return '📉';
   if (value.contains('revenus') || value.contains('emploi')) return '👥';
@@ -3057,9 +3083,9 @@ String _reasonEmoji(String title) {
   if (value.contains('dériv') ||
       value.contains('position') ||
       value.contains('levier')) {
-    return '📊';
+    return '🪙';
   }
-  if (value.contains('volatil') || value.contains('technique')) return '〰️';
+  if (value.contains('volatil') || value.contains('technique')) return '📊';
   if (value.contains('réglement') || value.contains('regulat')) return '⚖️';
   return '🔎';
 }
@@ -3141,7 +3167,6 @@ String _dateCompact(DateTime? value) {
       '${local.hour.toString().padLeft(2, '0')}:'
       '${local.minute.toString().padLeft(2, '0')}';
 }
-
 
 String _monthLabel(DateTime? value) {
   const months = [
