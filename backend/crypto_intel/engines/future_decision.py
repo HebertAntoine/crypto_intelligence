@@ -367,10 +367,42 @@ class EventRiskEngine:
         )
 
 
+def _delay_phrase(event: FutureEvent, now: datetime) -> str:
+    """Say in French, from real timestamps, when the event lands."""
+
+    if event.scheduled_at is None:
+        return "déjà publié"
+    delta = event.scheduled_at - now
+    hours = delta.total_seconds() / 3600
+    if hours < 0:
+        return "déjà publié"
+    if hours < 24:
+        return f"dans {int(round(hours))} h"
+    days = hours / 24
+    return f"dans {days:.1f} j".replace(".", ",")
+
+
 class EventRiskGate:
-    """Fail closed before a high-amplitude Tier-1 event inside 48 hours."""
+    """Fail closed while an unresolved Tier-1 event still sits in the horizon.
+
+    The floor stays at 48 hours, which is what an horizon-less caller gets.
+    When a decision horizon is supplied the window widens to that horizon:
+    a BUY/SELL claim that spans an unresolved, unpriced CRITICAL event is a
+    claim about an outcome the engine cannot know, whatever its direction.
+    """
 
     window = timedelta(hours=48)
+
+    _HORIZON_WINDOW = {
+        DecisionHorizon.H24: timedelta(hours=48),
+        DecisionHorizon.D7: timedelta(days=7),
+        DecisionHorizon.D30: timedelta(days=30),
+    }
+
+    def _window_for(self, horizon: "DecisionHorizon | None") -> timedelta:
+        if horizon is None:
+            return self.window
+        return max(self.window, self._HORIZON_WINDOW[horizon])
 
     @staticmethod
     def _uncertain(event: FutureEvent, analysis_uncertainty: float | None) -> bool:
@@ -389,9 +421,11 @@ class EventRiskGate:
         as_of: datetime | None = None,
         analysis_uncertainty: float | None = None,
         favorable_in_all_material_scenarios: bool = False,
+        horizon: DecisionHorizon | None = None,
     ) -> EventRiskGateResult:
         now = as_of or datetime.now(UTC)
         now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
+        window = self._window_for(horizon)
         material: list[FutureEvent] = []
         for event in events:
             if event.importance is not EventImportance.CRITICAL:
@@ -402,12 +436,12 @@ class EventRiskGate:
                 status in {FutureEventStatus.ACTIVE, FutureEventStatus.SURPRISE}
                 or (
                     status in {FutureEventStatus.RELEASED, FutureEventStatus.DECAYING}
-                    and timedelta(0) <= now - released_at <= self.window
+                    and timedelta(0) <= now - released_at <= window
                 )
             )
             imminent = (
                 event.scheduled_at is not None
-                and timedelta(0) <= event.scheduled_at - now <= self.window
+                and timedelta(0) <= event.scheduled_at - now <= window
             )
             high_amplitude = event.magnitude_effect in {
                 ExpectedMovement.HIGH,
@@ -425,8 +459,9 @@ class EventRiskGate:
 
         reasons = [
             (
-                f"{event.title}: événement critique à forte amplitude dans moins de 48 h; "
-                "distribution incertaine ou non disponible."
+                f"{event.title}: événement critique à forte amplitude "
+                f"{_delay_phrase(event, now)}, à l'intérieur de l'horizon de décision; "
+                "issue non résolue et non valorisée par le marché."
             )
             for event in material
         ]
@@ -713,6 +748,7 @@ class FutureDecisionEngine:
             event_list,
             as_of=now,
             analysis_uncertainty=analysis_uncertainty,
+            horizon=horizon,
         )
         event_risk = EventRiskEngine().assess(
             event_list,
@@ -809,9 +845,16 @@ class FutureDecisionEngine:
         else:
             action = DecisionAction.WAIT
 
+        # The family that actually carried the direction is listed first. Ranking
+        # by priority alone put a NEUTRAL family at the top, so the screen showed
+        # as its main reason the one family that had not voted.
         ordered = sorted(
             available,
-            key=lambda item: (FAMILY_PRIORITY[item.family], -item.confidence),
+            key=lambda item: (
+                0 if dominant is not None and item.family is dominant.family else 1,
+                FAMILY_PRIORITY[item.family],
+                -item.confidence,
+            ),
         )
         reasons: list[dict[str, Any]] = []
         if quality_blocks:

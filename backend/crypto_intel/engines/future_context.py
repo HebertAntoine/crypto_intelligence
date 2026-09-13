@@ -108,6 +108,46 @@ def _direction(value: float | None) -> DirectionalBias:
     return DirectionalBias.NEUTRAL
 
 
+_INSTITUTIONAL_STATE_FR = {
+    "STRONG_INFLOW": "fortes entrées nettes",
+    "INFLOW": "entrées nettes",
+    "NEUTRAL": "sans direction nette",
+    "OUTFLOW": "sorties nettes",
+    "STRONG_OUTFLOW": "fortes sorties nettes",
+}
+
+
+def _musd(value: Any) -> str:
+    """Format a millions-of-dollars figure for display, signed, one decimal."""
+
+    if value is None:
+        return "n/d"
+    return f"{float(value):+,.1f} M$".replace(",", " ").replace(".", ",")
+
+
+def _institutional_summary(institutional_flow: Any, state: str) -> str:
+    """Describe the flow regime and the recent window without mixing them.
+
+    The regime is measured over its own number of sessions; quoting a
+    five-session cumulative next to it made a positive regime read as if it
+    were negative. Each figure now carries the window it was measured on.
+    """
+
+    sessions = int(getattr(institutional_flow, "regime_sessions", 0) or 0)
+    regime_total = getattr(institutional_flow, "regime_total_musd", None)
+    label = _INSTITUTIONAL_STATE_FR.get(state, state.lower())
+    head = (
+        f"Flux institutionnels: {label} sur {sessions} séances "
+        f"({_musd(regime_total)})"
+        if sessions
+        else f"Flux institutionnels: {label}"
+    )
+    recent = getattr(institutional_flow, "rolling_5_sessions_musd", None)
+    if recent is None or sessions == 5:
+        return head + "."
+    return f"{head}; 5 dernières séances {_musd(recent)}."
+
+
 def _event_direction(events: list[FutureEvent]) -> DirectionalBias | None:
     directed = [
         event for event in events if event.directional_effect is not DirectionalBias.NEUTRAL
@@ -457,9 +497,7 @@ def build_five_family_snapshot(
             ),
             summary=(
                 (
-                    f"Flux institutionnels {institutional_state.lower()}; "
-                    f"cumul 5 séances "
-                    f"{getattr(institutional_flow, 'rolling_5_sessions_musd', None)} M$."
+                    _institutional_summary(institutional_flow, institutional_state)
                     if institutional_usable
                     else "; ".join(str(getattr(item, "detail", "")) for item in flow_components[:2])
                 )

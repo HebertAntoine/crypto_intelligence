@@ -39,6 +39,8 @@ class InstitutionalFlowAnalysis(BaseModel):
     rolling_3_sessions_musd: float | None = None
     rolling_5_sessions_musd: float | None = None
     rolling_20_sessions_musd: float | None = None
+    regime_sessions: int = 0
+    regime_total_musd: float | None = None
     acceleration_musd_per_session: float | None = None
     reversal: bool | None = None
     flow_reversal: FlowReversal = FlowReversal.UNAVAILABLE
@@ -224,6 +226,8 @@ class InstitutionalFlowEngine:
             rolling_3_sessions_musd=_window(values, 3),
             rolling_5_sessions_musd=_window(values, 5),
             rolling_20_sessions_musd=_window(values, 20),
+            regime_sessions=regime_length,
+            regime_total_musd=sum(regime_values),
             acceleration_musd_per_session=acceleration,
             reversal=reversal,
             flow_reversal=flow_reversal,

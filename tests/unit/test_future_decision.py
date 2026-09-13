@@ -247,3 +247,59 @@ def test_zero_confidence_direction_is_not_a_counter_signal() -> None:
 
     assert result.decision is DecisionAction.SELL
     assert result.counter_signals == []
+
+
+def test_gate_window_follows_the_decision_horizon() -> None:
+    """A 74 h event is outside 48 h but inside the 7-day claim it would span."""
+
+    fomc = event(hours=74)
+    assert EventRiskGate().assess([fomc], as_of=NOW).active is False
+    assert (
+        EventRiskGate()
+        .assess([fomc], as_of=NOW, horizon=DecisionHorizon.H24)
+        .active
+        is False
+    )
+    assert (
+        EventRiskGate().assess([fomc], as_of=NOW, horizon=DecisionHorizon.D7).active is True
+    )
+
+
+def test_buy_is_refused_while_an_unpriced_fomc_sits_inside_the_horizon() -> None:
+    """The exact 13/09/2026 case: BUY at 7 d with a CRITICAL FOMC at 74 h."""
+
+    result = FutureDecisionEngine().decide(
+        Asset.BTC,
+        [event(hours=74)],
+        five(technical=DirectionalBias.STRONGLY_BULLISH),
+        horizon=DecisionHorizon.D7,
+        as_of=NOW,
+        analysis_uncertainty=0.8,
+    )
+    assert result.decision is DecisionAction.WAIT
+    assert result.event_risk_gate.active is True
+    assert "horizon de décision" in result.event_risk_gate.reasons[0]
+
+
+def test_same_event_still_allows_a_direction_on_the_24h_horizon() -> None:
+    """Gating 7 d must not silently gate the shorter horizon too."""
+
+    result = FutureDecisionEngine().decide(
+        Asset.BTC,
+        [event(hours=74)],
+        five(technical=DirectionalBias.STRONGLY_BULLISH),
+        horizon=DecisionHorizon.H24,
+        as_of=NOW,
+        analysis_uncertainty=0.8,
+    )
+    assert result.event_risk_gate.active is False
+
+
+def test_gate_reason_carries_a_real_delay_not_a_fixed_48h_string() -> None:
+    reason = (
+        EventRiskGate()
+        .assess([event(hours=74)], as_of=NOW, horizon=DecisionHorizon.D7)
+        .reasons[0]
+    )
+    assert "dans 3,1 j" in reason
+    assert "48 h" not in reason
