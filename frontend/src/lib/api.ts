@@ -162,6 +162,7 @@ export interface FutureEventRead {
   event_type: string;
   scheduled_at: string | null;
   detected_at: string;
+  status: string;
   countdown_seconds: number | null;
   importance: string;
   directional_bias: string;

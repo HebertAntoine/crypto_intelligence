@@ -50,6 +50,34 @@ Quatre niveaux ne sont jamais confondus :
 Chaque conclusion remonte à ses preuves : le bouton **WHY ?** de l'interface
 affiche la source, la valeur d'origine, l'horodatage et la fraîcheur.
 
+## Décision future-first
+
+L'interface principale répond maintenant à « est-ce le bon moment pour prendre
+le risque ? » sur trois horizons (`24h`, `7d`, `30d`). Elle conserve exactement
+cinq familles : macro/liquidité, catalyseurs/réglementation,
+institutionnels/baleines, positionnement/dérivés et technique/volatilité.
+Une famille absente reste `UNAVAILABLE` ; elle ne devient jamais un zéro neutre.
+
+Les événements programmés proviennent des calendriers officiels Fed, BLS, BEA,
+Treasury, CFTC, Chambre et Sénat. Les actions législatives viennent de
+Congress.gov lorsque `CONGRESS_API_KEY` est configurée. Les annonces réseau
+Ethereum et Solana ainsi que les incidents Solana viennent de leurs sources
+officielles. Le calendrier YAML historique n'alimente plus le chemin de
+production.
+
+API additive :
+
+```text
+GET /api/future/BTC?horizon=7d
+GET /api/future/BTC/why?horizon=7d
+GET /api/future/BTC/timeline?days=30
+```
+
+Les probabilités FedWatch ne sont acceptées qu'avec une distribution complète,
+une source et un timestamp. L'adaptateur requiert un endpoint CME licencié via
+`CME_FEDWATCH_API_URL` et `CME_FEDWATCH_API_KEY` ; sans accès, la donnée est
+explicitement indisponible et aucune probabilité n'est inventée.
+
 ---
 
 ## Installation
@@ -190,7 +218,7 @@ config/
 ├── scoring.yaml          pondérations par actif ET par horizon
 ├── thresholds.yaml       seuils d'interprétation (RSI, funding, ETF, fraîcheur…)
 ├── providers.yaml        chaînes de fallback des sources, flux RSS
-└── macro_calendar.yaml   calendrier FOMC / CPI / NFP / PCE
+└── macro_calendar.yaml   compatibilité historique uniquement (pas en production)
 ```
 
 Les pondérations **diffèrent volontairement d'un actif à l'autre** :
@@ -215,6 +243,8 @@ Toutes optionnelles. Sans clé, le provider affiche `UNAVAILABLE — provider no
 | `CRYPTOQUANT_API_KEY` | payante | flux exchange |
 | `NANSEN_API_KEY` / `ARKHAM_API_KEY` | payantes | intelligence on-chain |
 | `COINGLASS_API_KEY` | payante | liquidations agrégées |
+| `WHALE_ALERT_API_KEY` | payante | transferts importants et destinations |
+| `CME_FEDWATCH_API_URL` + `CME_FEDWATCH_API_KEY` | sous licence | distribution FedWatch horodatée |
 
 ### Changer de modèle IA
 
@@ -296,7 +326,7 @@ Aucune logique métier n'est touchée. Remplacer Binance par Kraken = une ligne 
 ## Tests
 
 ```bash
-make test     # 201 tests, hors ligne, sans clé API
+make test     # suite hors ligne, sans clé API
 ```
 
 Ils couvrent notamment :

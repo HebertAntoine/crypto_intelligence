@@ -14,7 +14,7 @@ the UI needs in order to refuse to combine them.
 
 The id is content-addressed, not allocated. It is the hash of a fingerprint of
 the inputs: how many rows each stored series holds and when each one last
-advanced, plus the scheduled macro calendar and a five-minute clock bucket.
+advanced, plus the persisted rich future-event layer and a five-minute clock bucket.
 Two processes reading the same database therefore agree on the id without
 sharing any state, and the id changes exactly when the inputs do.
 
@@ -48,7 +48,7 @@ log = get_logger("engines.analysis_context")
 
 # Bumped whenever the meaning of a snapshot field changes, so a deployed
 # version never serves an id that names a differently-computed analysis.
-ANALYSIS_SCHEMA_VERSION = "2026-09-07.1"
+ANALYSIS_SCHEMA_VERSION = "2026-09-13.1"
 
 # The clock granularity of an analysis. Long enough that the id is stable
 # across the several requests one screen makes; short enough that a macro
@@ -58,9 +58,7 @@ ANALYSIS_BUCKET_SECONDS = 300
 
 def _bucket(now: datetime) -> str:
     epoch = int(now.timestamp())
-    return datetime.fromtimestamp(
-        epoch - epoch % ANALYSIS_BUCKET_SECONDS, tz=UTC
-    ).isoformat()
+    return datetime.fromtimestamp(epoch - epoch % ANALYSIS_BUCKET_SECONDS, tz=UTC).isoformat()
 
 
 def data_fingerprint(asset: Asset) -> dict[str, Any]:
@@ -72,24 +70,14 @@ def data_fingerprint(asset: Asset) -> dict[str, Any]:
     fingerprint adds the clock bucket, and is what the id is computed from.
     """
     from ..db import repo
-    from ..engines.macro import MacroAnalyzer
     from ..history import store
 
-    try:
-        calendar = [
-            [event.kind, str(event.scheduled_at), event.importance]
-            for event in MacroAnalyzer().load_calendar()
-            if not event.is_past
-        ]
-    except (OSError, ValueError) as exc:  # a malformed calendar must not 500
-        log.warning("calendar_fingerprint_failed", error=str(exc))
-        calendar = []
     return {
         "schema": ANALYSIS_SCHEMA_VERSION,
         "asset": asset.value,
         "series": store.series_fingerprint(asset),
         "observations": repo.observation_fingerprint(asset),
-        "calendar": sorted(calendar, key=lambda row: (row[1], row[0])),
+        "future_events": repo.future_event_fingerprint(),
     }
 
 
@@ -105,9 +93,8 @@ def analysis_id_for(fingerprint: dict[str, Any]) -> str:
 
 # --- input families -------------------------------------------------------
 
-def family_states(
-    asset: Asset, now: datetime | None = None
-) -> dict[str, FamilyState]:
+
+def family_states(asset: Asset, now: datetime | None = None) -> dict[str, FamilyState]:
     """Every stored input family, answered four ways from its real observation.
 
     The timestamps come from the store rather than from the engines, because an
@@ -127,12 +114,15 @@ def family_states(
         coverage = store.candle_coverage(asset, timeframe)
         rows = coverage.get("rows", 0)
         return FamilyState(
-            family=family, available=rows > 0, valid=rows >= minimum,
+            family=family,
+            available=rows > 0,
+            valid=rows >= minimum,
             freshness=freshness_for(family, coverage.get("end"), reference),
-            observed_at=coverage.get("end"), source="candle store", points=rows,
+            observed_at=coverage.get("end"),
+            source="candle store",
+            points=rows,
             reason=(
-                "" if rows >= minimum
-                else f"{rows} bougies, moins que les {minimum} nécessaires"
+                "" if rows >= minimum else f"{rows} bougies, moins que les {minimum} nécessaires"
             ),
         )
 
@@ -172,19 +162,27 @@ def family_states(
             entry = derivatives.get("oi.value")
         if entry is None:
             states[family] = FamilyState(
-                family=family, available=False, valid=False,
-                freshness=Freshness.UNAVAILABLE, source=metric,
+                family=family,
+                available=False,
+                valid=False,
+                freshness=Freshness.UNAVAILABLE,
+                source=metric,
                 reason=(
                     "aucune série DVOL n'existe pour cet actif; la volatilité "
                     "repose sur l'ATR réalisé"
-                    if family == "dvol" else "aucune observation stockée"
+                    if family == "dvol"
+                    else "aucune observation stockée"
                 ),
             )
             continue
         states[family] = FamilyState(
-            family=family, available=entry["rows"] > 0, valid=entry["rows"] >= 30,
+            family=family,
+            available=entry["rows"] > 0,
+            valid=entry["rows"] >= 30,
             freshness=freshness_for(family, entry["end"], reference),
-            observed_at=entry["end"], source=metric, points=entry["rows"],
+            observed_at=entry["end"],
+            source=metric,
+            points=entry["rows"],
         )
 
     observations = repo.observation_fingerprint(asset)
@@ -193,36 +191,50 @@ def family_states(
         rows, last = observations.get(key, [0, None])
         observed = datetime.fromisoformat(last) if last else None
         return FamilyState(
-            family=family, available=rows > 0, valid=rows >= minimum,
+            family=family,
+            available=rows > 0,
+            valid=rows >= minimum,
             freshness=freshness_for(family, observed, reference),
-            observed_at=observed, source=source, points=rows,
+            observed_at=observed,
+            source=source,
+            points=rows,
         )
 
     states["etf"] = from_observations("etf", "etf_flows", "Farside Investors, flux par émetteur")
     states["macro"] = from_observations("macro", "observations:macro.", "séries macro FRED/Stooq")
-    states["onchain"] = from_observations("onchain", "observations:onchain.", "fournisseurs on-chain")
+    states["onchain"] = from_observations(
+        "onchain", "observations:onchain.", "fournisseurs on-chain"
+    )
     states["whales"] = FamilyState(
-        family="whales", source="fournisseur on-chain vérifié",
+        family="whales",
+        source="fournisseur on-chain vérifié",
         reason=(
             "aucun fournisseur baleines fiable n'est configuré; suivre les gros "
             "portefeuilles demande un service payant, et rien n'est estimé à la place"
         ),
     )
     states["exchange_flows"] = FamilyState(
-        family="exchange_flows", source="connecteur de flux spot/exchange",
+        family="exchange_flows",
+        source="connecteur de flux spot/exchange",
         reason="aucune série fiable de flux net spot/exchange n'est configurée",
     )
 
     # Cross-asset correlation reads index candles from the macro store; without
     # them the correlation is not stale, it does not exist.
     macro_series = store.macro_coverage()
-    proxies = [entry for name, entry in macro_series.items()
-               if any(token in name.lower() for token in ("nasdaq", "spx", "dxy", "ndx"))]
+    proxies = [
+        entry
+        for name, entry in macro_series.items()
+        if any(token in name.lower() for token in ("nasdaq", "spx", "dxy", "ndx"))
+    ]
     latest = max((entry.get("end") for entry in proxies if entry.get("end")), default=None)
     states["cross_asset"] = FamilyState(
-        family="cross_asset", available=bool(proxies), valid=bool(latest),
+        family="cross_asset",
+        available=bool(proxies),
+        valid=bool(latest),
         freshness=freshness_for("cross_asset", latest, reference),
-        observed_at=latest, source="indices actions et dollar (séries macro)",
+        observed_at=latest,
+        source="indices actions et dollar (séries macro)",
         points=len(proxies),
     )
     return states
@@ -251,6 +263,7 @@ def price_family(market: dict[str, Any] | None, now: datetime | None = None) -> 
 
 
 # --- inputs the engines need ----------------------------------------------
+
 
 class _ReconstructedRegime:
     """Minimal stand-in carrying the same attributes the summary reads."""
@@ -298,15 +311,21 @@ def technical_snapshots(asset: Asset) -> dict[Timeframe, Any]:
             continue
         candles = [
             Candle(
-                timestamp=ts, open=row.open, high=row.high, low=row.low,
-                close=row.close, volume=row.volume,
+                timestamp=ts,
+                open=row.open,
+                high=row.high,
+                low=row.low,
+                close=row.close,
+                volume=row.volume,
             )
             for ts, row in df.tail(400).iterrows()
         ]
         try:
             snapshots[timeframe] = engine.analyze(
                 OHLCVSeries(
-                    asset=asset, timeframe=timeframe, candles=candles,
+                    asset=asset,
+                    timeframe=timeframe,
+                    candles=candles,
                     provenance=Provenance(source="local history", provider="ohlcv_store"),
                 )
             )
@@ -315,7 +334,9 @@ def technical_snapshots(asset: Asset) -> dict[Timeframe, Any]:
     return snapshots
 
 
-def upcoming_macro(asset: Asset, days: int = 14, now: datetime | None = None) -> list[dict[str, Any]]:
+def upcoming_macro(
+    asset: Asset, days: int = 14, now: datetime | None = None
+) -> list[dict[str, Any]]:
     """Scheduled macro events that touch this asset.
 
     Events come from the rich store populated by primary-source collectors. A
@@ -334,29 +355,35 @@ def upcoming_macro(asset: Asset, days: int = 14, now: datetime | None = None) ->
         limit=100,
     )
     for event in events:
-        if event.category not in {
-            FutureEventCategory.MACRO,
-            FutureEventCategory.MONETARY_POLICY,
-        } or event.scheduled_at is None:
+        if (
+            event.category
+            not in {
+                FutureEventCategory.MACRO,
+                FutureEventCategory.MONETARY_POLICY,
+            }
+            or event.scheduled_at is None
+        ):
             continue
         assets = [item.value for item in event.affected_assets]
         scheduled = event.scheduled_at
         hours = (scheduled - reference).total_seconds() / 3600.0
-        out.append({
-            "id": event.id,
-            "kind": event.event_type,
-            "name": event.title,
-            "scheduled_at": scheduled.isoformat(),
-            "importance": event.importance.value,
-            "hours_until": round(hours, 1),
-            "days_until": round(hours / 24.0, 1),
-            "assets": assets,
-            "source": event.source,
-            "source_tier": event.source_tier.value,
-            "source_url": event.source_url,
-            "directional_effect": event.directional_effect.value,
-            "magnitude_effect": event.magnitude_effect.value,
-        })
+        out.append(
+            {
+                "id": event.id,
+                "kind": event.event_type,
+                "name": event.title,
+                "scheduled_at": scheduled.isoformat(),
+                "importance": event.importance.value,
+                "hours_until": round(hours, 1),
+                "days_until": round(hours / 24.0, 1),
+                "assets": assets,
+                "source": event.source,
+                "source_tier": event.source_tier.value,
+                "source_url": event.source_url,
+                "directional_effect": event.directional_effect.value,
+                "magnitude_effect": event.magnitude_effect.value,
+            }
+        )
     out.sort(key=lambda event: event["hours_until"])
     return out[:5]
 
@@ -378,13 +405,16 @@ def breakout_sentence(breakout: Any) -> str:
     bars = getattr(breakout, "bars_since_break", None)
     quand = (
         f"il y a {bars} bougie{'s' if bars and bars > 1 else ''} en 4H"
-        if bars is not None else "récemment"
+        if bars is not None
+        else "récemment"
     )
     if quality is None:
         return f"Mouvement détecté {quand}. Sa qualité ne prédit pas sa suite."
     jugement = (
-        "de bonne facture" if quality >= 60
-        else "de qualité moyenne" if quality >= 40
+        "de bonne facture"
+        if quality >= 60
+        else "de qualité moyenne"
+        if quality >= 40
         else "de qualité limitée"
     )
     return (
@@ -454,47 +484,74 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     measured = len(bullish) + len(bearish)
     if measured:
         structural_score = (len(bullish) - len(bearish)) / measured * 100
-        factors.append(DecisionFactor(
-            id="structure.multi_timeframe", category=Category.STRUCTURE,
-            title="Structures multi-unités contradictoires" if conflict else
-                  f"Structure dominante sur {measured} unité(s)",
-            short_text=conflict or (
-                f"Haussière: {', '.join(bullish) or 'aucune'}; "
-                f"baissière: {', '.join(bearish) or 'aucune'}."
-            ),
-            raw_value={"bullish": bullish, "bearish": bearish,
-                       "contradiction": 1.0 if conflict else 0.0},
-            normalized_value=round(structural_score, 1),
-            polarity=(Polarity.WAIT if conflict else
-                      Polarity.POSITIVE if structural_score > 0 else
-                      Polarity.NEGATIVE if structural_score < 0 else Polarity.NEUTRAL),
-            importance=84, confidence=min(.9, measured / 4),
-            timeframe="1W/1D/4H/1H", source="MarketStructureEngine",
-            as_of=now.isoformat(), freshness="RECENT",
-        ))
+        factors.append(
+            DecisionFactor(
+                id="structure.multi_timeframe",
+                category=Category.STRUCTURE,
+                title="Structures multi-unités contradictoires"
+                if conflict
+                else f"Structure dominante sur {measured} unité(s)",
+                short_text=conflict
+                or (
+                    f"Haussière: {', '.join(bullish) or 'aucune'}; "
+                    f"baissière: {', '.join(bearish) or 'aucune'}."
+                ),
+                raw_value={
+                    "bullish": bullish,
+                    "bearish": bearish,
+                    "contradiction": 1.0 if conflict else 0.0,
+                },
+                normalized_value=round(structural_score, 1),
+                polarity=(
+                    Polarity.WAIT
+                    if conflict
+                    else Polarity.POSITIVE
+                    if structural_score > 0
+                    else Polarity.NEGATIVE
+                    if structural_score < 0
+                    else Polarity.NEUTRAL
+                ),
+                importance=84,
+                confidence=min(0.9, measured / 4),
+                timeframe="1W/1D/4H/1H",
+                source="MarketStructureEngine",
+                as_of=now.isoformat(),
+                freshness="RECENT",
+            )
+        )
 
     breakout = BreakoutQualityEngine().assess(asset, Timeframe.H4)
     breakout_state = breakout.state.value
     if breakout_state != "NONE":
         failed = breakout_state in ("FAILED_BREAKOUT", "FAKEOUT", "REINTEGRATION")
-        factors.append(DecisionFactor(
-            id="structure.breakout", category=Category.STRUCTURE,
-            # `interpretation` is the engine's English sentence. It stays in
-            # raw_value for the evidence screen; the page receives French.
-            title=breakout_title(breakout_state, breakout.direction),
-            short_text=breakout_sentence(breakout),
-            raw_value={"state": breakout_state, "direction": breakout.direction,
-                       "quality": breakout.quality_score,
-                       "recent_change": 1.0 if breakout.bars_since_break is not None
-                       and breakout.bars_since_break <= 3 else 0.3},
-            normalized_value=(
-                -(breakout.quality_score or 50) if failed
-                else (breakout.quality_score or 50)
-            ),
-            polarity=Polarity.NEGATIVE if failed else Polarity.WAIT,
-            importance=76, confidence=.72, timeframe="4H",
-            source="BreakoutQualityEngine", as_of=now.isoformat(), freshness="RECENT",
-        ))
+        factors.append(
+            DecisionFactor(
+                id="structure.breakout",
+                category=Category.STRUCTURE,
+                # `interpretation` is the engine's English sentence. It stays in
+                # raw_value for the evidence screen; the page receives French.
+                title=breakout_title(breakout_state, breakout.direction),
+                short_text=breakout_sentence(breakout),
+                raw_value={
+                    "state": breakout_state,
+                    "direction": breakout.direction,
+                    "quality": breakout.quality_score,
+                    "recent_change": 1.0
+                    if breakout.bars_since_break is not None and breakout.bars_since_break <= 3
+                    else 0.3,
+                },
+                normalized_value=(
+                    -(breakout.quality_score or 50) if failed else (breakout.quality_score or 50)
+                ),
+                polarity=Polarity.NEGATIVE if failed else Polarity.WAIT,
+                importance=76,
+                confidence=0.72,
+                timeframe="4H",
+                source="BreakoutQualityEngine",
+                as_of=now.isoformat(),
+                freshness="RECENT",
+            )
+        )
 
     # The pattern engine names its states in English enums. They belong in
     # raw_value for the evidence screen; the sentence the page reads gets
@@ -510,31 +567,41 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     if promoted_patterns:
         pattern = promoted_patterns[0]
         gate_decision = next(
-            decision for decision in pattern_gate["decisions"]
+            decision
+            for decision in pattern_gate["decisions"]
             if decision["pattern"] == pattern.name and decision["promoted"]
         )
-        factors.append(DecisionFactor(
-            id="structure.pattern", category=Category.STRUCTURE,
-            title=f"Figure reconnue: {pattern.name}",
-            short_text=(
-                f"Reconnaissance {pattern.recognition_confidence:.0f}/100, "
-                f"{pattern_state_fr.get(pattern.state.value, 'état indéterminé')}; "
-                f"avantage mesuré séparément : "
-                f"{pattern_edge_fr.get(pattern.edge_state.value, 'non évalué')}. "
-                "La reconnaissance n’est pas une probabilité."
-            ),
-            raw_value={"recognition_confidence": pattern.recognition_confidence,
-                       "state": pattern.state.value,
-                       "edge_state": pattern.edge_state.value,
-                       "independent_agreement": 1.0,
-                       "temporal_iou": gate_decision["temporal_iou"],
-                       "lmw_score": gate_decision["lmw_score"]},
-            normalized_value=pattern.recognition_confidence,
-            polarity=Polarity.WAIT, importance=48, confidence=.7,
-            evidence_level="COMPUTATION", timeframe="4H",
-            source="StructuralPatternConsensus", as_of=pattern.detected_at.isoformat(),
-            freshness="RECENT",
-        ))
+        factors.append(
+            DecisionFactor(
+                id="structure.pattern",
+                category=Category.STRUCTURE,
+                title=f"Figure reconnue: {pattern.name}",
+                short_text=(
+                    f"Reconnaissance {pattern.recognition_confidence:.0f}/100, "
+                    f"{pattern_state_fr.get(pattern.state.value, 'état indéterminé')}; "
+                    f"avantage mesuré séparément : "
+                    f"{pattern_edge_fr.get(pattern.edge_state.value, 'non évalué')}. "
+                    "La reconnaissance n’est pas une probabilité."
+                ),
+                raw_value={
+                    "recognition_confidence": pattern.recognition_confidence,
+                    "state": pattern.state.value,
+                    "edge_state": pattern.edge_state.value,
+                    "independent_agreement": 1.0,
+                    "temporal_iou": gate_decision["temporal_iou"],
+                    "lmw_score": gate_decision["lmw_score"],
+                },
+                normalized_value=pattern.recognition_confidence,
+                polarity=Polarity.WAIT,
+                importance=48,
+                confidence=0.7,
+                evidence_level="COMPUTATION",
+                timeframe="4H",
+                source="StructuralPatternConsensus",
+                as_of=pattern.detected_at.isoformat(),
+                freshness="RECENT",
+            )
+        )
 
     onchain_observations = repo.observations_since(asset, "onchain.", since)
     if _is_synthetic(onchain_observations):
@@ -542,16 +609,26 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     onchain = OnChainAnalyzer().analyze(asset, onchain_observations)
     if onchain.available and abs(onchain.strength) > 12:
         source, observed_at, freshness = latest_meta(onchain_observations, "on-chain provider")
-        factors.append(DecisionFactor(
-            id="onchain.activity", category=Category.ONCHAIN,
-            title="Activité on-chain en amélioration" if onchain.strength > 0
-                  else "Activité on-chain en retrait",
-            short_text="; ".join(onchain.findings[:2]), raw_value=onchain.metrics,
-            normalized_value=onchain.strength,
-            polarity=Polarity.POSITIVE if onchain.strength > 0 else Polarity.NEGATIVE,
-            importance=54, confidence=.65, evidence_level="COMPUTATION",
-            timeframe="7D", source=source, as_of=observed_at, freshness=freshness,
-        ))
+        factors.append(
+            DecisionFactor(
+                id="onchain.activity",
+                category=Category.ONCHAIN,
+                title="Activité on-chain en amélioration"
+                if onchain.strength > 0
+                else "Activité on-chain en retrait",
+                short_text="; ".join(onchain.findings[:2]),
+                raw_value=onchain.metrics,
+                normalized_value=onchain.strength,
+                polarity=Polarity.POSITIVE if onchain.strength > 0 else Polarity.NEGATIVE,
+                importance=54,
+                confidence=0.65,
+                evidence_level="COMPUTATION",
+                timeframe="7D",
+                source=source,
+                as_of=observed_at,
+                freshness=freshness,
+            )
+        )
 
     liquidity_observations = repo.observations_since(None, "stablecoin.", since)
     if _is_synthetic(liquidity_observations):
@@ -561,17 +638,26 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
         source, observed_at, freshness = latest_meta(
             liquidity_observations, "stablecoin supply providers"
         )
-        factors.append(DecisionFactor(
-            id="liquidity.stablecoins", category=Category.LIQUIDITY,
-            title=f"Liquidité stablecoin: {liquidity.regime.lower()}",
-            short_text="; ".join(liquidity.findings[:2]),
-            raw_value={"change_1d_pct": liquidity.change_1d_pct,
-                       "change_7d_pct": liquidity.change_7d_pct},
-            normalized_value=liquidity.strength,
-            polarity=Polarity.POSITIVE if liquidity.strength > 0 else Polarity.NEGATIVE,
-            importance=62, confidence=.72, timeframe="7D",
-            source=source, as_of=observed_at, freshness=freshness,
-        ))
+        factors.append(
+            DecisionFactor(
+                id="liquidity.stablecoins",
+                category=Category.LIQUIDITY,
+                title=f"Liquidité stablecoin: {liquidity.regime.lower()}",
+                short_text="; ".join(liquidity.findings[:2]),
+                raw_value={
+                    "change_1d_pct": liquidity.change_1d_pct,
+                    "change_7d_pct": liquidity.change_7d_pct,
+                },
+                normalized_value=liquidity.strength,
+                polarity=Polarity.POSITIVE if liquidity.strength > 0 else Polarity.NEGATIVE,
+                importance=62,
+                confidence=0.72,
+                timeframe="7D",
+                source=source,
+                as_of=observed_at,
+                freshness=freshness,
+            )
+        )
 
     macro_observations = repo.observations_since(None, "macro.", since)
     if _is_synthetic(macro_observations):
@@ -579,33 +665,52 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     macro = MacroAnalyzer().analyze(macro_observations, now=now)
     if macro.available and abs(macro.strength) > 12:
         source, observed_at, freshness = latest_meta(macro_observations, "macro providers")
-        factors.append(DecisionFactor(
-            id="macro.context", category=Category.MACRO,
-            title="Contexte macro porteur" if macro.strength > 0 else "Contexte macro contraignant",
-            short_text="; ".join(macro.findings[:2]),
-            raw_value={"risk_appetite": macro.risk_appetite,
-                       "dollar_trend": macro.dollar_trend,
-                       "rates_trend": macro.rates_trend},
-            normalized_value=macro.strength,
-            polarity=Polarity.POSITIVE if macro.strength > 0 else Polarity.NEGATIVE,
-            importance=68, confidence=.68, timeframe="5D",
-            source=source, as_of=observed_at, freshness=freshness,
-        ))
+        factors.append(
+            DecisionFactor(
+                id="macro.context",
+                category=Category.MACRO,
+                title="Contexte macro porteur"
+                if macro.strength > 0
+                else "Contexte macro contraignant",
+                short_text="; ".join(macro.findings[:2]),
+                raw_value={
+                    "risk_appetite": macro.risk_appetite,
+                    "dollar_trend": macro.dollar_trend,
+                    "rates_trend": macro.rates_trend,
+                },
+                normalized_value=macro.strength,
+                polarity=Polarity.POSITIVE if macro.strength > 0 else Polarity.NEGATIVE,
+                importance=68,
+                confidence=0.68,
+                timeframe="5D",
+                source=source,
+                as_of=observed_at,
+                freshness=freshness,
+            )
+        )
 
     cross_asset = CrossAssetAnalyzer().assess(asset)
-    if cross_asset.risk_proxy_correlation is not None and abs(
-        cross_asset.risk_proxy_correlation
-    ) >= .4:
-        factors.append(DecisionFactor(
-            id="cross_asset.nasdaq", category=Category.CROSS_ASSET,
-            title="Dépendance élevée aux actifs risqués",
-            short_text=cross_asset.interpretation,
-            raw_value={"nasdaq_correlation": cross_asset.risk_proxy_correlation},
-            normalized_value=abs(cross_asset.risk_proxy_correlation) * 100,
-            polarity=Polarity.WAIT, importance=50, confidence=.65,
-            timeframe="90D", source="CrossAssetAnalyzer (OHLCV + indices)",
-            as_of=now.isoformat(), freshness="TODAY",
-        ))
+    if (
+        cross_asset.risk_proxy_correlation is not None
+        and abs(cross_asset.risk_proxy_correlation) >= 0.4
+    ):
+        factors.append(
+            DecisionFactor(
+                id="cross_asset.nasdaq",
+                category=Category.CROSS_ASSET,
+                title="Dépendance élevée aux actifs risqués",
+                short_text=cross_asset.interpretation,
+                raw_value={"nasdaq_correlation": cross_asset.risk_proxy_correlation},
+                normalized_value=abs(cross_asset.risk_proxy_correlation) * 100,
+                polarity=Polarity.WAIT,
+                importance=50,
+                confidence=0.65,
+                timeframe="90D",
+                source="CrossAssetAnalyzer (OHLCV + indices)",
+                as_of=now.isoformat(),
+                freshness="TODAY",
+            )
+        )
 
     daily = store.load_candles(asset, Timeframe.D1)
     historical = HistoricalSimilarityEngine().analyze(asset, daily, Timeframe.D1)
@@ -633,15 +738,18 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
     if _is_synthetic(whale_observations):
         whale_observations = []
     whales = WhaleAnalyzer().analyze(
-        asset, whale_observations,
-        unavailable_reason=None if whale_observations else
-        "Aucun fournisseur baleines fiable n'est configuré : suivre les gros "
+        asset,
+        whale_observations,
+        unavailable_reason=None
+        if whale_observations
+        else "Aucun fournisseur baleines fiable n'est configuré : suivre les gros "
         "portefeuilles demande un service on-chain payant, et rien n'est estimé "
         "à la place.",
     )
     implied = ImpliedVolatilityEngine().assess(asset)
     return {
-        "factors": factors, "multi_timeframe": mtf,
+        "factors": factors,
+        "multi_timeframe": mtf,
         "breakout": breakout.model_dump(mode="json"),
         "patterns": [
             {
@@ -666,6 +774,7 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
 
 
 # --- the snapshot ---------------------------------------------------------
+
 
 @dataclass(slots=True)
 class AnalysisContextSnapshot:
@@ -709,6 +818,7 @@ class AnalysisContextSnapshot:
     timing: Any = None
     entry: Any = None
     pressure: Any = None
+    institutional_flow: Any = None
     opportunity: Any = None
 
     breakout: dict[str, Any] = field(default_factory=dict)
@@ -792,11 +902,13 @@ def build_context(
     now: datetime | None = None,
 ) -> AnalysisContextSnapshot:
     """Run every engine one decision needs, once, in one consistent moment."""
+    from ..db import repo
     from ..engines.edge import EdgeEngine, UncertaintyEngine, build_decision_summary
     from ..engines.entry_opportunity import EntryOpportunityEngine
     from ..engines.entry_timing import EntryTimingEngine
     from ..engines.future_context import build_five_family_snapshot
     from ..engines.future_decision import FutureDecisionEngine, horizon_decisions
+    from ..engines.institutional_flow import InstitutionalFlowEngine
     from ..engines.leverage import LeverageCrowdingEngine
     from ..engines.market_pressure import assess_pressure
     from ..engines.volatility import VolatilityRegimeEngine
@@ -824,15 +936,23 @@ def build_context(
     timing = EntryTimingEngine().assess(asset, {"snapshots": snapshots})
 
     freshness_map = {
-        name: ("OK" if state.usable else state.freshness.value)
-        for name, state in families.items()
+        name: ("OK" if state.usable else state.freshness.value) for name, state in families.items()
     }
     uncertainty = UncertaintyEngine().assess(
-        asset, edge, regime=regime, crowding=crowding, freshness=freshness_map,
+        asset,
+        edge,
+        regime=regime,
+        crowding=crowding,
+        freshness=freshness_map,
     )
     decision_summary = build_decision_summary(
-        asset, edge, uncertainty, regime=regime, timing=timing,
-        crowding=crowding, volatility=volatility,
+        asset,
+        edge,
+        uncertainty,
+        regime=regime,
+        timing=timing,
+        crowding=crowding,
+        volatility=volatility,
     )
 
     evidence = evidence_context(asset, reference)
@@ -853,11 +973,15 @@ def build_context(
         whale_analysis=evidence["whales"],
         family_states=families,
     )
+    institutional_flow = InstitutionalFlowEngine().analyze_records(
+        asset,
+        repo.get_etf_flows(asset, days=90),
+        now=reference,
+    )
 
     entry = EntryOpportunityEngine().assess(asset, Timeframe.H4)
     macro_events = upcoming_macro(asset, now=reference)
 
-    from ..db import repo
     from ..future_events.models import FutureEventStatus
 
     future_events = [
@@ -871,7 +995,12 @@ def build_context(
         if (
             (event.scheduled_at is not None and event.scheduled_at >= reference)
             or event.runtime_status(reference)
-            in {FutureEventStatus.ACTIVE, FutureEventStatus.SURPRISE, FutureEventStatus.DECAYING}
+            in {
+                FutureEventStatus.ACTIVE,
+                FutureEventStatus.RELEASED,
+                FutureEventStatus.SURPRISE,
+                FutureEventStatus.DECAYING,
+            }
         )
     ]
     future_families = build_five_family_snapshot(
@@ -882,6 +1011,7 @@ def build_context(
         macro_context=evidence["macro"],
         liquidity=evidence["liquidity"],
         pressure=pressure,
+        institutional_flow=institutional_flow,
         structure=evidence["multi_timeframe"],
         regime=regime,
         volatility=volatility,
@@ -909,14 +1039,19 @@ def build_context(
 
     opportunity = decide(
         asset,
-        entry=entry, edge=edge, uncertainty=uncertainty,
-        macro_events=macro_events, crowding=crowding, pressure=pressure,
+        entry=entry,
+        edge=edge,
+        uncertainty=uncertainty,
+        macro_events=macro_events,
+        crowding=crowding,
+        pressure=pressure,
         unusable_families=[name for name, state in families.items() if not state.usable],
         critical_missing_families=[
-            name for name in ("ohlcv_daily",)
-            if name not in families or not families[name].usable
+            name for name in ("ohlcv_daily",) if name not in families or not families[name].usable
         ],
-        regime=regime, timing=timing, volatility=volatility,
+        regime=regime,
+        timing=timing,
+        volatility=volatility,
         implied_volatility=evidence["implied_volatility"],
         historical_analogs=evidence["historical"],
         live_track_record=evidence["live_track_record"],
@@ -958,6 +1093,7 @@ def build_context(
         timing=timing,
         entry=entry,
         pressure=pressure,
+        institutional_flow=institutional_flow,
         opportunity=opportunity,
         breakout=evidence["breakout"],
         patterns=evidence["patterns"],
@@ -968,8 +1104,7 @@ def build_context(
         whales=evidence["whales"],
         factors=evidence["factors"],
         technical={
-            timeframe.value: snapshot_value
-            for timeframe, snapshot_value in snapshots.items()
+            timeframe.value: snapshot_value for timeframe, snapshot_value in snapshots.items()
         },
         future_events=future_events,
         future_families=future_families,
@@ -977,7 +1112,9 @@ def build_context(
         future_horizons=future_horizon_views,
     )
     log.info(
-        "analysis_built", asset=asset.value, analysis_id=analysis_id,
+        "analysis_built",
+        asset=asset.value,
+        analysis_id=analysis_id,
         state=opportunity.state.value,
         coverage=snapshot.coverage.summary_line if snapshot.coverage else "",
     )
@@ -1000,9 +1137,12 @@ def _etf_summary(pressure: Any) -> dict[str, Any]:
         return {
             "available": available,
             "headline": (
-                "Flux récents positifs" if available and (net_5 or 0) > 0
-                else "Flux récents négatifs" if available and (net_5 or 0) < 0
-                else "Flux récents équilibrés" if available
+                "Flux récents positifs"
+                if available and (net_5 or 0) > 0
+                else "Flux récents négatifs"
+                if available and (net_5 or 0) < 0
+                else "Flux récents équilibrés"
+                if available
                 else "Indisponible"
             ),
             "latest_musd": raw.get("latest_musd"),
@@ -1015,8 +1155,11 @@ def _etf_summary(pressure: Any) -> dict[str, Any]:
             "reason": getattr(component, "reason", ""),
             "caveat": "Flux observés ≠ avantage prédictif démontré.",
         }
-    return {"available": False, "headline": "Indisponible",
-            "caveat": "Flux observés ≠ avantage prédictif démontré."}
+    return {
+        "available": False,
+        "headline": "Indisponible",
+        "caveat": "Flux observés ≠ avantage prédictif démontré.",
+    }
 
 
 # --- the live layer -------------------------------------------------------
@@ -1081,9 +1224,7 @@ def _age_label(age_seconds: float) -> str:
     return f"{hours} h {rest:02d}"
 
 
-def freshness_sentence(
-    status: AnalysisFreshness, age_seconds: float, offline: bool = False
-) -> str:
+def freshness_sentence(status: AnalysisFreshness, age_seconds: float, offline: bool = False) -> str:
     age = _age_label(age_seconds)
     if offline:
         return f"Mode hors ligne · analyse non actualisée depuis {age}"
@@ -1113,8 +1254,15 @@ def live_layer(
             name, families, mode="price_only_fallback" if name == "direction" else "full"
         )
         for name in (
-            "price", "direction", "persistence", "volatility", "funding",
-            "positioning", "crowding", "edge", "action",
+            "price",
+            "direction",
+            "persistence",
+            "volatility",
+            "funding",
+            "positioning",
+            "crowding",
+            "edge",
+            "action",
         )
     }
     status, status_reason = page_status(families, engines)
@@ -1125,8 +1273,10 @@ def live_layer(
     if analysis_price and live_price:
         drift_pct = round((live_price / analysis_price - 1) * 100, 3)
     severity = (
-        "NONE" if drift_pct is None or abs(drift_pct) < drift_threshold_pct
-        else "SEVERE" if abs(drift_pct) >= DRIFT_SEVERE_PCT
+        "NONE"
+        if drift_pct is None or abs(drift_pct) < drift_threshold_pct
+        else "SEVERE"
+        if abs(drift_pct) >= DRIFT_SEVERE_PCT
         else "NOTABLE"
     )
     age_seconds = round((reference - snapshot.analysis_time).total_seconds(), 1)

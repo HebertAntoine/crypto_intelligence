@@ -117,7 +117,9 @@ class FiveFamilySnapshot:
         if set(self.assessments) != required:
             missing = sorted(item.value for item in required - set(self.assessments))
             extra = sorted(str(item) for item in set(self.assessments) - required)
-            raise ValueError(f"five family snapshot requires exact slots; missing={missing}, extra={extra}")
+            raise ValueError(
+                f"five family snapshot requires exact slots; missing={missing}, extra={extra}"
+            )
         if any(key != value.family for key, value in self.assessments.items()):
             raise ValueError("family assessment keys and values must match")
 
@@ -159,9 +161,7 @@ class FiveFamilySnapshot:
             "available_count": self.available_count,
             "total_count": 5,
             "unavailable": unavailable,
-            "items": {
-                family.value: self.assessments[family].to_dict() for family in FutureFamily
-            },
+            "items": {family.value: self.assessments[family].to_dict() for family in FutureFamily},
         }
 
 
@@ -213,9 +213,13 @@ class EventRiskGate:
             if event.importance is not EventImportance.CRITICAL:
                 continue
             status = event.runtime_status(now)
-            active_unscheduled = (
-                event.scheduled_at is None
-                and status in {FutureEventStatus.ACTIVE, FutureEventStatus.SURPRISE}
+            released_at = event.source_published_at or event.detected_at
+            active_unscheduled = event.scheduled_at is None and (
+                status in {FutureEventStatus.ACTIVE, FutureEventStatus.SURPRISE}
+                or (
+                    status in {FutureEventStatus.RELEASED, FutureEventStatus.DECAYING}
+                    and timedelta(0) <= now - released_at <= self.window
+                )
             )
             imminent = (
                 event.scheduled_at is not None
@@ -225,8 +229,10 @@ class EventRiskGate:
                 ExpectedMovement.HIGH,
                 ExpectedMovement.EXTREME,
             }
-            if (active_unscheduled or imminent) and high_amplitude and self._uncertain(
-                event, analysis_uncertainty
+            if (
+                (active_unscheduled or imminent)
+                and high_amplitude
+                and self._uncertain(event, analysis_uncertainty)
             ):
                 material.append(event)
 
@@ -311,17 +317,14 @@ def _dominant_family(families: FiveFamilySnapshot) -> FamilyAssessment | None:
         assessment
         for assessment in families.assessments.values()
         if assessment.available
-        and assessment.directional_bias
-        not in {None, DirectionalBias.NEUTRAL}
+        and assessment.directional_bias not in {None, DirectionalBias.NEUTRAL}
     ]
     if not candidates:
         return None
     candidates.sort(key=lambda item: (FAMILY_PRIORITY[item.family], -item.confidence))
     first_priority = FAMILY_PRIORITY[candidates[0].family]
     peers = [item for item in candidates if FAMILY_PRIORITY[item.family] == first_priority]
-    directions = {
-        "bull" if "BULLISH" in item.directional_bias.value else "bear" for item in peers
-    }
+    directions = {"bull" if _is_bullish(item.directional_bias) else "bear" for item in peers}
     if len(directions) > 1:
         return None
     return peers[0]
@@ -349,8 +352,7 @@ class FutureScenarioEngine:
             (
                 event
                 for event in events
-                if event.scheduled_at is None
-                or now <= event.scheduled_at <= now + horizon_delta
+                if event.scheduled_at is None or now <= event.scheduled_at <= now + horizon_delta
             ),
             key=lambda event: (
                 -event.importance.rank,
@@ -365,19 +367,22 @@ class FutureScenarioEngine:
             chain = ["Aucun catalyseur futur sourcé dans cet horizon."]
 
         dominant = _dominant_family(families)
-        base_direction = dominant.directional_bias if dominant else DirectionalBias.NEUTRAL
+        base_direction = (
+            dominant.directional_bias if dominant else DirectionalBias.NEUTRAL
+        ) or DirectionalBias.NEUTRAL
         movement = _max_movement(
             [event.magnitude_effect for event in upcoming]
             + [item.expected_movement for item in families.assessments.values()]
         )
         available = [item for item in families.assessments.values() if item.available]
         confidence = (
-            sum(item.confidence for item in available) / len(available)
-            if available
-            else 0.0
+            sum(item.confidence for item in available) / len(available) if available else 0.0
         )
 
-        specs = {
+        specs: dict[
+            ScenarioKind,
+            tuple[DirectionalBias, ExpectedMovement, list[str], list[str]],
+        ] = {
             ScenarioKind.BASE_CASE: (
                 base_direction,
                 movement,
@@ -469,9 +474,7 @@ class FutureDecision:
             "decision_confidence": round(self.decision_confidence, 3),
             "event_risk": self.event_risk.to_dict(),
             "next_major_event": (
-                self.next_major_event.to_public_dict(self.as_of)
-                if self.next_major_event
-                else None
+                self.next_major_event.to_public_dict(self.as_of) if self.next_major_event else None
             ),
             "reasons": self.reasons[:5],
             "counter_signals": self.counter_signals[:5],
@@ -512,11 +515,11 @@ class FutureDecisionEngine:
             as_of=now,
             analysis_uncertainty=analysis_uncertainty,
         )
-        scenarios = FutureScenarioEngine().build(
-            event_list, families, horizon=horizon, as_of=now
-        )
+        scenarios = FutureScenarioEngine().build(event_list, families, horizon=horizon, as_of=now)
         dominant = _dominant_family(families)
-        direction = dominant.directional_bias if dominant else DirectionalBias.NEUTRAL
+        direction = (
+            dominant.directional_bias if dominant else DirectionalBias.NEUTRAL
+        ) or DirectionalBias.NEUTRAL
         expected_movement = _max_movement(
             [item.expected_movement for item in families.assessments.values()]
             + [
@@ -578,9 +581,7 @@ class FutureDecisionEngine:
                     "icon": "signal",
                     "title": FAMILY_LABELS[item.family],
                     "date_time": item.as_of,
-                    "impact": (
-                        item.expected_movement.value if item.expected_movement else None
-                    ),
+                    "impact": (item.expected_movement.value if item.expected_movement else None),
                     "explanation": item.summary,
                     "source": source.get("source"),
                     "source_url": source.get("url"),
@@ -593,10 +594,11 @@ class FutureDecisionEngine:
             if (_is_bullish(direction) and _is_bearish(item.directional_bias)) or (
                 _is_bearish(direction) and _is_bullish(item.directional_bias)
             ):
+                item_direction = item.directional_bias or DirectionalBias.NEUTRAL
                 counter_signals.append(
                     {
                         "family": item.family.value,
-                        "directional_bias": item.directional_bias.value,
+                        "directional_bias": item_direction.value,
                         "explanation": item.summary,
                         "sources": item.sources,
                     }
@@ -609,7 +611,7 @@ class FutureDecisionEngine:
         ]
         next_event = min(
             future_scheduled,
-            key=lambda event: (event.scheduled_at, -event.importance.rank),
+            key=lambda event: (-event.importance.rank, event.scheduled_at),
             default=None,
         )
         changes = []
@@ -617,7 +619,9 @@ class FutureDecisionEngine:
             changes.append("Attendre la publication et réévaluer la surprise observée.")
         changes.extend(scenarios[0].invalidation_conditions)
         if families.available_count < 5:
-            changes.append("Rétablir les familles indisponibles avec des données actuelles et sourcées.")
+            changes.append(
+                "Rétablir les familles indisponibles avec des données actuelles et sourcées."
+            )
 
         provenance: list[dict[str, Any]] = []
         seen: set[tuple[str | None, str | None]] = set()
@@ -636,9 +640,14 @@ class FutureDecisionEngine:
                 )
         for item in families.assessments.values():
             for source in item.sources:
-                key = (source.get("source"), source.get("url"))
-                if key not in seen:
-                    seen.add(key)
+                raw_source = source.get("source")
+                raw_url = source.get("url")
+                family_key: tuple[str | None, str | None] = (
+                    str(raw_source) if raw_source is not None else None,
+                    str(raw_url) if raw_url is not None else None,
+                )
+                if family_key not in seen:
+                    seen.add(family_key)
                     provenance.append(source)
 
         return FutureDecision(

@@ -50,21 +50,49 @@ class RegulatoryCatalystAnalysis(BaseModel):
 
 
 _RULES: tuple[tuple[tuple[str, ...], RegulatoryStage, str], ...] = (
-    (("signed into law", "signed the act", "became law"), RegulatoryStage.SIGNED_INTO_LAW, "Signé et promulgué"),
-    (("presented to president", "sent to the president"), RegulatoryStage.PRESENTED_TO_PRESIDENT, "Transmis au président"),
-    (("passed the senate", "senate passed"), RegulatoryStage.PASSED_SENATE, "Adopté par le Sénat"),
-    (("passed the house", "house passed"), RegulatoryStage.PASSED_HOUSE, "Adopté par la Chambre"),
-    (("committee approved", "ordered to be reported", "reported favorably"), RegulatoryStage.COMMITTEE_APPROVAL, "Approuvé en commission"),
+    (
+        ("signed into law", "signed the act", "became law"),
+        RegulatoryStage.SIGNED_INTO_LAW,
+        "Signé et promulgué",
+    ),
+    (
+        ("presented to president", "sent to the president"),
+        RegulatoryStage.PRESENTED_TO_PRESIDENT,
+        "Transmis au président",
+    ),
+    (
+        ("passed the senate", "passed senate", "senate passed"),
+        RegulatoryStage.PASSED_SENATE,
+        "Adopté par le Sénat",
+    ),
+    (
+        ("passed the house", "passed house", "house passed"),
+        RegulatoryStage.PASSED_HOUSE,
+        "Adopté par la Chambre",
+    ),
+    (
+        ("committee approved", "ordered to be reported", "reported favorably"),
+        RegulatoryStage.COMMITTEE_APPROVAL,
+        "Approuvé en commission",
+    ),
     (("cloture",), RegulatoryStage.CLOTURE, "Procédure de clôture"),
     (("markup",), RegulatoryStage.COMMITTEE_MARKUP, "Examen en commission"),
     (("hearing", "roundtable", "testimony"), RegulatoryStage.HEARING, "Audition ou table ronde"),
     (("introduced", "introduction of"), RegulatoryStage.INTRODUCED, "Texte déposé"),
     (("reconciliation",), RegulatoryStage.RECONCILIATION, "Réconciliation des textes"),
     (("motion",), RegulatoryStage.MOTION, "Motion procédurale"),
-    (("final rule", "adopts rules", "adopted rules"), RegulatoryStage.FINAL_RULE, "Règle définitive"),
+    (
+        ("final rule", "adopts rules", "adopted rules"),
+        RegulatoryStage.FINAL_RULE,
+        "Règle définitive",
+    ),
     (("proposed rule", "proposes", "proposal"), RegulatoryStage.PROPOSED_RULE, "Règle proposée"),
     (("comment period", "comments due"), RegulatoryStage.COMMENT_PERIOD, "Période de consultation"),
-    (("charges", "charged", "enforcement", "settled charges"), RegulatoryStage.ENFORCEMENT, "Mesure d’exécution"),
+    (
+        ("charges", "charged", "enforcement", "settled charges"),
+        RegulatoryStage.ENFORCEMENT,
+        "Mesure d’exécution",
+    ),
     (("effective date", "takes effect"), RegulatoryStage.EFFECTIVE, "Entrée en vigueur"),
     (("discussion", "forum", "remarks"), RegulatoryStage.DISCUSSION, "Discussion publique"),
 )
@@ -81,7 +109,10 @@ class RegulatoryCatalystEngine:
 
     @staticmethod
     def stage_label(stage: RegulatoryStage) -> str:
-        return next((label for _phrases, candidate, label in _RULES if candidate is stage), "Annonce officielle" if stage is RegulatoryStage.ANNOUNCEMENT else "Statut à confirmer")
+        return next(
+            (label for _phrases, candidate, label in _RULES if candidate is stage),
+            "Annonce officielle" if stage is RegulatoryStage.ANNOUNCEMENT else "Statut à confirmer",
+        )
 
     def analyze(self, event: FutureEvent | None) -> RegulatoryCatalystAnalysis:
         if event is None:
@@ -91,7 +122,9 @@ class RegulatoryCatalystEngine:
             )
         raw_stage = event.metadata.get("regulatory_stage")
         try:
-            stage = RegulatoryStage(str(raw_stage)) if raw_stage else self.classify_stage(event.title)
+            stage = (
+                RegulatoryStage(str(raw_stage)) if raw_stage else self.classify_stage(event.title)
+            )
         except ValueError:
             stage = RegulatoryStage.UNKNOWN
         return RegulatoryCatalystAnalysis(

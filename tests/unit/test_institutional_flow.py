@@ -84,3 +84,24 @@ def test_per_fund_rows_are_summed_before_windows():
 
     assert result.latest_flow_musd == 45.0
     assert result.rolling_3_sessions_musd == 90.0
+
+
+def test_persisted_records_keep_provider_provenance_and_runtime_freshness():
+    records = [
+        {
+            "id": f"BTC_IBIT_{index}",
+            "date": NOW - timedelta(days=2 - index),
+            "ticker": "IBIT",
+            "flow_musd": float(index + 1),
+            "import_source": "farside",
+            "source_url": "https://farside.co.uk/bitcoin-etf-flow-all-data/",
+        }
+        for index in range(3)
+    ]
+
+    result = InstitutionalFlowEngine().analyze_records(Asset.BTC, records, now=NOW)
+
+    assert result.available is True
+    assert result.freshness != "UNAVAILABLE"
+    assert result.evidence_ids == ["BTC_IBIT_0", "BTC_IBIT_1", "BTC_IBIT_2"]
+    assert result.provenance[0]["source"] == "Farside Investors"

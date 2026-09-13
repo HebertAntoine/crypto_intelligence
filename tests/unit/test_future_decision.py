@@ -22,6 +22,7 @@ from crypto_intel.future_events.models import (
     FutureEvent,
     FutureEventCategory,
     FutureEventSourceTier,
+    FutureEventStatus,
 )
 
 NOW = datetime(2026, 9, 12, 12, tzinfo=UTC)
@@ -69,7 +70,9 @@ def five(*, technical: DirectionalBias = DirectionalBias.BULLISH) -> FiveFamilyS
         {
             family: assessment(
                 family,
-                technical if family is FutureFamily.TECHNICAL_VOLATILITY else DirectionalBias.NEUTRAL,
+                technical
+                if family is FutureFamily.TECHNICAL_VOLATILITY
+                else DirectionalBias.NEUTRAL,
             )
             for family in FutureFamily
         }
@@ -97,11 +100,7 @@ def test_bullish_technical_cannot_override_tier_one_event_gate() -> None:
 
 def test_exactly_five_slots_and_missing_is_not_neutral() -> None:
     families = FiveFamilySnapshot.from_partial(
-        {
-            FutureFamily.TECHNICAL_VOLATILITY: assessment(
-                FutureFamily.TECHNICAL_VOLATILITY
-            )
-        }
+        {FutureFamily.TECHNICAL_VOLATILITY: assessment(FutureFamily.TECHNICAL_VOLATILITY)}
     )
     payload = families.to_dict()
     assert len(payload["items"]) == 5
@@ -114,11 +113,7 @@ def test_exactly_five_slots_and_missing_is_not_neutral() -> None:
 def test_five_family_constructor_rejects_missing_slot() -> None:
     with pytest.raises(ValueError, match="exact slots"):
         FiveFamilySnapshot(
-            {
-                FutureFamily.TECHNICAL_VOLATILITY: assessment(
-                    FutureFamily.TECHNICAL_VOLATILITY
-                )
-            }
+            {FutureFamily.TECHNICAL_VOLATILITY: assessment(FutureFamily.TECHNICAL_VOLATILITY)}
         )
 
 
@@ -155,6 +150,21 @@ def test_low_amplitude_event_does_not_block() -> None:
         [event(movement=ExpectedMovement.NORMAL)], as_of=NOW, analysis_uncertainty=0.9
     )
     assert result.active is False
+
+
+def test_recent_unscheduled_critical_release_activates_gate_then_decays() -> None:
+    recent = event().model_copy(
+        update={
+            "schedule_type": EventScheduleType.UNSCHEDULED,
+            "scheduled_at": None,
+            "status": FutureEventStatus.RELEASED,
+            "source_published_at": NOW - timedelta(hours=2),
+        }
+    )
+    old = recent.model_copy(update={"source_published_at": NOW - timedelta(hours=49)})
+
+    assert EventRiskGate().assess([recent], as_of=NOW).active is True
+    assert EventRiskGate().assess([old], as_of=NOW).active is False
 
 
 def test_default_decision_horizon_is_seven_days() -> None:

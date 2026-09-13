@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import UTC, timedelta
 from typing import Any
 
@@ -11,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from ..core.enums import Asset
 from ..engines.analysis_context import context_for
 from ..engines.future_decision import FutureDecisionEngine
-from ..future_events.models import DecisionHorizon
+from ..future_events.models import DecisionHorizon, FutureEventStatus
 
 router = APIRouter(tags=["future intelligence"])
 
@@ -62,14 +61,14 @@ def _decision(snapshot: Any, horizon: DecisionHorizon) -> Any:
 
 
 @router.get("/future/{symbol}")
-async def future_decision(
+def future_decision(
     symbol: str,
     horizon: str = Query("7d", description="24h, 7d or 30d"),
 ) -> dict[str, Any]:
     """The complete source-backed decision contract for one asset."""
     asset = _asset(symbol)
     selected_horizon = _horizon(horizon)
-    snapshot = await asyncio.to_thread(context_for, asset)
+    snapshot = context_for(asset)
     result = _decision(snapshot, selected_horizon).to_dict()
     result["horizons"] = snapshot.future_horizons
     result["analysis_id"] = snapshot.analysis_id
@@ -78,23 +77,29 @@ async def future_decision(
 
 
 @router.get("/future/{symbol}/why")
-async def future_why(
+def future_why(
     symbol: str,
     horizon: str = Query("7d", description="24h, 7d or 30d"),
 ) -> dict[str, Any]:
     """Compact click-through for 'why buy/wait/sell'."""
     asset = _asset(symbol)
     selected_horizon = _horizon(horizon)
-    snapshot = await asyncio.to_thread(context_for, asset)
+    snapshot = context_for(asset)
     result = _decision(snapshot, selected_horizon)
     payload = result.to_dict()
+    action_label = {
+        "BUY": "acheter",
+        "WAIT": "attendre",
+        "SELL": "vendre",
+        "INSUFFICIENT_DATA": "conclure",
+    }[result.decision.value]
     return {
         "asset": asset.value,
         "analysis_id": snapshot.analysis_id,
         "as_of": result.as_of.isoformat(),
         "horizon": selected_horizon.value,
         "decision": result.decision.value,
-        "title": f"Pourquoi {result.decision.value.lower()} ?",
+        "title": f"Pourquoi {action_label} ?",
         "reasons": payload["reasons"],
         "counter_signals": payload["counter_signals"],
         "what_could_change_decision": payload["what_could_change_decision"],
@@ -103,20 +108,29 @@ async def future_why(
 
 
 @router.get("/future/{symbol}/timeline")
-async def future_timeline(
+def future_timeline(
     symbol: str,
     days: int = Query(30, ge=1, le=30),
 ) -> dict[str, Any]:
     """Short upcoming-event timeline, with no generated announcements."""
     asset = _asset(symbol)
-    snapshot = await asyncio.to_thread(context_for, asset)
+    snapshot = context_for(asset)
     now = snapshot.analysis_time.astimezone(UTC)
     cutoff = now + timedelta(days=days)
     events = sorted(
         (
             event
             for event in snapshot.future_events
-            if event.scheduled_at is None or now <= event.scheduled_at <= cutoff
+            if (event.scheduled_at is not None and now <= event.scheduled_at <= cutoff)
+            or (
+                event.scheduled_at is None
+                and event.runtime_status(now)
+                in {
+                    FutureEventStatus.ACTIVE,
+                    FutureEventStatus.SURPRISE,
+                    FutureEventStatus.DECAYING,
+                }
+            )
         ),
         key=lambda event: (event.scheduled_at or event.detected_at, -event.importance.rank),
     )
@@ -130,6 +144,7 @@ async def future_timeline(
                 "event_type": event.event_type,
                 "scheduled_at": event.scheduled_at.isoformat() if event.scheduled_at else None,
                 "detected_at": event.detected_at.isoformat(),
+                "status": event.runtime_status(now).value,
                 "countdown_seconds": (
                     max(0, int((event.scheduled_at - now).total_seconds()))
                     if event.scheduled_at
@@ -139,9 +154,7 @@ async def future_timeline(
                 "directional_bias": event.directional_effect.value,
                 "expected_movement": event.magnitude_effect.value,
                 "uncertainty": (
-                    "UNKNOWN"
-                    if not event.market_probabilities
-                    else "MARKET_DISTRIBUTION_AVAILABLE"
+                    "UNKNOWN" if not event.market_probabilities else "MARKET_DISTRIBUTION_AVAILABLE"
                 ),
                 "assets": [item.value for item in event.affected_assets],
                 "source": event.source,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -33,8 +34,17 @@ from ..news.rss import _parse_entry_time
 EASTERN = ZoneInfo("America/New_York")
 ALL_ASSETS = [Asset.BTC, Asset.ETH, Asset.SOL]
 _CRYPTO_TERMS = (
-    "crypto", "digital asset", "bitcoin", "ethereum", "solana", "stablecoin",
-    "tokenization", "blockchain", "distributed ledger", "clarity act",
+    "crypto",
+    "digital asset",
+    "bitcoin",
+    "ethereum",
+    "solana",
+    "stablecoin",
+    "tokenization",
+    "blockchain",
+    "distributed ledger",
+    "digital commodit",
+    "clarity act",
 )
 
 
@@ -118,7 +128,9 @@ def regulatory_feed_items_to_events(
                     affected_markets=["crypto", "regulation"],
                     importance=_importance(stage),
                     directional_effect=DirectionalBias.NEUTRAL,
-                    magnitude_effect=ExpectedMovement.HIGH if _importance(stage) is EventImportance.CRITICAL else ExpectedMovement.NORMAL,
+                    magnitude_effect=ExpectedMovement.HIGH
+                    if _importance(stage) is EventImportance.CRITICAL
+                    else ExpectedMovement.NORMAL,
                     confidence=1.0,
                     last_updated=detected,
                     expires_at=published + timedelta(days=14),
@@ -143,21 +155,27 @@ def parse_cftc_calendar(html: str, *, fetched_at: datetime | None = None) -> lis
     events: list[FutureEvent] = []
     for row in soup.select("table tbody tr"):
         title_node = row.select_one("td.views-field-title a[href]")
-        start_node = row.select_one(".field-start-date time[datetime]") or row.select_one("time[datetime]")
+        start_node = row.select_one(".field-start-date time[datetime]") or row.select_one(
+            "time[datetime]"
+        )
         if not title_node or not start_node:
             continue
         text = row.get_text(" ", strip=True)
         if not _relevant(text):
             continue
         try:
-            scheduled = datetime.fromisoformat(start_node["datetime"].replace("Z", "+00:00")).astimezone(UTC)
+            scheduled = datetime.fromisoformat(
+                start_node["datetime"].replace("Z", "+00:00")
+            ).astimezone(UTC)
         except (ValueError, KeyError):
             continue
         end_node = row.select_one(".field-end-date time[datetime]")
         expected_end = None
         if end_node:
             with suppress(ValueError, KeyError):
-                expected_end = datetime.fromisoformat(end_node["datetime"].replace("Z", "+00:00")).astimezone(UTC)
+                expected_end = datetime.fromisoformat(
+                    end_node["datetime"].replace("Z", "+00:00")
+                ).astimezone(UTC)
         title = title_node.get_text(" ", strip=True)
         stage = RegulatoryCatalystEngine.classify_stage(text)
         events.append(
@@ -228,7 +246,9 @@ def parse_house_calendar(html: str, *, fetched_at: datetime | None = None) -> li
                     title=title,
                     source="U.S. House Financial Services Committee",
                     source_tier=FutureEventSourceTier.A,
-                    source_url=urljoin("https://financialservices.house.gov/calendar/", title_node["href"]),
+                    source_url=urljoin(
+                        "https://financialservices.house.gov/calendar/", title_node["href"]
+                    ),
                     detected_at=detected,
                     scheduled_at=scheduled,
                     timezone="America/New_York",
@@ -242,7 +262,134 @@ def parse_house_calendar(html: str, *, fetched_at: datetime | None = None) -> li
                     metadata={
                         "entities": ["U.S. House"],
                         "subject": title,
-                        "location": (article.select_one("address").get_text(" ", strip=True) if article.select_one("address") else "United States"),
+                        "location": (
+                            article.select_one("address").get_text(" ", strip=True)
+                            if article.select_one("address")
+                            else "United States"
+                        ),
+                        "regulatory_stage": stage.value,
+                        "stage_is_completed_only": True,
+                    },
+                )
+            )
+        )
+    return EventDeduplicator().deduplicate(events)
+
+
+def _senate_hearing_container(time_node: Any) -> tuple[Any, Any] | None:
+    """Find the nearest event block containing one unambiguous hearing link."""
+    for depth, parent in enumerate(time_node.parents):
+        if depth > 8 or getattr(parent, "name", "") in {"body", "html"}:
+            break
+        links = [
+            link
+            for link in parent.select('a[href*="/hearings/"]')
+            if str(link.get("href") or "").rstrip("/")
+            not in {
+                "https://www.banking.senate.gov/hearings",
+                "https://www.agriculture.senate.gov/hearings",
+                "/hearings",
+            }
+            and "witness" not in str(link.get("href") or "").lower()
+            and "calendar" not in str(link.get("href") or "").lower()
+        ]
+        unique = {str(link.get("href")): link for link in links}
+        if len(unique) == 1:
+            return parent, next(iter(unique.values()))
+    return None
+
+
+def _senate_hearing_time(time_node: Any, container: Any) -> datetime | None:
+    """Parse a committee-provided date/time; never supply a missing time."""
+    raw = str(time_node.get("datetime") or "").strip()
+    visible = " ".join((time_node.get_text(" ", strip=True), container.get_text(" ", strip=True)))
+    date_value: datetime | None = None
+    if raw:
+        with suppress(ValueError):
+            date_value = datetime.fromisoformat(raw)
+        if date_value is None:
+            for date_format in ("%B %d, %Y", "%b %d, %Y", "%m/%d/%y"):
+                with suppress(ValueError):
+                    date_value = datetime.strptime(raw, date_format)
+                    break
+    if date_value is None:
+        date_match = re.search(r"\b(\d{1,2}/\d{1,2}/\d{2,4})\b", visible)
+        if date_match:
+            for date_format in ("%m/%d/%y", "%m/%d/%Y"):
+                with suppress(ValueError):
+                    date_value = datetime.strptime(date_match.group(1), date_format)
+                    break
+    if date_value is None:
+        return None
+
+    if "T" not in raw or date_value.hour == date_value.minute == 0:
+        time_match = re.search(r"\b(\d{1,2}:\d{2})\s*([AP]M)\b", visible, re.I)
+        if not time_match:
+            return None
+        with suppress(ValueError):
+            parsed_time = datetime.strptime(
+                f"{time_match.group(1)} {time_match.group(2).upper()}", "%I:%M %p"
+            ).time()
+            date_value = datetime.combine(date_value.date(), parsed_time)
+    return date_value.replace(tzinfo=EASTERN).astimezone(UTC)
+
+
+def parse_senate_calendar(
+    html: str,
+    *,
+    source_url: str,
+    source_name: str,
+    fetched_at: datetime | None = None,
+) -> list[FutureEvent]:
+    """Parse official Banking/Agriculture hearing lists with strict time rules."""
+    detected = fetched_at or datetime.now(UTC)
+    if detected.tzinfo is None:
+        detected = detected.replace(tzinfo=UTC)
+    detected = detected.astimezone(UTC)
+    soup = BeautifulSoup(html, "lxml")
+    events: list[FutureEvent] = []
+    seen_links: set[str] = set()
+    for time_node in soup.select("time"):
+        found = _senate_hearing_container(time_node)
+        if found is None:
+            continue
+        container, link = found
+        href = urljoin(source_url, str(link.get("href") or ""))
+        if href in seen_links:
+            continue
+        title = link.get_text(" ", strip=True)
+        text = container.get_text(" ", strip=True)
+        if not title or not _relevant(f"{title} {text}"):
+            continue
+        scheduled = _senate_hearing_time(time_node, container)
+        if scheduled is None or scheduled < detected - timedelta(hours=12):
+            continue
+        seen_links.add(href)
+        stage = RegulatoryCatalystEngine.classify_stage(f"hearing {title} {text}")
+        events.append(
+            _canonical(
+                FutureEvent(
+                    event_type=f"SENATE_{stage.value}",
+                    category=FutureEventCategory.REGULATION,
+                    schedule_type=EventScheduleType.SCHEDULED,
+                    title=title,
+                    source=source_name,
+                    source_tier=FutureEventSourceTier.A,
+                    source_url=href,
+                    detected_at=detected,
+                    scheduled_at=scheduled,
+                    timezone="America/New_York",
+                    affected_assets=_assets(f"{title} {text}"),
+                    affected_markets=["crypto", "regulation"],
+                    importance=_importance(stage),
+                    directional_effect=DirectionalBias.NEUTRAL,
+                    magnitude_effect=ExpectedMovement.NORMAL,
+                    confidence=1.0,
+                    last_updated=detected,
+                    metadata={
+                        "entities": [source_name, "U.S. Senate"],
+                        "subject": title,
+                        "location": "United States",
                         "regulatory_stage": stage.value,
                         "stage_is_completed_only": True,
                     },
@@ -270,8 +417,12 @@ class OfficialRegulatoryFeedProvider(BaseProvider):
                 continue
             headers = {"User-Agent": get_settings().sec_user_agent} if "sec.gov" in url else None
             result = await get_http().get_text(
-                url, provider=self.name, headers=headers, cache_ttl=900,
-                rate_limit_per_min=20, retries=0,
+                url,
+                provider=self.name,
+                headers=headers,
+                cache_ttl=900,
+                rate_limit_per_min=20,
+                retries=0,
             )
             if not result.ok:
                 failures.append(f"{feed.get('name', url)}: {result.status.value}")
@@ -281,14 +432,16 @@ class OfficialRegulatoryFeedProvider(BaseProvider):
                 published = _parse_entry_time(entry)
                 if published is None:
                     continue
-                items.append({
-                    "title": entry.get("title") or "",
-                    "url": entry.get("link") or "",
-                    "summary": entry.get("summary") or entry.get("description") or "",
-                    "published_at": published,
-                    "source": feed.get("name"),
-                    "institution": feed.get("institution"),
-                })
+                items.append(
+                    {
+                        "title": entry.get("title") or "",
+                        "url": entry.get("link") or "",
+                        "summary": entry.get("summary") or entry.get("description") or "",
+                        "published_at": published,
+                        "source": feed.get("name"),
+                        "institution": feed.get("institution"),
+                    }
+                )
         events = regulatory_feed_items_to_events(items)
         if not events:
             return FetchResult.failure(
@@ -344,12 +497,17 @@ class SenateCalendarProvider(BaseProvider):
     base_confidence = 100.0
 
     async def fetch(self, request: FetchRequest) -> FetchResult:
-        # These official pages currently reject some automated clients. Keep
-        # each failure explicit rather than substituting a secondary calendar.
         failures: list[str] = []
-        for url in (
-            "https://www.banking.senate.gov/hearings",
-            "https://www.agriculture.senate.gov/hearings",
+        events: list[FutureEvent] = []
+        for url, source_name in (
+            (
+                "https://www.banking.senate.gov/hearings",
+                "U.S. Senate Banking Committee",
+            ),
+            (
+                "https://www.agriculture.senate.gov/hearings",
+                "U.S. Senate Agriculture Committee",
+            ),
         ):
             result = await get_http().get_text(
                 url, provider=self.name, cache_ttl=10800, rate_limit_per_min=3, retries=0
@@ -357,8 +515,20 @@ class SenateCalendarProvider(BaseProvider):
             if not result.ok:
                 failures.append(f"{url}: {result.status.value}")
                 continue
-            # Committee templates vary and expose incomplete time metadata.
-            # Until a source-backed parser is available, return no event rather
-            # than guessing dates from prose.
-            failures.append(f"{url}: no verified structured event parser")
-        return FetchResult.failure(FetchStatus.NO_DATA, self.name, "; ".join(failures))
+            events.extend(
+                parse_senate_calendar(
+                    result.data,
+                    source_url=url,
+                    source_name=source_name,
+                )
+            )
+        events = EventDeduplicator().deduplicate(events)
+        if events:
+            return FetchResult.success_events(events, self.name, raw={"failures": failures})
+        return FetchResult.failure(
+            FetchStatus.NO_DATA,
+            self.name,
+            "; ".join(failures)
+            if failures
+            else "No upcoming crypto-related Senate committee hearing",
+        )

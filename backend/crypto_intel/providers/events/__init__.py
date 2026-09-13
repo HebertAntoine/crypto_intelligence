@@ -8,6 +8,8 @@ from .official_calendars import (
     FederalReserveCalendarProvider,
     TreasuryAuctionProvider,
 )
+from .official_congress import CongressBillActionProvider
+from .official_protocols import EthereumProtocolProvider, SolanaProtocolProvider
 from .official_regulation import (
     CftcCalendarProvider,
     HouseCalendarProvider,
@@ -20,10 +22,13 @@ __all__ = [
     "BlsCalendarProvider",
     "CftcCalendarProvider",
     "CmeFedWatchProvider",
+    "CongressBillActionProvider",
+    "EthereumProtocolProvider",
     "FederalReserveCalendarProvider",
     "GeopoliticalFeedProvider",
     "HouseCalendarProvider",
     "OfficialRegulatoryFeedProvider",
     "SenateCalendarProvider",
+    "SolanaProtocolProvider",
     "TreasuryAuctionProvider",
 ]

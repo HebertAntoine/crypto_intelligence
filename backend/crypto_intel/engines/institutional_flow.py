@@ -9,7 +9,8 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 from ..core.enums import Asset
-from ..core.models import Observation
+from ..core.freshness import compute_freshness
+from ..core.models import Observation, Provenance
 
 
 class InstitutionalFlowState(StrEnum):
@@ -34,6 +35,7 @@ class InstitutionalFlowAnalysis(BaseModel):
     sessions_available: int = 0
     observed_at: datetime | None = None
     age_seconds: float | None = None
+    freshness: str = "UNAVAILABLE"
     unavailable_reason: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     provenance: list[dict[str, str | None]] = Field(default_factory=list)
@@ -46,6 +48,47 @@ def _window(values: list[float], length: int) -> float | None:
 
 class InstitutionalFlowEngine:
     """Aggregate per-fund rows before applying trading-session windows."""
+
+    def analyze_records(
+        self,
+        asset: Asset,
+        records: list[dict[str, object]],
+        *,
+        now: datetime | None = None,
+    ) -> InstitutionalFlowAnalysis:
+        """Adapt persisted per-fund rows without losing their provenance."""
+        observations = []
+        for record in records:
+            timestamp = record.get("date")
+            value = record.get("flow_musd")
+            if not isinstance(timestamp, datetime) or not isinstance(value, int | float):
+                continue
+            provider = str(record.get("import_source") or "etf_import")
+            observations.append(
+                Observation(
+                    id=str(record.get("id") or ""),
+                    asset=asset,
+                    metric="etf.flow",
+                    value=value,
+                    unit="USD_M",
+                    timestamp=timestamp,
+                    provenance=Provenance(
+                        source=(
+                            "Farside Investors" if provider == "farside"
+                            else f"ETF flow import ({provider})"
+                        ),
+                        provider=provider,
+                        source_url=(
+                            str(record["source_url"])
+                            if record.get("source_url")
+                            else None
+                        ),
+                    ),
+                    freshness=compute_freshness(timestamp, "etf", now=now),
+                    meta={"ticker": str(record.get("ticker") or "")},
+                )
+            )
+        return self.analyze(asset, observations, now=now)
 
     def analyze(
         self,
@@ -68,6 +111,7 @@ class InstitutionalFlowEngine:
                 asset=asset,
                 unavailable_reason=f"UNAVAILABLE - no sourced {asset.value} institutional flow",
                 explanation="No neutral value is substituted for missing ETF data.",
+                freshness="UNAVAILABLE",
             )
 
         daily: dict[datetime, float] = defaultdict(float)
@@ -91,6 +135,9 @@ class InstitutionalFlowEngine:
                 age_seconds=age,
                 unavailable_reason="UNAVAILABLE - fewer than 3 reported ETF sessions",
                 explanation="A single session is not treated as an institutional trend.",
+                freshness=(
+                    compute_freshness(observed_at, "etf", now=reference).value
+                ),
             )
 
         # Prefer the full 20-session regime; fall back to five or three only
@@ -142,6 +189,7 @@ class InstitutionalFlowEngine:
             sessions_available=len(values),
             observed_at=observed_at,
             age_seconds=age,
+            freshness=compute_freshness(observed_at, "etf", now=reference).value,
             evidence_ids=sorted({item.id for item in rows}),
             provenance=[
                 {"source": source, "provider": provider, "source_url": url}

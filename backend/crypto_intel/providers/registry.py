@@ -98,7 +98,8 @@ class ProviderRegistry:
                 # them would be exactly the fabrication this project forbids.
                 # Whale flows in particular must never be synthesised.
                 return FetchResult.failure(
-                    FetchStatus.NOT_CONFIGURED, "registry",
+                    FetchStatus.NOT_CONFIGURED,
+                    "registry",
                     f"UNAVAILABLE - '{request.capability}' has no mock fixture by design; "
                     "this domain requires a real provider and is never simulated",
                 )
@@ -122,8 +123,10 @@ class ProviderRegistry:
             except Exception as exc:
                 # A provider bug must never take down a collection run.
                 log.warning(
-                    "provider_raised", provider=provider.name,
-                    capability=request.capability, error=str(exc),
+                    "provider_raised",
+                    provider=provider.name,
+                    capability=request.capability,
+                    error=str(exc),
                 )
                 result = FetchResult.failure(FetchStatus.NETWORK_ERROR, provider.name, str(exc))
 
@@ -132,8 +135,10 @@ class ProviderRegistry:
             if first_failure is None:
                 first_failure = result
             log.info(
-                "provider_fallback", capability=request.capability,
-                provider=provider.name, status=result.status.value,
+                "provider_fallback",
+                capability=request.capability,
+                provider=provider.name,
+                status=result.status.value,
             )
 
         return first_failure or FetchResult.failure(
@@ -154,11 +159,14 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         BlsCalendarProvider,
         CftcCalendarProvider,
         CmeFedWatchProvider,
+        CongressBillActionProvider,
+        EthereumProtocolProvider,
         FederalReserveCalendarProvider,
         GeopoliticalFeedProvider,
         HouseCalendarProvider,
         OfficialRegulatoryFeedProvider,
         SenateCalendarProvider,
+        SolanaProtocolProvider,
         TreasuryAuctionProvider,
     )
     from .macro.fred import FredProvider
@@ -183,20 +191,45 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     from .whales.whale_alert import WhaleAlertProvider
 
     classes: list[type[BaseProvider]] = [
-        BinanceSpotProvider, CoinbaseSpotProvider, KrakenSpotProvider, CoinGeckoProvider,
-        BinanceFuturesProvider, CoinglassProvider,
-        ETFCSVProvider, FarsideProvider, CoinglassETFProvider, SoSoValueProvider,
-        BlockchainInfoProvider, BlockchairBTCProvider, BlockchairETHProvider, SolanaRPCProvider,
-        DefiLlamaProvider, DefiLlamaRWAProvider, DefiLlamaStablecoinsProvider,
-        FredProvider, YahooFinanceProvider, StooqProvider,
-        FederalReserveCalendarProvider, BlsCalendarProvider,
-        BeaCalendarProvider, TreasuryAuctionProvider,
-        OfficialRegulatoryFeedProvider, CftcCalendarProvider,
-        HouseCalendarProvider, SenateCalendarProvider,
+        BinanceSpotProvider,
+        CoinbaseSpotProvider,
+        KrakenSpotProvider,
+        CoinGeckoProvider,
+        BinanceFuturesProvider,
+        CoinglassProvider,
+        ETFCSVProvider,
+        FarsideProvider,
+        CoinglassETFProvider,
+        SoSoValueProvider,
+        BlockchainInfoProvider,
+        BlockchairBTCProvider,
+        BlockchairETHProvider,
+        SolanaRPCProvider,
+        DefiLlamaProvider,
+        DefiLlamaRWAProvider,
+        DefiLlamaStablecoinsProvider,
+        FredProvider,
+        YahooFinanceProvider,
+        StooqProvider,
+        FederalReserveCalendarProvider,
+        BlsCalendarProvider,
+        BeaCalendarProvider,
+        TreasuryAuctionProvider,
+        OfficialRegulatoryFeedProvider,
+        CftcCalendarProvider,
+        HouseCalendarProvider,
+        CongressBillActionProvider,
+        SenateCalendarProvider,
         CmeFedWatchProvider,
         GeopoliticalFeedProvider,
-        RSSNewsProvider, RSSRegulationProvider,
-        GlassnodeProvider, CryptoQuantProvider, NansenProvider, ArkhamProvider,
+        EthereumProtocolProvider,
+        SolanaProtocolProvider,
+        RSSNewsProvider,
+        RSSRegulationProvider,
+        GlassnodeProvider,
+        CryptoQuantProvider,
+        NansenProvider,
+        ArkhamProvider,
         WhaleAlertProvider,
         DeribitVolatilityProvider,
     ]

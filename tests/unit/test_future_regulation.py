@@ -10,6 +10,7 @@ from crypto_intel.future_events.models import FutureEventStatus
 from crypto_intel.providers.events.official_regulation import (
     parse_cftc_calendar,
     parse_house_calendar,
+    parse_senate_calendar,
     regulatory_feed_items_to_events,
 )
 
@@ -83,3 +84,53 @@ def test_cftc_calendar_keeps_event_end_and_does_not_infer_direction():
     assert event.expected_end_at == datetime(2028, 9, 18, 17, tzinfo=UTC)
     assert event.metadata["regulatory_stage"] == "HEARING"
     assert event.directional_effect.value == "NEUTRAL"
+
+
+def test_senate_banking_calendar_uses_official_datetime_and_stage_only():
+    html = """
+    <article class="hearing-item">
+      <time datetime="2028-09-15T10:00">09/15/28 10:00AM</time>
+      <h3><a href="/hearings/markup-of-the-digital-asset-clarity-act">
+        Markup of the Digital Asset CLARITY Act
+      </a></h3>
+    </article>
+    """
+
+    event = parse_senate_calendar(
+        html,
+        source_url="https://www.banking.senate.gov/hearings",
+        source_name="U.S. Senate Banking Committee",
+        fetched_at=NOW,
+    )[0]
+
+    assert event.scheduled_at == datetime(2028, 9, 15, 14, tzinfo=UTC)
+    assert event.metadata["regulatory_stage"] == "COMMITTEE_MARKUP"
+    assert event.directional_effect.value == "NEUTRAL"
+    assert event.source_url.endswith("markup-of-the-digital-asset-clarity-act")
+
+
+def test_senate_agriculture_calendar_requires_visible_time():
+    dated_only = """
+    <div class="hearing-item">
+      <time datetime="September 15, 2028">Date: 09/15/28</time>
+      <a href="/hearings/digital-commodities">Digital commodities hearing</a>
+    </div>
+    """
+    complete = dated_only.replace("Date: 09/15/28", "Date: 09/15/28 Time: 03:30pm")
+
+    assert (
+        parse_senate_calendar(
+            dated_only,
+            source_url="https://www.agriculture.senate.gov/hearings",
+            source_name="U.S. Senate Agriculture Committee",
+            fetched_at=NOW,
+        )
+        == []
+    )
+    event = parse_senate_calendar(
+        complete,
+        source_url="https://www.agriculture.senate.gov/hearings",
+        source_name="U.S. Senate Agriculture Committee",
+        fetched_at=NOW,
+    )[0]
+    assert event.scheduled_at == datetime(2028, 9, 15, 19, 30, tzinfo=UTC)

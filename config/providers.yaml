@@ -37,8 +37,11 @@ capabilities:
   events.regulation.cftc:   [cftc_calendar]
   events.regulation.house:  [house_financial_services_calendar]
   events.regulation.senate: [senate_committees_calendar]
+  events.regulation.congress: [congress_bill_actions]
   events.expectations.fed: [cme_fedwatch]
   events.geopolitical: [geopolitical_feeds]
+  events.protocol.ethereum: [ethereum_protocol]
+  events.protocol.solana: [solana_protocol]
 
   news.feed:           [rss_news]
   regulation.feed:     [rss_regulation]
@@ -73,12 +76,23 @@ providers:
   senate_committees_calendar:
     source_url: https://www.banking.senate.gov/hearings
     cache_ttl: {default: 10800}
+  congress_bill_actions:
+    base_url: https://api.congress.gov/v3
+    requires_key: CONGRESS_API_KEY
+    cache_ttl: {default: 10800}
   cme_fedwatch:
     base_url: ${CME_FEDWATCH_API_URL}
     requires_key: CME_FEDWATCH_API_KEY
     cache_ttl: {default: 60}
   geopolitical_feeds:
     cache_ttl: {default: 900}
+  ethereum_protocol:
+    source_url: https://blog.ethereum.org/en/feed.xml
+    cache_ttl: {default: 10800}
+  solana_protocol:
+    news_url: https://solana.com/news
+    status_url: https://status.solana.com/api/v2/incidents.json
+    cache_ttl: {default: 10800}
   binance_spot:
     base_url: https://api.binance.com
     cache_ttl: {15m: 120, 1h: 300, 4h: 900, 1d: 3600, 1w: 7200, ticker: 60}

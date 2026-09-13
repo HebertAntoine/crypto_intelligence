@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Route, Routes } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Today from "./pages/Today";
+import FutureAnalysis from "./pages/FutureAnalysis";
 import Dashboard from "./pages/Dashboard";
 import AssetPage from "./pages/AssetPage";
 import GlobalMarketPage from "./pages/GlobalMarket";
@@ -37,23 +38,16 @@ export default function App() {
           </span>
         )}
         <nav>
-          <NavLink to="/" end>Today</NavLink>
-          <NavLink to="/daily">Daily Report</NavLink>
-          <NavLink to="/global">Global</NavLink>
-          <NavLink to="/calendar">Calendar</NavLink>
+          <NavLink to="/" end>Marchés</NavLink>
+          <NavLink to="/analyse">Analyse</NavLink>
           <NavLink to="/chart">Graphiques &amp; Patterns</NavLink>
-          <NavLink to="/trader-knowledge">Trader Knowledge</NavLink>
-          <NavLink to="/structure">Structure</NavLink>
-          <NavLink to="/track-record">Track Record</NavLink>
-          <NavLink to="/research">Research</NavLink>
-          <NavLink to="/knowledge">Knowledge</NavLink>
-          <NavLink to="/sources">Sources</NavLink>
         </nav>
       </header>
 
       <main className="main">
         <Routes>
           <Route path="/" element={<Today />} />
+          <Route path="/analyse" element={<FutureAnalysis />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/daily" element={<DailyReportPage />} />
           <Route path="/structure" element={<MarketStructurePage />} />

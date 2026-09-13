@@ -17,8 +17,14 @@ import '../widgets/mobile_kit.dart';
 class MarketsScreen extends StatefulWidget {
   final ApiClient client;
   final LivePriceSource? livePrices;
+  final ValueChanged<String>? onAssetSelected;
 
-  const MarketsScreen({super.key, required this.client, this.livePrices});
+  const MarketsScreen({
+    super.key,
+    required this.client,
+    this.livePrices,
+    this.onAssetSelected,
+  });
 
   @override
   State<MarketsScreen> createState() => _MarketsScreenState();
@@ -108,12 +114,14 @@ class _MarketsScreenState extends State<MarketsScreen> {
                     livePrices: widget.livePrices,
                     timeframes: data.timeframes[read.asset],
                     impliedVolatility: data.impliedVolatility[read.asset],
-                    onTap: () => _showMarketDetail(
-                      context,
-                      read,
-                      data.timeframes[read.asset],
-                      data.impliedVolatility[read.asset],
-                    ),
+                    onTap: widget.onAssetSelected == null
+                        ? () => _showMarketDetail(
+                              context,
+                              read,
+                              data.timeframes[read.asset],
+                              data.impliedVolatility[read.asset],
+                            )
+                        : () => widget.onAssetSelected!(read.asset),
                   ),
                   const SizedBox(height: 16),
                 ],

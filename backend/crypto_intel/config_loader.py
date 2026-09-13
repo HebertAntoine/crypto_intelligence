@@ -68,6 +68,7 @@ def providers_config() -> dict[str, Any]:
 
 
 def macro_calendar_config() -> dict[str, Any]:
+    """Deprecated compatibility loader; production events use FutureEvent."""
     return _load("macro_calendar.yaml")
 
 

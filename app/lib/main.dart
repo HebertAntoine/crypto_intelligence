@@ -13,8 +13,8 @@ import 'api/client.dart';
 import 'config.dart';
 import 'live_prices/live_price_service.dart';
 import 'screens/chart_screen.dart';
+import 'screens/future_analysis_screen.dart';
 import 'screens/markets_screen.dart';
-import 'screens/today_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/mobile_kit.dart';
 
@@ -71,12 +71,24 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
+  String _analysisAsset = 'BTC';
 
   @override
   Widget build(BuildContext context) {
     final screens = [
-      TodayScreen(client: widget.client, livePrices: widget.livePrices),
-      MarketsScreen(client: widget.client, livePrices: widget.livePrices),
+      MarketsScreen(
+        client: widget.client,
+        livePrices: widget.livePrices,
+        onAssetSelected: (asset) => setState(() {
+          _analysisAsset = asset;
+          _index = 1;
+        }),
+      ),
+      FutureAnalysisScreen(
+        client: widget.client,
+        livePrices: widget.livePrices,
+        initialAsset: _analysisAsset,
+      ),
       ChartScreen(client: widget.client),
     ];
 
@@ -87,8 +99,8 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _index,
         onSelected: (value) => setState(() => _index = value),
         destinations: const [
-          MobileNavDestination(icon: Icons.home_rounded, label: 'Aujourd’hui'),
           MobileNavDestination(icon: Icons.bar_chart_rounded, label: 'Marchés'),
+          MobileNavDestination(icon: Icons.radar_rounded, label: 'Analyse'),
           MobileNavDestination(
               icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
         ],

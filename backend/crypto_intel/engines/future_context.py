@@ -19,6 +19,10 @@ def _value(value: Any, default: str = "") -> str:
     return str(result) if result is not None else default
 
 
+def _isoformat(value: Any) -> str | None:
+    return value.isoformat() if isinstance(value, datetime) else None
+
+
 def _direction(value: float | None) -> DirectionalBias:
     if value is None:
         return DirectionalBias.NEUTRAL
@@ -35,19 +39,14 @@ def _direction(value: float | None) -> DirectionalBias:
 
 def _event_direction(events: list[FutureEvent]) -> DirectionalBias | None:
     directed = [
-        event
-        for event in events
-        if event.directional_effect is not DirectionalBias.NEUTRAL
+        event for event in events if event.directional_effect is not DirectionalBias.NEUTRAL
     ]
     if not directed:
         return None
     directed.sort(key=lambda event: (-event.importance.rank, -event.confidence))
     top_rank = directed[0].importance.rank
     top = [event for event in directed if event.importance.rank == top_rank]
-    sides = {
-        "bull" if "BULLISH" in event.directional_effect.value else "bear"
-        for event in top
-    }
+    sides = {"bull" if "BULLISH" in event.directional_effect.value else "bear" for event in top}
     return directed[0].directional_effect if len(sides) == 1 else DirectionalBias.NEUTRAL
 
 
@@ -132,6 +131,7 @@ def build_five_family_snapshot(
     macro_context: dict[str, Any],
     liquidity: dict[str, Any],
     pressure: Any,
+    institutional_flow: Any,
     structure: dict[str, Any],
     regime: Any,
     volatility: Any,
@@ -162,8 +162,10 @@ def build_five_family_snapshot(
         }
     ]
 
-    macro_available = bool(macro_events) or bool(macro_context.get("available")) or bool(
-        liquidity.get("available")
+    macro_available = (
+        bool(macro_events)
+        or bool(macro_context.get("available"))
+        or bool(liquidity.get("available"))
     )
     macro_strengths = [
         float(item)
@@ -186,16 +188,43 @@ def build_five_family_snapshot(
     catalyst_available = bool(catalyst_events)
     catalyst_direction = _event_direction(catalyst_events) or DirectionalBias.NEUTRAL
 
-    flow_components = _pressure_components(pressure, {"institutions", "spot", "whales"})
-    flow_order = {"institutions": 0, "whales": 1, "spot": 2}
+    institutional_usable = bool(getattr(institutional_flow, "available", False)) and _value(
+        getattr(institutional_flow, "freshness", None), "UNAVAILABLE"
+    ) not in {"STALE", "UNAVAILABLE"}
+    flow_components = _pressure_components(pressure, {"spot", "whales"})
+    flow_order = {"whales": 1, "spot": 2}
     flow_components.sort(
         key=lambda item: (
             flow_order.get(getattr(item, "name", getattr(item, "family", "")), 9),
             -abs(float(getattr(item, "score", 0) or 0)),
         )
     )
-    flow_direction = _direction(float(flow_components[0].score)) if flow_components else None
+    institutional_state = _value(getattr(institutional_flow, "state", None))
+    institutional_directions = {
+        "STRONG_INFLOW": DirectionalBias.STRONGLY_BULLISH,
+        "INFLOW": DirectionalBias.BULLISH,
+        "NEUTRAL": DirectionalBias.NEUTRAL,
+        "OUTFLOW": DirectionalBias.BEARISH,
+        "STRONG_OUTFLOW": DirectionalBias.STRONGLY_BEARISH,
+    }
+    flow_direction = (
+        institutional_directions.get(institutional_state)
+        if institutional_usable
+        else _direction(float(flow_components[0].score))
+        if flow_components
+        else None
+    )
     flow_sources = [
+        {
+            "source": item.get("source"),
+            "tier": "MEASURED",
+            "url": item.get("source_url"),
+            "reference": item.get("provider"),
+            "as_of": _isoformat(getattr(institutional_flow, "observed_at", None)),
+            "evidence_ids": list(getattr(institutional_flow, "evidence_ids", [])),
+        }
+        for item in getattr(institutional_flow, "provenance", [])
+    ] + [
         {
             "source": getattr(item, "source", ""),
             "tier": "MEASURED",
@@ -209,14 +238,14 @@ def build_five_family_snapshot(
     positioning_components = _pressure_components(pressure, {"derivatives", "funding"})
     positioning_components.sort(key=lambda item: -abs(float(getattr(item, "score", 0) or 0)))
     positioning_direction = (
-        _direction(float(positioning_components[0].score))
-        if positioning_components
-        else None
+        _direction(float(positioning_components[0].score)) if positioning_components else None
     )
     volatility_regime = _value(getattr(volatility, "regime", None), "UNKNOWN")
     dvol_available = bool(getattr(implied_volatility, "available", False))
-    positioning_available = bool(positioning_components) or dvol_available or _usable(
-        states, "funding", "open_interest", "dvol"
+    positioning_available = (
+        bool(positioning_components)
+        or dvol_available
+        or _usable(states, "funding", "open_interest", "dvol")
     )
     positioning_movement = (
         ExpectedMovement.HIGH
@@ -224,7 +253,7 @@ def build_five_family_snapshot(
         or _value(getattr(volatility, "direction", None)) == "EXPANDING"
         else ExpectedMovement.NORMAL
     )
-    positioning_sources = [
+    positioning_sources: list[dict[str, Any]] = [
         {
             "source": getattr(item, "source", ""),
             "tier": "MEASURED",
@@ -235,7 +264,9 @@ def build_five_family_snapshot(
         for item in positioning_components
     ]
     if dvol_available:
-        positioning_sources.append(_derived_source("ImpliedVolatilityEngine (Deribit)", analysis_id, as_of))
+        positioning_sources.append(
+            _derived_source("ImpliedVolatilityEngine (Deribit)", analysis_id, as_of)
+        )
 
     bullish = list(structure.get("bullish_timeframes") or [])
     bearish = list(structure.get("bearish_timeframes") or [])
@@ -244,8 +275,10 @@ def build_five_family_snapshot(
     if technical_score is None:
         regime_label = _value(getattr(regime, "regime", None), "UNDETERMINED")
         technical_score = (
-            40 if "BULL" in regime_label or "UP" in regime_label
-            else -40 if "BEAR" in regime_label or "DOWN" in regime_label
+            40
+            if "BULL" in regime_label or "UP" in regime_label
+            else -40
+            if "BEAR" in regime_label or "DOWN" in regime_label
             else None
         )
     technical_direction = _direction(technical_score) if technical_available else None
@@ -271,9 +304,7 @@ def build_five_family_snapshot(
             reasons=[event.title for event in macro_events[:3]],
             sources=macro_sources,
             as_of=as_of.isoformat(),
-            freshness=(
-                "RECENT" if macro_events else _freshness(states, ("macro", "onchain"))
-            ),
+            freshness=("RECENT" if macro_events else _freshness(states, ("macro", "onchain"))),
             unavailable_reason="Calendrier et séries macro/liquidité indisponibles.",
         ),
         FutureFamily.CATALYSTS_REGULATION: FamilyAssessment(
@@ -296,24 +327,43 @@ def build_five_family_snapshot(
         ),
         FutureFamily.FLOWS_WHALES: FamilyAssessment(
             family=FutureFamily.FLOWS_WHALES,
-            available=bool(flow_components),
+            available=institutional_usable or bool(flow_components),
             directional_bias=flow_direction,
             expected_movement=ExpectedMovement.NORMAL,
             confidence=(
-                float(getattr(flow_components[0], "confidence", 0.0))
+                min(0.9, float(getattr(institutional_flow, "sessions_available", 0)) / 20)
+                if institutional_usable
+                else float(getattr(flow_components[0], "confidence", 0.0))
                 if flow_components
                 else 0.0
             ),
             summary=(
-                "; ".join(str(getattr(item, "detail", "")) for item in flow_components[:2])
-                if flow_components
+                (
+                    f"Flux institutionnels {institutional_state.lower()}; "
+                    f"cumul 5 séances "
+                    f"{getattr(institutional_flow, 'rolling_5_sessions_musd', None)} M$."
+                    if institutional_usable
+                    else "; ".join(str(getattr(item, "detail", "")) for item in flow_components[:2])
+                )
+                if institutional_usable or flow_components
                 else ""
             ),
-            reasons=[str(getattr(item, "label", "")) for item in flow_components[:3]],
+            reasons=(
+                [f"Régime institutionnel {institutional_state}"] if institutional_usable else []
+            )
+            + [str(getattr(item, "label", "")) for item in flow_components[:3]],
             sources=flow_sources,
-            as_of=getattr(flow_components[0], "as_of", None) if flow_components else None,
+            as_of=(
+                _isoformat(getattr(institutional_flow, "observed_at", None))
+                if institutional_usable and getattr(institutional_flow, "observed_at", None)
+                else getattr(flow_components[0], "as_of", None)
+                if flow_components
+                else None
+            ),
             freshness=(
-                _value(getattr(flow_components[0], "freshness", None), "UNAVAILABLE")
+                _value(getattr(institutional_flow, "freshness", None), "UNAVAILABLE")
+                if institutional_usable
+                else _value(getattr(flow_components[0], "freshness", None), "UNAVAILABLE")
                 if flow_components
                 else "UNAVAILABLE"
             ),
@@ -322,9 +372,7 @@ def build_five_family_snapshot(
         FutureFamily.POSITIONING_DERIVATIVES: FamilyAssessment(
             family=FutureFamily.POSITIONING_DERIVATIVES,
             available=positioning_available,
-            directional_bias=(
-                positioning_direction if positioning_available else None
-            ),
+            directional_bias=(positioning_direction if positioning_available else None),
             expected_movement=positioning_movement,
             confidence=(
                 max(
@@ -354,9 +402,7 @@ def build_five_family_snapshot(
             directional_bias=technical_direction,
             expected_movement=technical_movement,
             confidence=(
-                min(0.9, (len(bullish) + len(bearish)) / 4)
-                if technical_available
-                else 0.0
+                min(0.9, (len(bullish) + len(bearish)) / 4) if technical_available else 0.0
             ),
             summary=(
                 f"Structure haussière sur {len(bullish)} unité(s), baissière sur "
@@ -364,9 +410,15 @@ def build_five_family_snapshot(
                 if technical_available
                 else ""
             ),
-            reasons=[*(f"Structure haussière {item}" for item in bullish[:2]),
-                     *(f"Structure baissière {item}" for item in bearish[:2])],
-            sources=[_derived_source("MarketStructureEngine + VolatilityRegimeEngine", analysis_id, as_of)],
+            reasons=[
+                *(f"Structure haussière {item}" for item in bullish[:2]),
+                *(f"Structure baissière {item}" for item in bearish[:2]),
+            ],
+            sources=[
+                _derived_source(
+                    "MarketStructureEngine + VolatilityRegimeEngine", analysis_id, as_of
+                )
+            ],
             as_of=as_of.isoformat(),
             freshness=_freshness(states, ("structure", "volatility")),
             unavailable_reason="Historique OHLCV insuffisant pour structure et volatilité.",

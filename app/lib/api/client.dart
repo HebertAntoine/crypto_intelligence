@@ -13,6 +13,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import 'future_models.dart';
 import 'models.dart';
 
 /// Where the last response actually came from.
@@ -222,6 +223,24 @@ class ApiClient {
     final results = await Future.wait(assets.map(today));
     return results;
   }
+
+  Future<FutureDecisionRead> futureDecision(
+    String asset, {
+    String horizon = '7d',
+  }) async =>
+      FutureDecisionRead.fromJson(
+        await _get('/future/$asset', {'horizon': horizon})
+            as Map<String, dynamic>,
+      );
+
+  Future<FutureTimelineRead> futureTimeline(
+    String asset, {
+    int days = 30,
+  }) async =>
+      FutureTimelineRead.fromJson(
+        await _get('/future/$asset/timeline', {'days': '$days'})
+            as Map<String, dynamic>,
+      );
 
   Future<StructureRead> structure(String asset,
           {String timeframe = '4h'}) async =>

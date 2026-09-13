@@ -16,11 +16,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
 
-from ..config_loader import macro_calendar_config
 from ..core.enums import Asset, Timeframe
 from ..history import store
 from ..logging_setup import get_logger
@@ -63,10 +63,11 @@ def generate_nfp_dates(start_year: int = 2018, end_year: int | None = None) -> l
             # Monday=0 … Friday=4. Offset to the first Friday.
             offset = (4 - first_weekday) % 7
             day = 1 + offset
-            # 08:30 ET is 12:30 UTC in winter, 13:30 UTC in summer. Using 12:30
-            # year-round is an approximation of at most one hour, which the
-            # hourly-bar anchoring already tolerates.
-            when = datetime(year, month, day, 12, 30, tzinfo=UTC)
+            # Convert the documented local release time with the IANA zone so
+            # DST is correct for the historical date.
+            when = datetime(
+                year, month, day, 8, 30, tzinfo=ZoneInfo("America/New_York")
+            ).astimezone(UTC)
             if when > datetime.now(UTC):
                 continue
             events.append({
@@ -81,15 +82,15 @@ def generate_nfp_dates(start_year: int = 2018, end_year: int | None = None) -> l
 
 
 def historical_event_times(
-    kinds: list[str] | None = None, include_derived: bool = True
+    kinds: list[str] | None = None, include_derived: bool = False
 ) -> list[dict[str, Any]]:
-    """Scheduled events, from the calendar plus rule-derived dates.
+    """Point-in-time-safe scheduled events from the rich event store.
 
-    The maintained calendar holds only a handful of upcoming entries, which is
-    why historical event studies were empty. Rule-derived NFP dates fill that
-    gap for one event type; CPI and FOMC still need an imported schedule.
+    An event is eligible only when its source was observed no later than the
+    event itself. This prevents a schedule imported after the fact from leaking
+    into a historical validation. Rule-derived NFP dates remain an explicit
+    opt-in calibration aid; they are never part of the production path.
     """
-    config = macro_calendar_config()
     events: list[dict[str, Any]] = []
 
     if include_derived:
@@ -100,35 +101,34 @@ def historical_event_times(
         if kinds:
             derived = [e for e in derived if e["kind"] in kinds]
         events.extend(derived)
-    for entry in config.get("events", []):
-        try:
-            when = datetime.strptime(
-                f"{entry['date']} {entry.get('time', '00:00')}", "%Y-%m-%d %H:%M"
-            ).replace(tzinfo=UTC)
-        except (KeyError, ValueError):
-            continue
-        kind = entry.get("kind", "OTHER")
-        if kinds and kind not in kinds:
-            continue
-        events.append({
-            "name": entry["name"], "kind": kind, "time": when,
-            "importance": entry.get("importance", "INFO"),
-            "certainty": "KNOWN",
-            "source": "config/macro_calendar.yaml",
-        })
-
-    # Regulatory items already stored carry their own publication time.
     from ..db import repo
 
-    for row in repo.recent_events(days=3650, limit=500):
-        if row["kind"] in ("FOMC", "CPI", "NFP", "PCE"):
+    now = datetime.now(UTC)
+    for event in repo.list_future_events(
+        end=now,
+        include_expired=True,
+        limit=5000,
+    ):
+        when = event.scheduled_at
+        if when is None or when > now:
             continue
-        if kinds and row["kind"] not in kinds:
+        if kinds and event.event_type not in kinds:
+            continue
+        observed_at = event.source_published_at or event.detected_at
+        if observed_at > when:
+            # The event may be valid for display today, but it was not known
+            # at the historical decision boundary being studied.
             continue
         events.append({
-            "name": row["name"], "kind": row["kind"],
-            "time": row["scheduled_at"], "importance": row["importance"],
-            "certainty": "KNOWN", "source": "stored regulatory feed",
+            "name": event.title,
+            "kind": event.event_type,
+            "time": when,
+            "importance": event.importance.value,
+            "certainty": "SOURCE_OBSERVED_BEFORE_EVENT",
+            "source": event.source,
+            "source_url": event.source_url,
+            "observed_at": observed_at,
+            "event_id": event.id,
         })
 
     events.sort(key=lambda e: e["time"])

@@ -5,6 +5,8 @@ Engines and analysts never touch SQLAlchemy directly.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -227,6 +229,7 @@ def get_etf_flows(asset: Asset, days: int = 90) -> list[dict[str, Any]]:
         )
         return [
             {
+                "id": r.id,
                 "date": _as_utc(r.date),
                 "ticker": r.ticker,
                 "flow_musd": r.flow_musd,
@@ -703,6 +706,46 @@ def list_future_events(
             event for event in events if event.runtime_status(now) is not FutureEventStatus.EXPIRED
         ]
     return events[:limit]
+
+
+def future_event_fingerprint() -> dict[str, Any]:
+    """Return a compact content fingerprint for every persisted future event.
+
+    Future events are market-wide inputs and can affect several assets.  A
+    global digest is therefore intentional: changing a regulatory or macro
+    event invalidates every cached asset analysis instead of risking a stale
+    decision because JSON asset filtering behaved differently across database
+    backends.
+    """
+    columns = (
+        FutureEventRow.canonical_event_id,
+        FutureEventRow.event_signature,
+        FutureEventRow.status,
+        FutureEventRow.scheduled_at,
+        FutureEventRow.importance,
+        FutureEventRow.directional_effect,
+        FutureEventRow.magnitude_effect,
+        FutureEventRow.confidence,
+        FutureEventRow.consensus,
+        FutureEventRow.expected_value,
+        FutureEventRow.actual_value,
+        FutureEventRow.surprise,
+        FutureEventRow.market_probabilities,
+        FutureEventRow.probability_timestamp,
+        FutureEventRow.last_updated,
+    )
+    with session_scope() as s:
+        rows = s.execute(select(*columns).order_by(FutureEventRow.canonical_event_id.asc())).all()
+    payload = json.dumps(
+        [list(row) for row in rows],
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return {
+        "count": len(rows),
+        "sha256": hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+    }
 
 
 def purge_old_observations(days: int = 400) -> int:

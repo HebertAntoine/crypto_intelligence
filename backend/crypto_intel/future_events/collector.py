@@ -22,14 +22,20 @@ OFFICIAL_REGULATORY_CAPABILITIES = (
     "events.regulation.cftc",
     "events.regulation.house",
     "events.regulation.senate",
+    "events.regulation.congress",
 )
 MARKET_EXPECTATION_CAPABILITIES = ("events.expectations.fed",)
 GEOPOLITICAL_CAPABILITIES = ("events.geopolitical",)
+OFFICIAL_PROTOCOL_CAPABILITIES = (
+    "events.protocol.ethereum",
+    "events.protocol.solana",
+)
 ALL_EVENT_CAPABILITIES = (
     OFFICIAL_MACRO_CAPABILITIES
     + OFFICIAL_REGULATORY_CAPABILITIES
     + MARKET_EXPECTATION_CAPABILITIES
     + GEOPOLITICAL_CAPABILITIES
+    + OFFICIAL_PROTOCOL_CAPABILITIES
 )
 
 
