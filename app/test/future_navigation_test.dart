@@ -100,6 +100,12 @@ void main() {
       expect(find.byKey(const ValueKey('horizon-24h')), findsOneWidget);
       expect(find.byKey(const ValueKey('horizon-7d')), findsOneWidget);
       expect(find.byKey(const ValueKey('horizon-30d')), findsOneWidget);
+      final decisionBottom =
+          tester.getBottomRight(find.byKey(const ValueKey('decision-card'))).dy;
+      final metricsBottom = tester
+          .getBottomRight(find.byKey(const ValueKey('decision-horizon')))
+          .dy;
+      expect(decisionBottom - metricsBottom, lessThanOrEqualTo(18));
       await tester.tap(find.byKey(const ValueKey('horizon-24h')).last);
       await tester.pumpAndSettle();
       // Switching horizon rebuilds the reasons; the five-reason cap holds on

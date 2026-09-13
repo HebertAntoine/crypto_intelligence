@@ -8,14 +8,9 @@ import '../api/future_models.dart';
 import '../api/models.dart';
 import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/color_emoji.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
-
-const _emojiFontFamily = 'Apple Color Emoji';
-const _emojiFontFallback = <String>[
-  'Segoe UI Emoji',
-  'Noto Color Emoji',
-];
 
 class FutureAnalysisScreen extends StatefulWidget {
   final ApiClient client;
@@ -643,6 +638,7 @@ class _DecisionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final visual = _decisionVisual(decision.decision);
     return ClipRRect(
+      key: const ValueKey('decision-card'),
       borderRadius: BorderRadius.circular(22),
       child: Stack(
         children: [
@@ -680,7 +676,7 @@ class _DecisionCard extends StatelessWidget {
             ),
           ),
           Container(
-            constraints: const BoxConstraints(minHeight: 268),
+            height: 268,
             padding: const EdgeInsets.fromLTRB(17, 18, 17, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -727,7 +723,7 @@ class _DecisionCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const Spacer(),
                 Row(
                   children: [
                     Expanded(
@@ -956,16 +952,7 @@ class _ReasonRow extends StatelessWidget {
             const SizedBox(width: 9),
             SizedBox(
               width: 30,
-              child: Text(
-                reason.emoji,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 23,
-                  height: 1.2,
-                  fontFamily: _emojiFontFamily,
-                  fontFamilyFallback: _emojiFontFallback,
-                ),
-              ),
+              child: Center(child: ColorEmoji(emoji: reason.emoji, size: 23)),
             ),
             const SizedBox(width: 9),
             Expanded(
@@ -1069,14 +1056,7 @@ void _showReasonDetail(BuildContext context, _DecisionFactor reason) {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  reason.emoji,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontFamily: _emojiFontFamily,
-                    fontFamilyFallback: _emojiFontFallback,
-                  ),
-                ),
+                ColorEmoji(emoji: reason.emoji, size: 26),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -1213,19 +1193,33 @@ class _ReasonDetailBlock extends StatelessWidget {
     // An empty section is noise: the heading promises content that is not
     // there. Nothing is rendered rather than an empty block.
     if (body.trim().isEmpty) return const SizedBox.shrink();
+    final separator = title.indexOf(' ');
+    final emoji = separator > 0 ? title.substring(0, separator) : null;
+    final label = separator > 0 ? title.substring(separator + 1) : title;
     return Padding(
       padding: const EdgeInsets.only(top: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: mobileMuted.withValues(alpha: .85),
-              fontSize: 10.5,
-              letterSpacing: .9,
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (emoji != null) ...[
+                ColorEmoji(emoji: emoji, size: 13),
+                const SizedBox(width: 6),
+              ],
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: mobileMuted.withValues(alpha: .85),
+                    fontSize: 10.5,
+                    letterSpacing: .9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
@@ -1440,14 +1434,7 @@ class _SignalListCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  icon,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontFamily: _emojiFontFamily,
-                    fontFamilyFallback: _emojiFontFallback,
-                  ),
-                ),
+                ColorEmoji(emoji: icon, size: 18),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -1548,14 +1535,7 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
         children: [
           Row(
             children: [
-              const Text(
-                '🗓️',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontFamily: _emojiFontFamily,
-                  fontFamilyFallback: _emojiFontFallback,
-                ),
-              ),
+              const ColorEmoji(emoji: '🗓️', size: 19),
               const SizedBox(width: 8),
               const Flexible(
                 child: Text(
@@ -1741,14 +1721,7 @@ Future<void> _showEventDetails(
             children: [
               Row(
                 children: [
-                  const Text(
-                    '🗓️',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontFamily: _emojiFontFamily,
-                      fontFamilyFallback: _emojiFontFallback,
-                    ),
-                  ),
+                  const ColorEmoji(emoji: '🗓️', size: 24),
                   const SizedBox(width: 9),
                   const Expanded(
                     child: Text(

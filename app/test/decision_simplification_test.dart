@@ -10,6 +10,7 @@ import 'package:crypto_intelligence_app/api/client.dart';
 import 'package:crypto_intelligence_app/live_prices/live_price_service.dart';
 import 'package:crypto_intelligence_app/main.dart';
 import 'package:crypto_intelligence_app/theme/app_theme.dart';
+import 'package:crypto_intelligence_app/widgets/color_emoji.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -77,7 +78,8 @@ void main() {
     expect(
       find.byWidgetPredicate((widget) =>
           widget is Text &&
-          const {'FAIBLE', 'MODÉRÉ', 'ÉLEVÉ', 'CRITIQUE'}.contains(widget.data)),
+          const {'FAIBLE', 'MODÉRÉ', 'ÉLEVÉ', 'CRITIQUE'}
+              .contains(widget.data)),
       findsWidgets,
     );
   });
@@ -90,19 +92,23 @@ void main() {
     await tester.pumpAndSettle();
 
     // Factor 1 is the ranked top catalyst, so it uses the event vocabulary.
-    expect(find.text('📅 CE QUI VA SE PASSER'), findsOneWidget);
-    expect(find.text('🎯 CE QUE LE MARCHÉ ATTEND'), findsOneWidget);
-    expect(find.text('💡 POURQUOI CELA COMPTE'), findsOneWidget);
+    expect(find.text('CE QUI VA SE PASSER'), findsOneWidget);
+    expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsOneWidget);
+    expect(find.text('POURQUOI CELA COMPTE'), findsOneWidget);
+    expect(find.byType(ColorEmoji), findsWidgets);
     // A dated event never carries the observation vocabulary.
-    expect(find.text('🔍 CE QU’ON OBSERVE'), findsNothing);
+    expect(find.text('CE QU’ON OBSERVE'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.text('🔴 SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU'),
+      find.text('SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU'),
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('🟢 SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU'), findsOneWidget);
-    expect(find.text('📈 CE QUE ÇA PEUT ENGENDRER'), findsOneWidget);
+    expect(
+      find.text('SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU'),
+      findsOneWidget,
+    );
+    expect(find.text('CE QUE ÇA PEUT ENGENDRER'), findsOneWidget);
 
     // Sources sit at the bottom so they inform without crowding the summary.
     await tester.scrollUntilVisible(
@@ -179,7 +185,8 @@ void main() {
     final decision = await _shippedClient().futureDecision('BTC');
     final diverges = (decision.decision == 'SELL' &&
             decision.direction.contains('BULLISH')) ||
-        (decision.decision == 'BUY' && decision.direction.contains('BEARISH')) ||
+        (decision.decision == 'BUY' &&
+            decision.direction.contains('BEARISH')) ||
         (decision.decision == 'WAIT' && decision.eventRiskActive);
     expect(note, diverges ? findsOneWidget : findsNothing);
   });
@@ -239,11 +246,11 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    expect(find.text('🔍 CE QU’ON OBSERVE'), findsOneWidget);
-    expect(find.text('🔄 CE QUI INVALIDERAIT CE SIGNAL'), findsOneWidget);
-    expect(find.text('📅 CE QUI VA SE PASSER'), findsNothing);
+    expect(find.text('CE QU’ON OBSERVE'), findsOneWidget);
+    expect(find.text('CE QUI INVALIDERAIT CE SIGNAL'), findsOneWidget);
+    expect(find.text('CE QUI VA SE PASSER'), findsNothing);
     // A signal already measured has no market expectation to quote.
-    expect(find.text('🎯 CE QUE LE MARCHÉ ATTEND'), findsNothing);
+    expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsNothing);
   });
 
   testWidgets('the top catalyst is ranked by contribution, not by date',
@@ -294,7 +301,8 @@ void main() {
     // Tier-1 event first even though its direction is unknown.
     final first = find.byKey(const ValueKey('decision-reason-1'));
     expect(
-      find.descendant(of: first, matching: find.textContaining('Décision de la Fed')),
+      find.descendant(
+          of: first, matching: find.textContaining('Décision de la Fed')),
       findsOneWidget,
     );
   });
