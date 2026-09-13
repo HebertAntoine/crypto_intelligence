@@ -225,6 +225,11 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   asOf: decision.asOf,
                   market: bundle.market?.marketData,
                 ),
+                const SizedBox(height: 15),
+                _HorizonSelector(
+                  selected: _horizon,
+                  onSelected: _selectHorizon,
+                ),
                 const SizedBox(height: 16),
                 _DecisionCard(
                   decision: decision,
@@ -521,8 +526,12 @@ class _AssetHeader extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 5),
+                      // The badge above describes the price feed; this line
+                      // describes the analysis, which is refreshed far less
+                      // often. Labelling both 'MAJ' made a live price look
+                      // stale by however long the analysis had been running.
                       Text(
-                        'MAJ ${_dateCompact(asOf)}',
+                        'Analyse du ${_dateCompact(asOf)}',
                         style: const TextStyle(
                           color: mobileMuted,
                           fontSize: 9.5,
@@ -587,148 +596,129 @@ class _DecisionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visual = _decisionVisual(decision.decision);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          BoxShadow(
-            color: visual.glow.withValues(alpha: .3),
-            blurRadius: 24,
-            spreadRadius: -7,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              visual.asset,
+              key: ValueKey(visual.asset),
+              fit: BoxFit.cover,
+              alignment: Alignment.centerRight,
+              filterQuality: FilterQuality.high,
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  stops: const [0, .6, 1],
+                  colors: [
+                    const Color(0xFF061121).withValues(alpha: .95),
+                    const Color(0xFF071426).withValues(alpha: .68),
+                    visual.overlay.withValues(alpha: .1),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Container(
+            constraints: const BoxConstraints(minHeight: 268),
+            padding: const EdgeInsets.fromLTRB(17, 18, 17, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'EST-CE LE BON MOMENT POUR ACHETER ?',
+                  style: TextStyle(
+                    color: Color(0xFFE7F0FF),
+                    fontSize: 12.5,
+                    height: 1.25,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _decisionLabel(decision.decision),
+                  style: TextStyle(
+                    color: visual.accent,
+                    fontSize: 40,
+                    height: .95,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -.8,
+                    shadows: [
+                      Shadow(
+                        color: visual.glow.withValues(alpha: .55),
+                        blurRadius: 14,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: Text(
+                    _decisionHeadline(decision),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFF4F8FF),
+                      fontSize: 15.5,
+                      height: 1.25,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DecisionMetric(
+                        icon: Icons.shield_outlined,
+                        label: 'Risque',
+                        value: _impactLabel(decision.eventRisk),
+                        tone: _impactColor(decision.eventRisk),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _DecisionMetric(
+                        key: const ValueKey('decision-horizon'),
+                        icon: Icons.schedule_rounded,
+                        label: 'Horizon',
+                        value: _horizonLongLabel(horizon),
+                        tone: mobileBlue,
+                        onTap: onHorizonTap,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _DecisionMetric(
+                        icon: Icons.show_chart_rounded,
+                        label: 'Volatilité',
+                        value: _movementLabel(decision.movement),
+                        tone: visual.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _DecisionMetric(
+                        icon: Icons.bar_chart_rounded,
+                        label: 'Confiance',
+                        value: '${(decision.confidence * 100).round()} %',
+                        tone: mobileBlue,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                visual.asset,
-                key: ValueKey(visual.asset),
-                fit: BoxFit.cover,
-                alignment: Alignment.centerRight,
-                filterQuality: FilterQuality.high,
-              ),
-            ),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    stops: const [0, .6, 1],
-                    colors: [
-                      const Color(0xFF061121).withValues(alpha: .95),
-                      const Color(0xFF071426).withValues(alpha: .68),
-                      visual.overlay.withValues(alpha: .1),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              constraints: const BoxConstraints(minHeight: 268),
-              padding: const EdgeInsets.fromLTRB(17, 18, 17, 16),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: visual.accent.withValues(alpha: .9),
-                  width: 1.25,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'EST-CE LE BON MOMENT POUR ACHETER ?',
-                    style: TextStyle(
-                      color: Color(0xFFE7F0FF),
-                      fontSize: 12.5,
-                      height: 1.25,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: .2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _decisionLabel(decision.decision),
-                    style: TextStyle(
-                      color: visual.accent,
-                      fontSize: 40,
-                      height: .95,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -.8,
-                      shadows: [
-                        Shadow(
-                          color: visual.glow.withValues(alpha: .55),
-                          blurRadius: 14,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 300),
-                    child: Text(
-                      _decisionHeadline(decision),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFFF4F8FF),
-                        fontSize: 15.5,
-                        height: 1.25,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DecisionMetric(
-                          icon: Icons.shield_outlined,
-                          label: 'Risque',
-                          value: _impactLabel(decision.eventRisk),
-                          tone: _impactColor(decision.eventRisk),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: _DecisionMetric(
-                          key: const ValueKey('decision-horizon'),
-                          icon: Icons.schedule_rounded,
-                          label: 'Horizon',
-                          value: _horizonLongLabel(horizon),
-                          tone: mobileBlue,
-                          onTap: onHorizonTap,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: _DecisionMetric(
-                          icon: Icons.show_chart_rounded,
-                          label: 'Volatilité',
-                          value: _movementLabel(decision.movement),
-                          tone: visual.accent,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: _DecisionMetric(
-                          icon: Icons.bar_chart_rounded,
-                          label: 'Confiance',
-                          value: '${(decision.confidence * 100).round()} %',
-                          tone: mobileBlue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -835,6 +825,7 @@ class _WhyDecisionCard extends StatelessWidget {
                 ),
               ),
               TextButton(
+                key: const ValueKey('why-see-all'),
                 onPressed: onSeeAll,
                 style: TextButton.styleFrom(
                   foregroundColor: mobileBlue,
@@ -1169,6 +1160,7 @@ class _UpcomingEventsCardState extends State<_UpcomingEventsCard> {
               ),
               if (widget.events.length > 4)
                 TextButton(
+                  key: const ValueKey('events-see-all'),
                   onPressed: () => setState(() => _expanded = !_expanded),
                   style: TextButton.styleFrom(
                     foregroundColor: mobileBlue,
@@ -1216,93 +1208,222 @@ class _UpcomingEventRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tone = _impactColor(event.importance);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 9),
-      child: Row(
-        children: [
-          Container(
-            width: 52,
-            padding: const EdgeInsets.symmetric(vertical: 7),
-            decoration: BoxDecoration(
-              color: const Color(0xFF14243A),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF304C69)),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  '${event.scheduledAt?.day ?? '—'}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    height: 1,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        key: ValueKey('event-${event.id}'),
+        onTap: () => _showEventDetails(context, event),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14243A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF304C69)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${event.scheduledAt?.day ?? '—'}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        height: 1,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _monthLabel(event.scheduledAt),
+                      style: const TextStyle(
+                        color: mobileMuted,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${_countdown(event.countdownSeconds)} · ${event.source}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(color: mobileMuted, fontSize: 10.5),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: tone.withValues(alpha: .13),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: tone.withValues(alpha: .35)),
+                ),
+                child: Text(
+                  _impactLabel(event.importance),
+                  style: TextStyle(
+                    color: tone,
+                    fontSize: 9,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  _monthLabel(event.scheduledAt),
-                  style: const TextStyle(
-                    color: mobileMuted,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${_countdown(event.countdownSeconds)} · ${event.source}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: mobileMuted, fontSize: 10.5),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
-              color: tone.withValues(alpha: .13),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: tone.withValues(alpha: .35)),
-            ),
-            child: Text(
-              _impactLabel(event.importance),
-              style: TextStyle(
-                color: tone,
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
               ),
-            ),
+              const SizedBox(width: 2),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF6FA9E8),
+                size: 17,
+              ),
+            ],
           ),
-          const SizedBox(width: 2),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: Color(0xFF6FA9E8),
-            size: 17,
-          ),
-        ],
+        ),
       ),
     );
   }
+}
+
+Future<void> _showEventDetails(
+  BuildContext context,
+  FutureEventRead event,
+) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF061525),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    '🗓️',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontFamilyFallback: _emojiFontFallback,
+                    ),
+                  ),
+                  const SizedBox(width: 9),
+                  const Expanded(
+                    child: Text(
+                      'Détail de l’événement',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Fermer',
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(
+                event.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  height: 1.25,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _DetailLine(
+                  label: 'Date', value: _dateCompact(event.scheduledAt)),
+              _DetailLine(
+                label: 'Échéance',
+                value: _countdown(event.countdownSeconds),
+              ),
+              _DetailLine(
+                label: 'Importance',
+                value: _impactLabel(event.importance),
+              ),
+              _DetailLine(label: 'Statut', value: _plainLabel(event.status)),
+              _DetailLine(
+                label: 'Effet directionnel',
+                value: _directionLabel(event.direction),
+              ),
+              _DetailLine(
+                label: 'Mouvement attendu',
+                value: _movementLabel(event.movement),
+              ),
+              _DetailLine(label: 'Fraîcheur', value: event.freshness),
+              _DetailLine(label: 'Source', value: event.source),
+              if (event.sourceUrl case final url?)
+                _DetailLine(label: 'Lien source', value: url),
+            ],
+          ),
+        ),
+      ),
+    );
+
+class _DetailLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 112,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: mobileMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Expanded(
+              child: SelectableText(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
 }
 
 class _MarketContextCard extends StatelessWidget {
@@ -1535,6 +1656,26 @@ class _Scenarios extends StatelessWidget {
                   ),
                 ),
               ),
+              TextButton(
+                key: const ValueKey('scenarios-see-details'),
+                onPressed: () => _showScenarioDetails(
+                  context,
+                  scenarios,
+                  horizon,
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: mobileBlue,
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  minimumSize: const Size(0, 36),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Voir détails'),
+                    Icon(Icons.chevron_right_rounded, size: 19),
+                  ],
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1548,7 +1689,14 @@ class _Scenarios extends StatelessWidget {
                   for (final scenario in visible)
                     SizedBox(
                       width: width,
-                      child: _ScenarioTile(scenario: scenario),
+                      child: _ScenarioTile(
+                        scenario: scenario,
+                        onTap: () => _showScenarioDetails(
+                          context,
+                          [scenario],
+                          horizon,
+                        ),
+                      ),
                     ),
                 ],
               );
@@ -1576,8 +1724,9 @@ class _Scenarios extends StatelessWidget {
 
 class _ScenarioTile extends StatelessWidget {
   final FutureScenarioRead scenario;
+  final VoidCallback? onTap;
 
-  const _ScenarioTile({required this.scenario});
+  const _ScenarioTile({required this.scenario, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -1585,60 +1734,186 @@ class _ScenarioTile extends StatelessWidget {
     final headline = scenario.probability == null
         ? 'Confiance ${(scenario.confidence * 100).round()} %'
         : '${(scenario.probability! * 100).round()} %';
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(13),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 128),
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            color: tone.withValues(alpha: .08),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: tone.withValues(alpha: .55)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _scenarioLabel(scenario.id),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: tone,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                headline,
+                style: TextStyle(
+                  color: tone,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${_directionLabel(scenario.direction)} · '
+                '${_movementLabel(scenario.movement)}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: mobileMuted,
+                  fontSize: 10.5,
+                  height: 1.25,
+                ),
+              ),
+              if (scenario.eventChain.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _cleanExplanation(scenario.eventChain.first),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 9.5,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showScenarioDetails(
+  BuildContext context,
+  List<FutureScenarioRead> scenarios,
+  String horizon,
+) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF061525),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: .68,
+        maxChildSize: .92,
+        builder: (context, controller) => SafeArea(
+          top: false,
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Scénarios · ${_horizonLongLabel(horizon)}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Fermer',
+                    onPressed: () => Navigator.of(sheetContext).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              for (final scenario in scenarios) ...[
+                _ScenarioDetailCard(scenario: scenario),
+                const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+
+class _ScenarioDetailCard extends StatelessWidget {
+  final FutureScenarioRead scenario;
+
+  const _ScenarioDetailCard({required this.scenario});
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = _scenarioColor(scenario);
+    final probability = scenario.probability == null
+        ? 'Non défendable — confiance ${(scenario.confidence * 100).round()} %'
+        : '${(scenario.probability! * 100).round()} %';
     return Container(
-      constraints: const BoxConstraints(minHeight: 128),
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: .08),
-        borderRadius: BorderRadius.circular(13),
-        border: Border.all(color: tone.withValues(alpha: .55)),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: tone.withValues(alpha: .5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _scenarioLabel(scenario.id),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: tone,
-              fontSize: 11,
+              fontSize: 16,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 7),
-          Text(
-            headline,
-            style: TextStyle(
-              color: tone,
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-            ),
+          const SizedBox(height: 10),
+          _DetailLine(label: 'Probabilité', value: probability),
+          _DetailLine(
+            label: 'Direction',
+            value: _directionLabel(scenario.direction),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${_directionLabel(scenario.direction)} · '
-            '${_movementLabel(scenario.movement)}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: mobileMuted,
-              fontSize: 10.5,
-              height: 1.25,
-            ),
+          _DetailLine(
+            label: 'Mouvement',
+            value: _movementLabel(scenario.movement),
           ),
+          if (scenario.probabilitySource case final source?)
+            _DetailLine(label: 'Méthode', value: source),
           if (scenario.eventChain.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              _cleanExplanation(scenario.eventChain.first),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 9.5,
-                height: 1.2,
+            const Text(
+              'Chaîne d’événements',
+              style: TextStyle(
+                color: mobileMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
             ),
+            const SizedBox(height: 8),
+            for (final event in scenario.eventChain)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: Text(
+                  '• ${_cleanExplanation(event)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    height: 1.3,
+                  ),
+                ),
+              ),
           ],
         ],
       ),

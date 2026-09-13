@@ -131,10 +131,9 @@ class _HomeShellState extends State<HomeShell> {
         selectedIndex: _index,
         onSelected: _selectPage,
         destinations: const [
-          MobileNavDestination(
-              icon: Icons.currency_bitcoin_rounded, label: 'BTC'),
-          MobileNavDestination(icon: Icons.diamond_outlined, label: 'ETH'),
-          MobileNavDestination(icon: Icons.blur_on_rounded, label: 'SOL'),
+          MobileNavDestination(asset: 'BTC', label: 'BTC'),
+          MobileNavDestination(asset: 'ETH', label: 'ETH'),
+          MobileNavDestination(asset: 'SOL', label: 'SOL'),
           MobileNavDestination(
               icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
         ],

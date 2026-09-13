@@ -331,10 +331,15 @@ class MobilePill extends StatelessWidget {
 }
 
 class MobileNavDestination {
-  final IconData icon;
+  final IconData? icon;
+  final String? asset;
   final String label;
 
-  const MobileNavDestination({required this.icon, required this.label});
+  const MobileNavDestination({
+    this.icon,
+    this.asset,
+    required this.label,
+  }) : assert(icon != null || asset != null);
 }
 
 class MobileBottomNav extends StatelessWidget {
@@ -416,6 +421,7 @@ class _MobileNavItem extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
+          key: ValueKey('nav-${destination.label}'),
           borderRadius: BorderRadius.circular(compact ? 18 : 28),
           onTap: onTap,
           child: Ink(
@@ -428,10 +434,18 @@ class _MobileNavItem extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(destination.icon,
+                if (destination.asset case final asset?)
+                  CryptoLogo(
+                    key: ValueKey('nav-logo-$asset'),
+                    asset: asset,
+                    size: compact ? (selected ? 28 : 25) : (selected ? 38 : 34),
+                  )
+                else
+                  Icon(
+                    destination.icon,
                     color: color,
-                    size:
-                        compact ? (selected ? 24 : 22) : (selected ? 34 : 31)),
+                    size: compact ? (selected ? 24 : 22) : (selected ? 34 : 31),
+                  ),
                 SizedBox(height: compact ? 4 : 8),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: compact ? 3 : 0),
@@ -575,9 +589,9 @@ class _EthPainter extends CustomPainter {
     final cx = w / 2;
 
     // Hauteurs des trois arêtes horizontales, en proportion de la marque.
-    final waist = h * 0.505;      // pointe des faces supérieures
-    final belt = h * 0.395;       // haut de la ceinture centrale
-    final lower = h * 0.575;      // départ de la pointe inférieure
+    final waist = h * 0.505; // pointe des faces supérieures
+    final belt = h * 0.395; // haut de la ceinture centrale
+    final lower = h * 0.575; // départ de la pointe inférieure
 
     void fill(Path path, Color colour) =>
         canvas.drawPath(path, Paint()..color = colour);

@@ -46,11 +46,14 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
+      final client = _shippedClient();
+      final timeline = await client.futureTimeline('BTC');
+
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark,
           home: HomeShell(
-            client: _shippedClient(),
+            client: client,
             livePrices: _SilentLivePrices(),
           ),
         ),
@@ -61,6 +64,9 @@ void main() {
       expect(find.text('ETH'), findsOneWidget);
       expect(find.text('SOL'), findsOneWidget);
       expect(find.text('Graphique'), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-logo-BTC')), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-logo-ETH')), findsOneWidget);
+      expect(find.byKey(const ValueKey('nav-logo-SOL')), findsOneWidget);
       expect(find.text('Bitcoin'), findsOneWidget);
       expect(
         find.text('EST-CE LE BON MOMENT POUR ACHETER ?'),
@@ -77,11 +83,56 @@ void main() {
         contains('Apple Color Emoji'),
       );
 
-      await tester.tap(find.byKey(const ValueKey('decision-horizon')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('horizon-24h')));
+      expect(find.byKey(const ValueKey('horizon-24h')), findsOneWidget);
+      expect(find.byKey(const ValueKey('horizon-7d')), findsOneWidget);
+      expect(find.byKey(const ValueKey('horizon-30d')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('horizon-24h')).last);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('decision-reason-6')), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('decision-horizon')));
+      await tester.pumpAndSettle();
+      expect(find.text('Choisir l’horizon'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('horizon-24h')).last);
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('why-see-all')),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const ValueKey('why-see-all')));
+      await tester.pumpAndSettle();
+      expect(find.text('Détails des facteurs'), findsOneWidget);
+      await tester.tap(find.byTooltip('Fermer'));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('events-see-all')),
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const ValueKey('events-see-all')));
+      await tester.pumpAndSettle();
+      expect(find.text('Réduire'), findsOneWidget);
+      await tester.tap(
+        find.byKey(ValueKey('event-${timeline.events.first.id}')),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Détail de l’événement'), findsOneWidget);
+      await tester.tap(find.byTooltip('Fermer'));
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('scenarios-see-details')),
+        450,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const ValueKey('scenarios-see-details')));
+      await tester.pumpAndSettle();
+      expect(find.text('Scénarios · 24 heures'), findsOneWidget);
+      await tester.tap(find.byTooltip('Fermer'));
+      await tester.pumpAndSettle();
 
       await tester.tap(find.text('ETH'));
       await tester.pumpAndSettle();
