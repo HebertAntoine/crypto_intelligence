@@ -411,7 +411,8 @@ class _MarketContextCard extends StatelessWidget {
                     dense: true,
                   ),
                   MobilePill(
-                    label: 'Volatilité ${_plainLabel(market!.volatilityRegime)}',
+                    label:
+                        'Volatilité ${_plainLabel(market!.volatilityRegime)}',
                     color: mobileBlue,
                     dense: true,
                   ),
@@ -548,8 +549,15 @@ class _Families extends StatelessWidget {
                 const Text('5 FAMILLES',
                     style: TextStyle(
                         color: mobileMuted, fontWeight: FontWeight.w700)),
-                Text(decision.coverage,
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    decision.coverage,
+                    maxLines: 2,
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
