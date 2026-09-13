@@ -1082,6 +1082,7 @@ def build_context(
         as_of=reference,
         analysis_uncertainty=uncertainty_fraction,
         data_quality=future_data_quality_by_horizon[DecisionHorizon.D7.value],
+        institutional_flow=institutional_flow,
     )
     future_horizon_views = horizon_decisions(
         future_engine,

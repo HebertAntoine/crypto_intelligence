@@ -367,6 +367,49 @@ class EventRiskEngine:
         )
 
 
+def _family_flip_condition(item: FamilyAssessment) -> str | None:
+    """Name the observable move that would reverse one family's reading.
+
+    Returns None when the family carries no direction to reverse: a neutral or
+    amplitude-only reading has nothing to flip, and inventing a condition for it
+    would be filler.
+    """
+
+    if not item.available or item.directional_bias in {None, DirectionalBias.NEUTRAL}:
+        return None
+    bullish = item.directional_bias in {
+        DirectionalBias.BULLISH,
+        DirectionalBias.STRONGLY_BULLISH,
+    }
+    label = FAMILY_LABELS[item.family]
+    return {
+        FutureFamily.FLOWS_WHALES: (
+            "Flux institutionnels: retour durable des "
+            + ("sorties" if bullish else "entrées")
+            + " nettes sur plusieurs séances consécutives."
+        ),
+        FutureFamily.POSITIONING_DERIVATIVES: (
+            "Positionnement: "
+            + (
+                "fermeture des positions à levier pendant que le prix recule."
+                if bullish
+                else "reprise durable des positions à levier accompagnée d'une hausse du prix."
+            )
+        ),
+        FutureFamily.TECHNICAL_VOLATILITY: (
+            "Technique: invalidation de la structure "
+            + ("haussière" if bullish else "baissière")
+            + " sur l'unité de temps de référence."
+        ),
+        FutureFamily.MACRO_LIQUIDITY: (
+            "Macro: inversion des conditions de liquidité mesurée sur les séries officielles."
+        ),
+        FutureFamily.CATALYSTS_REGULATION: (
+            "Réglementaire: décision publiée allant dans le sens opposé."
+        ),
+    }.get(item.family, f"{label}: retournement mesuré de cette lecture.")
+
+
 def _delay_phrase(event: FutureEvent, now: datetime) -> str:
     """Say in French, from real timestamps, when the event lands."""
 
@@ -687,6 +730,7 @@ class FutureDecision:
     families: FiveFamilySnapshot
     provenance: list[dict[str, Any]]
     data_quality: Any = None
+    consistency: Any = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -700,6 +744,7 @@ class FutureDecision:
             "event_risk": self.event_risk.to_dict(),
             "event_risk_gate": self.event_risk_gate.to_dict(),
             "market_expectations": self.market_expectations,
+            "consistency": self.consistency.to_dict() if self.consistency else None,
             "causal_graph": self.causal_graph,
             "signal_convergence": self.signal_convergence,
             "contradiction_resolution": self.contradiction_resolution,
@@ -740,6 +785,7 @@ class FutureDecisionEngine:
         as_of: datetime | None = None,
         analysis_uncertainty: float | None = None,
         data_quality: Any = None,
+        institutional_flow: Any = None,
     ) -> FutureDecision:
         now = as_of or datetime.now(UTC)
         now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
@@ -826,6 +872,19 @@ class FutureDecisionEngine:
             if available
             else 0.0
         )
+        # A decision taken across an event nobody has priced is less well
+        # founded than the same decision taken in a quiet window. Section 4 of
+        # the brief requires that gap to cost confidence rather than pass
+        # unnoticed, so a material unpriced event applies a fixed haircut.
+        expectations_available = any(
+            (item or {}).get("status") == "AVAILABLE" for item in market_expectations
+        )
+        from .decision_consistency import blocking_events
+
+        unpriced = blocking_events(event_list, priced=expectations_available)
+        if unpriced:
+            confidence *= 0.75
+
         quality_blocks = bool(
             data_quality is not None
             and getattr(data_quality, "blocks_directional_decision", False)
@@ -848,6 +907,23 @@ class FutureDecisionEngine:
         # The family that actually carried the direction is listed first. Ranking
         # by priority alone put a NEUTRAL family at the top, so the screen showed
         # as its main reason the one family that had not voted.
+        # Coherence gate: the decision must survive comparison with the evidence
+        # shown beside it. This runs in the engine, never in the UI, so the API
+        # and every client see the same degraded action and the same reason.
+        from .decision_consistency import DecisionConsistencyValidator
+
+        consistency = DecisionConsistencyValidator().validate(
+            action,
+            direction=direction,
+            confidence=confidence,
+            event_risk_level=event_risk.level,
+            horizon_events=event_list,
+            families=families,
+            expectations_available=expectations_available,
+            institutional_flow=institutional_flow,
+        )
+        action = consistency.action
+
         ordered = sorted(
             available,
             key=lambda item: (
@@ -937,6 +1013,9 @@ class FutureDecisionEngine:
             key=lambda event: (-event.importance.rank, event.scheduled_at),
             default=None,
         )
+        # Concrete, checkable conditions only. "Un catalyseur prioritaire change
+        # de sens" told the reader nothing they could watch for; each line below
+        # names a real event, a real family and the move that would flip it.
         changes = []
         if quality_blocks:
             changes.append(
@@ -944,13 +1023,21 @@ class FutureDecisionEngine:
                 + ", ".join(getattr(data_quality, "critical_missing_inputs", []))
                 + "."
             )
-        if gate.active:
-            changes.append("Attendre la publication et réévaluer la surprise observée.")
-        changes.extend(scenarios[0].invalidation_conditions)
-        if families.available_count < 5:
+        if next_event is not None and next_event.scheduled_at is not None:
             changes.append(
-                "Rétablir les familles indisponibles avec des données actuelles et sourcées."
+                f"Publication de « {next_event.title} » "
+                f"{_delay_phrase(next_event, now)}: la surprise mesurée par rapport "
+                "à ce qui était valorisé donnera la direction."
             )
+        for item in ordered:
+            condition = _family_flip_condition(item)
+            if condition:
+                changes.append(condition)
+        for item in families.assessments.values():
+            if not item.available and item.unavailable_reason:
+                changes.append(
+                    f"{FAMILY_LABELS[item.family]}: {item.unavailable_reason[:110]}"
+                )
 
         provenance: list[dict[str, Any]] = []
         seen: set[tuple[str | None, str | None]] = set()
@@ -1001,6 +1088,7 @@ class FutureDecisionEngine:
             families=families,
             provenance=provenance,
             data_quality=data_quality,
+            consistency=consistency,
         )
 
 

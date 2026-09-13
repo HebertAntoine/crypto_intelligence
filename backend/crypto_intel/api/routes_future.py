@@ -59,6 +59,7 @@ def _decision(snapshot: Any, horizon: DecisionHorizon) -> Any:
         as_of=snapshot.analysis_time,
         analysis_uncertainty=_uncertainty(snapshot),
         data_quality=horizon_quality.get(horizon.value),
+        institutional_flow=getattr(snapshot, "institutional_flow", None),
     )
 
 

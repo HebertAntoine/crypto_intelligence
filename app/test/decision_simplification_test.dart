@@ -31,6 +31,12 @@ ApiClient _shippedClient() => ApiClient(
       },
     );
 
+/// Switch to the 7-day horizon, the only one whose window holds the FOMC.
+Future<void> _select7d(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('horizon-7d')).last);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _openBtc(WidgetTester tester) async {
   tester.view.physicalSize = const Size(430, 932);
   tester.view.devicePixelRatio = 1;
@@ -78,37 +84,39 @@ void main() {
 
   testWidgets('tapping a reason opens the full explanation', (tester) async {
     await _openBtc(tester);
+    await _select7d(tester);
 
     await tester.tap(find.byKey(const ValueKey('decision-reason-1')));
     await tester.pumpAndSettle();
 
     // Factor 1 is the ranked top catalyst, so it uses the event vocabulary.
-    expect(find.text('CE QUI VA SE PASSER'), findsOneWidget);
-    expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsOneWidget);
-    expect(find.text('POURQUOI CELA COMPTE'), findsOneWidget);
+    expect(find.text('📅 CE QUI VA SE PASSER'), findsOneWidget);
+    expect(find.text('🎯 CE QUE LE MARCHÉ ATTEND'), findsOneWidget);
+    expect(find.text('💡 POURQUOI CELA COMPTE'), findsOneWidget);
     // A dated event never carries the observation vocabulary.
-    expect(find.text('CE QU’ON OBSERVE'), findsNothing);
+    expect(find.text('🔍 CE QU’ON OBSERVE'), findsNothing);
 
     await tester.scrollUntilVisible(
-      find.text('SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU'),
+      find.text('🔴 SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU'),
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU'), findsOneWidget);
-    expect(find.text('CE QUE ÇA PEUT ENGENDRER'), findsOneWidget);
+    expect(find.text('🟢 SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU'), findsOneWidget);
+    expect(find.text('📈 CE QUE ÇA PEUT ENGENDRER'), findsOneWidget);
 
     // Sources sit at the bottom so they inform without crowding the summary.
     await tester.scrollUntilVisible(
-      find.text('SOURCE'),
+      find.text('🔗 SOURCE'),
       200,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('SOURCE'), findsOneWidget);
+    expect(find.text('🔗 SOURCE'), findsOneWidget);
   });
 
   testWidgets('an absent market expectation is stated, never implied',
       (tester) async {
     await _openBtc(tester);
+    await _select7d(tester);
 
     await tester.tap(find.byKey(const ValueKey('decision-reason-1')));
     await tester.pumpAndSettle();
@@ -221,26 +229,129 @@ void main() {
       (tester) async {
     await _openBtc(tester);
 
-    // Two catalysts lead, so factor three onwards are measured signals.
-    final row = find.byKey(const ValueKey('decision-reason-3'));
+    // On the 24 h horizon the FOMC is out of window and a bill auction cannot
+    // be explained, so every factor is a measured signal.
+    await tester.tap(find.byKey(const ValueKey('horizon-24h')).last);
+    await tester.pumpAndSettle();
+    final row = find.byKey(const ValueKey('decision-reason-1'));
     await tester.ensureVisible(row);
     await tester.pumpAndSettle();
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    expect(find.text('CE QU’ON OBSERVE'), findsOneWidget);
-    expect(find.text('CE QUI INVALIDERAIT CE SIGNAL'), findsOneWidget);
-    expect(find.text('CE QUI VA SE PASSER'), findsNothing);
+    expect(find.text('🔍 CE QU’ON OBSERVE'), findsOneWidget);
+    expect(find.text('🔄 CE QUI INVALIDERAIT CE SIGNAL'), findsOneWidget);
+    expect(find.text('📅 CE QUI VA SE PASSER'), findsNothing);
     // A signal already measured has no market expectation to quote.
-    expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsNothing);
+    expect(find.text('🎯 CE QUE LE MARCHÉ ATTEND'), findsNothing);
   });
 
-  testWidgets('the top catalyst is ranked by importance, not by date',
+  testWidgets('the top catalyst is ranked by contribution, not by date',
       (tester) async {
     await _openBtc(tester);
+    await _select7d(tester);
 
-    // The 30-day window holds three Treasury bill auctions before the FOMC.
-    // Chronological order buried the only CRITICAL event.
+    // The window holds three Treasury bill auctions before the FOMC. Date
+    // order buried the only CRITICAL event; contribution order surfaces it.
     expect(find.textContaining('Décision de la Fed'), findsWidgets);
+  });
+
+  testWidgets('an unexplainable auction never displaces a real catalyst',
+      (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    // Section 6: without bid-to-cover or yield data the engine cannot say why
+    // a bill auction matters, so it stays in "À surveiller", not in "Pourquoi".
+    for (var index = 1; index <= 5; index++) {
+      final row = find.byKey(ValueKey('decision-reason-$index'));
+      if (row.evaluate().isEmpty) break;
+      expect(
+        find.descendant(
+          of: row,
+          matching: find.textContaining('Adjudication du Trésor'),
+        ),
+        findsNothing,
+      );
+    }
+  });
+
+  testWidgets('event names shown to the reader are in French', (tester) async {
+    await _openBtc(tester);
+
+    // Official English names stay in the Source line only.
+    expect(find.textContaining('FOMC monetary policy'), findsNothing);
+    expect(find.textContaining('Bill Treasury auction'), findsNothing);
+  });
+
+  testWidgets('factor ranking uses decision contribution, not date',
+      (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    // The FOMC lands after two Treasury auctions, and a barely-measured
+    // technical reading sits beside it. Contribution puts the unresolved
+    // Tier-1 event first even though its direction is unknown.
+    final first = find.byKey(const ValueKey('decision-reason-1'));
+    expect(
+      find.descendant(of: first, matching: find.textContaining('Décision de la Fed')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('generic factor explanations are forbidden', (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    // Section 6: "Ce facteur fait partie des éléments suivis par l'analyse"
+    // says nothing. A factor the engine cannot explain is not shown as a
+    // factor at all.
+    for (var index = 1; index <= 5; index++) {
+      final row = find.byKey(ValueKey('decision-reason-$index'));
+      if (row.evaluate().isEmpty) break;
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('fait partie des éléments suivis'),
+        findsNothing,
+        reason: 'factor $index falls back to a generic explanation',
+      );
+      await tester.tapAt(const Offset(200, 12));
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('decision change conditions are concrete', (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    for (final filler in const [
+      'Un catalyseur prioritaire change de sens',
+      'Rétablir les familles indisponibles',
+    ]) {
+      expect(find.textContaining(filler), findsNothing);
+    }
+  });
+
+  testWidgets('user facing text is french', (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    for (final english in const [
+      'FOMC monetary policy',
+      'Treasury auction',
+      'Personal Income and Outlays',
+      'inflow',
+      'outflow',
+      'squeeze',
+    ]) {
+      expect(
+        find.textContaining(english),
+        findsNothing,
+        reason: '"$english" reached a user-facing string',
+      );
+    }
   });
 }

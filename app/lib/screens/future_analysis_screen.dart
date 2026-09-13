@@ -1101,51 +1101,51 @@ void _showReasonDetail(BuildContext context, _DecisionFactor reason) {
             ),
             if (reason.kind == _FactorKind.futureCatalyst)
               _ReasonDetailBlock(
-                title: 'CE QUI VA SE PASSER',
+                title: '📅 CE QUI VA SE PASSER',
                 body: reason.description,
               )
             else
               // An already-measured signal is not something that "arrives".
               _ReasonDetailBlock(
-                title: 'CE QU’ON OBSERVE',
+                title: '🔍 CE QU’ON OBSERVE',
                 body: reason.observation,
               ),
             if (reason.kind == _FactorKind.futureCatalyst)
               _ReasonDetailBlock(
-                title: 'CE QUE LE MARCHÉ ATTEND',
+                title: '🎯 CE QUE LE MARCHÉ ATTEND',
                 body: reason.marketExpectation ??
                     'Anticipations actuellement indisponibles.',
                 muted: reason.marketExpectation == null,
               ),
             _ReasonDetailBlock(
-              title: 'POURQUOI CELA COMPTE',
+              title: '💡 POURQUOI CELA COMPTE',
               body: reason.whyItMatters,
             ),
             if (reason.caveat.isNotEmpty)
-              _ReasonDetailBlock(title: 'À GARDER EN TÊTE', body: reason.caveat),
+              _ReasonDetailBlock(title: '⚠️ À GARDER EN TÊTE', body: reason.caveat),
             _ReasonDetailBlock(
-              title: 'CE QUE ÇA PEUT ENGENDRER',
+              title: '📈 CE QUE ÇA PEUT ENGENDRER',
               body: reason.consequence,
             ),
             if (reason.kind == _FactorKind.futureCatalyst) ...[
               _ReasonDetailBlock(
-                title: 'SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU',
+                title: '🟢 SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU',
                 body: reason.upsideCase,
               ),
               _ReasonDetailBlock(
-                title: 'SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU',
+                title: '🔴 SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU',
                 body: reason.downsideCase,
               ),
             ] else
               _ReasonDetailBlock(
-                title: 'CE QUI INVALIDERAIT CE SIGNAL',
+                title: '🔄 CE QUI INVALIDERAIT CE SIGNAL',
                 body: reason.invalidation,
               ),
             const SizedBox(height: 18),
             const Divider(height: 1, color: Color(0xFF16304A)),
             const SizedBox(height: 12),
             Text(
-              'SOURCE',
+              '🔗 SOURCE',
               style: TextStyle(
                 color: mobileMuted.withValues(alpha: .8),
                 fontSize: 10,
@@ -1196,7 +1196,11 @@ class _ReasonDetailBlock extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    // An empty section is noise: the heading promises content that is not
+    // there. Nothing is rendered rather than an empty block.
+    if (body.trim().isEmpty) return const SizedBox.shrink();
+    return Padding(
         padding: const EdgeInsets.only(top: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1223,6 +1227,7 @@ class _ReasonDetailBlock extends StatelessWidget {
           ],
         ),
       );
+  }
 }
 
 /// Explain a decision that disagrees with the underlying reading.
@@ -1368,7 +1373,7 @@ class _ChangeAndRiskSection extends StatelessWidget {
               child: _SignalListCard(
                 icon: '⬆️',
                 title: 'Ce qui pourrait changer la décision',
-                items: decision.changes,
+                items: decision.changes.map(_frenchifyEventNames).toList(),
                 tone: const Color(0xFF55DD8B),
                 bullet: '✓',
               ),
@@ -1654,7 +1659,7 @@ class _UpcomingEventRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      event.title,
+                      _eventTitleFr(event.title),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1749,7 +1754,7 @@ Future<void> _showEventDetails(
               ),
               const SizedBox(height: 14),
               Text(
-                event.title,
+                _eventTitleFr(event.title),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 18,
@@ -2357,6 +2362,9 @@ class _DecisionFactor {
   final String emoji;
   final String when;
 
+  /// How well the engine could measure this factor, in [0, 1].
+  final double confidence;
+
   /// Catalyst only.
   final DateTime? scheduledAt;
   final String? marketExpectation;
@@ -2382,6 +2390,7 @@ class _DecisionFactor {
     required this.emoji,
     required this.when,
     required this.whyItMatters,
+    this.confidence = 1.0,
     required this.consequence,
     this.scheduledAt,
     this.marketExpectation,
@@ -2426,6 +2435,27 @@ String _eventTitleFr(String title) {
     return 'Vote réglementaire crypto';
   }
   return title;
+}
+
+/// Replace official English event names inside a free-text sentence.
+///
+/// The engine embeds the official title in its change conditions, which is the
+/// right thing to store and the wrong thing to show: section 10 keeps English
+/// names for the Source line only.
+String _frenchifyEventNames(String text) {
+  var result = text;
+  for (final pattern in const [
+    r'FOMC monetary policy decision[^»\n]*',
+    r'Personal Income and Outlays[^»\n]*',
+    r'GDP \(Third Estimate\)[^»\n]*',
+    r'[\w-]+ (?:Bill|Bond|Note) Treasury auction',
+  ]) {
+    result = result.replaceAllMapped(
+      RegExp(pattern),
+      (match) => _eventTitleFr(match.group(0)!),
+    );
+  }
+  return result;
 }
 
 String _importanceImpact(String importance) => switch (importance.toUpperCase()) {
@@ -2652,8 +2682,14 @@ List<_DecisionFactor> _decisionFactors(
   final horizon = _horizonLongLabel(decision.horizon);
   final asset = _assetName(decision.asset);
 
-  for (final event in _rankedCatalysts(decision, bundle).take(2)) {
+  for (final event in _rankedCatalysts(decision, bundle).take(3)) {
     final guidance = _topicGuidance(event.title);
+    // Section 6: either the engine can explain the mechanism, or the event does
+    // not belong among the main factors. An ordinary bill auction carries no
+    // bid-to-cover or yield data here, so it stays in "À surveiller" instead of
+    // displacing a catalyst that can actually be explained.
+    if (identical(guidance, _guidanceFallback)) continue;
+    if (factors.length >= 2) break;
     final title = _eventTitleFr(event.title);
     factors.add(_DecisionFactor(
       kind: _FactorKind.futureCatalyst,
@@ -2695,6 +2731,7 @@ List<_DecisionFactor> _decisionFactors(
       impact: _movementImpact(family.movement),
       emoji: _reasonEmoji('${family.label} $title'),
       when: 'ACTUEL',
+      confidence: family.confidence,
       observation: summary,
       invalidation: _signalInvalidation(family),
       whyItMatters: guidance.why,
@@ -2704,7 +2741,59 @@ List<_DecisionFactor> _decisionFactors(
     ));
   }
 
+  // Section 7: order by contribution to the decision, not by date. An event
+  // whose direction is unknown can still rank first when it dominates the risk.
+  factors.sort((left, right) =>
+      _contribution(right, decision).compareTo(_contribution(left, decision)));
   return factors.take(5).toList();
+}
+
+/// How much one factor weighs on this decision, in [0, 1].
+///
+/// Amplitude and relevance count for both kinds. A catalyst adds the risk it
+/// injects, which is why an unknown direction can still rank first. A signal
+/// adds whether it actually points the way the decision went.
+double _contribution(_DecisionFactor factor, FutureDecisionRead decision) {
+  const impactWeight = {
+    'TRÈS ÉLEVÉ': 1.0,
+    'ÉLEVÉ': 0.75,
+    'MODÉRÉ': 0.45,
+    'FAIBLE': 0.2,
+  };
+  var score = impactWeight[factor.impact] ?? 0.45;
+
+  if (factor.kind == _FactorKind.futureCatalyst) {
+    final seconds = factor.scheduledAt
+        ?.difference(DateTime.now())
+        .inSeconds
+        .clamp(0, 1 << 30);
+    final window = switch (decision.horizon) {
+      '24h' => 86400,
+      '30d' => 2592000,
+      _ => 604800,
+    };
+    // Closer means more decisive: a catalyst at the far edge of the window has
+    // most of the horizon before it, not after it.
+    final proximity = seconds == null ? 0.5 : 1.0 - (seconds / window).clamp(0.0, 1.0);
+    score *= 0.6 + 0.4 * proximity;
+    // Unresolved outcome is itself a contribution: it is what makes the
+    // decision fragile, even though it points neither way.
+    if (decision.eventRiskActive) score += 0.25;
+    return score.clamp(0.0, 1.0);
+  }
+
+  final aligned = switch (decision.decision) {
+    'BUY' => factor.direction?.contains('BULLISH') ?? false,
+    'SELL' => factor.direction?.contains('BEARISH') ?? false,
+    _ => false,
+  };
+  if (aligned) score += 0.2;
+  // A reading with no measured direction contributes amplitude only.
+  if (factor.direction == null || factor.direction == 'NEUTRAL') score *= 0.6;
+  // Data quality is part of the contribution: a family the engine could barely
+  // measure must not outrank an unresolved Tier-1 event.
+  score *= 0.45 + 0.55 * factor.confidence.clamp(0.0, 1.0);
+  return score.clamp(0.0, 1.0);
 }
 
 String _signalConsequence(
@@ -2768,7 +2857,7 @@ List<String> _decisionRisks(FutureDecisionRead decision) {
     final event = decision.nextEvent;
     add(event == null
         ? 'Risque événementiel ${_impactLabel(decision.eventRisk).toLowerCase()}.'
-        : '${event.title} : risque événementiel '
+        : '${_eventTitleFr(event.title)} : risque événementiel '
             '${_impactLabel(decision.eventRisk).toLowerCase()}.');
   }
   for (final signal in decision.counterSignals) {
@@ -2998,8 +3087,8 @@ String _cleanExplanation(String value) {
       )
       .replaceAll('traversent le spread', 'acceptent de payer le prix demandé')
       .replaceAll('spread crossing', 'ordres qui paient le prix demandé')
-      .replaceAll('open interest', 'positions à levier ouvertes')
       .replaceAll("L'open interest", 'Le nombre de positions à levier')
+      .replaceAll('open interest', 'positions à levier ouvertes')
       .replaceAll('upper third', 'tiers haut de sa zone')
       .replaceAll('mid range', 'milieu de sa zone')
       .replaceAll('des longs sortent', 'des acheteurs ferment leurs positions')

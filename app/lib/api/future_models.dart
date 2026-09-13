@@ -73,6 +73,10 @@ class FutureFamilyRead {
   final String freshness;
   final String? unavailableReason;
 
+  /// How well the engine could measure this family, in [0, 1]. It weighs on the
+  /// ranking: a barely-measured reading must not outrank a material event.
+  final double confidence;
+
   const FutureFamilyRead({
     required this.id,
     required this.label,
@@ -82,6 +86,7 @@ class FutureFamilyRead {
     this.direction,
     this.movement,
     this.unavailableReason,
+    this.confidence = 0,
   });
 
   factory FutureFamilyRead.fromJson(Map<String, dynamic> json) =>
@@ -94,6 +99,7 @@ class FutureFamilyRead {
         summary: json['summary']?.toString() ?? '',
         freshness: json['freshness']?.toString() ?? 'UNAVAILABLE',
         unavailableReason: json['unavailable_reason']?.toString(),
+        confidence: _number(json['confidence']) ?? 0,
       );
 }
 

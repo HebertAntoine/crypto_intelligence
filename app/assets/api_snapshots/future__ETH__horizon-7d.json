@@ -1,6 +1,6 @@
 {
-  "analysis_id": "an_5cdeea3f49d3a5fd",
-  "as_of": "2026-09-13T15:39:13.222389+00:00",
+  "analysis_id": "an_cc102fcabf4cad20",
+  "as_of": "2026-09-13T17:50:56.748307+00:00",
   "asset": "ETH",
   "causal_graph": {
     "chains": [
@@ -622,7 +622,7 @@
           "ETH_TETH_20260909",
           "ETH_TETH_20260910",
           "ETH_TETH_20260911",
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0
       },
@@ -637,7 +637,7 @@
         "source_ids": [
           "Federal Reserve",
           "U.S. Treasury / TreasuryDirect",
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0
       },
@@ -650,7 +650,7 @@
         "direction": "BEARISH",
         "root_factor": "family:positioning_derivatives",
         "source_ids": [
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0
       },
@@ -663,7 +663,7 @@
         "direction": "NEUTRAL",
         "root_factor": "family:technical_volatility",
         "source_ids": [
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0
       }
@@ -677,11 +677,11 @@
         "confidence": 1.0,
         "direction": "NEUTRAL",
         "id": "family:macro_liquidity",
-        "observed_at": "2026-09-13T15:39:13.222389Z",
+        "observed_at": "2026-09-13T17:50:56.748307Z",
         "source_ids": [
           "Federal Reserve",
           "U.S. Treasury / TreasuryDirect",
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0,
         "type": "macro_liquidity"
@@ -1304,7 +1304,7 @@
           "ETH_TETH_20260909",
           "ETH_TETH_20260910",
           "ETH_TETH_20260911",
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0,
         "type": "flows_whales"
@@ -1316,9 +1316,9 @@
         "confidence": 0.9,
         "direction": "BEARISH",
         "id": "family:positioning_derivatives",
-        "observed_at": "2026-09-13T15:39:13.222389Z",
+        "observed_at": "2026-09-13T17:50:56.748307Z",
         "source_ids": [
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0,
         "type": "positioning_derivatives"
@@ -1330,9 +1330,9 @@
         "confidence": 0.0,
         "direction": "BULLISH",
         "id": "family:technical_volatility",
-        "observed_at": "2026-09-13T15:39:13.222389Z",
+        "observed_at": "2026-09-13T17:50:56.748307Z",
         "source_ids": [
-          "an_5cdeea3f49d3a5fd"
+          "an_cc102fcabf4cad20"
         ],
         "strength": 1.0,
         "type": "technical_volatility"
@@ -1353,6 +1353,18 @@
       ]
     ],
     "methodology": "Causally connected factors form one independence unit. An edge is only present when an explicit mechanism has been supplied."
+  },
+  "consistency": {
+    "action": "WAIT",
+    "issues": [
+      {
+        "code": "AMPLITUDE_USED_AS_DIRECTION",
+        "detail": "La famille technique publie une direction sans confiance mesur\u00e9e; une compression renseigne l'ampleur, pas le sens.",
+        "downgraded_to": null
+      }
+    ],
+    "methodology": "Chaque contr\u00f4le compare la d\u00e9cision aux preuves affich\u00e9es \u00e0 c\u00f4t\u00e9 d'elle. Un contr\u00f4le ne peut que d\u00e9grader vers ATTENDRE ou DONN\u00c9ES INSUFFISANTES, jamais renforcer une conviction.",
+    "status": "FLAGGED"
   },
   "contradiction_resolution": {
     "convergence": {
@@ -1417,27 +1429,27 @@
   "counter_signals": [
     {
       "directional_bias": "BEARISH",
-      "explanation": "Le co\u00fbt du levier reste proche de sa normale.; Aucun changement de positionnement marqu\u00e9.",
+      "explanation": "Les shorts paient nettement pour rester en position.; Aucun changement de positionnement marqu\u00e9.",
       "family": "positioning_derivatives",
       "sources": [
         {
-          "as_of": "2026-09-13T08:00:00+00:00",
+          "as_of": "2026-09-13T16:00:00+00:00",
           "evidence_ids": [],
-          "reference": "an_5cdeea3f49d3a5fd",
+          "reference": "an_cc102fcabf4cad20",
           "source": "funding.rate Binance, percentile glissant par actif",
           "tier": "MEASURED"
         },
         {
-          "as_of": "2026-09-13T12:00:00+00:00",
+          "as_of": "2026-09-13T16:00:00+00:00",
           "evidence_ids": [],
-          "reference": "an_5cdeea3f49d3a5fd",
+          "reference": "an_cc102fcabf4cad20",
           "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
           "tier": "MEASURED"
         },
         {
           "as_of": "2026-09-13T00:00:00+00:00",
           "evidence_ids": [],
-          "reference": "an_5cdeea3f49d3a5fd",
+          "reference": "an_cc102fcabf4cad20",
           "source": "ImpliedVolatilityEngine (Deribit)",
           "tier": "DERIVED"
         }
@@ -1481,9 +1493,9 @@
         "event_calendar": {
           "available": true,
           "critical": false,
-          "freshness": "RECENT",
+          "freshness": "LIVE",
           "input": "event_calendar",
-          "observed_at": "2026-09-13T11:47:55.990113+00:00",
+          "observed_at": "2026-09-13T17:47:58.404301+00:00",
           "reason": null,
           "source": "sources officielles des \u00e9v\u00e9nements",
           "usable": true,
@@ -1494,7 +1506,7 @@
           "critical": false,
           "freshness": "LIVE",
           "input": "funding",
-          "observed_at": "2026-09-13T08:00:00+00:00",
+          "observed_at": "2026-09-13T16:00:00+00:00",
           "reason": null,
           "source": "funding.rate",
           "usable": true,
@@ -1505,7 +1517,7 @@
           "critical": false,
           "freshness": "LIVE",
           "input": "liquidity",
-          "observed_at": "2026-09-13T15:18:55.978183+00:00",
+          "observed_at": "2026-09-13T17:48:55.899342+00:00",
           "reason": null,
           "source": "DefiLlama stablecoins",
           "usable": true,
@@ -1538,7 +1550,7 @@
           "critical": true,
           "freshness": "LIVE",
           "input": "ohlcv_4h",
-          "observed_at": "2026-09-13T12:00:00+00:00",
+          "observed_at": "2026-09-13T16:00:00+00:00",
           "reason": null,
           "source": "candle store",
           "usable": true,
@@ -1560,7 +1572,7 @@
           "critical": false,
           "freshness": "LIVE",
           "input": "onchain",
-          "observed_at": "2026-09-13T15:19:29.695547+00:00",
+          "observed_at": "2026-09-13T17:49:20.125146+00:00",
           "reason": null,
           "source": "fournisseurs on-chain",
           "usable": true,
@@ -1582,7 +1594,7 @@
           "critical": true,
           "freshness": "LIVE",
           "input": "price",
-          "observed_at": "2026-09-13T15:38:56.810805+00:00",
+          "observed_at": "2026-09-13T17:49:19.950531+00:00",
           "reason": null,
           "source": "ticker spot persist\u00e9",
           "usable": true,
@@ -1761,68 +1773,68 @@
     "stale_inputs": [],
     "status": "PARTIAL"
   },
-  "decision": "BUY",
-  "decision_confidence": 0.56,
+  "decision": "WAIT",
+  "decision_confidence": 0.42,
   "directional_bias": "STRONGLY_BULLISH",
   "disclaimer": "Analyse de risque d\u00e9terministe; aucun ordre n'est ex\u00e9cut\u00e9.",
   "event_risk": {
     "contributions": [
       {
-        "contribution": 0.509,
+        "contribution": 0.521,
         "event_id": "fev_8931898860acc69bc00229d8",
         "expected_movement": "HIGH",
         "importance": "CRITICAL",
-        "proximity": 0.557,
+        "proximity": 0.571,
         "scheduled_at": "2026-09-16T18:00:00+00:00",
         "title": "FOMC monetary policy decision (September 2026)",
         "uncertainty": 1.0
       },
       {
-        "contribution": 0.482,
+        "contribution": 0.491,
         "event_id": "fev_7aa26cfaa6bd0fda4b5c9be6",
         "expected_movement": "NORMAL",
         "importance": "HIGH",
-        "proximity": 0.706,
+        "proximity": 0.719,
         "scheduled_at": "2026-09-15T17:00:00+00:00",
         "title": "19-Year 11-Month Bond Treasury auction",
         "uncertainty": 1.0
       },
       {
-        "contribution": 0.457,
+        "contribution": 0.464,
         "event_id": "fev_75dd8e2c1664c550697d0bac",
         "expected_movement": "NORMAL",
         "importance": "MEDIUM",
-        "proximity": 0.858,
+        "proximity": 0.871,
         "scheduled_at": "2026-09-14T15:30:00+00:00",
         "title": "13-Week Bill Treasury auction",
         "uncertainty": 1.0
       },
       {
-        "contribution": 0.457,
+        "contribution": 0.464,
         "event_id": "fev_99b5a586664fb8cded1f6a04",
         "expected_movement": "NORMAL",
         "importance": "MEDIUM",
-        "proximity": 0.858,
+        "proximity": 0.871,
         "scheduled_at": "2026-09-14T15:30:00+00:00",
         "title": "26-Week Bill Treasury auction",
         "uncertainty": 1.0
       },
       {
-        "contribution": 0.381,
+        "contribution": 0.388,
         "event_id": "fev_a449f8434e5c34f84c92602e",
         "expected_movement": "NORMAL",
         "importance": "MEDIUM",
-        "proximity": 0.715,
+        "proximity": 0.728,
         "scheduled_at": "2026-09-15T15:30:00+00:00",
         "title": "6-Week Bill Treasury auction",
         "uncertainty": 1.0
       },
       {
-        "contribution": 0.287,
+        "contribution": 0.296,
         "event_id": "fev_03f537022f3f05b99023d1be",
         "expected_movement": "NORMAL",
         "importance": "HIGH",
-        "proximity": 0.421,
+        "proximity": 0.434,
         "scheduled_at": "2026-09-17T17:00:00+00:00",
         "title": "9-Year 10-Month Note Treasury auction",
         "uncertainty": 1.0
@@ -1831,17 +1843,21 @@
     "event_count": 6,
     "horizon": "7d",
     "level": "HIGH",
-    "materiality": 0.967,
+    "materiality": 0.97,
     "methodology": "Horizon-relative linear proximity \u00d7 transparent event severity; listed event contributions are combined as 1-\u03a0(1-c). This describes risk quantity and does not trigger WAIT.",
     "status": "AVAILABLE"
   },
   "event_risk_gate": {
-    "active": false,
+    "active": true,
     "bypassed": false,
-    "event_ids": [],
-    "level": "LOW",
-    "reasons": [],
-    "status": "NOT_TRIGGERED"
+    "event_ids": [
+      "fev_8931898860acc69bc00229d8"
+    ],
+    "level": "HIGH",
+    "reasons": [
+      "FOMC monetary policy decision (September 2026): \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 3,0 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9."
+    ],
+    "status": "TRIGGERED"
   },
   "expected_movement": "HIGH",
   "families": {
@@ -1849,7 +1865,7 @@
     "coverage": "4/5 disponibles",
     "items": {
       "catalysts_regulation": {
-        "as_of": "2026-09-13T15:39:13.222389+00:00",
+        "as_of": "2026-09-13T17:50:56.748307+00:00",
         "available": false,
         "confidence": 0.0,
         "directional_bias": null,
@@ -2498,17 +2514,17 @@
           {
             "as_of": "2026-09-13T00:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "Binance klines, taker buy base volume / volume total",
             "tier": "MEASURED"
           }
         ],
         "status": "AVAILABLE",
-        "summary": "Flux institutionnels strong_inflow; cumul 5 s\u00e9ances 222.79999999999998 M$.",
+        "summary": "Flux institutionnels: fortes entr\u00e9es nettes sur 20 s\u00e9ances (+1 920,5 M$); 5 derni\u00e8res s\u00e9ances +222,8 M$.",
         "unavailable_reason": null
       },
       "macro_liquidity": {
-        "as_of": "2026-09-13T15:39:13.222389+00:00",
+        "as_of": "2026-09-13T17:50:56.748307+00:00",
         "available": true,
         "confidence": 1.0,
         "directional_bias": "NEUTRAL",
@@ -2523,7 +2539,7 @@
         ],
         "sources": [
           {
-            "as_of": "2026-09-13T11:47:55.990113+00:00",
+            "as_of": "2026-09-13T17:47:58.404301+00:00",
             "evidence_ids": [],
             "reference": null,
             "source": "U.S. Treasury / TreasuryDirect",
@@ -2531,7 +2547,7 @@
             "url": "https://www.treasurydirect.gov/TA_WS/securities/announced?format=json"
           },
           {
-            "as_of": "2026-09-13T11:47:55.926912+00:00",
+            "as_of": "2026-09-13T17:47:56.166731+00:00",
             "evidence_ids": [],
             "reference": null,
             "source": "Federal Reserve",
@@ -2539,16 +2555,16 @@
             "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
           },
           {
-            "as_of": "2026-09-13T15:39:13.222389+00:00",
+            "as_of": "2026-09-13T17:50:56.748307+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "MacroAnalyzer",
             "tier": "DERIVED"
           },
           {
-            "as_of": "2026-09-13T15:39:13.222389+00:00",
+            "as_of": "2026-09-13T17:50:56.748307+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "StablecoinLiquidityAnalyzer",
             "tier": "DERIVED"
           }
@@ -2558,7 +2574,7 @@
         "unavailable_reason": null
       },
       "positioning_derivatives": {
-        "as_of": "2026-09-13T15:39:13.222389+00:00",
+        "as_of": "2026-09-13T17:50:56.748307+00:00",
         "available": true,
         "confidence": 0.9,
         "directional_bias": "BEARISH",
@@ -2572,33 +2588,33 @@
         ],
         "sources": [
           {
-            "as_of": "2026-09-13T08:00:00+00:00",
+            "as_of": "2026-09-13T16:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "funding.rate Binance, percentile glissant par actif",
             "tier": "MEASURED"
           },
           {
-            "as_of": "2026-09-13T12:00:00+00:00",
+            "as_of": "2026-09-13T16:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
             "tier": "MEASURED"
           },
           {
             "as_of": "2026-09-13T00:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "ImpliedVolatilityEngine (Deribit)",
             "tier": "DERIVED"
           }
         ],
         "status": "AVAILABLE",
-        "summary": "Le co\u00fbt du levier reste proche de sa normale.; Aucun changement de positionnement marqu\u00e9.",
+        "summary": "Les shorts paient nettement pour rester en position.; Aucun changement de positionnement marqu\u00e9.",
         "unavailable_reason": null
       },
       "technical_volatility": {
-        "as_of": "2026-09-13T15:39:13.222389+00:00",
+        "as_of": "2026-09-13T17:50:56.748307+00:00",
         "available": true,
         "confidence": 0.0,
         "directional_bias": "BULLISH",
@@ -2609,23 +2625,23 @@
         "reasons": [],
         "sources": [
           {
-            "as_of": "2026-09-13T15:39:13.222389+00:00",
+            "as_of": "2026-09-13T17:50:56.748307+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "MarketStructureEngine",
             "tier": "DERIVED"
           },
           {
-            "as_of": "2026-09-13T15:39:13.222389+00:00",
+            "as_of": "2026-09-13T17:50:56.748307+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "VolatilityRegimeEngine",
             "tier": "DERIVED"
           },
           {
-            "as_of": "2026-09-13T15:39:13.222389+00:00",
+            "as_of": "2026-09-13T17:50:56.748307+00:00",
             "evidence_ids": [],
-            "reference": "an_5cdeea3f49d3a5fd",
+            "reference": "an_cc102fcabf4cad20",
             "source": "ExpectedVolatilityEngine",
             "tier": "DERIVED"
           }
@@ -2669,9 +2685,9 @@
             "event_calendar": {
               "available": true,
               "critical": false,
-              "freshness": "RECENT",
+              "freshness": "LIVE",
               "input": "event_calendar",
-              "observed_at": "2026-09-13T11:47:55.990113+00:00",
+              "observed_at": "2026-09-13T17:47:58.404301+00:00",
               "reason": null,
               "source": "sources officielles des \u00e9v\u00e9nements",
               "usable": true,
@@ -2682,7 +2698,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "funding",
-              "observed_at": "2026-09-13T08:00:00+00:00",
+              "observed_at": "2026-09-13T16:00:00+00:00",
               "reason": null,
               "source": "funding.rate",
               "usable": true,
@@ -2704,7 +2720,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "ohlcv_4h",
-              "observed_at": "2026-09-13T12:00:00+00:00",
+              "observed_at": "2026-09-13T16:00:00+00:00",
               "reason": null,
               "source": "candle store",
               "usable": true,
@@ -2715,7 +2731,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "ohlcv_h1",
-              "observed_at": "2026-09-13T14:00:00+00:00",
+              "observed_at": "2026-09-13T17:00:00+00:00",
               "reason": null,
               "source": "candle store",
               "usable": true,
@@ -2737,7 +2753,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "price",
-              "observed_at": "2026-09-13T15:38:56.810805+00:00",
+              "observed_at": "2026-09-13T17:49:19.950531+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -2938,9 +2954,9 @@
             "event_calendar": {
               "available": true,
               "critical": false,
-              "freshness": "RECENT",
+              "freshness": "LIVE",
               "input": "event_calendar",
-              "observed_at": "2026-09-13T11:47:55.990113+00:00",
+              "observed_at": "2026-09-13T17:47:58.404301+00:00",
               "reason": null,
               "source": "sources officielles des \u00e9v\u00e9nements",
               "usable": true,
@@ -2951,7 +2967,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "liquidity",
-              "observed_at": "2026-09-13T15:18:55.978183+00:00",
+              "observed_at": "2026-09-13T17:48:55.899342+00:00",
               "reason": null,
               "source": "DefiLlama stablecoins",
               "usable": true,
@@ -3006,7 +3022,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "onchain",
-              "observed_at": "2026-09-13T15:19:29.695547+00:00",
+              "observed_at": "2026-09-13T17:49:20.125146+00:00",
               "reason": null,
               "source": "fournisseurs on-chain",
               "usable": true,
@@ -3017,7 +3033,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "price",
-              "observed_at": "2026-09-13T15:38:56.810805+00:00",
+              "observed_at": "2026-09-13T17:49:19.950531+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -3175,17 +3191,23 @@
         "stale_inputs": [],
         "status": "PARTIAL"
       },
-      "decision": "BUY",
-      "decision_confidence": 0.56,
+      "decision": "WAIT",
+      "decision_confidence": 0.42,
       "directional_bias": "STRONGLY_BULLISH",
       "event_risk": "HIGH",
       "event_risk_gate": {
-        "active": false,
+        "active": true,
         "bypassed": false,
-        "event_ids": [],
-        "level": "LOW",
-        "reasons": [],
-        "status": "NOT_TRIGGERED"
+        "event_ids": [
+          "fev_8931898860acc69bc00229d8",
+          "fev_b2dce6bef31ee6282c294b5b"
+        ],
+        "level": "HIGH",
+        "reasons": [
+          "FOMC monetary policy decision (September 2026): \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 3,0 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9.",
+          "Personal Income and Outlays, August 2026: \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 16,8 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9."
+        ],
+        "status": "TRIGGERED"
       },
       "expected_movement": "HIGH"
     },
@@ -3227,9 +3249,9 @@
             "event_calendar": {
               "available": true,
               "critical": false,
-              "freshness": "RECENT",
+              "freshness": "LIVE",
               "input": "event_calendar",
-              "observed_at": "2026-09-13T11:47:55.990113+00:00",
+              "observed_at": "2026-09-13T17:47:58.404301+00:00",
               "reason": null,
               "source": "sources officielles des \u00e9v\u00e9nements",
               "usable": true,
@@ -3240,7 +3262,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "funding",
-              "observed_at": "2026-09-13T08:00:00+00:00",
+              "observed_at": "2026-09-13T16:00:00+00:00",
               "reason": null,
               "source": "funding.rate",
               "usable": true,
@@ -3251,7 +3273,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "liquidity",
-              "observed_at": "2026-09-13T15:18:55.978183+00:00",
+              "observed_at": "2026-09-13T17:48:55.899342+00:00",
               "reason": null,
               "source": "DefiLlama stablecoins",
               "usable": true,
@@ -3284,7 +3306,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "ohlcv_4h",
-              "observed_at": "2026-09-13T12:00:00+00:00",
+              "observed_at": "2026-09-13T16:00:00+00:00",
               "reason": null,
               "source": "candle store",
               "usable": true,
@@ -3306,7 +3328,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "onchain",
-              "observed_at": "2026-09-13T15:19:29.695547+00:00",
+              "observed_at": "2026-09-13T17:49:20.125146+00:00",
               "reason": null,
               "source": "fournisseurs on-chain",
               "usable": true,
@@ -3328,7 +3350,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "price",
-              "observed_at": "2026-09-13T15:38:56.810805+00:00",
+              "observed_at": "2026-09-13T17:49:19.950531+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -3507,17 +3529,21 @@
         "stale_inputs": [],
         "status": "PARTIAL"
       },
-      "decision": "BUY",
-      "decision_confidence": 0.56,
+      "decision": "WAIT",
+      "decision_confidence": 0.42,
       "directional_bias": "STRONGLY_BULLISH",
       "event_risk": "HIGH",
       "event_risk_gate": {
-        "active": false,
+        "active": true,
         "bypassed": false,
-        "event_ids": [],
-        "level": "LOW",
-        "reasons": [],
-        "status": "NOT_TRIGGERED"
+        "event_ids": [
+          "fev_8931898860acc69bc00229d8"
+        ],
+        "level": "HIGH",
+        "reasons": [
+          "FOMC monetary policy decision (September 2026): \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 3,0 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9."
+        ],
+        "status": "TRIGGERED"
       },
       "expected_movement": "HIGH"
     }
@@ -3531,7 +3557,7 @@
       "freshness": "UNAVAILABLE",
       "market_probability": null,
       "methodology": "No probability is inferred when timestamped market pricing is unavailable.",
-      "observed_at": "2026-09-13T15:39:13.222389Z",
+      "observed_at": "2026-09-13T17:50:56.748307Z",
       "outcome_distribution": [],
       "probability_timestamp": null,
       "source": null,
@@ -3547,7 +3573,7 @@
       "freshness": "UNAVAILABLE",
       "market_probability": null,
       "methodology": "No probability is inferred when timestamped market pricing is unavailable.",
-      "observed_at": "2026-09-13T15:39:13.222389Z",
+      "observed_at": "2026-09-13T17:50:56.748307Z",
       "outcome_distribution": [],
       "probability_timestamp": null,
       "source": null,
@@ -3563,7 +3589,7 @@
       "freshness": "UNAVAILABLE",
       "market_probability": null,
       "methodology": "No probability is inferred when timestamped market pricing is unavailable.",
-      "observed_at": "2026-09-13T15:39:13.222389Z",
+      "observed_at": "2026-09-13T17:50:56.748307Z",
       "outcome_distribution": [],
       "probability_timestamp": null,
       "source": null,
@@ -3579,7 +3605,7 @@
       "freshness": "UNAVAILABLE",
       "market_probability": null,
       "methodology": "No probability is inferred when timestamped market pricing is unavailable.",
-      "observed_at": "2026-09-13T15:39:13.222389Z",
+      "observed_at": "2026-09-13T17:50:56.748307Z",
       "outcome_distribution": [],
       "probability_timestamp": null,
       "source": null,
@@ -3595,7 +3621,7 @@
       "freshness": "UNAVAILABLE",
       "market_probability": null,
       "methodology": "No probability is inferred when timestamped market pricing is unavailable.",
-      "observed_at": "2026-09-13T15:39:13.222389Z",
+      "observed_at": "2026-09-13T17:50:56.748307Z",
       "outcome_distribution": [],
       "probability_timestamp": null,
       "source": null,
@@ -3611,7 +3637,7 @@
       "freshness": "UNAVAILABLE",
       "market_probability": null,
       "methodology": "No probability is inferred when timestamped market pricing is unavailable.",
-      "observed_at": "2026-09-13T15:39:13.222389Z",
+      "observed_at": "2026-09-13T17:50:56.748307Z",
       "outcome_distribution": [],
       "probability_timestamp": null,
       "source": null,
@@ -3632,13 +3658,13 @@
       "rates",
       "risk_assets"
     ],
-    "age_seconds": 13877.295,
+    "age_seconds": 180.582,
     "canonical_event_id": "fev_8931898860acc69bc00229d8",
     "category": "MONETARY_POLICY",
     "causal_chain": [],
     "confidence": 1.0,
     "consensus": null,
-    "detected_at": "2026-09-13T11:47:55.926912Z",
+    "detected_at": "2026-09-13T17:47:56.166731Z",
     "directional_effect": "NEUTRAL",
     "event_signature": "federal reserve,fomc|fomc decision|2026-09-16T18:00:00+00:00|united states|monetary policy decision|",
     "event_type": "FOMC_DECISION",
@@ -3646,12 +3672,12 @@
     "expected_end_at": "2026-09-16T19:00:00Z",
     "expected_value": null,
     "expires_at": null,
-    "fetched_at": "2026-09-13T11:47:55.926912+00:00",
-    "freshness_status": "FRESH",
-    "hours_until": 74.346,
+    "fetched_at": "2026-09-13T17:47:56.166731+00:00",
+    "freshness_status": "LIVE",
+    "hours_until": 72.151,
     "id": "fev_8931898860acc69bc00229d8",
     "importance": "CRITICAL",
-    "last_updated": "2026-09-13T11:47:55.926912Z",
+    "last_updated": "2026-09-13T17:47:56.166731Z",
     "magnitude_effect": "HIGH",
     "market_probabilities": [],
     "metadata": {
@@ -3667,7 +3693,7 @@
       "time_basis": "FOMC statements are released at 2:00 p.m. Eastern"
     },
     "normalized_title": "fomc monetary policy decision september 2026",
-    "observed_at": "2026-09-13T11:47:55.926912+00:00",
+    "observed_at": "2026-09-13T17:47:56.166731+00:00",
     "outcome_space": [],
     "previous_value": null,
     "probability_timestamp": null,
@@ -3679,7 +3705,7 @@
     "source_references": [
       {
         "evidence_ids": [],
-        "fetched_at": "2026-09-13T11:47:55.926912Z",
+        "fetched_at": "2026-09-13T17:47:56.166731Z",
         "published_at": null,
         "reference": null,
         "source": "Federal Reserve",
@@ -3695,33 +3721,33 @@
     "timezone": "America/New_York",
     "title": "FOMC monetary policy decision (September 2026)"
   },
-  "price_at_analysis": 2492.79,
+  "price_at_analysis": 2503.78,
   "provenance": [
     {
       "evidence_ids": [],
-      "last_updated": "2026-09-13T11:47:55.990113+00:00",
+      "last_updated": "2026-09-13T17:47:58.404301+00:00",
       "source": "U.S. Treasury / TreasuryDirect",
       "tier": "A",
       "url": "https://www.treasurydirect.gov/TA_WS/securities/announced?format=json"
     },
     {
       "evidence_ids": [],
-      "last_updated": "2026-09-13T11:47:55.926912+00:00",
+      "last_updated": "2026-09-13T17:47:56.166731+00:00",
       "source": "Federal Reserve",
       "tier": "A",
       "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
     },
     {
-      "as_of": "2026-09-13T15:39:13.222389+00:00",
+      "as_of": "2026-09-13T17:50:56.748307+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "MacroAnalyzer",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-13T15:39:13.222389+00:00",
+      "as_of": "2026-09-13T17:50:56.748307+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "StablecoinLiquidityAnalyzer",
       "tier": "DERIVED"
     },
@@ -4346,63 +4372,63 @@
     {
       "as_of": "2026-09-13T00:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "Binance klines, taker buy base volume / volume total",
       "tier": "MEASURED"
     },
     {
-      "as_of": "2026-09-13T08:00:00+00:00",
+      "as_of": "2026-09-13T16:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "funding.rate Binance, percentile glissant par actif",
       "tier": "MEASURED"
     },
     {
-      "as_of": "2026-09-13T12:00:00+00:00",
+      "as_of": "2026-09-13T16:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
       "tier": "MEASURED"
     },
     {
       "as_of": "2026-09-13T00:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "ImpliedVolatilityEngine (Deribit)",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-13T15:39:13.222389+00:00",
+      "as_of": "2026-09-13T17:50:56.748307+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "MarketStructureEngine",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-13T15:39:13.222389+00:00",
+      "as_of": "2026-09-13T17:50:56.748307+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "VolatilityRegimeEngine",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-13T15:39:13.222389+00:00",
+      "as_of": "2026-09-13T17:50:56.748307+00:00",
       "evidence_ids": [],
-      "reference": "an_5cdeea3f49d3a5fd",
+      "reference": "an_cc102fcabf4cad20",
       "source": "ExpectedVolatilityEngine",
       "tier": "DERIVED"
     }
   ],
   "reasons": [
     {
-      "date_time": "2026-09-13T15:39:13.222389+00:00",
+      "date_time": "2026-09-16T18:00:00+00:00",
       "evidence_ids": [],
-      "explanation": "6 \u00e9v\u00e9nement(s) macro/mon\u00e9taire sourc\u00e9(s) dans la fen\u00eatre.",
-      "icon": "signal",
+      "explanation": "FOMC monetary policy decision (September 2026): \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 3,0 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9.",
+      "icon": "calendar-alert",
       "impact": "HIGH",
-      "source": "U.S. Treasury / TreasuryDirect",
-      "source_url": "https://www.treasurydirect.gov/TA_WS/securities/announced?format=json",
-      "title": "Macro & liquidit\u00e9"
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "title": "FOMC monetary policy decision (September 2026)"
     },
     {
       "date_time": "2026-09-11T00:00:00+00:00",
@@ -5017,7 +5043,7 @@
         "ETH_TETH_20260910",
         "ETH_TETH_20260911"
       ],
-      "explanation": "Flux institutionnels strong_inflow; cumul 5 s\u00e9ances 222.79999999999998 M$.",
+      "explanation": "Flux institutionnels: fortes entr\u00e9es nettes sur 20 s\u00e9ances (+1 920,5 M$); 5 derni\u00e8res s\u00e9ances +222,8 M$.",
       "icon": "signal",
       "impact": "NORMAL",
       "source": "Farside Investors",
@@ -5025,9 +5051,19 @@
       "title": "Flux institutionnels & baleines"
     },
     {
-      "date_time": "2026-09-13T15:39:13.222389+00:00",
+      "date_time": "2026-09-13T17:50:56.748307+00:00",
       "evidence_ids": [],
-      "explanation": "Le co\u00fbt du levier reste proche de sa normale.; Aucun changement de positionnement marqu\u00e9.",
+      "explanation": "6 \u00e9v\u00e9nement(s) macro/mon\u00e9taire sourc\u00e9(s) dans la fen\u00eatre.",
+      "icon": "signal",
+      "impact": "HIGH",
+      "source": "U.S. Treasury / TreasuryDirect",
+      "source_url": "https://www.treasurydirect.gov/TA_WS/securities/announced?format=json",
+      "title": "Macro & liquidit\u00e9"
+    },
+    {
+      "date_time": "2026-09-13T17:50:56.748307+00:00",
+      "evidence_ids": [],
+      "explanation": "Les shorts paient nettement pour rester en position.; Aucun changement de positionnement marqu\u00e9.",
       "icon": "signal",
       "impact": "NORMAL",
       "source": "funding.rate Binance, percentile glissant par actif",
@@ -5035,7 +5071,7 @@
       "title": "Positionnement & d\u00e9riv\u00e9s"
     },
     {
-      "date_time": "2026-09-13T15:39:13.222389+00:00",
+      "date_time": "2026-09-13T17:50:56.748307+00:00",
       "evidence_ids": [],
       "explanation": "Structure 7d: haussi\u00e8re sur 0 unit\u00e9(s), baissi\u00e8re sur 0; volatilit\u00e9 low. Bollinger squeeze=False.",
       "icon": "signal",
@@ -5155,7 +5191,10 @@
     ]
   },
   "what_could_change_decision": [
-    "Un catalyseur prioritaire change de sens ou d'amplitude.",
-    "R\u00e9tablir les familles indisponibles avec des donn\u00e9es actuelles et sourc\u00e9es."
+    "Publication de \u00ab FOMC monetary policy decision (September 2026) \u00bb dans 3,0 j: la surprise mesur\u00e9e par rapport \u00e0 ce qui \u00e9tait valoris\u00e9 donnera la direction.",
+    "Flux institutionnels: retour durable des sorties nettes sur plusieurs s\u00e9ances cons\u00e9cutives.",
+    "Positionnement: reprise durable des positions \u00e0 levier accompagn\u00e9e d'une hausse du prix.",
+    "Technique: invalidation de la structure haussi\u00e8re sur l'unit\u00e9 de temps de r\u00e9f\u00e9rence.",
+    "Catalyseurs & r\u00e9glementation: Aucun catalyseur pertinent remont\u00e9 par les sources configur\u00e9es."
   ]
 }

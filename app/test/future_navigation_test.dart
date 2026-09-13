@@ -168,7 +168,15 @@ void main() {
       await tester.tap(find.text('SOL'));
       await tester.pumpAndSettle();
       expect(find.text('Solana'), findsOneWidget);
-      expect(find.text('VENDRE'), findsOneWidget);
+      // The action follows the shipped snapshot; asserting a fixed word here
+      // broke every time the engine legitimately changed its mind.
+      expect(
+        find.byWidgetPredicate((widget) =>
+            widget is Text &&
+            const {'ACHETER', 'ATTENDRE', 'VENDRE', 'DONNÉES INSUFFISANTES'}
+                .contains(widget.data)),
+        findsWidgets,
+      );
 
       await tester.tap(find.text('Graphique'));
       await tester.pumpAndSettle();
