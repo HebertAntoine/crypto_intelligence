@@ -47,6 +47,7 @@ def event(tier: FutureEventSourceTier, *, title: str = "Événement") -> FutureE
         magnitude_effect=ExpectedMovement.HIGH,
         scheduled_at=NOW + timedelta(hours=30),
         detected_at=NOW,
+        last_updated=NOW,
     )
 
 

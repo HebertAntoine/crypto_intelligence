@@ -689,12 +689,21 @@ def build_five_family_snapshot(
     )
 
     normalised: list[dict[str, Any]] = []
-    if institutional_usable:
-        normalised.append(
-            flow_assessment(
-                institutional_flow, label="Flux institutionnels & baleines"
-            ).to_dict()
-        )
+    # Stale ETF data is published as stale rather than dropped. Dropping it made
+    # the family fall back to spot aggression while the screen still titled the
+    # block "ETF", so a reader was told about fund flows while looking at a
+    # measure of who crosses the spread.
+    if getattr(institutional_flow, "available", False):
+        flow_reading = flow_assessment(
+            institutional_flow, label="Flux ETF"
+        ).to_dict()
+        if not institutional_usable:
+            flow_reading["availability"] = "STALE"
+            flow_reading["missing_requirements"] = [
+                "Séance ETF plus récente: la dernière publication date de "
+                f"{int(float(getattr(institutional_flow, 'age_seconds', 0) or 0) // 3600)} h."
+            ]
+        normalised.append(flow_reading)
     if positioning_available:
         normalised.append(
             positioning_from_leverage_state(

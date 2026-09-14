@@ -80,7 +80,9 @@ void main() {
     await _openBtc(tester);
 
     expect(find.text('Risque'), findsOneWidget);
-    expect(find.text('Mouvement'), findsOneWidget);
+    // The field behind it is expected_movement, an amplitude rather than a
+    // volatility reading, so the label names the amplitude.
+    expect(find.text('Mouvement att.'), findsOneWidget);
     expect(
       find.byWidgetPredicate((widget) =>
           widget is Text &&
@@ -608,5 +610,48 @@ void main() {
     await _openDecisionDetails(tester);
     expect(find.byKey(const ValueKey('scenario-pair')), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the home page carries at most four factors', (tester) async {
+    await _openBtc(tester);
+
+    expect(find.byKey(const ValueKey('decision-reason-4')), findsOneWidget);
+    expect(find.byKey(const ValueKey('decision-reason-5')), findsNothing);
+  });
+
+  testWidgets('an ETF reading is titled and described as ETF flows',
+      (tester) async {
+    await _openBtc(tester);
+
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final flows = decision.factors.where((item) => item.key == 'flows');
+    if (flows.isEmpty) return;
+    // The reported bug: the ETF block described who crosses the spread.
+    expect(flows.first.rationale.toLowerCase().contains('spread'), isFalse);
+    expect(flows.first.rationale.toLowerCase().contains('prix demandé'), isFalse);
+  });
+
+  testWidgets('the page renders without overflow on three iPhone widths',
+      (tester) async {
+    for (final size in const [
+      Size(375, 667), // iPhone SE
+      Size(390, 844), // iPhone standard
+      Size(430, 932), // iPhone Max
+    ]) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark,
+          home: HomeShell(
+            client: _shippedClient(),
+            livePrices: _SilentLivePrices(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: '$size');
+    }
+    addTearDown(tester.view.reset);
   });
 }

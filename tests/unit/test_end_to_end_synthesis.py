@@ -161,6 +161,7 @@ def test_d_an_unverified_social_item_never_reaches_the_decision() -> None:
             magnitude_effect=ExpectedMovement.HIGH,
             scheduled_at=NOW + timedelta(hours=24),
             detected_at=NOW,
+            last_updated=NOW,
         )
 
     usable = usable_events_for_horizon(

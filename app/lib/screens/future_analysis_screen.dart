@@ -885,7 +885,9 @@ class _DecisionCard extends StatelessWidget {
                         Expanded(
                           child: _DecisionMetric(
                             icon: Icons.show_chart_rounded,
-                            label: 'Mouvement',
+                            // The field is expected_movement - an amplitude,
+                            // not a volatility reading - so the label says so.
+                            label: 'Mouvement att.',
                             value: _expectedMovementLabel(decision.movement),
                             tone: visual.accent,
                           ),
@@ -3124,20 +3126,6 @@ bool _supportsDecision(_DecisionFactor factor, FutureDecisionRead decision) {
   };
 }
 
-/// Match a family to its normalised reading, when the engine published one.
-FutureFactorRead? _factorFor(FutureDecisionRead decision, String familyId) {
-  const mapping = {
-    'flows_whales': 'flows',
-    'positioning_derivatives': 'positioning',
-    'technical_volatility': 'technical',
-  };
-  final key = mapping[familyId];
-  if (key == null) return null;
-  for (final factor in decision.factors) {
-    if (factor.key == key) return factor;
-  }
-  return null;
-}
 
 /// UNKNOWN is kept distinct from NEUTRAL all the way to the badge.
 String? _normalisedDirection(String direction) => switch (direction) {
@@ -3168,14 +3156,6 @@ String _importanceImpact(String importance) =>
       'CRITICAL' => 'TRÈS ÉLEVÉ',
       'HIGH' => 'ÉLEVÉ',
       'MEDIUM' => 'MODÉRÉ',
-      'LOW' => 'FAIBLE',
-      _ => 'MODÉRÉ',
-    };
-
-String _movementImpact(String? movement) => switch (movement?.toUpperCase()) {
-      'EXTREME' => 'TRÈS ÉLEVÉ',
-      'HIGH' => 'ÉLEVÉ',
-      'NORMAL' => 'MODÉRÉ',
       'LOW' => 'FAIBLE',
       _ => 'MODÉRÉ',
     };
@@ -3268,32 +3248,66 @@ const _guidanceByKey = <String, _TopicGuidance>{
   ),
 };
 
-/// Guidance for one family, by identifier rather than by wording.
+/// A concrete, readable name for what one reading measures.
 ///
-/// Falling back to a keyword search on the label was the original defect and it
-/// came back the moment a family had no normalised factor: "Flux institutionnels
-/// & baleines" matched the whale branch and an ETF reading was explained with
-/// on-chain vocabulary. Identifiers cannot be ambiguous, so the family id is
-/// tried before any text is inspected.
-const _guidanceByFamily = <String, String>{
-  'flows_whales': 'flows',
-  'positioning_derivatives': 'positioning',
-  'technical_volatility': 'technical',
-  'macro_liquidity': 'rates',
-  'catalysts_regulation': 'regulation',
-};
-
-_TopicGuidance _guidanceForFactor(
-  FutureFactorRead? factor,
-  String familyId,
-  String fallbackTitle,
-) {
-  final byFactor = _guidanceByKey[factor?.key];
-  if (byFactor != null) return byFactor;
-  final byFamily = _guidanceByKey[_guidanceByFamily[familyId]];
-  if (byFamily != null) return byFamily;
-  return _topicGuidance(fallbackTitle);
+/// The name follows the measurement, never the family it is filed under.
+String _readingTitle(FutureFactorRead reading) {
+  final negative = reading.direction == 'NEGATIVE';
+  return switch (reading.key) {
+    'flows' => negative ? 'Sorties nettes des ETF' : 'Entrées nettes sur les ETF',
+    'spot' => negative
+        ? 'Pression vendeuse au comptant'
+        : 'Pression acheteuse au comptant',
+    'whales' => 'Mouvements de gros portefeuilles',
+    'positioning' => 'Positionnement sur les dérivés',
+    'derivatives' => 'Positionnement sur les dérivés',
+    'funding' => 'Coût du levier',
+    'basis' => 'Écart contrats / comptant',
+    'technical' => negative
+        ? 'Tendance court terme fragile'
+        : 'Tendance court terme porteuse',
+    'volatility' => 'Compression de volatilité',
+    'implied_volatility' => 'Volatilité attendue par les options',
+    'energy' => 'Énergie',
+    'rates' => 'Rendements obligataires',
+    'credit' => 'Écarts de crédit',
+    _ => reading.label,
+  };
 }
+
+String _readingInvalidation(String key) => switch (key) {
+      'flows' =>
+        'Un retour durable des flux dans le sens inverse sur plusieurs séances.',
+      'spot' => 'Un rééquilibrage durable entre acheteurs et vendeurs au comptant.',
+      'positioning' || 'derivatives' =>
+        'Une reprise durable des positions à levier accompagnée d’une reprise du prix.',
+      'funding' => 'Un retour du coût du levier vers sa zone habituelle.',
+      'technical' => 'Une invalidation de la structure sur l’échelle de référence.',
+      'volatility' || 'implied_volatility' =>
+        'Une sortie de compression, qui donnerait enfin une direction.',
+      'energy' => 'Une stabilisation durable du prix du pétrole.',
+      'rates' => 'Une détente durable des rendements.',
+      'credit' => 'Un resserrement durable des écarts de crédit.',
+      _ => 'Une donnée nouvelle qui renverserait cette lecture.',
+    };
+
+String _readingConsequence(
+  FutureFactorRead reading,
+  String horizon,
+  String asset,
+) {
+  if (reading.impactOnDirection == 'NONE') {
+    return 'Mouvement potentiellement important sur $horizon, '
+        'direction actuellement incertaine.';
+  }
+  return switch (reading.direction) {
+    'POSITIVE' => 'Soutien à la hausse pour $asset sur $horizon.',
+    'NEGATIVE' => 'Pression à la baisse pour $asset sur $horizon.',
+    _ => 'Pas d’effet directionnel mesuré sur $horizon.',
+  };
+}
+
+
 
 _TopicGuidance _topicGuidance(String title) {
   final value = title.toLowerCase();
@@ -3445,44 +3459,11 @@ List<FutureEventRead> _rankedCatalysts(
   return inWindow;
 }
 
-/// A concrete, readable name for what one family is currently measuring.
-///
-/// "Flux institutionnels & baleines" is the family; "Sorties nettes des ETF" is
-/// what a reader can actually picture.
-String? _signalTitle(FutureFamilyRead family) {
-  final summary = family.summary.toLowerCase();
-  final bearish = family.direction?.contains('BEARISH') ?? false;
-  switch (family.id) {
-    case 'flows_whales':
-      if (summary.contains('inversé') || summary.contains('sorties')) {
-        return bearish
-            ? 'Sorties nettes des ETF'
-            : 'Flux ETF en train de s’inverser';
-      }
-      return bearish ? 'Sorties nettes des ETF' : 'Entrées nettes sur les ETF';
-    case 'positioning_derivatives':
-      if (summary.contains('recule') || summary.contains('baisse')) {
-        return 'Positions à levier en baisse';
-      }
-      return 'Positionnement sur les dérivés';
-    case 'technical_volatility':
-      if (summary.contains('compression')) return 'Compression de Bollinger';
-      return bearish
-          ? 'Tendance court terme fragile'
-          : 'Tendance court terme porteuse';
-    case 'catalysts_regulation':
-      return 'Contexte réglementaire';
-    case 'macro_liquidity':
-      // Its content is the dated events, which are surfaced as catalysts. A
-      // neutral macro family has nothing of its own to show the reader.
-      return family.direction == null || family.direction == 'NEUTRAL'
-          ? null
-          : 'Conditions de liquidité';
-  }
-  return family.label;
-}
 
 /// Build three to five concrete causes: dated catalysts and measured signals.
+/// How many factors the home page carries before "voir l'analyse complète".
+const _homeFactorLimit = 4;
+
 List<_DecisionFactor> _decisionFactors(
   FutureDecisionRead decision,
   _FutureBundle bundle,
@@ -3526,50 +3507,41 @@ List<_DecisionFactor> _decisionFactors(
     ));
   }
 
-  for (final family in decision.families) {
+  // Signals are built from the engine's own readings, not from the analytical
+  // family they belong to. Titling by family identifier is what produced
+  // "Sorties nettes des ETF" above a sentence about who crosses the spread:
+  // when the ETF series went stale the family fell back to spot pressure, and
+  // the screen kept the ETF title. A reading now names itself.
+  for (final reading in decision.factors) {
     if (factors.length >= 5) break;
-    if (!family.available) continue;
-    final title = _signalTitle(family);
-    if (title == null) continue;
-    final summary = _cleanExplanation(family.summary);
-    // Prefer the normalised reading when the engine published one: it keeps
-    // direction, impact and trend apart, where the family carries a bias and an
-    // amplitude that the screen used to conflate.
-    final normalised = _factorFor(decision, family.id);
-    final guidance = _guidanceForFactor(normalised, family.id, family.label);
+    if (reading.availability == 'UNAVAILABLE' ||
+        reading.availability == 'NOT_APPLICABLE') {
+      continue;
+    }
+    final guidance = _guidanceByKey[reading.key] ?? _guidanceFallback;
+    if (identical(guidance, _guidanceFallback)) continue;
     factors.add(_DecisionFactor(
       kind: _FactorKind.currentSignal,
-      title: title,
-      description: summary,
-      direction: normalised != null
-          ? _normalisedDirection(normalised.direction)
-          : family.direction,
-      impact: normalised != null
-          ? _impactLabelFr(normalised.impact)
-          : _movementImpact(family.movement),
-      emoji: _reasonEmoji('${family.label} $title'),
-      when: 'ACTUEL',
-      confidence: normalised?.confidence ?? family.confidence,
-      trend: normalised?.trend ?? 'UNKNOWN',
-      impactOnDirection: normalised?.impactOnDirection ?? 'MEASURED',
-      observation: normalised?.rationale.isNotEmpty == true
-          ? normalised!.rationale
-          : summary,
-      invalidation: _signalInvalidation(family),
-      // The mechanism comes from the engine's causal chain. Deriving it in the
-      // UI from a keyword in the title served whale wording for an ETF factor,
-      // because the family label "Flux institutionnels & baleines" matched the
-      // whale branch first.
-      whyItMatters: normalised != null && normalised.causalChain.length >= 3
-          ? normalised.causalChain.last
+      title: _readingTitle(reading),
+      description: _cleanExplanation(reading.rationale),
+      direction: _normalisedDirection(reading.direction),
+      impact: _impactLabelFr(reading.impact),
+      emoji: _reasonEmoji('${reading.label} ${reading.key}'),
+      when: reading.availability == 'STALE' ? 'PÉRIMÉ' : 'ACTUEL',
+      confidence: reading.confidence,
+      trend: reading.trend,
+      impactOnDirection: reading.impactOnDirection,
+      observation: _cleanExplanation(reading.rationale),
+      invalidation: _readingInvalidation(reading.key),
+      whyItMatters: reading.causalChain.length >= 3
+          ? reading.causalChain.last
           : guidance.why,
-      caveat: guidance.caveat,
-      consequence: _signalConsequence(family, horizon, asset),
-      // The real upstream provider, not the analytical family it belongs to.
-      source: normalised?.provider.isNotEmpty == true
-          ? normalised!.provider
-          : family.label,
-      sourceUrl: normalised?.sourceUrl,
+      caveat: reading.missingRequirements.isNotEmpty
+          ? reading.missingRequirements.first
+          : guidance.caveat,
+      consequence: _readingConsequence(reading, horizon, asset),
+      source: reading.provider,
+      sourceUrl: reading.sourceUrl,
     ));
   }
 
@@ -3577,7 +3549,10 @@ List<_DecisionFactor> _decisionFactors(
   // whose direction is unknown can still rank first when it dominates the risk.
   factors.sort((left, right) =>
       _contribution(right, decision).compareTo(_contribution(left, decision)));
-  return factors.take(5).toList();
+  // Section 6: four factors on the home page. The rest stays one tap away in
+  // the full analysis, which is where a reader goes to understand rather than
+  // to decide.
+  return factors.take(_homeFactorLimit).toList();
 }
 
 /// How much one factor weighs on this decision, in [0, 1].
@@ -3629,40 +3604,7 @@ double _contribution(_DecisionFactor factor, FutureDecisionRead decision) {
   return score.clamp(0.0, 1.0);
 }
 
-String _signalConsequence(
-  FutureFamilyRead family,
-  String horizon,
-  String asset,
-) {
-  if (family.id == 'technical_volatility' &&
-      family.summary.toLowerCase().contains('compression')) {
-    return 'Mouvement potentiellement important sur $horizon, '
-        'direction actuellement incertaine.';
-  }
-  return switch (family.direction?.toUpperCase()) {
-    'STRONGLY_BULLISH' ||
-    'BULLISH' =>
-      'Soutien à la hausse pour $asset sur $horizon.',
-    'BEARISH' ||
-    'STRONGLY_BEARISH' =>
-      'Pression à la baisse pour $asset sur $horizon.',
-    _ => 'Pas d’effet directionnel mesuré sur $horizon.',
-  };
-}
 
-String _signalInvalidation(FutureFamilyRead family) => switch (family.id) {
-      'flows_whales' =>
-        'Un retour durable des flux dans le sens inverse sur plusieurs séances.',
-      'positioning_derivatives' =>
-        'Une reprise durable des positions à levier accompagnée d’une reprise '
-            'du prix.',
-      'technical_volatility' =>
-        'Une sortie de compression, qui donnerait enfin une direction.',
-      'macro_liquidity' =>
-        'Un changement des conditions de liquidité mesuré sur les séries '
-            'officielles.',
-      _ => 'Une donnée nouvelle qui renverserait cette lecture.',
-    };
 
 /// Short date badge: "16 sept.".
 String _dateShort(DateTime? value) {
