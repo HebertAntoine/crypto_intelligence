@@ -81,28 +81,24 @@ class _HomeShellState extends State<HomeShell> {
     _screens = [_screenFor(0), null, null, null];
   }
 
+  Widget _assetPage(String asset) => Navigator(
+        key: ValueKey('${asset.toLowerCase()}-navigator'),
+        onGenerateRoute: (_) => MaterialPageRoute<void>(
+          settings: RouteSettings(name: '/${asset.toLowerCase()}'),
+          builder: (_) => FutureAnalysisScreen(
+            key: ValueKey('${asset.toLowerCase()}-page'),
+            client: widget.client,
+            livePrices: widget.livePrices,
+            initialAsset: asset,
+            lockAsset: true,
+          ),
+        ),
+      );
+
   Widget _screenFor(int index) => switch (index) {
-        0 => FutureAnalysisScreen(
-            key: const ValueKey('btc-page'),
-            client: widget.client,
-            livePrices: widget.livePrices,
-            initialAsset: 'BTC',
-            lockAsset: true,
-          ),
-        1 => FutureAnalysisScreen(
-            key: const ValueKey('eth-page'),
-            client: widget.client,
-            livePrices: widget.livePrices,
-            initialAsset: 'ETH',
-            lockAsset: true,
-          ),
-        2 => FutureAnalysisScreen(
-            key: const ValueKey('sol-page'),
-            client: widget.client,
-            livePrices: widget.livePrices,
-            initialAsset: 'SOL',
-            lockAsset: true,
-          ),
+        0 => _assetPage('BTC'),
+        1 => _assetPage('ETH'),
+        2 => _assetPage('SOL'),
         _ => ChartScreen(
             key: const ValueKey('chart-page'),
             client: widget.client,

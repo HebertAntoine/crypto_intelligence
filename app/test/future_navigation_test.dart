@@ -126,6 +126,19 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('horizon-24h')).last);
       await tester.pumpAndSettle();
 
+      // The hero is the doorway to the complete synthesis. It opens inside
+      // the asset tab so the four-item bottom navigation remains available.
+      await tester.tap(find.byKey(const ValueKey('decision-card')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('market-state-card')), findsOneWidget);
+      expect(find.byKey(const ValueKey('why-now-card')), findsOneWidget);
+      expect(find.text('BTC'), findsWidgets);
+      expect(find.text('ETH'), findsOneWidget);
+      expect(find.text('SOL'), findsOneWidget);
+      expect(find.text('Graphique'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('decision-detail-back')));
+      await tester.pumpAndSettle();
+
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('why-see-all')),
         250,

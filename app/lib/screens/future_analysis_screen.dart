@@ -230,6 +230,23 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
         },
       );
 
+  void _showDecisionDetails(
+    FutureDecisionRead decision,
+    _FutureBundle bundle,
+  ) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: '/${_asset.toLowerCase()}/decision'),
+        builder: (_) => _DecisionDetailPage(
+          asset: _asset,
+          decision: decision,
+          bundle: bundle,
+          horizon: _horizon,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return _FutureVisualFrame(
@@ -283,51 +300,8 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   bundle: bundle,
                   horizon: _horizon,
                   onHorizonTap: _chooseHorizon,
+                  onTap: () => _showDecisionDetails(decision, bundle),
                 ),
-                // Section 18: the synthesis leads, then the evidence for it,
-                // then the evidence against, then what would settle it.
-                if (decision.synthesis != null) ...[
-                  const SizedBox(height: 12),
-                  _MarketStateCard(synthesis: decision.synthesis!),
-                  const SizedBox(height: 12),
-                  _EvidenceListCard(
-                    key: const ValueKey('why-now-card'),
-                    title: '⚠️ POURQUOI MAINTENANT ?',
-                    tone: const Color(0xFFFFB34F),
-                    items: decision.synthesis!.whyNow,
-                    emptyText: 'Aucun facteur défavorable mesuré.',
-                  ),
-                  const SizedBox(height: 12),
-                  _EvidenceListCard(
-                    key: const ValueKey('counter-evidence-card'),
-                    title: '🛡️ POURQUOI CE N’EST PAS ENCORE CONFIRMÉ',
-                    tone: const Color(0xFF55DD8B),
-                    items: decision.synthesis!.counterEvidence,
-                  ),
-                  if (decision.synthesis!.upcomingEvents.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _CatalystListCard(
-                      events: decision.synthesis!.upcomingEvents,
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  _ConditionListCard(
-                    key: const ValueKey('confirmation-card'),
-                    title: '🚨 CE QUI CONFIRMERAIT',
-                    tone: const Color(0xFFFF6676),
-                    conditions: decision.synthesis!.confirmationConditions,
-                    counter: decision.synthesis!.confirmationMet,
-                  ),
-                  const SizedBox(height: 12),
-                  _ConditionListCard(
-                    key: const ValueKey('invalidation-card'),
-                    title: '🟢 CE QUI INVALIDERAIT',
-                    tone: const Color(0xFF55DD8B),
-                    conditions: decision.synthesis!.invalidationConditions,
-                  ),
-                  const SizedBox(height: 12),
-                  _ScenarioPairCard(synthesis: decision.synthesis!),
-                ],
                 if (_coherenceNote(decision) != null) ...[
                   const SizedBox(height: 10),
                   _CoherenceNote(text: _coherenceNote(decision)!),
@@ -352,6 +326,116 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// Focused decision route opened from the hero card. It deliberately lives in
+/// the asset tab's nested navigator so the BTC/ETH/SOL/Graphique bar remains
+/// available while the reader explores the full synthesis.
+class _DecisionDetailPage extends StatelessWidget {
+  final String asset;
+  final FutureDecisionRead decision;
+  final _FutureBundle bundle;
+  final String horizon;
+
+  const _DecisionDetailPage({
+    required this.asset,
+    required this.decision,
+    required this.bundle,
+    required this.horizon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final synthesis = decision.synthesis;
+    return _FutureVisualFrame(
+      asset: asset,
+      child: MobileScrollView(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 170),
+        children: [
+          Row(
+            children: [
+              IconButton.filledTonal(
+                key: const ValueKey('decision-detail-back'),
+                tooltip: 'Retour',
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back_rounded),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Analyse complète · ${_assetName(asset)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _DecisionCard(
+            decision: decision,
+            bundle: bundle,
+            horizon: horizon,
+          ),
+          if (synthesis != null) ...[
+            const SizedBox(height: 12),
+            _MarketStateCard(synthesis: synthesis),
+            const SizedBox(height: 12),
+            _EvidenceListCard(
+              key: const ValueKey('why-now-card'),
+              emoji: '⚠️',
+              title: 'POURQUOI MAINTENANT ?',
+              tone: const Color(0xFFFFB34F),
+              items: synthesis.whyNow,
+              emptyText: 'Aucun facteur défavorable mesuré.',
+            ),
+            const SizedBox(height: 12),
+            _EvidenceListCard(
+              key: const ValueKey('counter-evidence-card'),
+              emoji: '🛡️',
+              title: 'POURQUOI CE N’EST PAS ENCORE CONFIRMÉ',
+              tone: const Color(0xFF55DD8B),
+              items: synthesis.counterEvidence,
+            ),
+            if (synthesis.upcomingEvents.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              _CatalystListCard(events: synthesis.upcomingEvents),
+            ],
+            const SizedBox(height: 12),
+            _ConditionListCard(
+              key: const ValueKey('confirmation-card'),
+              emoji: '🚨',
+              title: 'CE QUI CONFIRMERAIT',
+              tone: const Color(0xFFFF6676),
+              conditions: synthesis.confirmationConditions,
+              counter: synthesis.confirmationMet,
+            ),
+            const SizedBox(height: 12),
+            _ConditionListCard(
+              key: const ValueKey('invalidation-card'),
+              emoji: '🟢',
+              title: 'CE QUI INVALIDERAIT',
+              tone: const Color(0xFF55DD8B),
+              conditions: synthesis.invalidationConditions,
+            ),
+            const SizedBox(height: 12),
+            _ScenarioPairCard(synthesis: synthesis),
+          ] else ...[
+            const SizedBox(height: 12),
+            const GlassPanel(
+              borderColor: Color(0xFF24506F),
+              child: Text(
+                'La synthèse détaillée est momentanément indisponible.',
+                style: TextStyle(color: mobileMuted, fontSize: 13),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -669,150 +753,160 @@ class _DecisionCard extends StatelessWidget {
   final FutureDecisionRead decision;
   final _FutureBundle bundle;
   final String horizon;
-  final VoidCallback onHorizonTap;
+  final VoidCallback? onHorizonTap;
+  final VoidCallback? onTap;
 
   const _DecisionCard({
     required this.decision,
     required this.bundle,
     required this.horizon,
-    required this.onHorizonTap,
+    this.onHorizonTap,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final visual = _decisionVisual(decision.decision);
-    return ClipRRect(
-      key: const ValueKey('decision-card'),
-      borderRadius: BorderRadius.circular(22),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Transform.scale(
-              // The supplied visual already contains its luminous frame and
-              // a transparent export margin. Stretching the full artwork,
-              // then cropping only that margin, prevents both the former
-              // nested-card effect and the horizontal crop caused by cover.
-              alignment: const Alignment(0, -.18),
-              scaleX: 1.045,
-              scaleY: 1.155,
-              child: Image.asset(
-                visual.asset,
-                key: ValueKey(visual.asset),
-                fit: BoxFit.fill,
-                filterQuality: FilterQuality.high,
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  stops: const [0, .6, 1],
-                  colors: [
-                    const Color(0xFF061121).withValues(alpha: .95),
-                    const Color(0xFF071426).withValues(alpha: .68),
-                    visual.overlay.withValues(alpha: .1),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Container(
-            height: 250,
-            padding: const EdgeInsets.fromLTRB(17, 18, 17, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'EST-CE LE BON MOMENT POUR ACHETER ?',
-                  style: TextStyle(
-                    color: Color(0xFFE7F0FF),
-                    fontSize: 12.5,
-                    height: 1.25,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: .2,
+    return Semantics(
+      button: onTap != null,
+      label: onTap == null ? null : 'Ouvrir l’analyse complète',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: ClipRRect(
+          key: const ValueKey('decision-card'),
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: Transform.scale(
+                  // The supplied visual already contains its luminous frame and
+                  // a transparent export margin. Stretching the full artwork,
+                  // then cropping only that margin, prevents both the former
+                  // nested-card effect and the horizontal crop caused by cover.
+                  alignment: const Alignment(0, -.18),
+                  scaleX: 1.045,
+                  scaleY: 1.155,
+                  child: Image.asset(
+                    visual.asset,
+                    key: ValueKey(visual.asset),
+                    fit: BoxFit.fill,
+                    filterQuality: FilterQuality.high,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _decisionLabel(decision.decision),
-                  style: TextStyle(
-                    color: visual.accent,
-                    fontSize: 40,
-                    height: .95,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -.8,
-                    shadows: [
-                      Shadow(
-                        color: visual.glow.withValues(alpha: .55),
-                        blurRadius: 14,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 300),
-                  child: Text(
-                    _decisionHeadline(decision, bundle),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFF4F8FF),
-                      fontSize: 15.5,
-                      height: 1.25,
-                      fontWeight: FontWeight.w600,
+              ),
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      stops: const [0, .6, 1],
+                      colors: [
+                        const Color(0xFF061121).withValues(alpha: .95),
+                        const Color(0xFF071426).withValues(alpha: .68),
+                        visual.overlay.withValues(alpha: .1),
+                      ],
                     ),
                   ),
                 ),
-                const Spacer(),
-                Row(
+              ),
+              Container(
+                height: 250,
+                padding: const EdgeInsets.fromLTRB(17, 18, 17, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _DecisionMetric(
-                        icon: Icons.shield_outlined,
-                        label: 'Risque',
-                        value: _riskLevelLabel(decision.eventRisk),
-                        tone: _impactColor(decision.eventRisk),
+                    const Text(
+                      'EST-CE LE BON MOMENT POUR ACHETER ?',
+                      style: TextStyle(
+                        color: Color(0xFFE7F0FF),
+                        fontSize: 12.5,
+                        height: 1.25,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .2,
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: _DecisionMetric(
-                        key: const ValueKey('decision-horizon'),
-                        icon: Icons.schedule_rounded,
-                        label: 'Horizon',
-                        value: _horizonLongLabel(horizon),
-                        tone: mobileBlue,
-                        onTap: onHorizonTap,
+                    const SizedBox(height: 8),
+                    Text(
+                      _decisionLabel(decision.decision),
+                      style: TextStyle(
+                        color: visual.accent,
+                        fontSize: 40,
+                        height: .95,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -.8,
+                        shadows: [
+                          Shadow(
+                            color: visual.glow.withValues(alpha: .55),
+                            blurRadius: 14,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: _DecisionMetric(
-                        icon: Icons.show_chart_rounded,
-                        label: 'Mouvement',
-                        value: _expectedMovementLabel(decision.movement),
-                        tone: visual.accent,
+                    const SizedBox(height: 8),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 300),
+                      child: Text(
+                        _decisionHeadline(decision, bundle),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFFF4F8FF),
+                          fontSize: 15.5,
+                          height: 1.25,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: _DecisionMetric(
-                        icon: Icons.bar_chart_rounded,
-                        label: 'Confiance',
-                        value: _confidenceLevelLabel(decision.confidence),
-                        tone: mobileBlue,
-                      ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _DecisionMetric(
+                            icon: Icons.shield_outlined,
+                            label: 'Risque',
+                            value: _riskLevelLabel(decision.eventRisk),
+                            tone: _impactColor(decision.eventRisk),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _DecisionMetric(
+                            key: const ValueKey('decision-horizon'),
+                            icon: Icons.schedule_rounded,
+                            label: 'Horizon',
+                            value: _horizonLongLabel(horizon),
+                            tone: mobileBlue,
+                            onTap: onHorizonTap,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _DecisionMetric(
+                            icon: Icons.show_chart_rounded,
+                            label: 'Mouvement',
+                            value: _expectedMovementLabel(decision.movement),
+                            tone: visual.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: _DecisionMetric(
+                            icon: Icons.bar_chart_rounded,
+                            label: 'Confiance',
+                            value: _confidenceLevelLabel(decision.confidence),
+                            tone: mobileBlue,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1501,6 +1595,7 @@ class _PartialDataChip extends StatelessWidget {
 
 /// One list of evidence entries: why now, or what argues against it.
 class _EvidenceListCard extends StatelessWidget {
+  final String emoji;
   final String title;
   final Color tone;
   final List<FutureEvidenceRead> items;
@@ -1508,6 +1603,7 @@ class _EvidenceListCard extends StatelessWidget {
 
   const _EvidenceListCard({
     super.key,
+    required this.emoji,
     required this.title,
     required this.tone,
     required this.items,
@@ -1520,14 +1616,22 @@ class _EvidenceListCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: tone,
-                fontSize: 12.5,
-                letterSpacing: .5,
-                fontWeight: FontWeight.w900,
-              ),
+            Row(
+              children: [
+                ColorEmoji(emoji: emoji, size: 13),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: tone,
+                      fontSize: 12.5,
+                      letterSpacing: .5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             if (items.isEmpty)
@@ -1597,6 +1701,7 @@ class _EvidenceListCard extends StatelessWidget {
 
 /// Confirmation and invalidation, each condition with the weight it carries.
 class _ConditionListCard extends StatelessWidget {
+  final String emoji;
   final String title;
   final Color tone;
   final List<FutureConditionRead> conditions;
@@ -1604,6 +1709,7 @@ class _ConditionListCard extends StatelessWidget {
 
   const _ConditionListCard({
     super.key,
+    required this.emoji,
     required this.title,
     required this.tone,
     required this.conditions,
@@ -1619,14 +1725,22 @@ class _ConditionListCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: tone,
-                      fontSize: 12.5,
-                      letterSpacing: .5,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  child: Row(
+                    children: [
+                      ColorEmoji(emoji: emoji, size: 13),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            color: tone,
+                            fontSize: 12.5,
+                            letterSpacing: .5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (counter != null)
@@ -3090,10 +3204,10 @@ const _TopicGuidance _guidanceFallback = _TopicGuidance(
 const _guidanceByKey = <String, _TopicGuidance>{
   'flows': _TopicGuidance(
     'Les ETF au comptant constituent une source de demande ou d’offre nette. '
-    'Des entrées persistantes apportent du soutien; des sorties persistantes '
-    'réduisent ce soutien.',
+        'Des entrées persistantes apportent du soutien; des sorties persistantes '
+        'réduisent ce soutien.',
     'Les flux sont publiés avec un jour de décalage: ils décrivent les séances '
-    'déjà passées.',
+        'déjà passées.',
   ),
   'whales': _TopicGuidance(
     'Les gros portefeuilles peuvent modifier l’offre disponible à la vente.',
@@ -3101,7 +3215,7 @@ const _guidanceByKey = <String, _TopicGuidance>{
   ),
   'positioning': _TopicGuidance(
     'Quand les positions à levier se ferment pendant que le prix recule, des '
-    'acheteurs abandonnent: cela confirme une faiblesse à court terme.',
+        'acheteurs abandonnent: cela confirme une faiblesse à court terme.',
     'Le levier amplifie les mouvements dans les deux sens.',
   ),
   'derivatives': _TopicGuidance(
@@ -3111,41 +3225,41 @@ const _guidanceByKey = <String, _TopicGuidance>{
   'funding': _TopicGuidance(
     'Le coût pour rester positionné indique quel côté du marché paie.',
     'Un coût très bas accompagne souvent un marché faible: ce n’est pas un '
-    'signal d’achat en soi.',
+        'signal d’achat en soi.',
   ),
   'spot': _TopicGuidance(
     'L’équilibre entre acheteurs et vendeurs au comptant montre qui accepte de '
-    'payer le prix demandé maintenant.',
+        'payer le prix demandé maintenant.',
     'Cette lecture est immédiate et peut changer vite.',
   ),
   'technical': _TopicGuidance(
     'Quand plusieurs échelles de temps racontent la même histoire, la lecture '
-    'est plus fiable que lorsqu’elles se contredisent.',
+        'est plus fiable que lorsqu’elles se contredisent.',
     'Une seule échelle concordante reste une lecture isolée.',
   ),
   'volatility': _TopicGuidance(
     'Une période de faible volatilité précède parfois un mouvement beaucoup '
-    'plus important.',
+        'plus important.',
     'Cette lecture n’indique jamais la direction du mouvement à venir.',
   ),
   'rates': _TopicGuidance(
     'Des rendements plus élevés resserrent les conditions financières et pèsent '
-    'sur la valorisation des actifs risqués.',
+        'sur la valorisation des actifs risqués.',
     'Ce qui compte est le mouvement, pas seulement le niveau.',
   ),
   'energy': _TopicGuidance(
     'Une hausse rapide de l’énergie alimente l’inflation anticipée, ce qui rend '
-    'une détente monétaire moins probable.',
+        'une détente monétaire moins probable.',
     'Un niveau élevé mais stable est déjà intégré dans les anticipations.',
   ),
   'credit': _TopicGuidance(
     'Les écarts de crédit montrent ce que le marché exige pour prêter aux '
-    'entreprises: ils confirment, ou non, qu’une baisse devient un stress.',
+        'entreprises: ils confirment, ou non, qu’une baisse devient un stress.',
     'Tant que le crédit reste calme, une baisse reste une correction.',
   ),
   'regulation': _TopicGuidance(
     'Une décision réglementaire modifie qui peut acheter, vendre ou conserver '
-    'l’actif, et à quelles conditions.',
+        'l’actif, et à quelles conditions.',
     'Une étape de procédure n’est pas une loi adoptée.',
   ),
   'implied_volatility': _TopicGuidance(

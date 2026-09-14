@@ -54,6 +54,12 @@ Future<void> _openBtc(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _openDecisionDetails(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('decision-card')));
+  await tester.pumpAndSettle();
+  expect(find.byKey(const ValueKey('decision-detail-back')), findsOneWidget);
+}
+
 void main() {
   testWidgets('confidence is a level, never an uncalibrated percentage',
       (tester) async {
@@ -369,7 +375,8 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final decision =
+        await _shippedClient().futureDecision('BTC', horizon: '7d');
     if (decision.decision != 'WAIT') return;
 
     // Under "Pourquoi attendre ?" nothing may argue for buying. A healthy
@@ -378,7 +385,8 @@ void main() {
       final row = find.byKey(ValueKey('decision-reason-$index'));
       if (row.evaluate().isEmpty) break;
       final badges = tester
-          .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
+          .widgetList<Text>(
+              find.descendant(of: row, matching: find.byType(Text)))
           .map((widget) => widget.data)
           .toList();
       if (badges.contains('CE QUI RESTE FAVORABLE')) break;
@@ -503,7 +511,8 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final decision =
+        await _shippedClient().futureDecision('BTC', horizon: '7d');
     // A direction-free reading must never show a directional badge.
     for (final factor in decision.factors) {
       if (factor.impactOnDirection != 'NONE') continue;
@@ -521,19 +530,25 @@ void main() {
     }
   });
 
-  testWidgets('the synthesis leads the page with its state and summary',
+  testWidgets('the hero opens a subpage led by the state and summary',
       (tester) async {
     await _openBtc(tester);
 
+    expect(find.byKey(const ValueKey('market-state-card')), findsNothing);
+    await _openDecisionDetails(tester);
+
     expect(find.byKey(const ValueKey('market-state-card')), findsOneWidget);
-    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final decision =
+        await _shippedClient().futureDecision('BTC', horizon: '7d');
     final synthesis = decision.synthesis;
-    expect(synthesis, isNotNull, reason: 'the backend must publish a synthesis');
+    expect(synthesis, isNotNull,
+        reason: 'the backend must publish a synthesis');
     expect(find.text(synthesis!.headline), findsOneWidget);
   });
 
   testWidgets('why-now and counter-evidence are both shown', (tester) async {
     await _openBtc(tester);
+    await _openDecisionDetails(tester);
 
     for (final key in const [
       'why-now-card',
@@ -554,8 +569,10 @@ void main() {
   testWidgets('a missing family is declared, never shown as neutral',
       (tester) async {
     await _openBtc(tester);
+    await _openDecisionDetails(tester);
 
-    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final decision =
+        await _shippedClient().futureDecision('BTC', horizon: '7d');
     final synthesis = decision.synthesis!;
     if (synthesis.dataStatus != 'PARTIAL_DATA') return;
     expect(find.byKey(const ValueKey('partial-data-chip')), findsOneWidget);
@@ -566,7 +583,8 @@ void main() {
     await _openBtc(tester);
 
     expect(find.textContaining('null'), findsNothing);
-    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final decision =
+        await _shippedClient().futureDecision('BTC', horizon: '7d');
     // The counter-evidence block always carries content, even when nothing
     // argues the other way.
     expect(decision.synthesis!.counterEvidence, isNotEmpty);
@@ -587,6 +605,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await _openDecisionDetails(tester);
+    expect(find.byKey(const ValueKey('scenario-pair')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
