@@ -88,7 +88,10 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    await tester.tap(find.byKey(const ValueKey('decision-reason-1')));
+    final firstReason = find.byKey(const ValueKey('decision-reason-1'));
+    await tester.ensureVisible(firstReason);
+    await tester.pumpAndSettle();
+    await tester.tap(firstReason);
     await tester.pumpAndSettle();
 
     // Factor 1 is the ranked top catalyst, so it uses the event vocabulary.
@@ -99,11 +102,10 @@ void main() {
     // A dated event never carries the observation vocabulary.
     expect(find.text('CE QU’ON OBSERVE'), findsNothing);
 
-    await tester.scrollUntilVisible(
-      find.text('SI LE RÉSULTAT EST PLUS NÉGATIF QUE PRÉVU'),
-      200,
-      scrollable: find.byType(Scrollable).last,
-    );
+    // The sheet scrolls on its own list; dragging it is steadier than hunting
+    // for the right Scrollable now that the page carries more of them.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -400));
+    await tester.pumpAndSettle();
     expect(
       find.text('SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU'),
       findsOneWidget,
@@ -111,11 +113,8 @@ void main() {
     expect(find.text('CE QUE ÇA PEUT ENGENDRER'), findsOneWidget);
 
     // Sources sit at the bottom so they inform without crowding the summary.
-    await tester.scrollUntilVisible(
-      find.text('🔗 SOURCE'),
-      200,
-      scrollable: find.byType(Scrollable).last,
-    );
+    await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+    await tester.pumpAndSettle();
     expect(find.text('🔗 SOURCE'), findsOneWidget);
   });
 
@@ -124,7 +123,10 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    await tester.tap(find.byKey(const ValueKey('decision-reason-1')));
+    final firstReason = find.byKey(const ValueKey('decision-reason-1'));
+    await tester.ensureVisible(firstReason);
+    await tester.pumpAndSettle();
+    await tester.tap(firstReason);
     await tester.pumpAndSettle();
 
     // Every shipped expectation is UNAVAILABLE, so the sheet must say so
@@ -466,19 +468,31 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('🔗 SOURCE'),
-      200,
-      scrollable: find.byType(Scrollable).last,
-    );
+    // A catalyst sheet carries more blocks than a signal sheet, so the source
+    // line sits further down. Drag until it appears rather than guessing.
+    for (var attempt = 0; attempt < 6; attempt++) {
+      if (find.text('🔗 SOURCE').evaluate().isNotEmpty) break;
+      await tester.drag(find.byType(ListView).last, const Offset(0, -300));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('🔗 SOURCE'), findsOneWidget);
+
+    // Scoped to the source line itself. The evidence sections legitimately
+    // display family labels as the name of a reading, which is not a source,
+    // so searching the whole tree would fail on correct output.
+    final lines = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((widget) => widget.data ?? '')
+        .toList();
+    final sourceLine = lines[lines.indexOf('🔗 SOURCE') + 1];
     for (final familyName in const [
       'Positionnement & dérivés',
       'Flux institutionnels & baleines',
       'Technique & volatilité',
     ]) {
       expect(
-        find.text(familyName),
-        findsNothing,
+        sourceLine.contains(familyName),
+        isFalse,
         reason: 'the analytical family is not a data source',
       );
     }
@@ -505,5 +519,74 @@ void main() {
       expect(factor.direction, 'UNKNOWN', reason: factor.key);
       expect(factor.missingRequirements, isNotEmpty, reason: factor.key);
     }
+  });
+
+  testWidgets('the synthesis leads the page with its state and summary',
+      (tester) async {
+    await _openBtc(tester);
+
+    expect(find.byKey(const ValueKey('market-state-card')), findsOneWidget);
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final synthesis = decision.synthesis;
+    expect(synthesis, isNotNull, reason: 'the backend must publish a synthesis');
+    expect(find.text(synthesis!.headline), findsOneWidget);
+  });
+
+  testWidgets('why-now and counter-evidence are both shown', (tester) async {
+    await _openBtc(tester);
+
+    for (final key in const [
+      'why-now-card',
+      'counter-evidence-card',
+      'confirmation-card',
+      'invalidation-card',
+      'scenario-pair',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.byKey(ValueKey(key)),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.byKey(ValueKey(key)), findsOneWidget, reason: key);
+    }
+  });
+
+  testWidgets('a missing family is declared, never shown as neutral',
+      (tester) async {
+    await _openBtc(tester);
+
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final synthesis = decision.synthesis!;
+    if (synthesis.dataStatus != 'PARTIAL_DATA') return;
+    expect(find.byKey(const ValueKey('partial-data-chip')), findsOneWidget);
+    expect(synthesis.missingFamilies, isNotEmpty);
+  });
+
+  testWidgets('no section renders empty or shows a raw null', (tester) async {
+    await _openBtc(tester);
+
+    expect(find.textContaining('null'), findsNothing);
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    // The counter-evidence block always carries content, even when nothing
+    // argues the other way.
+    expect(decision.synthesis!.counterEvidence, isNotEmpty);
+  });
+
+  testWidgets('the page does not overflow at 360 px with the synthesis',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.dark,
+        home: HomeShell(
+          client: _shippedClient(),
+          livePrices: _SilentLivePrices(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

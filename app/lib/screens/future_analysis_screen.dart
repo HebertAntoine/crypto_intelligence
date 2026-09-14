@@ -284,6 +284,50 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   horizon: _horizon,
                   onHorizonTap: _chooseHorizon,
                 ),
+                // Section 18: the synthesis leads, then the evidence for it,
+                // then the evidence against, then what would settle it.
+                if (decision.synthesis != null) ...[
+                  const SizedBox(height: 12),
+                  _MarketStateCard(synthesis: decision.synthesis!),
+                  const SizedBox(height: 12),
+                  _EvidenceListCard(
+                    key: const ValueKey('why-now-card'),
+                    title: '⚠️ POURQUOI MAINTENANT ?',
+                    tone: const Color(0xFFFFB34F),
+                    items: decision.synthesis!.whyNow,
+                    emptyText: 'Aucun facteur défavorable mesuré.',
+                  ),
+                  const SizedBox(height: 12),
+                  _EvidenceListCard(
+                    key: const ValueKey('counter-evidence-card'),
+                    title: '🛡️ POURQUOI CE N’EST PAS ENCORE CONFIRMÉ',
+                    tone: const Color(0xFF55DD8B),
+                    items: decision.synthesis!.counterEvidence,
+                  ),
+                  if (decision.synthesis!.upcomingEvents.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _CatalystListCard(
+                      events: decision.synthesis!.upcomingEvents,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  _ConditionListCard(
+                    key: const ValueKey('confirmation-card'),
+                    title: '🚨 CE QUI CONFIRMERAIT',
+                    tone: const Color(0xFFFF6676),
+                    conditions: decision.synthesis!.confirmationConditions,
+                    counter: decision.synthesis!.confirmationMet,
+                  ),
+                  const SizedBox(height: 12),
+                  _ConditionListCard(
+                    key: const ValueKey('invalidation-card'),
+                    title: '🟢 CE QUI INVALIDERAIT',
+                    tone: const Color(0xFF55DD8B),
+                    conditions: decision.synthesis!.invalidationConditions,
+                  ),
+                  const SizedBox(height: 12),
+                  _ScenarioPairCard(synthesis: decision.synthesis!),
+                ],
                 if (_coherenceNote(decision) != null) ...[
                   const SizedBox(height: 10),
                   _CoherenceNote(text: _coherenceNote(decision)!),
@@ -1350,6 +1394,453 @@ class _CoherenceNote extends StatelessWidget {
         ),
       );
 }
+
+/// The market state, its headline and the two-line summary.
+class _MarketStateCard extends StatelessWidget {
+  final FutureSynthesisRead synthesis;
+
+  const _MarketStateCard({required this.synthesis});
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        key: const ValueKey('market-state-card'),
+        borderColor: _stateColor(synthesis.state).withValues(alpha: .55),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      ColorEmoji(emoji: _stateEmoji(synthesis.state), size: 15),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _stateWords(synthesis.stateLabel),
+                          style: TextStyle(
+                            color: _stateColor(synthesis.state),
+                            fontSize: 15,
+                            letterSpacing: .4,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (synthesis.dataStatus == 'PARTIAL_DATA')
+                  const _PartialDataChip(),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              synthesis.headline,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                height: 1.25,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            if (synthesis.summary.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                synthesis.summary,
+                style: const TextStyle(
+                  color: Color(0xFFD3E0F0),
+                  fontSize: 13,
+                  height: 1.42,
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              'Incertitude ${_uncertaintyFr(synthesis.uncertainty)}',
+              style: TextStyle(
+                color: mobileMuted.withValues(alpha: .95),
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+/// Missing families are declared, never turned into a neutral stance.
+class _PartialDataChip extends StatelessWidget {
+  const _PartialDataChip();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('partial-data-chip'),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0x33FFB34F),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0x66FFB34F)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ColorEmoji(emoji: '⚠️', size: 10),
+            SizedBox(width: 4),
+            Text(
+              'ANALYSE PARTIELLE',
+              style: TextStyle(
+                color: Color(0xFFFFB34F),
+                fontSize: 9,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+/// One list of evidence entries: why now, or what argues against it.
+class _EvidenceListCard extends StatelessWidget {
+  final String title;
+  final Color tone;
+  final List<FutureEvidenceRead> items;
+  final String emptyText;
+
+  const _EvidenceListCard({
+    super.key,
+    required this.title,
+    required this.tone,
+    required this.items,
+    this.emptyText = '',
+  });
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        borderColor: tone.withValues(alpha: .4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: tone,
+                fontSize: 12.5,
+                letterSpacing: .5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (items.isEmpty)
+              Text(
+                emptyText,
+                style: const TextStyle(color: mobileMuted, fontSize: 12),
+              ),
+            for (final item in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 11),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${_reasonImpactLabel(_normalisedDirection(item.direction))}'
+                          ' · ${_impactLabelFr(item.impact)}',
+                          style: TextStyle(
+                            color: _reasonImpactColor(
+                              _normalisedDirection(item.direction),
+                            ),
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      item.observation,
+                      style: const TextStyle(
+                        color: mobileMuted,
+                        fontSize: 11.5,
+                        height: 1.3,
+                      ),
+                    ),
+                    if (item.whyItMatters.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Text(
+                          '→ ${item.whyItMatters}',
+                          style: const TextStyle(
+                            color: Color(0xFF9FB6D0),
+                            fontSize: 11,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+}
+
+/// Confirmation and invalidation, each condition with the weight it carries.
+class _ConditionListCard extends StatelessWidget {
+  final String title;
+  final Color tone;
+  final List<FutureConditionRead> conditions;
+  final String? counter;
+
+  const _ConditionListCard({
+    super.key,
+    required this.title,
+    required this.tone,
+    required this.conditions,
+    this.counter,
+  });
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        borderColor: tone.withValues(alpha: .4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: tone,
+                      fontSize: 12.5,
+                      letterSpacing: .5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                if (counter != null)
+                  Text(
+                    counter!,
+                    style: TextStyle(
+                      color: mobileMuted.withValues(alpha: .95),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 9),
+            for (final item in conditions)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 7),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.met ? '✓' : '○',
+                      style: TextStyle(
+                        color: item.met ? tone : mobileMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.text,
+                        style: TextStyle(
+                          color: item.met
+                              ? const Color(0xFFE6EEFA)
+                              : const Color(0xFF9FB6D0),
+                          fontSize: 12.5,
+                          height: 1.3,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+}
+
+/// The few catalysts worth watching, ranked by relevance to this asset.
+class _CatalystListCard extends StatelessWidget {
+  final List<FutureCatalystRead> events;
+
+  const _CatalystListCard({required this.events});
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        key: const ValueKey('upcoming-catalysts'),
+        borderColor: const Color(0xFF245E90),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                ColorEmoji(emoji: '👀', size: 13),
+                SizedBox(width: 6),
+                Text(
+                  'À SURVEILLER',
+                  style: TextStyle(
+                    color: Color(0xFF6FA8DA),
+                    fontSize: 12.5,
+                    letterSpacing: .5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            for (final item in events)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 9),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _eventTitleFr(item.title),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${_dateShort(DateTime.tryParse(item.scheduledAt ?? ''))}'
+                            ' · ${item.source}',
+                            style: const TextStyle(
+                              color: mobileMuted,
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'IMPACT ${_impactLabelFr(item.assetImpact)}',
+                      style: const TextStyle(
+                        color: Color(0xFFFFB34F),
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+}
+
+/// Main and alternative scenario, always published together.
+class _ScenarioPairCard extends StatelessWidget {
+  final FutureSynthesisRead synthesis;
+
+  const _ScenarioPairCard({required this.synthesis});
+
+  Widget _row(String emoji, String title, FutureScenarioBriefRead? scenario) {
+    if (scenario == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ColorEmoji(emoji: emoji, size: 13),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '$title — ${scenario.name}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            scenario.description,
+            style: const TextStyle(
+              color: mobileMuted,
+              fontSize: 11.5,
+              height: 1.32,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Plausibilité ${scenario.likelihood.toLowerCase()}',
+            style: const TextStyle(color: Color(0xFF7E93AD), fontSize: 10.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        key: const ValueKey('scenario-pair'),
+        borderColor: const Color(0xFF24506F),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _row('🎯', 'Scénario principal', synthesis.mainScenario),
+            _row('🔄', 'Scénario alternatif', synthesis.alternativeScenario),
+          ],
+        ),
+      );
+}
+
+Color _stateColor(String state) => switch (state) {
+      'CORRECTION_CONFIRMED' => const Color(0xFFFF6676),
+      'ELEVATED_RISK' => const Color(0xFFFFB34F),
+      'MIXED' => const Color(0xFFEBD14F),
+      'CONSTRUCTIVE' || 'CALM' => const Color(0xFF55DD8B),
+      _ => const Color(0xFF94A8C2),
+    };
+
+/// The label ships with its marker; the emoji is rendered separately so the
+/// canvas renderer can colour it.
+String _stateEmoji(String state) => switch (state) {
+      'CORRECTION_CONFIRMED' => '🔴',
+      'ELEVATED_RISK' => '🟠',
+      'MIXED' => '🟡',
+      'CONSTRUCTIVE' || 'CALM' => '🟢',
+      _ => '⚪',
+    };
+
+String _stateWords(String label) =>
+    label.replaceAll(RegExp(r'^[^A-Za-zÀ-ÿ]+'), '').trim();
+
+String _uncertaintyFr(String value) => switch (value) {
+      'LOW' => 'faible',
+      'HIGH' => 'élevée',
+      'VERY_HIGH' => 'très élevée',
+      _ => 'moyenne',
+    };
 
 class _SeeDetailsButton extends StatelessWidget {
   final VoidCallback onTap;
@@ -2637,14 +3128,58 @@ const _guidanceByKey = <String, _TopicGuidance>{
     'plus important.',
     'Cette lecture n’indique jamais la direction du mouvement à venir.',
   ),
+  'rates': _TopicGuidance(
+    'Des rendements plus élevés resserrent les conditions financières et pèsent '
+    'sur la valorisation des actifs risqués.',
+    'Ce qui compte est le mouvement, pas seulement le niveau.',
+  ),
+  'energy': _TopicGuidance(
+    'Une hausse rapide de l’énergie alimente l’inflation anticipée, ce qui rend '
+    'une détente monétaire moins probable.',
+    'Un niveau élevé mais stable est déjà intégré dans les anticipations.',
+  ),
+  'credit': _TopicGuidance(
+    'Les écarts de crédit montrent ce que le marché exige pour prêter aux '
+    'entreprises: ils confirment, ou non, qu’une baisse devient un stress.',
+    'Tant que le crédit reste calme, une baisse reste une correction.',
+  ),
+  'regulation': _TopicGuidance(
+    'Une décision réglementaire modifie qui peut acheter, vendre ou conserver '
+    'l’actif, et à quelles conditions.',
+    'Une étape de procédure n’est pas une loi adoptée.',
+  ),
   'implied_volatility': _TopicGuidance(
     'Le marché des options chiffre l’ampleur du mouvement qu’il anticipe.',
     'L’ampleur attendue ne dit rien du sens.',
   ),
 };
 
-_TopicGuidance _guidanceForFactor(FutureFactorRead? factor, String fallbackTitle) =>
-    _guidanceByKey[factor?.key] ?? _topicGuidance(fallbackTitle);
+/// Guidance for one family, by identifier rather than by wording.
+///
+/// Falling back to a keyword search on the label was the original defect and it
+/// came back the moment a family had no normalised factor: "Flux institutionnels
+/// & baleines" matched the whale branch and an ETF reading was explained with
+/// on-chain vocabulary. Identifiers cannot be ambiguous, so the family id is
+/// tried before any text is inspected.
+const _guidanceByFamily = <String, String>{
+  'flows_whales': 'flows',
+  'positioning_derivatives': 'positioning',
+  'technical_volatility': 'technical',
+  'macro_liquidity': 'rates',
+  'catalysts_regulation': 'regulation',
+};
+
+_TopicGuidance _guidanceForFactor(
+  FutureFactorRead? factor,
+  String familyId,
+  String fallbackTitle,
+) {
+  final byFactor = _guidanceByKey[factor?.key];
+  if (byFactor != null) return byFactor;
+  final byFamily = _guidanceByKey[_guidanceByFamily[familyId]];
+  if (byFamily != null) return byFamily;
+  return _topicGuidance(fallbackTitle);
+}
 
 _TopicGuidance _topicGuidance(String title) {
   final value = title.toLowerCase();
@@ -2887,7 +3422,7 @@ List<_DecisionFactor> _decisionFactors(
     // direction, impact and trend apart, where the family carries a bias and an
     // amplitude that the screen used to conflate.
     final normalised = _factorFor(decision, family.id);
-    final guidance = _guidanceForFactor(normalised, family.label);
+    final guidance = _guidanceForFactor(normalised, family.id, family.label);
     factors.add(_DecisionFactor(
       kind: _FactorKind.currentSignal,
       title: title,

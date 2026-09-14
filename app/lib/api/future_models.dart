@@ -169,6 +169,183 @@ class FutureFactorRead {
       );
 }
 
+/// The chief synthesis: a state, the evidence for it, and the evidence against.
+///
+/// The counter-evidence is never omitted. A reading that only collects agreeing
+/// facts is how a screen talks a reader into a conclusion.
+class FutureSynthesisRead {
+  final String state;
+  final String stateLabel;
+  final String headline;
+  final String summary;
+  final List<FutureEvidenceRead> whyNow;
+  final List<FutureEvidenceRead> counterEvidence;
+  final List<FutureConditionRead> confirmationConditions;
+  final String confirmationMet;
+  final List<FutureConditionRead> invalidationConditions;
+  final FutureScenarioBriefRead? mainScenario;
+  final FutureScenarioBriefRead? alternativeScenario;
+  final List<FutureCatalystRead> upcomingEvents;
+  final String uncertainty;
+  final List<String> missingFamilies;
+  final String dataStatus;
+
+  const FutureSynthesisRead({
+    required this.state,
+    required this.stateLabel,
+    required this.headline,
+    required this.summary,
+    required this.whyNow,
+    required this.counterEvidence,
+    required this.confirmationConditions,
+    required this.confirmationMet,
+    required this.invalidationConditions,
+    required this.upcomingEvents,
+    required this.uncertainty,
+    required this.missingFamilies,
+    required this.dataStatus,
+    this.mainScenario,
+    this.alternativeScenario,
+  });
+
+  static List<T> _list<T>(dynamic raw, T Function(Map<String, dynamic>) build) =>
+      (raw as List? ?? const [])
+          .whereType<Map>()
+          .map((value) => build(Map<String, dynamic>.from(value)))
+          .toList();
+
+  factory FutureSynthesisRead.fromJson(Map<String, dynamic> json) =>
+      FutureSynthesisRead(
+        state: json['state']?.toString() ?? 'INSUFFICIENT_DATA',
+        stateLabel: json['state_label']?.toString() ?? '',
+        headline: json['headline']?.toString() ?? '',
+        summary: json['summary']?.toString() ?? '',
+        whyNow: _list(json['why_now'], FutureEvidenceRead.fromJson),
+        counterEvidence:
+            _list(json['counter_evidence'], FutureEvidenceRead.fromJson),
+        confirmationConditions:
+            _list(json['confirmation_conditions'], FutureConditionRead.fromJson),
+        confirmationMet: json['confirmation_met']?.toString() ?? '',
+        invalidationConditions:
+            _list(json['invalidation_conditions'], FutureConditionRead.fromJson),
+        mainScenario: json['main_scenario'] is Map
+            ? FutureScenarioBriefRead.fromJson(
+                Map<String, dynamic>.from(json['main_scenario'] as Map))
+            : null,
+        alternativeScenario: json['alternative_scenario'] is Map
+            ? FutureScenarioBriefRead.fromJson(
+                Map<String, dynamic>.from(json['alternative_scenario'] as Map))
+            : null,
+        upcomingEvents:
+            _list(json['upcoming_events'], FutureCatalystRead.fromJson),
+        uncertainty: json['uncertainty']?.toString() ?? 'MEDIUM',
+        missingFamilies: (json['missing_families'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        dataStatus: json['data_status']?.toString() ?? 'AVAILABLE',
+      );
+}
+
+class FutureEvidenceRead {
+  final String label;
+  final String direction;
+  final String impact;
+  final String observation;
+  final String whyItMatters;
+  final String source;
+  final String freshness;
+
+  const FutureEvidenceRead({
+    required this.label,
+    required this.direction,
+    required this.impact,
+    required this.observation,
+    required this.whyItMatters,
+    required this.source,
+    required this.freshness,
+  });
+
+  factory FutureEvidenceRead.fromJson(Map<String, dynamic> json) =>
+      FutureEvidenceRead(
+        label: json['label']?.toString() ?? '',
+        direction: json['direction']?.toString() ?? 'UNKNOWN',
+        impact: json['impact']?.toString() ?? 'MODERATE',
+        observation: json['observation']?.toString() ?? '',
+        whyItMatters: json['why_it_matters']?.toString() ?? '',
+        source: json['source']?.toString() ?? '',
+        freshness: json['freshness']?.toString() ?? '',
+      );
+}
+
+class FutureConditionRead {
+  final String text;
+  final bool met;
+  final int weight;
+  final String evidence;
+
+  const FutureConditionRead({
+    required this.text,
+    required this.met,
+    required this.weight,
+    required this.evidence,
+  });
+
+  factory FutureConditionRead.fromJson(Map<String, dynamic> json) =>
+      FutureConditionRead(
+        text: json['text']?.toString() ?? '',
+        met: json['met'] == true,
+        weight: (_number(json['weight']) ?? 1).round(),
+        evidence: json['evidence']?.toString() ?? '',
+      );
+}
+
+class FutureScenarioBriefRead {
+  final String name;
+  final String description;
+  final String likelihood;
+
+  const FutureScenarioBriefRead({
+    required this.name,
+    required this.description,
+    required this.likelihood,
+  });
+
+  factory FutureScenarioBriefRead.fromJson(Map<String, dynamic> json) =>
+      FutureScenarioBriefRead(
+        name: json['name']?.toString() ?? '',
+        description: json['description']?.toString() ?? '',
+        likelihood: json['likelihood']?.toString() ?? '',
+      );
+}
+
+class FutureCatalystRead {
+  final String title;
+  final String assetImpact;
+  final int relevanceScore;
+  final String importance;
+  final String? scheduledAt;
+  final String source;
+
+  const FutureCatalystRead({
+    required this.title,
+    required this.assetImpact,
+    required this.relevanceScore,
+    required this.importance,
+    required this.source,
+    this.scheduledAt,
+  });
+
+  factory FutureCatalystRead.fromJson(Map<String, dynamic> json) =>
+      FutureCatalystRead(
+        title: json['title']?.toString() ?? '',
+        assetImpact: json['asset_impact']?.toString() ?? 'MEDIUM',
+        relevanceScore: (_number(json['relevance_score']) ?? 0).round(),
+        importance: json['importance']?.toString() ?? 'MEDIUM',
+        scheduledAt: json['scheduled_at']?.toString(),
+        source: json['source']?.toString() ?? '',
+      );
+}
+
 class FutureEventRead {
   final String id;
   final String title;
@@ -283,6 +460,9 @@ class FutureDecisionRead {
   /// Normalised factor semantics, published beside the five families.
   final List<FutureFactorRead> factors;
 
+  /// The chief synthesis, when the backend published one.
+  final FutureSynthesisRead? synthesis;
+
   /// What would have to happen to move the decision each way (section 14).
   final List<String> conditionsToBuy;
   final List<String> conditionsToSell;
@@ -309,6 +489,7 @@ class FutureDecisionRead {
     this.factors = const [],
     this.conditionsToBuy = const [],
     this.conditionsToSell = const [],
+    this.synthesis,
   });
 
   /// Build the sentence only from an AVAILABLE, priced expectation.
@@ -347,6 +528,10 @@ class FutureDecisionRead {
           .map((value) =>
               FutureFactorRead.fromJson(Map<String, dynamic>.from(value)))
           .toList(),
+      synthesis: json['synthesis'] is Map
+          ? FutureSynthesisRead.fromJson(
+              Map<String, dynamic>.from(json['synthesis'] as Map))
+          : null,
       conditionsToBuy: (json['conditions_to_buy'] as List? ?? const [])
           .map((value) => value.toString())
           .toList(),
