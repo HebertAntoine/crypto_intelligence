@@ -119,6 +119,32 @@ class FactorAssessment:
     source_url: str | None = None
     availability: Availability = Availability.AVAILABLE
 
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> FactorAssessment:
+        """Rebuild a reading from its published form.
+
+        The synthesis consumes exactly what the API publishes, so a field that
+        never reaches the payload cannot silently influence the verdict.
+        """
+
+        return cls(
+            key=str(payload.get("key") or ""),
+            label=str(payload.get("label") or ""),
+            direction=FactorDirection(payload.get("direction") or "UNKNOWN"),
+            impact=FactorImpact(payload.get("impact") or "MODERATE"),
+            trend=FactorTrend(payload.get("trend") or "UNKNOWN"),
+            confidence=float(payload.get("confidence") or 0.0),
+            freshness=str(payload.get("freshness") or "UNAVAILABLE"),
+            rationale=str(payload.get("rationale") or ""),
+            evidence_ids=list(payload.get("evidence_ids") or []),
+            impact_on_direction=str(payload.get("impact_on_direction") or "MEASURED"),
+            causal_chain=list(payload.get("causal_chain") or []),
+            missing_requirements=list(payload.get("missing_requirements") or []),
+            provider=str(payload.get("provider") or ""),
+            source_url=payload.get("source_url"),
+            availability=Availability(payload.get("availability") or "AVAILABLE"),
+        )
+
     @property
     def confidence_band(self) -> ConfidenceLevel:
         return confidence_level(self.confidence, self.availability)

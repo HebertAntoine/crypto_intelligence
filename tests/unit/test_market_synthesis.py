@@ -262,3 +262,57 @@ def test_the_synthesis_needs_no_language_model() -> None:
     source = inspect.getsource(market_synthesis)
     for token in ("llm", "openai", "anthropic", "completion"):
         assert token not in source.lower()
+
+
+def test_an_empty_counter_evidence_section_says_so_explicitly() -> None:
+    """A blank block reads as "not checked", which is the opposite of the point."""
+
+    result = synth(
+        [
+            factor("rates", FactorDirection.NEGATIVE, FactorImpact.HIGH, label="Taux"),
+            factor("energy", FactorDirection.NEGATIVE, FactorImpact.HIGH, label="Énergie"),
+            factor("technical", FactorDirection.NEGATIVE, label="Technique"),
+            factor("positioning", FactorDirection.NEGATIVE, label="Positionnement"),
+        ]
+    )
+    assert result.counter_evidence
+    assert result.counter_evidence[0]["label"] == "Aucune contre-preuve mesurée"
+
+
+def test_a_missing_family_marks_the_analysis_partial_not_neutral() -> None:
+    result = synth(
+        [
+            factor("rates", FactorDirection.NEGATIVE, FactorImpact.HIGH, label="Taux"),
+            factor("energy", FactorDirection.NEGATIVE, label="Énergie"),
+            factor("technical", FactorDirection.NEGATIVE, label="Technique"),
+            factor("flows", FactorDirection.POSITIVE, label="Flux"),
+            factor(
+                "credit",
+                FactorDirection.UNKNOWN,
+                label="Crédit",
+                availability=Availability.UNAVAILABLE,
+            ),
+        ]
+    )
+    assert result.data_status == "PARTIAL_DATA"
+    assert result.missing_families == ["Crédit"]
+    assert result.state is not MarketState.INSUFFICIENT_DATA
+
+
+def test_the_summary_never_embeds_a_raw_official_event_title() -> None:
+    """Official names are English; the summary is what the reader sees first."""
+
+    result = synth(
+        [
+            factor("rates", FactorDirection.NEGATIVE, FactorImpact.HIGH, label="Taux"),
+            factor("energy", FactorDirection.NEGATIVE, label="Énergie"),
+            factor("technical", FactorDirection.POSITIVE, label="Technique"),
+        ],
+        next_events=[
+            {"title": "FOMC monetary policy decision (September 2026)"},
+            {"title": "19-Year Bond Treasury auction"},
+        ],
+    )
+    assert "FOMC" not in result.summary
+    assert "Treasury" not in result.summary
+    assert "catalyseur(s) majeur(s)" in result.summary

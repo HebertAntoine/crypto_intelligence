@@ -738,6 +738,7 @@ class FutureDecision:
     provenance: list[dict[str, Any]]
     data_quality: Any = None
     consistency: Any = None
+    synthesis: Any = None
     conditions_to_buy: list[str] = field(default_factory=list)
     conditions_to_sell: list[str] = field(default_factory=list)
 
@@ -756,6 +757,7 @@ class FutureDecision:
             "conditions_to_buy": self.conditions_to_buy,
             "conditions_to_sell": self.conditions_to_sell,
             "consistency": self.consistency.to_dict() if self.consistency else None,
+            "synthesis": self.synthesis.to_dict() if self.synthesis else None,
             "causal_graph": self.causal_graph,
             "signal_convergence": self.signal_convergence,
             "contradiction_resolution": self.contradiction_resolution,
@@ -934,6 +936,34 @@ class FutureDecisionEngine:
             institutional_flow=institutional_flow,
         )
         action = consistency.action
+
+        # The synthesis reads the same normalised factors the screen shows, so
+        # the headline can never disagree with the evidence listed beneath it.
+        from .event_relevance import EventRelevanceEngine
+        from .factor_semantics import FactorAssessment
+        from .market_synthesis import MarketSynthesisEngine
+
+        synthesis = MarketSynthesisEngine().synthesize(
+            [FactorAssessment.from_dict(item) for item in families.normalised_factors],
+            next_events=[
+                {
+                    "title": event.title,
+                    "scheduled_at": (
+                        event.scheduled_at.isoformat() if event.scheduled_at else None
+                    ),
+                }
+                for event in sorted(
+                    (item for item in event_list if item.scheduled_at is not None),
+                    key=lambda item: (-item.importance.rank, item.scheduled_at),
+                )[:3]
+            ],
+            upcoming_events=[
+                item.to_dict()
+                for item in EventRelevanceEngine().top(event_list, asset, limit=3, now=now)
+            ],
+            asset=asset.value,
+            now=now,
+        )
 
         ordered = sorted(
             available,
@@ -1120,6 +1150,7 @@ class FutureDecisionEngine:
             provenance=provenance,
             data_quality=data_quality,
             consistency=consistency,
+            synthesis=synthesis,
             conditions_to_buy=list(dict.fromkeys(to_buy)),
             conditions_to_sell=list(dict.fromkeys(to_sell)),
         )

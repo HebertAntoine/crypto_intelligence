@@ -124,8 +124,12 @@ class MarketSynthesis:
     invalidation_conditions: list[Condition] = field(default_factory=list)
     main_scenario: Scenario | None = None
     alternative_scenario: Scenario | None = None
+    upcoming_events: list[dict[str, Any]] = field(default_factory=list)
     uncertainty: Uncertainty = Uncertainty.MEDIUM
     missing_families: list[str] = field(default_factory=list)
+    #: AVAILABLE / PARTIAL_DATA - the screen must be able to say when a family
+    #: is missing rather than presenting a degraded reading as a complete one.
+    data_status: str = "AVAILABLE"
     generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
@@ -151,8 +155,10 @@ class MarketSynthesis:
             "alternative_scenario": (
                 self.alternative_scenario.to_dict() if self.alternative_scenario else None
             ),
+            "upcoming_events": self.upcoming_events,
             "uncertainty": self.uncertainty.value,
             "missing_families": self.missing_families,
+            "data_status": self.data_status,
             "generated_at": self.generated_at.isoformat(),
             "methodology": (
                 "Le risque décrit ce qui rend un mouvement possible; la "
@@ -178,6 +184,7 @@ class MarketSynthesisEngine:
         factors: list[FactorAssessment],
         *,
         next_events: list[dict[str, Any]] | None = None,
+        upcoming_events: list[dict[str, Any]] | None = None,
         asset: str = "",
         now: datetime | None = None,
     ) -> MarketSynthesis:
@@ -205,8 +212,10 @@ class MarketSynthesisEngine:
                     "dans cet état."
                 ),
                 counter_evidence=[],
+                upcoming_events=list(upcoming_events or []),
                 uncertainty=Uncertainty.VERY_HIGH,
                 missing_families=missing,
+                data_status="PARTIAL_DATA",
                 generated_at=reference,
             )
 
@@ -227,9 +236,31 @@ class MarketSynthesisEngine:
         )
 
         why_now = [self._evidence_entry(item) for item in self._rank(negative)[:5]]
-        # The section that exists to argue against the state. It is built from
-        # the readings that disagree, and is never allowed to be silently empty.
+        # The section that exists to argue against the state. When nothing
+        # genuinely argues the other way it must say so: an empty block reads as
+        # "not checked", which is the opposite of the point.
         counter = [self._evidence_entry(item) for item in self._rank(positive)[:4]]
+        if not counter:
+            counter = [
+                {
+                    "label": "Aucune contre-preuve mesurée",
+                    "direction": "NEUTRAL",
+                    "impact": "LOW",
+                    "observation": (
+                        "Aucune des familles disponibles ne va actuellement à "
+                        "l'encontre de cette lecture."
+                    ),
+                    "why_it_matters": (
+                        "L'absence de contradiction renforce la lecture, mais "
+                        f"{len(missing)} famille(s) restent indisponibles."
+                        if missing
+                        else "L'absence de contradiction renforce la lecture."
+                    ),
+                    "reliability": "LOW",
+                    "freshness": "",
+                    "source": "",
+                }
+            ]
 
         return MarketSynthesis(
             state=state,
@@ -241,8 +272,12 @@ class MarketSynthesisEngine:
             invalidation_conditions=invalidation,
             main_scenario=self._main_scenario(state),
             alternative_scenario=self._alternative_scenario(state),
+            upcoming_events=list(upcoming_events or []),
             uncertainty=self._uncertainty(usable, missing, negative, positive),
             missing_families=missing,
+            # Missing families never become a neutral stance: the state is
+            # published with the gap declared beside it.
+            data_status="PARTIAL_DATA" if missing else "AVAILABLE",
             generated_at=reference,
         )
 
@@ -278,7 +313,12 @@ class MarketSynthesisEngine:
         if negative_weight > positive_weight:
             if confirmation_ratio >= 0.7:
                 return MarketState.CORRECTION_CONFIRMED
-            if negative_weight - positive_weight >= 3:
+            # Magnitude matters as much as the gap. Judging on the difference
+            # alone rated two high-impact negative forces as merely "mixed"
+            # because two moderate positives pushed back - which is exactly the
+            # situation the phrase "elevated risk" describes.
+            material = negative_weight >= 5
+            if material or negative_weight - positive_weight >= 3:
                 return MarketState.ELEVATED_RISK
             return MarketState.MIXED
         if positive_weight - negative_weight >= 3:
@@ -409,8 +449,13 @@ class MarketSynthesisEngine:
             )
             parts.append(f"En revanche, {names} {verb}.")
         if next_events:
-            titles = ", ".join(str(item.get("title") or "") for item in next_events[:2])
-            parts.append(f"Les prochains catalyseurs sont: {titles}.")
+            # The catalysts are listed in their own section, where the screen
+            # renders their French name. Embedding the raw official title here
+            # pushed English wording into the summary the reader sees first.
+            count = len(next_events)
+            parts.append(
+                f"{count} catalyseur(s) majeur(s) sont attendus sur cet horizon."
+            )
         return " ".join(parts) or "Aucune lecture dominante."
 
     @staticmethod
