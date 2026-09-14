@@ -788,6 +788,9 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
         "onchain": onchain.model_dump(mode="json"),
         "liquidity": liquidity.model_dump(mode="json"),
         "macro": macro.model_dump(mode="json"),
+        # The raw rows travel with the analysis so the transmission readings can
+        # be built from the same, already fixture-filtered list.
+        "macro_observations": macro_observations,
         "cross_asset": cross_asset.model_dump(mode="json"),
         "historical": historical_summary,
         "live_track_record": track_summary,
@@ -1060,6 +1063,7 @@ def build_context(
             # Funding state is not part of this context; it is left unset rather
             # than guessed, which only means positioning impact stays MODERATE.
             leverage_state=str(getattr(leverage_state, "state", "") or ""),
+            macro_observations=evidence.get("macro_observations"),
             horizon=horizon,
         )
     future_families = future_families_by_horizon[DecisionHorizon.D7.value]

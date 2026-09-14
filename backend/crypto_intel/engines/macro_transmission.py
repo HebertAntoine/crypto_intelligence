@@ -15,6 +15,7 @@ measured at all.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
@@ -529,3 +530,157 @@ def confront(readings: list[MacroReading]) -> MacroConfrontation:
         disagreeing=disagreeing,
         missing=missing,
     )
+
+
+# ---------------------------------------------------------------------------
+# Adapter: real observations -> readings
+# ---------------------------------------------------------------------------
+
+#: Metric names as the observation store already publishes them. Nothing new is
+#: collected here: the same list the macro analyser receives is reused.
+_METRIC_OIL_BRENT = "macro.brent"
+_METRIC_OIL_WTI = ("macro.wti", "macro.oil_wti")
+_METRIC_US2Y = "macro.us2y"
+_METRIC_US10Y = ("macro.us10y", "macro.us10y_yahoo")
+_METRIC_US30Y = "macro.us30y"
+_METRIC_HY = "macro.hy_spread"
+_METRIC_IG = "macro.ig_spread"
+
+
+def _is_production(observation: Any) -> bool:
+    """Reuse the project's own production-label rule, row by row."""
+
+    from ..core.data_integrity import is_production_label
+
+    provenance = getattr(observation, "provenance", None)
+    return is_production_label(
+        getattr(provenance, "source", "")
+    ) and is_production_label(getattr(provenance, "provider", ""))
+
+
+def _series(observations: list[Any], names: str | tuple[str, ...]) -> list[Any]:
+    """Build one series, fixtures excluded.
+
+    Mock rows sit interleaved with real ones in the live database: a constant
+    71.8 appeared between genuine 92-93 dollar prints on the same day. Picked up
+    as a reference point it produced a 43 per cent "oil shock" that never
+    happened. The guard belongs here rather than at the call site, so it cannot
+    be forgotten by a future caller.
+    """
+
+    wanted = (names,) if isinstance(names, str) else names
+    items = [
+        item
+        for item in observations
+        if item.metric in wanted
+        and isinstance(item.value, int | float)
+        and _is_production(item)
+    ]
+    return sorted(items, key=lambda item: item.timestamp)
+
+
+def _latest(series: list[Any]) -> Any | None:
+    return series[-1] if series else None
+
+
+def _change_pct(series: list[Any], days: int, *, now: datetime) -> float | None:
+    """Percentage change against the closest observation `days` ago.
+
+    Returns None rather than a guess when no observation is old enough: a
+    change computed against the only point available would be zero, which reads
+    as "stable" and is a fabrication.
+    """
+
+    if len(series) < 2:
+        return None
+    current = series[-1]
+    cutoff = now - timedelta(days=days)
+    earlier = [item for item in series[:-1] if item.timestamp <= cutoff]
+    if not earlier:
+        return None
+    reference = earlier[-1]
+    if not reference.value:
+        return None
+    return (float(current.value) - float(reference.value)) / abs(float(reference.value)) * 100.0
+
+
+def _freshness_of(item: Any) -> str:
+    return str(getattr(getattr(item, "freshness", None), "value", "") or "UNAVAILABLE")
+
+
+def _provider_of(item: Any, fallback: str) -> tuple[str, str | None]:
+    prov = getattr(item, "provenance", None)
+    provider = str(getattr(prov, "provider", "") or getattr(prov, "source", "") or fallback)
+    return provider, getattr(prov, "source_url", None)
+
+
+def readings_from_observations(
+    observations: list[Any], *, now: datetime | None = None
+) -> list[MacroReading]:
+    """Build the energy, rates and credit readings from stored observations.
+
+    Every variable is read from the series that actually exists. A missing one
+    produces an UNAVAILABLE reading that states what it needs, so the absence
+    travels to the screen instead of quietly becoming a neutral stance.
+    """
+
+    reference = now or datetime.now(UTC)
+
+    brent_series = _series(observations, _METRIC_OIL_BRENT)
+    wti_series = _series(observations, _METRIC_OIL_WTI)
+    oil_series = brent_series or wti_series
+    oil_latest = _latest(oil_series)
+    oil_provider, oil_url = (
+        _provider_of(oil_latest, "FRED") if oil_latest else ("", None)
+    )
+    oil = oil_assessment(
+        brent=float(_latest(brent_series).value) if brent_series else None,
+        wti=float(_latest(wti_series).value) if wti_series else None,
+        change_7d_pct=_change_pct(oil_series, 7, now=reference),
+        change_30d_pct=_change_pct(oil_series, 30, now=reference),
+        freshness=_freshness_of(oil_latest) if oil_latest else "UNAVAILABLE",
+        provider=oil_provider,
+        source_url=oil_url,
+    )
+
+    us2y, us10y, us30y = (
+        _latest(_series(observations, _METRIC_US2Y)),
+        _latest(_series(observations, _METRIC_US10Y)),
+        _latest(_series(observations, _METRIC_US30Y)),
+    )
+    ten_year_series = _series(observations, _METRIC_US10Y)
+    rates_provider, rates_url = _provider_of(us10y, "FRED") if us10y else ("", None)
+    rates = rates_assessment(
+        us2y=float(us2y.value) if us2y else None,
+        us10y=float(us10y.value) if us10y else None,
+        us30y=float(us30y.value) if us30y else None,
+        # Yields are already percentages: the meaningful move is in points.
+        us10y_change_30d_pct=(
+            (float(us10y.value) - float(ten_year_series[0].value))
+            if us10y and len(ten_year_series) > 1
+            else None
+        ),
+        freshness=_freshness_of(us10y) if us10y else "UNAVAILABLE",
+        provider=rates_provider,
+        source_url=rates_url,
+    )
+
+    hy_series = _series(observations, _METRIC_HY)
+    hy_latest = _latest(hy_series)
+    ig_latest = _latest(_series(observations, _METRIC_IG))
+    credit_provider, credit_url = (
+        _provider_of(hy_latest, "FRED / ICE BofA") if hy_latest else ("", None)
+    )
+    credit = credit_assessment(
+        hy_spread_pct=float(hy_latest.value) if hy_latest else None,
+        hy_change_30d_pct=(
+            float(hy_latest.value) - float(hy_series[0].value)
+            if hy_latest and len(hy_series) > 1
+            else None
+        ),
+        ig_spread_pct=float(ig_latest.value) if ig_latest else None,
+        freshness=_freshness_of(hy_latest) if hy_latest else "UNAVAILABLE",
+        provider=credit_provider,
+        source_url=credit_url,
+    )
+    return [oil, rates, credit]

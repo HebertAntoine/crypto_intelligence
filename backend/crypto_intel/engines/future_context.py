@@ -327,6 +327,7 @@ def build_five_family_snapshot(
     expected_volatility: Any = None,
     leverage_state: str | None = None,
     funding_state: str | None = None,
+    macro_observations: list[Any] | None = None,
     horizon: DecisionHorizon = DecisionHorizon.D7,
 ) -> FiveFamilySnapshot:
     """Create all five slots from one immutable analysis context."""
@@ -707,12 +708,17 @@ def build_five_family_snapshot(
     # reading. Funding drove a family's direction while having no interpretation
     # of its own, which left a decision resting on something the screen could
     # not explain.
+    # The pressure engine's "derivatives" component measures the same thing as
+    # the leverage-state reading published above. Adding both counted one
+    # measurement twice and inflated its weight in the synthesis.
+    same_as = {"derivatives": "positioning"}
     covered = {item["key"] for item in normalised}
     for component in flow_components + positioning_components:
         reading = pressure_component_assessment(component)
-        if reading.key in covered:
+        key = same_as.get(reading.key, reading.key)
+        if key in covered:
             continue
-        covered.add(reading.key)
+        covered.add(key)
         normalised.append(reading.to_dict())
     if technical_available:
         normalised.append(
@@ -729,6 +735,15 @@ def build_five_family_snapshot(
                 freshness=_freshness(states, technical_state_names),
             ).to_dict()
         )
+    # Energy, the Treasury curve and credit join the macro family as readings of
+    # their own. They were collected and never interpreted; a missing series
+    # publishes what it needs rather than a neutral stance.
+    if macro_observations:
+        from .macro_transmission import readings_from_observations
+
+        for reading in readings_from_observations(macro_observations, now=as_of):
+            normalised.append(reading.to_dict())
+
     normalised.append(
         implied_volatility_assessment(
             available=dvol_usable,
