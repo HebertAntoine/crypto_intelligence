@@ -169,6 +169,53 @@ def _institutional_summary(institutional_flow: Any, state: str) -> str:
     return f"{head}; 5 dernières séances {_musd(recent)}."
 
 
+_VOLATILITY_FR = {
+    "VERY_LOW": "très faible",
+    "LOW": "faible",
+    "NORMAL": "normale",
+    "HIGH": "forte",
+    "VERY_HIGH": "très forte",
+}
+
+
+def _technical_summary(
+    *,
+    horizon: DecisionHorizon,
+    bullish: list[str],
+    bearish: list[str],
+    volatility_regime: str,
+    squeeze: bool | None,
+) -> str:
+    """Describe the technical reading in words a non-specialist can act on."""
+
+    window = {
+        DecisionHorizon.H24: "sur 24 heures",
+        DecisionHorizon.D7: "sur 7 jours",
+        DecisionHorizon.D30: "sur 30 jours",
+    }[horizon]
+    if not bullish and not bearish:
+        head = f"Aucune échelle de temps ne donne de direction claire {window}"
+    elif bullish and not bearish:
+        head = f"{len(bullish)} échelle(s) de temps orientée(s) à la hausse {window}"
+    elif bearish and not bullish:
+        head = f"{len(bearish)} échelle(s) de temps orientée(s) à la baisse {window}"
+    else:
+        head = (
+            f"Échelles de temps partagées {window}: {len(bullish)} à la hausse "
+            f"contre {len(bearish)} à la baisse"
+        )
+    volatility = _VOLATILITY_FR.get(volatility_regime.upper(), volatility_regime.lower())
+    parts = [f"{head}; volatilité {volatility}."]
+    if squeeze is True:
+        parts.append(
+            "Les bandes de Bollinger sont resserrées: un mouvement de forte "
+            "amplitude est possible, sans indication de sens."
+        )
+    elif squeeze is False:
+        parts.append("Pas de compression des bandes de Bollinger.")
+    return " ".join(parts)
+
+
 def _event_direction(events: list[FutureEvent]) -> DirectionalBias | None:
     directed = [
         event for event in events if event.directional_effect is not DirectionalBias.NEUTRAL
@@ -583,13 +630,20 @@ def build_five_family_snapshot(
             confidence=(
                 min(0.9, (len(bullish) + len(bearish)) / 4) if technical_available else 0.0
             ),
+            # Plain French at the source. Translating "squeeze=False" in the UI
+            # meant the screen was interpreting an engine flag, which is exactly
+            # what the interpretation layer exists to prevent.
             summary=(
-                f"Structure {horizon.value}: haussière sur {len(bullish)} unité(s), "
-                f"baissière sur {len(bearish)}; volatilité {volatility_regime.lower()}."
-                + (
-                    f" Bollinger squeeze={getattr(expected_volatility, 'squeeze', None)}."
-                    if bool(getattr(expected_volatility, "available", False))
-                    else ""
+                _technical_summary(
+                    horizon=horizon,
+                    bullish=bullish,
+                    bearish=bearish,
+                    volatility_regime=volatility_regime,
+                    squeeze=(
+                        bool(getattr(expected_volatility, "squeeze", False))
+                        if bool(getattr(expected_volatility, "available", False))
+                        else None
+                    ),
                 )
                 if technical_available
                 else ""
@@ -617,7 +671,9 @@ def build_five_family_snapshot(
     # from another - and so UNKNOWN stays distinct from NEUTRAL.
     from .factor_semantics import (
         flow_assessment,
+        implied_volatility_assessment,
         positioning_from_leverage_state,
+        pressure_component_assessment,
         technical_assessment,
         volatility_assessment,
     )
@@ -635,8 +691,20 @@ def build_five_family_snapshot(
                 leverage_state,
                 funding_state=funding_state,
                 freshness=_freshness(states, ("open_interest", "funding")),
+                provider="Open interest multi-exchange, comptes Binance",
             ).to_dict()
         )
+    # Every component the families actually weighed must have a traceable
+    # reading. Funding drove a family's direction while having no interpretation
+    # of its own, which left a decision resting on something the screen could
+    # not explain.
+    covered = {item["key"] for item in normalised}
+    for component in flow_components + positioning_components:
+        reading = pressure_component_assessment(component)
+        if reading.key in covered:
+            continue
+        covered.add(reading.key)
+        normalised.append(reading.to_dict())
     if technical_available:
         normalised.append(
             technical_assessment(
@@ -645,9 +713,21 @@ def build_five_family_snapshot(
                 freshness=_freshness(states, technical_state_names),
             ).to_dict()
         )
-    squeeze = bool(getattr(expected_volatility, "squeeze", False))
     if getattr(expected_volatility, "available", False):
-        normalised.append(volatility_assessment(squeeze=squeeze).to_dict())
+        normalised.append(
+            volatility_assessment(
+                squeeze=bool(getattr(expected_volatility, "squeeze", False)),
+                freshness=_freshness(states, technical_state_names),
+            ).to_dict()
+        )
+    normalised.append(
+        implied_volatility_assessment(
+            available=dvol_usable,
+            percentile=getattr(implied_volatility, "dvol_percentile", None),
+            freshness=_value(getattr(implied_volatility, "freshness", None), "UNAVAILABLE"),
+            provider="Deribit" if dvol_available else "",
+        ).to_dict()
+    )
 
     snapshot = FiveFamilySnapshot.from_partial(partial)
     snapshot.normalised_factors = normalised

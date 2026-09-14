@@ -223,3 +223,59 @@ def test_an_unmapped_leverage_state_is_unknown_not_neutral() -> None:
     result = positioning_from_leverage_state("SOMETHING_ELSE")
     assert result.direction is FactorDirection.UNKNOWN
 
+
+
+class Component:
+    """Stand-in for PressureFamilyContribution."""
+
+    def __init__(self, family, direction, score, *, available=True, detail="mesure"):
+        self.family = family
+        self.label = family
+        self.direction = direction
+        self.normalized_score = score
+        self.available = available
+        self.freshness = "LIVE"
+        self.source = "Binance"
+        self.detail = detail
+        self.explanation = detail
+        self.confidence = 0.9
+
+
+def test_pressure_components_keep_the_direction_the_engine_measured() -> None:
+    """The engine names directions BUY/SELL; the layer names them POSITIVE/NEGATIVE."""
+
+    from crypto_intel.engines.factor_semantics import pressure_component_assessment
+
+    cases = {
+        "STRONG_SELL": FactorDirection.NEGATIVE,
+        "SELL": FactorDirection.NEGATIVE,
+        "SLIGHT_SELL": FactorDirection.NEGATIVE,
+        "NEUTRAL": FactorDirection.NEUTRAL,
+        "SLIGHT_BUY": FactorDirection.POSITIVE,
+        "BUY": FactorDirection.POSITIVE,
+        "STRONG_BUY": FactorDirection.POSITIVE,
+    }
+    for raw, expected in cases.items():
+        got = pressure_component_assessment(Component("funding", raw, -40))
+        assert got.direction is expected, raw
+
+
+def test_a_measured_component_is_never_reported_as_unknown() -> None:
+    from crypto_intel.engines.factor_semantics import pressure_component_assessment
+
+    result = pressure_component_assessment(Component("spot", "SELL", -30))
+    assert result.direction is FactorDirection.NEGATIVE
+    assert result.availability.value == "AVAILABLE"
+    assert result.provider == "Binance"
+    assert len(result.causal_chain) >= 3
+
+
+def test_an_unavailable_component_states_what_is_missing() -> None:
+    from crypto_intel.engines.factor_semantics import pressure_component_assessment
+
+    result = pressure_component_assessment(
+        Component("whales", "UNAVAILABLE", None, available=False, detail="pas de flux")
+    )
+    assert result.direction is FactorDirection.UNKNOWN
+    assert result.availability.value == "UNAVAILABLE"
+    assert result.missing_requirements
