@@ -419,4 +419,91 @@ void main() {
     if (uncertain.evaluate().isEmpty) return;
     expect(uncertain, findsWidgets);
   });
+
+  testWidgets('an ETF factor never borrows whale vocabulary', (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    // The family is called "Flux institutionnels & baleines", so a keyword
+    // lookup on the title served the whale explanation for an ETF reading.
+    // The mechanism now comes from the engine's causal chain.
+    for (var index = 1; index <= 5; index++) {
+      final row = find.byKey(ValueKey('decision-reason-$index'));
+      if (row.evaluate().isEmpty) break;
+      final isEtf = find
+          .descendant(of: row, matching: find.textContaining('ETF'))
+          .evaluate()
+          .isNotEmpty;
+      if (!isEtf) continue;
+      await tester.ensureVisible(row);
+      await tester.pumpAndSettle();
+      await tester.tap(row);
+      await tester.pumpAndSettle();
+      for (final whaleWord in const [
+        'plateformes d’échange',
+        'transfert',
+        'baleine',
+      ]) {
+        expect(
+          find.textContaining(whaleWord),
+          findsNothing,
+          reason: 'whale wording "$whaleWord" reached an ETF factor',
+        );
+      }
+      await tester.tapAt(const Offset(200, 12));
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('the source shown is a real provider, not the family name',
+      (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    final row = find.byKey(const ValueKey('decision-reason-1'));
+    await tester.ensureVisible(row);
+    await tester.pumpAndSettle();
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('🔗 SOURCE'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    for (final familyName in const [
+      'Positionnement & dérivés',
+      'Flux institutionnels & baleines',
+      'Technique & volatilité',
+    ]) {
+      expect(
+        find.text(familyName),
+        findsNothing,
+        reason: 'the analytical family is not a data source',
+      );
+    }
+  });
+
+  testWidgets('every displayed factor carries a status the payload supports',
+      (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    // A direction-free reading must never show a directional badge.
+    for (final factor in decision.factors) {
+      if (factor.impactOnDirection != 'NONE') continue;
+      expect(
+        factor.direction == 'POSITIVE' || factor.direction == 'NEGATIVE',
+        isFalse,
+        reason: '${factor.key} is amplitude-only yet directional',
+      );
+    }
+    // And an unavailable one must declare what it lacks.
+    for (final factor in decision.factors) {
+      if (factor.availability != 'UNAVAILABLE') continue;
+      expect(factor.direction, 'UNKNOWN', reason: factor.key);
+      expect(factor.missingRequirements, isNotEmpty, reason: factor.key);
+    }
+  });
 }

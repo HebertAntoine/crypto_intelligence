@@ -2591,6 +2591,61 @@ const _TopicGuidance _guidanceFallback = _TopicGuidance(
   'Ce facteur fait partie des éléments suivis par l’analyse pour cet horizon.',
 );
 
+/// Guidance indexed by the factor's own key.
+///
+/// Keying on the title made "Flux institutionnels & baleines" match the whale
+/// branch before the ETF branch, so an ETF reading was explained with on-chain
+/// wording. A key cannot be ambiguous the way a sentence can.
+const _guidanceByKey = <String, _TopicGuidance>{
+  'flows': _TopicGuidance(
+    'Les ETF au comptant constituent une source de demande ou d’offre nette. '
+    'Des entrées persistantes apportent du soutien; des sorties persistantes '
+    'réduisent ce soutien.',
+    'Les flux sont publiés avec un jour de décalage: ils décrivent les séances '
+    'déjà passées.',
+  ),
+  'whales': _TopicGuidance(
+    'Les gros portefeuilles peuvent modifier l’offre disponible à la vente.',
+    'Un transfert vers une plateforme ne signifie pas qu’une vente aura lieu.',
+  ),
+  'positioning': _TopicGuidance(
+    'Quand les positions à levier se ferment pendant que le prix recule, des '
+    'acheteurs abandonnent: cela confirme une faiblesse à court terme.',
+    'Le levier amplifie les mouvements dans les deux sens.',
+  ),
+  'derivatives': _TopicGuidance(
+    'Le positionnement à levier amplifie les mouvements en cours.',
+    'Il décrit une exposition, pas une intention.',
+  ),
+  'funding': _TopicGuidance(
+    'Le coût pour rester positionné indique quel côté du marché paie.',
+    'Un coût très bas accompagne souvent un marché faible: ce n’est pas un '
+    'signal d’achat en soi.',
+  ),
+  'spot': _TopicGuidance(
+    'L’équilibre entre acheteurs et vendeurs au comptant montre qui accepte de '
+    'payer le prix demandé maintenant.',
+    'Cette lecture est immédiate et peut changer vite.',
+  ),
+  'technical': _TopicGuidance(
+    'Quand plusieurs échelles de temps racontent la même histoire, la lecture '
+    'est plus fiable que lorsqu’elles se contredisent.',
+    'Une seule échelle concordante reste une lecture isolée.',
+  ),
+  'volatility': _TopicGuidance(
+    'Une période de faible volatilité précède parfois un mouvement beaucoup '
+    'plus important.',
+    'Cette lecture n’indique jamais la direction du mouvement à venir.',
+  ),
+  'implied_volatility': _TopicGuidance(
+    'Le marché des options chiffre l’ampleur du mouvement qu’il anticipe.',
+    'L’ampleur attendue ne dit rien du sens.',
+  ),
+};
+
+_TopicGuidance _guidanceForFactor(FutureFactorRead? factor, String fallbackTitle) =>
+    _guidanceByKey[factor?.key] ?? _topicGuidance(fallbackTitle);
+
 _TopicGuidance _topicGuidance(String title) {
   final value = title.toLowerCase();
   if (value.contains('fed') ||
@@ -2827,12 +2882,12 @@ List<_DecisionFactor> _decisionFactors(
     if (!family.available) continue;
     final title = _signalTitle(family);
     if (title == null) continue;
-    final guidance = _topicGuidance('${family.label} ${family.summary}');
     final summary = _cleanExplanation(family.summary);
     // Prefer the normalised reading when the engine published one: it keeps
     // direction, impact and trend apart, where the family carries a bias and an
     // amplitude that the screen used to conflate.
     final normalised = _factorFor(decision, family.id);
+    final guidance = _guidanceForFactor(normalised, family.label);
     factors.add(_DecisionFactor(
       kind: _FactorKind.currentSignal,
       title: title,
@@ -2848,12 +2903,24 @@ List<_DecisionFactor> _decisionFactors(
       confidence: normalised?.confidence ?? family.confidence,
       trend: normalised?.trend ?? 'UNKNOWN',
       impactOnDirection: normalised?.impactOnDirection ?? 'MEASURED',
-      observation: summary,
+      observation: normalised?.rationale.isNotEmpty == true
+          ? normalised!.rationale
+          : summary,
       invalidation: _signalInvalidation(family),
-      whyItMatters: guidance.why,
+      // The mechanism comes from the engine's causal chain. Deriving it in the
+      // UI from a keyword in the title served whale wording for an ETF factor,
+      // because the family label "Flux institutionnels & baleines" matched the
+      // whale branch first.
+      whyItMatters: normalised != null && normalised.causalChain.length >= 3
+          ? normalised.causalChain.last
+          : guidance.why,
       caveat: guidance.caveat,
       consequence: _signalConsequence(family, horizon, asset),
-      source: family.label,
+      // The real upstream provider, not the analytical family it belongs to.
+      source: normalised?.provider.isNotEmpty == true
+          ? normalised!.provider
+          : family.label,
+      sourceUrl: normalised?.sourceUrl,
     ));
   }
 

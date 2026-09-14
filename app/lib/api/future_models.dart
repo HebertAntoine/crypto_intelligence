@@ -122,6 +122,14 @@ class FutureFactorRead {
   /// Bollinger compression. It bounds what the reading may be used for.
   final String impactOnDirection;
 
+  /// Raw data → observation → mechanism, written by the engine. The UI renders
+  /// it; it never composes an interpretation of its own.
+  final List<String> causalChain;
+  final List<String> missingRequirements;
+  final String provider;
+  final String? sourceUrl;
+  final String availability;
+
   const FutureFactorRead({
     required this.key,
     required this.label,
@@ -132,6 +140,11 @@ class FutureFactorRead {
     required this.freshness,
     required this.rationale,
     required this.impactOnDirection,
+    this.causalChain = const [],
+    this.missingRequirements = const [],
+    this.provider = '',
+    this.sourceUrl,
+    this.availability = 'AVAILABLE',
   });
 
   factory FutureFactorRead.fromJson(Map<String, dynamic> json) => FutureFactorRead(
@@ -144,6 +157,15 @@ class FutureFactorRead {
         freshness: json['freshness']?.toString() ?? 'UNAVAILABLE',
         rationale: json['rationale']?.toString() ?? '',
         impactOnDirection: json['impact_on_direction']?.toString() ?? 'MEASURED',
+        causalChain: (json['causal_chain'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        missingRequirements: (json['missing_requirements'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        provider: json['provider']?.toString() ?? '',
+        sourceUrl: json['source_url']?.toString(),
+        availability: json['availability']?.toString() ?? 'AVAILABLE',
       );
 }
 
