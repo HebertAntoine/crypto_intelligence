@@ -39,8 +39,22 @@ SERIES: dict[str, tuple[str, str, str]] = {
     # Labour
     "UNRATE":     ("macro.unemployment", "pct", "US Unemployment Rate"),
     "PAYEMS":     ("macro.nonfarm_payrolls", "thousands", "Total Nonfarm Payrolls"),
+    "PPIACO":     ("macro.ppi", "index", "Producer Price Index, All Commodities"),
     # Dollar - broad trade-weighted index, NOT the tradable DXY
     "DTWEXBGS":   ("macro.dxy_broad", "index", "Broad Trade-Weighted Dollar Index"),
+    # Long end of the curve. The 2Y prices policy expectations and the 10Y
+    # prices financial conditions; the 30Y carries long-run inflation and
+    # fiscal risk, which the other two do not.
+    "DGS30":      ("macro.us30y", "pct", "US 30Y Treasury Yield"),
+    # Energy. Oil enters the analysis as an inflation input, never as a direct
+    # crypto signal: the chain runs through inflation, policy and yields.
+    "DCOILBRENTEU": ("macro.brent", "usd", "Crude Oil Prices: Brent - Europe"),
+    "DCOILWTICO":   ("macro.wti", "usd", "Crude Oil Prices: WTI - Cushing"),
+    # Credit. Equities falling with calm spreads is a drawdown; equities falling
+    # while spreads widen is systemic stress. Without these two series the
+    # difference cannot be measured at all.
+    "BAMLH0A0HYM2": ("macro.hy_spread", "pct", "ICE BofA US High Yield OAS"),
+    "BAMLC0A0CM":   ("macro.ig_spread", "pct", "ICE BofA US Corporate OAS"),
 }
 
 # Series available from a better or more timely free source. Documented so the
