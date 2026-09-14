@@ -51,12 +51,21 @@ def events_for_horizon(
 def usable_events_for_horizon(
     events: list[FutureEvent], horizon: DecisionHorizon, as_of: datetime
 ) -> list[FutureEvent]:
-    """Return horizon-relevant events fresh enough to affect a decision."""
+    """Return horizon-relevant events fresh and authoritative enough to decide.
+
+    Social-tier items were being assigned tier E and then flowing on unchecked:
+    a post could reach the decision without ever being re-sourced. They are now
+    dropped here, which is the single point every horizon passes through.
+    """
+
+    from .source_hierarchy import may_influence_decision
+
     return [
         event
         for event in events_for_horizon(events, horizon, as_of)
         if event_freshness(event, as_of).freshness_status
         in {EventFreshness.LIVE, EventFreshness.FRESH}
+        and may_influence_decision(event.source_tier)
     ]
 
 
