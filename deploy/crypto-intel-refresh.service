@@ -1,0 +1,14 @@
+[Unit]
+Description=Crypto Intelligence — collecte, analyse et régénération des snapshots
+Documentation=file:///home/antoineh/crypto_intelligence/scripts/refresh_all.sh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/antoineh/crypto_intelligence
+ExecStart=/home/antoineh/crypto_intelligence/scripts/refresh_all.sh
+# Providers can hang on a slow endpoint; the run is capped rather than left to
+# overlap with the next one.
+TimeoutStartSec=3600
+Nice=10

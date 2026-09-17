@@ -1,0 +1,17 @@
+[Unit]
+Description=Rafraîchissement Crypto Intelligence deux fois par jour
+
+[Timer]
+# 07:00 and 19:00 local time. The morning run lands after the US session has
+# settled and the ETF flows of the previous day have been published; the evening
+# run picks up the European close and any intraday macro release.
+OnCalendar=*-*-* 07:00:00
+OnCalendar=*-*-* 19:00:00
+# A machine that was asleep still gets its refresh instead of skipping a day.
+Persistent=true
+# Avoids every install hitting the same provider at the same second.
+RandomizedDelaySec=300
+Unit=crypto-intel-refresh.service
+
+[Install]
+WantedBy=timers.target
