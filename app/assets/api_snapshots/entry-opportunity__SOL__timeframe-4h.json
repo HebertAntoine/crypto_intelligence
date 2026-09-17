@@ -1,52 +1,52 @@
 {
-  "analysis_id": "an_01c781782156963f",
-  "analysis_time": "2026-09-08T15:58:21.359137+00:00",
+  "analysis_id": "an_29b05ecd72eae105",
+  "analysis_time": "2026-09-17T23:36:49.956295+00:00",
   "asset": "SOL",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
-      "contribution": -25.0,
-      "detail": "En 4h, le prix est proche du haut de son range (qualit\u00e9 de zone 74/100)",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
-    },
-    {
       "contribution": 8.0,
-      "detail": "Funding dans sa normale, au 32e centile de son historique",
+      "detail": "Funding dans sa normale, au 44e centile de son historique",
       "is_measured_edge": false,
       "name": "funding normalised",
       "source": "derivatives"
     },
     {
       "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.9e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.6e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
     },
     {
       "contribution": 0.0,
-      "detail": "Structure 1d en range (LH HH HL HL)",
+      "detail": "Structure 1d en range (HH LH HL HL)",
       "is_measured_edge": false,
       "name": "higher timeframe structure",
+      "source": "structure"
+    },
+    {
+      "contribution": 0.0,
+      "detail": "En 4h, le prix est au milieu de son range (qualit\u00e9 de zone 70/100)",
+      "is_measured_edge": false,
+      "name": "structural location",
       "source": "structure"
     }
   ],
   "from_analysis": true,
-  "invalidation": "Une cl\u00f4ture 4h au-dessus de 107.86 casserait la zone haute du range et invaliderait cette lecture.",
+  "invalidation": "Une cl\u00f4ture 4h hors de 95.54-105.91 invaliderait cette lecture du range.",
   "measured_edge_note": "9 candidate relationships were tested for SOL and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [],
-  "price_at_analysis": 103.5,
-  "score": -2.2,
+  "price_at_analysis": 101.44,
+  "score": 4.0,
   "state": "NEUTRAL",
-  "statement": "SOL 4h configuration is NEUTRAL (-2). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "statement": "SOL 4h configuration is NEUTRAL (+4). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "4h",
   "why_now": [
-    "En 4h, le prix est proche du haut de son range (qualit\u00e9 de zone 74/100)",
-    "Funding dans sa normale, au 32e centile de son historique",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.9e centile : les mouvements sont petits, dans les deux sens",
-    "Structure 1d en range (LH HH HL HL)"
+    "Funding dans sa normale, au 44e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.6e centile : les mouvements sont petits, dans les deux sens",
+    "Structure 1d en range (HH LH HL HL)",
+    "En 4h, le prix est au milieu de son range (qualit\u00e9 de zone 70/100)"
   ]
 }

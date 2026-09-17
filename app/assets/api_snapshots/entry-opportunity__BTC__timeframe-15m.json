@@ -4,55 +4,55 @@
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
-      "contribution": -12.0,
-      "detail": "En 15m, le prix est dans le tiers haut de son range (qualit\u00e9 de zone 73/100)",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
-    },
-    {
       "contribution": 12.0,
-      "detail": "Encombrement d\u00e9riv\u00e9 faible, 27.5/100",
+      "detail": "Encombrement d\u00e9riv\u00e9 faible, 21.9/100",
       "is_measured_edge": false,
       "name": "crowding low",
       "source": "derivatives"
     },
     {
       "contribution": 8.0,
-      "detail": "Funding dans sa normale, au 45e centile de son historique",
+      "detail": "Funding dans sa normale, au 49e centile de son historique",
       "is_measured_edge": false,
       "name": "funding normalised",
       "source": "derivatives"
     },
     {
       "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 13.8e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.0e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
     },
     {
       "contribution": 0.0,
-      "detail": "Structure 4h en range (LH HH LL HL)",
+      "detail": "Structure 4h en range (HH LH LL HL)",
       "is_measured_edge": false,
       "name": "higher timeframe structure",
+      "source": "structure"
+    },
+    {
+      "contribution": 0.0,
+      "detail": "En 15m, le prix est au milieu de son range (qualit\u00e9 de zone 55/100)",
+      "is_measured_edge": false,
+      "name": "structural location",
       "source": "structure"
     }
   ],
   "from_analysis": false,
-  "invalidation": "Une cl\u00f4ture 15m au-dessus de 80036.74 casserait la zone haute du range et invaliderait cette lecture.",
+  "invalidation": "Une cl\u00f4ture 15m hors de 76146.33-76776.44 invaliderait cette lecture du range.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [],
-  "score": 3.2,
+  "score": 5.6,
   "state": "NEUTRAL",
-  "statement": "BTC 15m configuration is NEUTRAL (+3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "statement": "BTC 15m configuration is NEUTRAL (+6). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "15m",
   "why_now": [
-    "En 15m, le prix est dans le tiers haut de son range (qualit\u00e9 de zone 73/100)",
-    "Encombrement d\u00e9riv\u00e9 faible, 27.5/100",
-    "Funding dans sa normale, au 45e centile de son historique",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 13.8e centile : les mouvements sont petits, dans les deux sens",
-    "Structure 4h en range (LH HH LL HL)"
+    "Encombrement d\u00e9riv\u00e9 faible, 21.9/100",
+    "Funding dans sa normale, au 49e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.0e centile : les mouvements sont petits, dans les deux sens",
+    "Structure 4h en range (HH LH LL HL)",
+    "En 15m, le prix est au milieu de son range (qualit\u00e9 de zone 55/100)"
   ]
 }

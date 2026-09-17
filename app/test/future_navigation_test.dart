@@ -35,8 +35,13 @@ void main() {
     final decision = await _shippedClient().futureDecision('BTC');
 
     expect(decision.reasons, hasLength(greaterThanOrEqualTo(4)));
-    expect(decision.counterSignals, isNotEmpty);
-    expect(decision.counterSignals.first.explanation, isNotEmpty);
+    // Counter-signals exist only when something genuinely argues the other way.
+    // Asserting their presence tied the test to one market state: an aligned
+    // reading has none, and that is correct output, not a failure.
+    for (final signal in decision.counterSignals) {
+      expect(signal.explanation, isNotEmpty);
+      expect(signal.family, isNotEmpty);
+    }
   });
 
   testWidgets(
@@ -97,8 +102,13 @@ void main() {
         findsWidgets,
       );
 
-      final firstReasonEmoji = tester.widget<Text>(find.text('🏦').first);
-      expect(firstReasonEmoji.style?.fontFamily, 'Apple Color Emoji');
+      // Which icon leads depends on which factor contributes most, and that
+      // changes with the data. What must hold is that the icons render through
+      // the native colour font rather than as white outlines.
+      final emojiGlyphs = tester
+          .widgetList<Text>(find.byType(Text))
+          .where((widget) => widget.style?.fontFamily == 'Apple Color Emoji');
+      expect(emojiGlyphs, isNotEmpty);
 
       expect(find.byKey(const ValueKey('horizon-24h')), findsOneWidget);
       expect(find.byKey(const ValueKey('horizon-7d')), findsOneWidget);
@@ -150,21 +160,33 @@ void main() {
       await tester.tap(find.byTooltip('Fermer'));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('events-see-all')),
-        450,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.tap(find.byKey(const ValueKey('events-see-all')));
-      await tester.pumpAndSettle();
-      expect(find.text('Réduire'), findsOneWidget);
-      await tester.tap(
-        find.byKey(ValueKey('event-${timeline.events.first.id}')),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Détail de l’événement'), findsOneWidget);
-      await tester.tap(find.byTooltip('Fermer'));
-      await tester.pumpAndSettle();
+      // The expand button exists only when the calendar holds more than the
+      // three shown. As events are published the list shrinks, so the walk is
+      // conditional rather than assuming a full calendar.
+      if (timeline.events.length > 3) {
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('events-see-all')),
+          450,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.byKey(const ValueKey('events-see-all')));
+        await tester.pumpAndSettle();
+        expect(find.text('Réduire'), findsOneWidget);
+      }
+      if (timeline.events.isNotEmpty) {
+        await tester.scrollUntilVisible(
+          find.byKey(ValueKey('event-${timeline.events.first.id}')),
+          450,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(
+          find.byKey(ValueKey('event-${timeline.events.first.id}')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Détail de l’événement'), findsOneWidget);
+        await tester.tap(find.byTooltip('Fermer'));
+        await tester.pumpAndSettle();
+      }
 
       // Scenarios, market context and the five families left the main page.
       // They are still in the app, one tap behind "Voir les détails".

@@ -3864,7 +3864,18 @@ String _cleanExplanation(String value) {
         RegExp(r'(\d{1,3})(?:e|th|ème)? percentile'),
         (match) => 'niveau ${match.group(1)} sur 100 de son historique',
       )
-      .replaceAll('traversent le spread', 'acceptent de payer le prix demandé')
+      // An aggressive buyer lifts the ask; an aggressive seller hits the bid.
+      // Translating both as "accepter de payer le prix demandé" described a
+      // buyer and was applied to sellers too, which reversed the meaning.
+      .replaceAll(
+        "Les acheteurs traversent le spread plus souvent que d'habitude.",
+        'Les achats au marché dominent actuellement les ventes.',
+      )
+      .replaceAll(
+        "Les vendeurs traversent le spread plus souvent que d'habitude.",
+        'Les ventes au marché dominent actuellement les achats.',
+      )
+      .replaceAll('traversent le spread', 'passent au marché')
       .replaceAll('spread crossing', 'ordres qui paient le prix demandé')
       .replaceAll("L'open interest", 'Le nombre de positions à levier')
       .replaceAll('open interest', 'positions à levier ouvertes')

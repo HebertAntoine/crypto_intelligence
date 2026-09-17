@@ -679,7 +679,10 @@ def build_five_family_snapshot(
     # Normalised semantics, published alongside the families. Direction, impact,
     # trend and confidence are kept apart here so the UI never has to infer one
     # from another - and so UNKNOWN stays distinct from NEUTRAL.
+    from dataclasses import replace
+
     from .factor_semantics import (
+        Availability,
         flow_assessment,
         implied_volatility_assessment,
         positioning_from_leverage_state,
@@ -694,16 +697,22 @@ def build_five_family_snapshot(
     # block "ETF", so a reader was told about fund flows while looking at a
     # measure of who crosses the spread.
     if getattr(institutional_flow, "available", False):
-        flow_reading = flow_assessment(
-            institutional_flow, label="Flux ETF"
-        ).to_dict()
+        reading = flow_assessment(institutional_flow, label="Flux ETF")
         if not institutional_usable:
-            flow_reading["availability"] = "STALE"
-            flow_reading["missing_requirements"] = [
-                "Séance ETF plus récente: la dernière publication date de "
-                f"{int(float(getattr(institutional_flow, 'age_seconds', 0) or 0) // 3600)} h."
-            ]
-        normalised.append(flow_reading)
+            # Rebuilt rather than patched after serialisation: overriding the
+            # dictionary left confidence_band computed from the original
+            # availability, so a reading 47 hours old still claimed HIGH.
+            hours = int(
+                float(getattr(institutional_flow, "age_seconds", 0) or 0) // 3600
+            )
+            reading = replace(
+                reading,
+                availability=Availability.STALE,
+                missing_requirements=[
+                    f"Séance ETF plus récente: la dernière publication date de {hours} h."
+                ],
+            )
+        normalised.append(reading.to_dict())
     if positioning_available:
         normalised.append(
             positioning_from_leverage_state(

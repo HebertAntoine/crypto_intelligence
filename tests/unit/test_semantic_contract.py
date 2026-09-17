@@ -139,3 +139,20 @@ def test_unknown_is_never_rendered_as_neutral() -> None:
                 if factor["availability"] in {"UNAVAILABLE", "NOT_APPLICABLE"}:
                     assert factor["direction"] == "UNKNOWN", factor["key"]
                     assert factor["direction"] != "NEUTRAL"
+
+
+def test_spot_wording_never_describes_a_seller_as_paying_the_ask() -> None:
+    """An aggressive seller hits the bid; only a buyer lifts the ask."""
+
+    from pathlib import Path
+
+    screen = (
+        Path(__file__).resolve().parents[2]
+        / "app" / "lib" / "screens" / "future_analysis_screen.dart"
+    ).read_text(encoding="utf-8")
+
+    # The blanket replacement turned every crossing into "paying the asked
+    # price", which describes a buyer and was applied to sellers as well.
+    assert "'acceptent de payer le prix demandé'" not in screen
+    assert "Les ventes au marché dominent" in screen
+    assert "Les achats au marché dominent" in screen
