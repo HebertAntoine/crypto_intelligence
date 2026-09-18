@@ -196,3 +196,27 @@ POURQUOI ?                                              Voir tout
 `ExpectedMovement` et la confiance quittent la home mais restent dans la feuille
 de détail : ils n'ont pas été supprimés du moteur, conformément à la consigne de
 ne simplifier que ce que l'utilisateur voit.
+
+## 13. Révision — maquette validée
+
+La home suit maintenant la maquette fournie :
+
+- carte verdict : phrase qui nomme l'équilibre des signaux, tuiles
+  ⚠️ Risque · ⏱️ Horizon · 📊 Tendance (« Plutôt favorable », « Mitigée »…) ;
+- 🤔 « Pourquoi attendre ? » : trois raisons, chacune dans sa tuile, emoji par
+  sujet (🛒 spot, 💰 ETF, 💸 levier, 📈 technique, 🛢️ énergie, 🏛️ régulation…) ;
+- ⏳ « Confirmation encore insuffisante » en tête **seulement** si le contrôle de
+  cohérence du backend renvoie `NO_MEASURABLE_EDGE` et que le verdict est
+  ATTENDRE : c'est la vraie raison du verdict, jamais une déduction de l'écran ;
+- 🎯 « Pour passer à acheter » : cercles vides, libellés courts dérivés de la
+  famille de chaque condition ;
+- 👀 « À surveiller » : date, heure, sujet, une ligne d'attention, « Voir tout ».
+
+Défauts corrigés au passage : une tendance « Mitigée » pouvait s'afficher
+au-dessus de trois badges verts (le signal opposé passait sous la coupe — les
+deux côtés sont désormais garantis) ; « (1 ans) » pour une échéance 1 an 10 mois ;
+deux adjudications indiscernables parce que l'échéance était en fin de titre ;
+emojis des échéances rendus en contour blanc hors du widget couleur.
+
+Aperçu visuel : `flutter test test/home_render_preview_test.dart
+--update-goldens --dart-define=PREVIEW_DIR=<dossier>`.

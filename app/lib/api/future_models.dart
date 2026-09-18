@@ -361,6 +361,9 @@ class FutureCatalystRead {
 
 class FutureEventRead {
   final String id;
+
+  /// FOMC_DECISION, ECB_RATE_DECISION, CPI... - what kind of date this is.
+  final String eventType;
   final String title;
   final DateTime? scheduledAt;
   final int? countdownSeconds;
@@ -373,6 +376,7 @@ class FutureEventRead {
   final String freshness;
 
   const FutureEventRead({
+    this.eventType = '',
     required this.id,
     required this.title,
     required this.importance,
@@ -392,6 +396,7 @@ class FutureEventRead {
     final hours = _number(json['hours_until']);
     return FutureEventRead(
       id: json['id']?.toString() ?? '',
+      eventType: json['event_type']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       scheduledAt:
           scheduled == null ? null : DateTime.tryParse(scheduled)?.toLocal(),
@@ -480,6 +485,11 @@ class FutureDecisionRead {
   final List<String> conditionsToBuy;
   final List<String> conditionsToSell;
 
+  /// The consistency check found no relationship that survives the
+  /// statistical tests. That, not the signals themselves, is what holds the
+  /// verdict at WAIT - and the home has to be able to say so.
+  final bool noMeasurableEdge;
+
   const FutureDecisionRead({
     required this.asset,
     required this.analysisId,
@@ -503,6 +513,7 @@ class FutureDecisionRead {
     this.conditionsToBuy = const [],
     this.conditionsToSell = const [],
     this.synthesis,
+    this.noMeasurableEdge = false,
   });
 
   /// Build the sentence only from an AVAILABLE, priced expectation.
@@ -551,6 +562,10 @@ class FutureDecisionRead {
       conditionsToSell: (json['conditions_to_sell'] as List? ?? const [])
           .map((value) => value.toString())
           .toList(),
+      noMeasurableEdge: ((json['consistency'] as Map?)?['issues'] as List? ??
+              const [])
+          .whereType<Map>()
+          .any((issue) => issue['code'] == 'NO_MEASURABLE_EDGE'),
       coverage: familyBlock['coverage']?.toString() ?? '0/5 disponibles',
       reasons: (json['reasons'] as List? ?? const [])
           .whereType<Map>()

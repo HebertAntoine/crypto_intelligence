@@ -77,6 +77,7 @@ const _jargon = <String>[
 
 void main() {
   _plainLanguage();
+  _mockupRules();
 
   for (final asset in ['BTC', 'ETH', 'SOL']) {
     group(asset, () {
@@ -98,7 +99,14 @@ void main() {
         );
 
         // 2. Why?
-        expect(find.text('POURQUOI ?'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate((widget) =>
+              widget is Text &&
+              const {'Pourquoi attendre ?', 'Pourquoi acheter ?',
+                      'Pourquoi vendre ?'}
+                  .contains(widget.data)),
+          findsOneWidget,
+        );
 
         // 3. What would change it? - present unless the engine has no path
         // to offer, which is a legitimate answer rather than a filler list.
@@ -112,13 +120,13 @@ void main() {
         }
       });
 
-      testWidgets('shows at most four reasons however many signals exist',
+      testWidgets('shows at most three reasons however many signals exist',
           (tester) async {
         await _open(tester, asset);
 
         // The engine tracks far more than this. The page shows the few that
-        // weigh most on the verdict; a fifth row means the cap leaked.
-        expect(find.byKey(const ValueKey('decision-reason-5')), findsNothing);
+        // weigh most on the verdict; a fourth row means the cap leaked.
+        expect(find.byKey(const ValueKey('decision-reason-4')), findsNothing);
         expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
       });
 
@@ -150,8 +158,13 @@ void main() {
 
         final card = find.byKey(const ValueKey('upcoming-events'));
         if (card.evaluate().isEmpty) return;
-        final rows = find.descendant(of: card, matching: find.byType(InkWell));
-        expect(rows.evaluate().length, lessThanOrEqualTo(3));
+        final rows = find.descendant(
+          of: card,
+          matching: find.byWidgetPredicate((widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith('event-')),
+        );
+        expect(rows.evaluate().length, inInclusiveRange(1, 3));
       });
 
       testWidgets('the watchlist does not repeat a reason', (tester) async {
@@ -207,7 +220,8 @@ void main() {
       'n’a pas encore livré son résultat',
       'se contredisent',
       'avantage suffisamment clair',
-      'pas encore assez favorables',
+      'sans avantage',
+      'pas assez nets',
     ].any((phrase) => find.textContaining(phrase).evaluate().isNotEmpty);
     expect(explained, isTrue);
   });
@@ -234,6 +248,101 @@ void _plainLanguage() {
           reason: '$asset: « échelle(s) » se lit comme une chaîne inachevée',
         );
       }
+    });
+  });
+}
+
+
+List<String> _badgesOnHome(WidgetTester tester) {
+  const badges = {'FAVORABLE', 'DÉFAVORABLE', 'À SURVEILLER', 'NEUTRE'};
+  final found = <String>[];
+  for (var index = 1; index <= 4; index++) {
+    final row = find.byKey(ValueKey('decision-reason-$index'));
+    if (row.evaluate().isEmpty) break;
+    found.addAll(tester
+        .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
+        .map((widget) => widget.data)
+        .whereType<String>()
+        .where(badges.contains));
+  }
+  return found;
+}
+
+void _mockupRules() {
+  group('validated mockup', () {
+    for (final asset in ['BTC', 'ETH', 'SOL']) {
+      testWidgets('$asset: a mixed tendency shows both sides', (tester) async {
+        await _open(tester, asset);
+        if (find.text('Mitigée').evaluate().isEmpty) return;
+
+        // "Mitigée" above three green badges was the bug: ranking by weight
+        // pushed every opposing signal past the cut.
+        final badges = _badgesOnHome(tester);
+        expect(badges, contains('FAVORABLE'));
+        expect(badges, contains('DÉFAVORABLE'));
+      });
+
+      testWidgets('$asset: the confirmation row follows the engine, not looks',
+          (tester) async {
+        await _open(tester, asset);
+        final decision = await _shippedClient().futureDecision(asset);
+
+        final shown =
+            find.text('Confirmation encore insuffisante').evaluate().isNotEmpty;
+        if (!decision.noMeasurableEdge || decision.decision != 'WAIT') {
+          expect(shown, isFalse,
+              reason: 'sans NO_MEASURABLE_EDGE, la ligne serait inventée');
+        }
+        if (shown) {
+          // It is a reason to watch, never a direction.
+          final row = find.ancestor(
+            of: find.text('Confirmation encore insuffisante'),
+            matching: find.byWidgetPredicate((widget) =>
+                widget.key is ValueKey<String> &&
+                (widget.key! as ValueKey<String>)
+                    .value
+                    .startsWith('decision-reason-')),
+          );
+          expect(
+            find.descendant(of: row, matching: find.text('À SURVEILLER')),
+            findsOneWidget,
+          );
+        }
+      });
+
+      testWidgets('$asset: the watchlist reads in date order', (tester) async {
+        await _open(tester, asset);
+        final card = find.byKey(const ValueKey('upcoming-events'));
+        if (card.evaluate().isEmpty) return;
+
+        final timeline = await _shippedClient().futureTimeline(asset);
+        final byId = {for (final event in timeline.events) event.id: event};
+        final shown = tester
+            .widgetList(find.descendant(
+              of: card,
+              matching: find.byWidgetPredicate((widget) =>
+                  widget.key is ValueKey<String> &&
+                  (widget.key! as ValueKey<String>).value.startsWith('event-')),
+            ))
+            .map((widget) => byId[(widget.key! as ValueKey<String>)
+                .value
+                .substring('event-'.length)])
+            .toList();
+
+        expect(shown.every((event) => event?.scheduledAt != null), isTrue,
+            reason: 'une ligne qui commence par une date doit en avoir une');
+        for (var index = 1; index < shown.length; index++) {
+          expect(
+            shown[index]!.scheduledAt!.isBefore(shown[index - 1]!.scheduledAt!),
+            isFalse,
+          );
+        }
+      });
+    }
+
+    testWidgets('a two-part maturity is not read as "(1 ans)"', (tester) async {
+      await _open(tester, 'BTC');
+      expect(find.textContaining('(1 ans)'), findsNothing);
     });
   });
 }

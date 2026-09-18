@@ -88,23 +88,22 @@ void main() {
       expect(find.text('CONTEXTE ACTUEL'), findsNothing);
       expect(find.byKey(const ValueKey('see-full-details')), findsNothing);
 
-      // At most five reasons, so the "why" stays readable at a glance. The
-      // exact count follows the data: duplicated families are not repeated.
+      // Three reasons on the home, so the "why" reads at a glance; the
+      // rest is under "Voir tout".
       expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('decision-reason-4')), findsOneWidget);
-      expect(find.byKey(const ValueKey('decision-reason-6')), findsNothing);
+      expect(find.byKey(const ValueKey('decision-reason-4')), findsNothing);
 
       // The hero carries risk, horizon and the balance of signals. Confidence
       // and expected amplitude are engine vocabulary and moved down with the
       // rest of the analysis. The 24 h price change keeps its own percent
       // sign, which is a measurement rather than a model output.
       expect(find.text('Confiance'), findsNothing);
-      expect(find.text('Signaux'), findsOneWidget);
+      expect(find.text('Tendance'), findsOneWidget);
       expect(
         find.byWidgetPredicate((widget) =>
             widget is Text &&
-            const {'Favorables', 'Défavorables', 'Mitigés', 'Neutres',
-                    'Insuffisants'}
+            const {'Plutôt favorable', 'Plutôt défavorable', 'Mitigée',
+                    'Neutre', 'Insuffisante'}
                 .contains(widget.data)),
         findsWidgets,
       );
@@ -167,11 +166,10 @@ void main() {
       await tester.tap(find.byTooltip('Fermer'));
       await tester.pumpAndSettle();
 
-      // The watchlist no longer expands in place: it shows the three dates
-      // that matter and the rest of the calendar lives in its own page. Which
+      // The watchlist shows the three dates that matter; the rest of the
+      // calendar opens from "Voir tout". Which
       // three those are depends on the data, so the walk looks for whichever
       // row rendered rather than assuming the first event of the timeline.
-      expect(find.byKey(const ValueKey('events-see-all')), findsNothing);
       final shownEvent = timeline.events
           .map((event) => find.byKey(ValueKey('event-${event.id}')))
           .where((finder) => finder.evaluate().isNotEmpty)

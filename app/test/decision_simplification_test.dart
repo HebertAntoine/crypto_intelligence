@@ -70,7 +70,7 @@ void main() {
     // market is doing, so they belong to the full analysis.
     expect(find.text('Risque'), findsOneWidget);
     expect(find.text('Horizon'), findsOneWidget);
-    expect(find.text('Signaux'), findsOneWidget);
+    expect(find.text('Tendance'), findsOneWidget);
     expect(find.text('Confiance'), findsNothing);
     expect(find.text('Mouvement att.'), findsNothing);
     expect(find.textContaining(RegExp(r'^\d+ %$')), findsNothing);
@@ -82,8 +82,8 @@ void main() {
     expect(
       find.byWidgetPredicate((widget) =>
           widget is Text &&
-          const {'Favorables', 'Défavorables', 'Mitigés', 'Neutres',
-                  'Insuffisants'}
+          const {'Plutôt favorable', 'Plutôt défavorable', 'Mitigée', 'Neutre',
+                  'Insuffisante'}
               .contains(widget.data)),
       findsWidgets,
     );
@@ -159,15 +159,16 @@ void main() {
       find.byWidgetPredicate((widget) =>
           widget is Text &&
           const {
-            'POSITIF',
-            'FORTEMENT POSITIF',
-            'NÉGATIF',
-            'FORTEMENT NÉGATIF',
+            'FAVORABLE',
+            'DÉFAVORABLE',
+            'À SURVEILLER',
             'NEUTRE',
-            'DIRECTION INCONNUE',
           }.contains(widget.data)),
       findsWidgets,
     );
+    for (final amplitude in const ['CRITIQUE', 'IMPACT ÉLEVÉ', 'IMPACT MODÉRÉ']) {
+      expect(find.text(amplitude), findsNothing);
+    }
   });
 
   testWidgets('the summary carries no engine jargon', (tester) async {
@@ -449,8 +450,8 @@ void main() {
         await _shippedClient().futureDecision('BTC', horizon: '7d');
     expect(
       find.text(decision.decision == 'BUY'
-          ? 'CE QUI INVALIDERAIT L’ACHAT'
-          : 'CE QUI FERAIT PASSER À ACHETER'),
+          ? 'Ce qui invaliderait l’achat'
+          : 'Pour passer à acheter'),
       findsOneWidget,
     );
   });
@@ -646,11 +647,12 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the home page carries at most four factors', (tester) async {
+  testWidgets('the home page carries three reasons', (tester) async {
     await _openBtc(tester);
 
-    expect(find.byKey(const ValueKey('decision-reason-4')), findsOneWidget);
-    expect(find.byKey(const ValueKey('decision-reason-5')), findsNothing);
+    // The rest is one tap away under "Voir tout".
+    expect(find.byKey(const ValueKey('decision-reason-3')), findsOneWidget);
+    expect(find.byKey(const ValueKey('decision-reason-4')), findsNothing);
   });
 
   testWidgets('an ETF reading is titled and described as ETF flows',

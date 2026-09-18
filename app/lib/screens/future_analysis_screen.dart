@@ -187,7 +187,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
         isScrollControlled: true,
         backgroundColor: const Color(0xFF061525),
         builder: (sheetContext) {
-          final reasons = _decisionFactors(decision, bundle);
+          final reasons = _homeReasons(decision, bundle, limit: null);
           return DraggableScrollableSheet(
             expand: false,
             initialChildSize: .72,
@@ -219,9 +219,8 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   ),
                   const SizedBox(height: 8),
                   for (var index = 0; index < reasons.length; index++) ...[
+                    if (index > 0) const SizedBox(height: 8),
                     _ReasonRow(index: index, reason: reasons[index]),
-                    if (index < reasons.length - 1)
-                      const Divider(height: 1, color: Color(0xFF1D3853)),
                   ],
                   const SizedBox(height: 16),
                   // The home no longer carries a button to the full analysis -
@@ -859,7 +858,7 @@ class _DecisionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 300),
+                      constraints: const BoxConstraints(maxWidth: 322),
                       child: Text(
                         _verdictSentence(
                           decision,
@@ -869,7 +868,7 @@ class _DecisionCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFFF4F8FF),
-                          fontSize: 15.5,
+                          fontSize: 14.5,
                           height: 1.25,
                           fontWeight: FontWeight.w600,
                         ),
@@ -880,9 +879,9 @@ class _DecisionCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _DecisionMetric(
-                            icon: Icons.shield_outlined,
+                            emoji: '⚠️',
                             label: 'Risque',
-                            value: _riskLevelLabel(decision.eventRisk),
+                            value: _riskLabelShort(decision.eventRisk),
                             tone: _impactColor(decision.eventRisk),
                           ),
                         ),
@@ -890,7 +889,7 @@ class _DecisionCard extends StatelessWidget {
                         Expanded(
                           child: _DecisionMetric(
                             key: const ValueKey('decision-horizon'),
-                            icon: Icons.schedule_rounded,
+                            emoji: '⏱️',
                             label: 'Horizon',
                             value: _horizonLongLabel(horizon),
                             tone: mobileBlue,
@@ -899,24 +898,21 @@ class _DecisionCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: _DecisionMetric(
-                            key: const ValueKey('decision-signals'),
-                            icon: Icons.tune_rounded,
-                            // Amplitude and confidence were the other two
-                            // readings here. Both are engine vocabulary: they
-                            // told the reader how the model feels rather than
-                            // what the market is doing, so they moved to the
-                            // full analysis and the balance of signals - the
-                            // thing the verdict actually rests on - took the
-                            // slot.
-                            label: 'Signaux',
-                            value: _signalsLabel(
-                              _decisionFactors(decision, bundle),
-                            ),
-                            tone: _signalsTone(
-                              _signalsLabel(_decisionFactors(decision, bundle)),
-                            ),
-                          ),
+                          child: Builder(builder: (context) {
+                            // Amplitude and confidence used to sit here. Both
+                            // describe how the model feels rather than what
+                            // the market is doing; the balance of measured
+                            // signals is what the verdict actually rests on.
+                            final signals =
+                                _signalsLabel(_decisionFactors(decision, bundle));
+                            return _DecisionMetric(
+                              key: const ValueKey('decision-signals'),
+                              emoji: '📊',
+                              label: 'Tendance',
+                              value: _tendencyLabel(signals),
+                              tone: _signalsTone(signals),
+                            );
+                          }),
                         ),
                       ],
                     ),
@@ -932,7 +928,7 @@ class _DecisionCard extends StatelessWidget {
 }
 
 class _DecisionMetric extends StatelessWidget {
-  final IconData icon;
+  final String emoji;
   final String label;
   final String value;
   final Color tone;
@@ -940,7 +936,7 @@ class _DecisionMetric extends StatelessWidget {
 
   const _DecisionMetric({
     super.key,
-    required this.icon,
+    required this.emoji,
     required this.label,
     required this.value,
     required this.tone,
@@ -952,19 +948,19 @@ class _DecisionMetric extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(14),
           child: Container(
             height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
               color: const Color(0xC20A1726),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFF314861)),
             ),
             child: Row(
               children: [
-                Icon(icon, color: tone, size: 19),
-                const SizedBox(width: 5),
+                ColorEmoji(emoji: emoji, size: 17),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -974,7 +970,10 @@ class _DecisionMetric extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: mobileMuted, fontSize: 9),
+                        style: const TextStyle(
+                          color: Color(0xFFB7C6DC),
+                          fontSize: 10,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       FittedBox(
@@ -985,8 +984,8 @@ class _DecisionMetric extends StatelessWidget {
                           maxLines: 1,
                           style: TextStyle(
                             color: tone,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -1018,7 +1017,7 @@ class _WhyDecisionCard extends StatelessWidget {
     // which cost a whole extra section for something each row's badge already
     // says: green argues one way, red the other, amber is still waiting on an
     // outcome. Seeing them interleaved is what makes a mixed verdict legible.
-    final reasons = _decisionFactors(decision, bundle);
+    final reasons = _homeReasons(decision, bundle);
     return GlassPanel(
       borderColor: const Color(0xFF2B669B),
       child: Column(
@@ -1027,14 +1026,13 @@ class _WhyDecisionCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  'POURQUOI ?',
-                  style: const TextStyle(
-                    color: Color(0xFF8FA8C4),
-                    fontSize: 13,
-                    letterSpacing: .9,
-                    fontWeight: FontWeight.w900,
-                  ),
+                child: _SectionTitle(
+                  emoji: '🤔',
+                  text: switch (decision.decision) {
+                    'BUY' => 'Pourquoi acheter ?',
+                    'SELL' => 'Pourquoi vendre ?',
+                    _ => 'Pourquoi attendre ?',
+                  },
                 ),
               ),
               TextButton(
@@ -1070,14 +1068,42 @@ class _WhyDecisionCard extends StatelessWidget {
             )
           else
             for (var index = 0; index < reasons.length; index++) ...[
+              if (index > 0) const SizedBox(height: 8),
               _ReasonRow(index: index, reason: reasons[index]),
-              if (index < reasons.length - 1)
-                const Divider(height: 1, color: Color(0xFF1D3853)),
             ],
         ],
       ),
     );
   }
+}
+
+/// A card heading: one emoji, then the question the card answers.
+class _SectionTitle extends StatelessWidget {
+  final String emoji;
+  final String text;
+
+  const _SectionTitle({required this.emoji, required this.text});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ColorEmoji(emoji: emoji, size: 18),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      );
 }
 
 class _ReasonRow extends StatelessWidget {
@@ -1093,8 +1119,13 @@ class _ReasonRow extends StatelessWidget {
       key: ValueKey('decision-reason-${index + 1}'),
       onTap: () => _showReasonDetail(context, reason),
       borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
+        decoration: BoxDecoration(
+          color: const Color(0x590C1C30),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF1F3A57)),
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -1102,8 +1133,8 @@ class _ReasonRow extends StatelessWidget {
             // the reader had to hold in mind; the subject of the reason is what
             // they actually scan for, so the icon carries the slot instead.
             Container(
-              width: 42,
-              height: 42,
+              width: 38,
+              height: 38,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: badge.tone.withValues(alpha: .12),
@@ -1111,18 +1142,18 @@ class _ReasonRow extends StatelessWidget {
               ),
               child: ColorEmoji(emoji: reason.emoji, size: 21),
             ),
-            const SizedBox(width: 11),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    reason.title,
-                    maxLines: 1,
+                    _homeTitle(reason),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14.5,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -1146,17 +1177,17 @@ class _ReasonRow extends StatelessWidget {
             ),
             const SizedBox(width: 9),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
               decoration: BoxDecoration(
                 color: badge.tone.withValues(alpha: .13),
-                borderRadius: BorderRadius.circular(9),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: badge.tone.withValues(alpha: .34)),
               ),
               child: Text(
                 badge.label,
                 style: TextStyle(
                   color: badge.tone,
-                  fontSize: 9,
+                  fontSize: 8.5,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -1962,24 +1993,28 @@ class _ChangeAndRiskSection extends StatelessWidget {
   const _ChangeAndRiskSection({required this.decision});
 
   /// The buy path, unless the verdict is already BUY - then what would undo it.
-  ({String title, List<String> items}) _path() {
+  ({String title, List<String> items, bool toBuy}) _path() {
     if (decision.decision == 'BUY') {
       final items = decision.conditionsToSell.isNotEmpty
           ? decision.conditionsToSell
           : _decisionRisks(decision);
-      return (title: 'CE QUI INVALIDERAIT L’ACHAT', items: items);
+      return (title: 'Ce qui invaliderait l’achat', items: items, toBuy: false);
     }
     final items = decision.conditionsToBuy.isNotEmpty
         ? decision.conditionsToBuy
         : decision.changes;
-    return (title: 'CE QUI FERAIT PASSER À ACHETER', items: items);
+    return (title: 'Pour passer à acheter', items: items, toBuy: true);
   }
 
   @override
   Widget build(BuildContext context) {
     final path = _path();
-    final items =
-        path.items.map(_frenchifyEventNames).take(3).toList(growable: false);
+    // Shortening can fold two conditions onto the same words; show each once.
+    final items = path.items
+        .map((item) => _shortCondition(item, toBuy: path.toBuy))
+        .toSet()
+        .take(3)
+        .toList(growable: false);
     if (items.isEmpty) return const SizedBox.shrink();
     return GlassPanel(
       key: const ValueKey('what-would-change'),
@@ -1987,47 +2022,34 @@ class _ChangeAndRiskSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            path.title,
-            style: const TextStyle(
-              color: Color(0xFF8FA8C4),
-              fontSize: 13,
-              letterSpacing: .9,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          _SectionTitle(emoji: '🎯', text: path.title),
           const SizedBox(height: 12),
           for (var index = 0; index < items.length; index++) ...[
-            if (index > 0) const SizedBox(height: 13),
+            if (index > 0) const SizedBox(height: 11),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 26,
-                  height: 26,
-                  alignment: Alignment.center,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF3B5A7C)),
-                  ),
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      color: Color(0xFF9FB8D4),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                    border: Border.all(
+                      color: const Color(0xFF5E7FA3),
+                      width: 1.6,
                     ),
                   ),
                 ),
-                const SizedBox(width: 11),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     items[index],
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: 14.5,
                       height: 1.3,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -2040,17 +2062,16 @@ class _ChangeAndRiskSection extends StatelessWidget {
   }
 }
 
-
 /// The next few dates, as a glance rather than a briefing.
 ///
-/// Every row used to carry a countdown, the provider name and an importance
-/// badge. None of that helps someone deciding whether to look closer: the day
-/// and the subject do. The rest is one tap away.
+/// Day, time, subject and one line saying what kind of attention it
+/// deserves. The countdown, the provider and the full calendar are one tap
+/// away.
 class _UpcomingEventsCard extends StatelessWidget {
   final List<FutureEventRead> events;
 
-  /// Titles already shown under "Pourquoi ?", so the home never says the same
-  /// thing twice in two different shapes.
+  /// Titles already argued under "Pourquoi ?", so the home never says the
+  /// same thing twice in two different shapes.
   final Set<String> alreadyShown;
 
   const _UpcomingEventsCard({
@@ -2058,23 +2079,32 @@ class _UpcomingEventsCard extends StatelessWidget {
     this.alreadyShown = const {},
   });
 
-  @override
-  Widget build(BuildContext context) {
+  /// Dated events only - a row whose first thing is a date cannot show one
+  /// without it - most consequential first, then soonest.
+  static List<FutureEventRead> ranked(
+    List<FutureEventRead> events, {
+    Set<String> skip = const {},
+  }) {
     const rank = {'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0};
-    // Chronological order buried the FOMC behind three Treasury bill auctions,
-    // so the most consequential dates come first.
-    final ranked = [...events]
-      ..removeWhere(
-        (event) => alreadyShown.contains(_eventTitleFr(event.title)),
-      )
+    return [...events]
+      ..removeWhere((event) =>
+          event.scheduledAt == null ||
+          skip.contains(_eventTitleFr(event.title)))
       ..sort((left, right) {
         final byRank = (rank[right.importance.toUpperCase()] ?? 0)
             .compareTo(rank[left.importance.toUpperCase()] ?? 0);
         if (byRank != 0) return byRank;
-        return (left.countdownSeconds ?? 0)
-            .compareTo(right.countdownSeconds ?? 0);
+        return left.scheduledAt!.compareTo(right.scheduledAt!);
       });
-    final displayed = ranked.take(3).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final all = ranked(events, skip: alreadyShown);
+    // Chosen by importance so the FOMC is not buried behind bill auctions,
+    // then read in date order, which is how a calendar is read.
+    final displayed = all.take(3).toList()
+      ..sort((left, right) => left.scheduledAt!.compareTo(right.scheduledAt!));
     if (displayed.isEmpty) return const SizedBox.shrink();
     return GlassPanel(
       key: const ValueKey('upcoming-events'),
@@ -2082,20 +2112,34 @@ class _UpcomingEventsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'À SURVEILLER',
-            style: TextStyle(
-              color: Color(0xFF8FA8C4),
-              fontSize: 13,
-              letterSpacing: .9,
-              fontWeight: FontWeight.w900,
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: _SectionTitle(emoji: '👀', text: 'À surveiller'),
+              ),
+              if (all.length > displayed.length)
+                TextButton(
+                  key: const ValueKey('events-see-all'),
+                  onPressed: () => _showAllEvents(context, all),
+                  style: TextButton.styleFrom(
+                    foregroundColor: mobileBlue,
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    minimumSize: const Size(0, 36),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Voir tout'),
+                      Icon(Icons.chevron_right_rounded, size: 20),
+                    ],
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           for (var index = 0; index < displayed.length; index++) ...[
+            if (index > 0) const SizedBox(height: 8),
             _UpcomingEventRow(event: displayed[index]),
-            if (index < displayed.length - 1)
-              const Divider(height: 1, color: Color(0xFF1D3853)),
           ],
         ],
       ),
@@ -2103,59 +2147,150 @@ class _UpcomingEventsCard extends StatelessWidget {
   }
 }
 
+Future<void> _showAllEvents(
+  BuildContext context,
+  List<FutureEventRead> events,
+) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF061525),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: .7,
+        maxChildSize: .92,
+        builder: (context, controller) => SafeArea(
+          top: false,
+          child: ListView(
+            controller: controller,
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+            children: [
+              const _SectionTitle(emoji: '🗓️', text: 'Prochaines échéances'),
+              const SizedBox(height: 12),
+              for (var index = 0; index < events.length; index++) ...[
+                if (index > 0) const SizedBox(height: 8),
+                _UpcomingEventRow(event: events[index]),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+
 class _UpcomingEventRow extends StatelessWidget {
   final FutureEventRead event;
 
   const _UpcomingEventRow({required this.event});
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: ValueKey('event-${event.id}'),
-          onTap: () => _showEventDetails(context, event),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 11),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 78,
-                  child: Text(
-                    _weekdayLabel(event.scheduledAt),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+  Widget build(BuildContext context) {
+    final when = event.scheduledAt?.toLocal();
+    final time = _eventTime(event.scheduledAt);
+    return InkWell(
+      key: ValueKey('event-${event.id}'),
+      onTap: () => _showEventDetails(context, event),
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 8, 6, 8),
+        decoration: BoxDecoration(
+          color: const Color(0x590C1C30),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF1F3A57)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14243A),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF304C69)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    '${when?.day ?? '—'}',
                     style: const TextStyle(
-                      color: Color(0xFF8FA8C4),
-                      fontSize: 12.5,
+                      color: Colors.white,
+                      fontSize: 19,
+                      height: 1,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _eventTitleFr(event.title),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 3),
+                  Text(
+                    when == null ? '' : _monthsShort[when.month - 1],
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF9FB3CC),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFF55749B),
-                  size: 18,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            SizedBox(
+              width: 52,
+              child: Text(
+                time ?? '',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFFB7C6DC),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // Inline in the Text the glyph fell back to a white
+                      // outline; ColorEmoji carries the colour font.
+                      ColorEmoji(
+                        emoji: _reasonEmoji(
+                          '${_eventTitleFr(event.title)} ${event.title}',
+                        ),
+                        size: 13,
+                      ),
+                      const SizedBox(width: 5),
+                      Expanded(
+                        child: Text(
+                          _eventTitleFr(event.title),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _eventSubtitle(event),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: mobileMuted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF55749B),
+              size: 18,
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 Future<void> _showEventDetails(
@@ -2798,10 +2933,15 @@ class _FutureBundle {
 /// 17h39" invented an event that does not exist; the date was the analysis
 /// timestamp. Catalysts are dated things that will happen; signals are things
 /// already measured now.
-enum _FactorKind { futureCatalyst, currentSignal }
+/// A gate is not a market reading: it is the reason the readings are not
+/// acted on - here, that none of them has shown a measurable edge.
+enum _FactorKind { futureCatalyst, currentSignal, gate }
 
 class _DecisionFactor {
   final _FactorKind kind;
+
+  /// The engine's factor key (flows, spot, technical...), empty for events.
+  final String key;
 
   /// A concrete thing, never a family name: "Décision de la Fed — 16 sept.",
   /// "Sorties nettes des ETF", "Compression de Bollinger".
@@ -2839,6 +2979,7 @@ class _DecisionFactor {
 
   const _DecisionFactor({
     required this.kind,
+    this.key = '',
     required this.title,
     required this.description,
     required this.direction,
@@ -2869,7 +3010,7 @@ String _eventTitleFr(String title) {
     return 'Décision de la Fed sur les taux';
   }
   if (value.contains('personal income')) {
-    return 'Revenus et dépenses des ménages américains';
+    return 'Revenus des ménages US';
   }
   if (value.contains('gdp')) return 'PIB américain';
   if (value.contains('cpi') || value.contains('consumer price')) {
@@ -2879,15 +3020,23 @@ String _eventTitleFr(String title) {
     return 'Emploi américain';
   }
   if (value.contains('treasury auction')) {
-    final match = RegExp(r'(\d+)[- ](week|year|month)').firstMatch(value);
-    if (match == null) return 'Adjudication du Trésor américain';
-    final unit = switch (match.group(2)) {
-      'week' => 'semaines',
-      'month' => 'mois',
-      _ => 'ans',
-    };
-    return 'Adjudication du Trésor américain '
-        '(${match.group(1)} $unit)';
+    // "1-Year 10-Month Note" is one maturity with two parts; reading only the
+    // first produced "(1 ans)".
+    final parts = RegExp(r'(\d+)[- ](week|year|month)')
+        .allMatches(value)
+        .map((match) {
+      final count = int.parse(match.group(1)!);
+      final unit = switch (match.group(2)) {
+        'week' => count > 1 ? 'semaines' : 'semaine',
+        'month' => 'mois',
+        _ => count > 1 ? 'ans' : 'an',
+      };
+      return '$count $unit';
+    }).toList();
+    // The maturity first: it is the only thing telling two rows apart, and a
+    // narrow screen cuts the end of a title.
+    if (parts.isEmpty) return 'Adjudication du Trésor US';
+    return 'Adjudication ${parts.join(' ')} du Trésor US';
   }
   if (value.contains('vote') || value.contains('markup')) {
     return 'Vote réglementaire crypto';
@@ -3306,11 +3455,13 @@ List<_DecisionFactor> _decisionFactors(
     if (identical(guidance, _guidanceFallback)) continue;
     factors.add(_DecisionFactor(
       kind: _FactorKind.currentSignal,
+      key: reading.key,
       title: _readingTitle(reading),
       description: _cleanExplanation(reading.rationale),
       direction: _normalisedDirection(reading.direction),
       impact: _impactLabelFr(reading.impact),
-      emoji: _reasonEmoji('${reading.label} ${reading.key}'),
+      emoji: _emojiByKey[reading.key] ??
+          _reasonEmoji('${reading.label} ${reading.key}'),
       when: reading.availability == 'STALE' ? 'PÉRIMÉ' : 'ACTUEL',
       confidence: reading.confidence,
       trend: reading.trend,
@@ -3460,16 +3611,16 @@ String _plainHomeSentence(String rationale) {
     final shortPositive = match.group(4) == '+';
     if (longPositive == shortPositive) {
       return longPositive
-          ? 'Les entrées restent positives sur $longWindow séances comme sur '
-              'les $shortWindow dernières.'
-          : 'Les sorties dominent sur $longWindow séances comme sur les '
-              '$shortWindow dernières.';
+          ? 'Entrées positives sur $longWindow séances comme sur les '
+              '$shortWindow dernières.'
+          : 'Sorties sur $longWindow séances comme sur les $shortWindow '
+              'dernières.';
     }
     return longPositive
-        ? 'Les entrées restent positives sur $longWindow séances, mais les '
-            '$shortWindow dernières sont négatives.'
-        : 'Les sorties dominent sur $longWindow séances, mais les '
-            '$shortWindow dernières redeviennent positives.';
+        ? 'Entrées positives sur $longWindow séances, sorties sur les '
+            '$shortWindow dernières.'
+        : 'Sorties sur $longWindow séances, entrées sur les $shortWindow '
+            'dernières.';
   }
   // "1 échelle(s) haussière(s) contre 0" - the placeholder plural reads as an
   // unfinished string to anyone who did not write it.
@@ -3486,6 +3637,183 @@ String _plainHomeSentence(String rationale) {
   );
 }
 
+/// The reasons the home shows, in the order it shows them.
+///
+/// When the verdict is WAIT because no measured signal has shown an edge,
+/// that absence is the real reason and it leads the list - otherwise three
+/// green badges under ATTENDRE read as a contradiction. It comes from the
+/// engine's own consistency check, never from the look of the signals.
+List<_DecisionFactor> _homeReasons(
+  FutureDecisionRead decision,
+  _FutureBundle bundle, {
+  int? limit = 3,
+}) {
+  final factors = _decisionFactors(decision, bundle);
+  final signals = _signalsLabel(factors);
+  final gated = decision.decision == 'WAIT' &&
+      decision.noMeasurableEdge &&
+      !decision.eventRiskActive;
+  // When signals pull against each other, the contradiction is itself the
+  // explanation and both sides need the room. The gate still heads the full
+  // list one tap away.
+  final gateOnHome = gated && signals != 'Mitigés';
+  if (limit == null) {
+    return [if (gated) _edgeGate(decision, signals), ...factors];
+  }
+  final shown = [
+    if (gateOnHome) _edgeGate(decision, signals),
+    ...factors,
+  ].take(limit).toList();
+  // Section 14: a mixed reading must show both sides. Ranking by weight can
+  // push every opposing signal past the cut, leaving "Mitigée" above three
+  // green badges.
+  bool leans(_DecisionFactor item, String side) =>
+      item.kind == _FactorKind.currentSignal &&
+      (item.direction ?? '').toUpperCase().contains(side);
+  for (final side in ['BULLISH', 'BEARISH']) {
+    if (shown.any((item) => leans(item, side))) continue;
+    final missing = factors.where((item) => leans(item, side)).firstOrNull;
+    if (missing == null || shown.isEmpty) continue;
+    shown[shown.length - 1] = missing;
+  }
+  return shown;
+}
+
+_DecisionFactor _edgeGate(FutureDecisionRead decision, String signals) {
+  final horizon = _horizonLongLabel(decision.horizon);
+  return _DecisionFactor(
+    kind: _FactorKind.gate,
+    key: 'edge',
+    title: 'Confirmation encore insuffisante',
+    description: signals == 'Favorables'
+        ? 'Les signaux positifs ne sont pas encore assez solides.'
+        : 'Aucun signal ne montre encore un avantage mesurable.',
+    direction: null,
+    impact: 'ÉLEVÉ',
+    emoji: '⏳',
+    when: 'ACTUEL',
+    observation: 'Aucun des signaux testés n’a montré, sur l’historique, un '
+        'avantage qui résiste aux tests statistiques sur $horizon.',
+    whyItMatters: 'Un signal favorable qui n’a jamais prédit mieux que le '
+        'hasard ne justifie pas de prendre position, même s’il semble '
+        'porteur aujourd’hui.',
+    consequence: 'Le verdict reste ATTENDRE tant qu’aucun avantage mesurable '
+        'n’apparaît, quelle que soit la couleur des autres signaux.',
+    invalidation: 'Un signal dont l’avantage se confirme sur l’historique '
+        'et survit à la correction pour tests multiples.',
+    source: 'Contrôle de cohérence de l’analyse',
+  );
+}
+
+/// Short, plain titles for the subjects that come up most. The engine title
+/// stays in the detail sheet; the home needs something readable in one look.
+String _homeTitle(_DecisionFactor factor) {
+  final direction = (factor.direction ?? '').toUpperCase();
+  final up = direction.contains('BULLISH');
+  final down = direction.contains('BEARISH');
+  switch (factor.key) {
+    case 'spot':
+      if (up) return 'Achats spot dominants';
+      if (down) return 'Ventes spot dominantes';
+    case 'flows':
+      final flows = _twoWindowFlows.firstMatch(factor.description);
+      final weakening =
+          flows != null && flows.group(2) == '+' && flows.group(4) == '-';
+      if (up) return weakening ? 'ETF encore favorables' : 'Entrées sur les ETF';
+      if (down) return 'Sorties sur les ETF';
+    case 'technical':
+      if (up) return 'Tendance courte haussière';
+      if (down) return 'Tendance courte baissière';
+  }
+  return factor.kind == _FactorKind.futureCatalyst
+      ? factor.title.split(' — ').first
+      : factor.title;
+}
+
+/// The balance of measured signals, in the words the hero card uses.
+String _tendencyLabel(String signals) => switch (signals) {
+      'Favorables' => 'Plutôt favorable',
+      'Défavorables' => 'Plutôt défavorable',
+      'Mitigés' => 'Mitigée',
+      'Neutres' => 'Neutre',
+      _ => 'Insuffisante',
+    };
+
+String _riskLabelShort(String risk) => switch (risk.toUpperCase()) {
+      'CRITICAL' || 'VERY_HIGH' => 'Critique',
+      'HIGH' => 'Élevé',
+      'MODERATE' || 'MEDIUM' => 'Modéré',
+      'LOW' => 'Faible',
+      _ => 'Inconnu',
+    };
+
+/// A change condition, cut to the few words that fit on one line.
+///
+/// The engine phrases each condition as "Famille: mécanisme mesuré sur...";
+/// the family says what to watch, which is all the front page needs. The full
+/// wording stays in the analysis.
+String _shortCondition(String raw, {required bool toBuy}) {
+  final text = _frenchifyEventNames(raw).trim();
+  final event = RegExp(r'^«\s*(.+?)\s*»').firstMatch(text);
+  if (event != null) {
+    return '${toBuy ? 'Issue favorable' : 'Issue défavorable'} : '
+        '${event.group(1)}';
+  }
+  final family = text.split(':').first.trim().toLowerCase();
+  if (family.startsWith('macro')) {
+    return toBuy
+        ? 'Contexte macro plus porteur'
+        : 'Dégradation du contexte macro';
+  }
+  if (family.startsWith('flux')) {
+    return toBuy ? 'Flux acheteurs durables' : 'Retour des sorties nettes';
+  }
+  if (family.startsWith('positionnement')) {
+    return toBuy
+        ? 'Reprise saine des positions acheteuses'
+        : 'Excès de levier';
+  }
+  if (family.startsWith('technique')) {
+    return toBuy
+        ? 'Confirmation du mouvement'
+        : 'Cassure de la structure haussière';
+  }
+  return text;
+}
+
+const _monthsShort = [
+  'JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUIN',
+  'JUIL', 'AOÛT', 'SEP', 'OCT', 'NOV', 'DÉC',
+];
+
+/// One line under an upcoming date: what kind of attention it deserves.
+/// Never a direction - a date on a calendar does not have one yet.
+String _eventSubtitle(FutureEventRead event) {
+  final type = '${event.eventType} ${event.title}'.toUpperCase();
+  if (RegExp(r'FOMC|ECB|BOJ|RATE_DECISION|POLICY_DECISION|MONETARY')
+      .hasMatch(type)) {
+    return 'Direction encore inconnue';
+  }
+  if (RegExp(r'VOTE|BILL|HEARING|MARKUP|SEC_|CFTC|REGUL|SENATE|HOUSE')
+      .hasMatch(type)) {
+    return 'Étape importante à surveiller';
+  }
+  return switch (event.importance.toUpperCase()) {
+    'CRITICAL' || 'HIGH' => 'Impact potentiel élevé',
+    _ => 'Impact potentiel modéré',
+  };
+}
+
+/// "14:30", or nothing when the source only gives a day.
+String? _eventTime(DateTime? when) {
+  if (when == null) return null;
+  final utc = when.toUtc();
+  if (utc.hour == 0 && utc.minute == 0) return null;
+  final local = when.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:'
+      '${local.minute.toString().padLeft(2, '0')}';
+}
+
 /// The badge one reason carries on the home.
 ///
 /// Attention and direction are different statements and the home must never
@@ -3493,7 +3821,7 @@ String _plainHomeSentence(String rationale) {
 /// something to watch; calling it unfavourable would mean deciding its outcome
 /// in advance, which the engine refuses to do.
 ({String label, Color tone}) _factorBadge(_DecisionFactor factor) {
-  if (factor.kind == _FactorKind.futureCatalyst) {
+  if (factor.kind != _FactorKind.currentSignal) {
     return (label: 'À SURVEILLER', tone: _badgeWatch);
   }
   return switch (factor.direction?.toUpperCase()) {
@@ -3583,25 +3911,19 @@ String _verdictSentence(
       // are poor - several are good - it is that nothing measured yet gives
       // an edge worth acting on. Section 26: say that in the reader's terms,
       // never by naming the engine state that produced it.
+      if (signals == 'Favorables') {
+        return 'Les signaux sont plutôt favorables, mais sans avantage '
+            'encore assez clair pour acheter.';
+      }
+      if (signals == 'Défavorables') {
+        return 'Les signaux sont plutôt défavorables, mais pas assez nets pour '
+            'justifier de vendre.';
+      }
       return 'Les signaux actuels ne donnent pas encore un avantage '
           'suffisamment clair pour prendre position.';
   }
 }
 
-/// "Mardi", "Jeudi" - the compact form the watchlist uses.
-String _weekdayLabel(DateTime? when) {
-  if (when == null) return '—';
-  const days = [
-    'Lundi',
-    'Mardi',
-    'Mercredi',
-    'Jeudi',
-    'Vendredi',
-    'Samedi',
-    'Dimanche',
-  ];
-  return days[(when.toLocal().weekday - 1).clamp(0, 6)];
-}
 
 
 String _assetName(String asset) => switch (asset) {
@@ -3673,14 +3995,6 @@ String _movementLabel(String value) => switch (value.toUpperCase()) {
       _ => _plainLabel(value).toUpperCase(),
     };
 
-/// Risk is its own four-step scale; it is not the event-importance scale.
-String _riskLevelLabel(String? value) => switch (value?.toUpperCase()) {
-      'EXTREME' => 'CRITIQUE',
-      'HIGH' => 'ÉLEVÉ',
-      'MODERATE' || 'MEDIUM' => 'MODÉRÉ',
-      'LOW' => 'FAIBLE',
-      _ => 'INDISPONIBLE',
-    };
 
 /// Amplitude of the move. It says how much, never which way.
 /// Impact is the direction a factor pushes, not how large the move may be.
@@ -3720,6 +4034,24 @@ Color _impactColor(String? value) => switch (value?.toUpperCase()) {
       _ => const Color(0xFF94A8C2),
     };
 
+
+/// One recognisable picture per subject, so a row can be scanned before it
+/// is read.
+const _emojiByKey = <String, String>{
+  'spot': '🛒',
+  'flows': '💰',
+  'technical': '📈',
+  'positioning': '⚖️',
+  'derivatives': '⚖️',
+  'funding': '💸',
+  'volatility': '🌪️',
+  'implied_volatility': '🌪️',
+  'rates': '🏦',
+  'energy': '🛢️',
+  'credit': '💳',
+  'regulation': '🏛️',
+  'whales': '🐋',
+};
 
 String _reasonEmoji(String title) {
   final value = title.toLowerCase();
