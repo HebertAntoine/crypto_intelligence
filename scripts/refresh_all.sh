@@ -26,8 +26,12 @@ cd "$ROOT" || exit 1
 LOCK="$ROOT/data/.refresh.lock"
 mkdir -p "$(dirname "$LOCK")"
 exec 9>"$LOCK"
-if ! flock -n 9; then
-  echo "$(date -u +%H:%M:%S) refresh already running, skipping this start" >&2
+# The full pass waits for the lock instead of giving up. The light pass fires
+# every 15 minutes, including at 07:00 and 19:00: a non-blocking lock made the
+# twice-daily run skip itself whenever the two coincided, with nothing to retry
+# it before the next half-day. A light pass takes minutes; 15 is ample.
+if ! flock -w "${REFRESH_LOCK_WAIT:-900}" 9; then
+  echo "$(date -u +%H:%M:%S) refresh lock still held after waiting, skipping this start" >&2
   exit 75   # EX_TEMPFAIL: not a failure, simply not this run's turn
 fi
 # The package lives under backend/, which is why the export script adds it to

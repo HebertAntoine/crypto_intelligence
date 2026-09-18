@@ -741,6 +741,7 @@ class FutureDecision:
     synthesis: Any = None
     conditions_to_buy: list[str] = field(default_factory=list)
     conditions_to_sell: list[str] = field(default_factory=list)
+    hierarchy: Any = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -758,6 +759,7 @@ class FutureDecision:
             "conditions_to_sell": self.conditions_to_sell,
             "consistency": self.consistency.to_dict() if self.consistency else None,
             "synthesis": self.synthesis.to_dict() if self.synthesis else None,
+            "hierarchy": self.hierarchy.to_dict() if self.hierarchy else None,
             "causal_graph": self.causal_graph,
             "signal_convergence": self.signal_convergence,
             "contradiction_resolution": self.contradiction_resolution,
@@ -1138,6 +1140,24 @@ class FutureDecisionEngine:
                     seen.add(family_key)
                     provenance.append(source)
 
+        # The hierarchy ranks what can move the market on this horizon and
+        # explains the action already taken above. It never changes the action.
+        from .decision_hierarchy import build_hierarchy
+
+        hierarchy = build_hierarchy(
+            asset=asset,
+            horizon=horizon,
+            action=action.value,
+            factors=[FactorAssessment.from_dict(item) for item in families.normalised_factors],
+            events=event_list,
+            now=now,
+            gate_active=gate.active,
+            gate_event_ids=list(gate.event_ids),
+            no_edge=any(item.code == "NO_MEASURABLE_EDGE" for item in consistency.issues),
+            conditions_to_buy=list(dict.fromkeys(to_buy)),
+            conditions_to_sell=list(dict.fromkeys(to_sell)),
+        )
+
         return FutureDecision(
             asset=asset,
             as_of=now,
@@ -1164,6 +1184,7 @@ class FutureDecisionEngine:
             synthesis=synthesis,
             conditions_to_buy=list(dict.fromkeys(to_buy)),
             conditions_to_sell=list(dict.fromkeys(to_sell)),
+            hierarchy=hierarchy,
         )
 
 
