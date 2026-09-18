@@ -31,6 +31,8 @@ class HealthReport:
     assets: dict[str, Any] = field(default_factory=dict)
     last_refresh: str | None = None
     last_refresh_status: str | None = None
+    sources: list[dict[str, Any]] = field(default_factory=list)
+    next_runs: dict[str, str | None] = field(default_factory=dict)
     alerts: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 
@@ -47,6 +49,8 @@ class HealthReport:
             "assets": self.assets,
             "last_refresh": self.last_refresh,
             "last_refresh_status": self.last_refresh_status,
+            "sources": self.sources,
+            "next_runs": self.next_runs,
             "alerts": self.alerts,
             "notes": self.notes,
             "checked_at": datetime.now(UTC).isoformat(),
@@ -103,6 +107,25 @@ def collect_health(now: datetime | None = None) -> HealthReport:
                 f"{asset}: familles indisponibles — {', '.join(missing) or 'non précisé'}"
             )
 
+    report.sources = _source_rows(reference)
+    for row in report.sources:
+        # A critical source whose data has aged out is the one case that turns
+        # a degraded pipeline into an unusable one.
+        if row["criticality"] == "CRITICAL" and row["freshness"] == "STALE":
+            _degrade(report, "DEGRADED")
+            report.alerts.append(f"CRITICAL_SOURCE_STALE: {row['source_id']}")
+        if row["health"] == "DOWN":
+            report.alerts.append(f"SOURCE_DOWN: {row['source_id']}")
+            _degrade(report, "DEGRADED")
+        if row["health"] == "DATA_STUCK":
+            report.alerts.append(f"DATA_STUCK: {row['source_id']}")
+            _degrade(report, "DEGRADED")
+        if row["health"] == "AUTH_ERROR":
+            report.alerts.append(f"AUTH_FAILURE: {row['source_id']}")
+            _degrade(report, "DEGRADED")
+
+    report.next_runs = _next_runs(reference)
+
     logs = sorted(LOG_DIR.glob("refresh_*.log")) if LOG_DIR.exists() else []
     if not logs:
         _degrade(report, "DEGRADED")
@@ -120,6 +143,114 @@ def collect_health(now: datetime | None = None) -> HealthReport:
             report.alerts.append("PIPELINE_FAILED: dernier passage en échec")
 
     return report
+
+
+def _source_rows(now: datetime) -> list[dict[str, Any]]:
+    """Each source with its own SLA beside its measured age."""
+
+    from .source_policy import (
+        POLICIES,
+        SourceState,
+        data_freshness,
+        health_of,
+    )
+    from .source_state_store import load as load_states
+
+    states = load_states()
+    observed = _observed_freshness()
+    rows: list[dict[str, Any]] = []
+    for policy in POLICIES.values():
+        state = states.get(policy.source_id)
+        age_min = None
+        if state is not None and state.last_success_at is not None:
+            age_min = round(
+                (now - state.last_success_at).total_seconds() / 60, 1
+            )
+        elif policy.metric_prefix:
+            # Collected by the full pass, which does not attribute per source.
+            # The stored observation is the measurement rather than a guess.
+            seen = observed.get(policy.metric_prefix)
+            if seen is not None:
+                age_min = round((now - seen).total_seconds() / 60, 1)
+                state = SourceState(
+                    source_id=policy.source_id, last_success_at=seen
+                )
+        rows.append({
+            "source_id": policy.source_id,
+            "family": policy.family,
+            "health": health_of(policy, state, now).value,
+            "freshness": data_freshness(policy, state, now),
+            "age_min": age_min,
+            "max_age_min": policy.max_age.total_seconds() / 60,
+            "refresh_interval_min": policy.refresh_interval.total_seconds() / 60,
+            "criticality": policy.criticality.value,
+            "enabled": policy.enabled,
+            "note": policy.note,
+        })
+    return rows
+
+
+def _observed_freshness() -> dict[str, datetime]:
+    """Newest stored observation per metric prefix, read once."""
+
+    try:
+        import sqlite3
+
+        database = PROJECT_ROOT / "data" / "crypto_intel.db"
+        if not database.exists():
+            return {}
+        con = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+        rows = con.execute(
+            "SELECT metric, MAX(timestamp) FROM observations GROUP BY metric"
+        ).fetchall()
+        con.close()
+    except Exception:
+        return {}
+
+    newest: dict[str, datetime] = {}
+    for metric, stamp in rows:
+        if not stamp:
+            continue
+        try:
+            when = datetime.fromisoformat(str(stamp))
+        except ValueError:
+            continue
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=UTC)
+        for prefix in {"etf.", "stablecoin", "macro.", "macro.hy_spread", "whale"}:
+            if str(metric).startswith(prefix):
+                current = newest.get(prefix)
+                if current is None or when > current:
+                    newest[prefix] = when
+    return newest
+
+
+def _next_runs(now: datetime) -> dict[str, str | None]:
+    """Computed from the timers, never written as a fixed string.
+
+    A report that says "next run 07:00" at nine in the morning is worse than
+    saying nothing: it reads as reassurance while being false.
+    """
+
+    import subprocess
+
+    result: dict[str, str | None] = {"full": None, "light": None}
+    try:
+        output = subprocess.run(
+            ["systemctl", "--user", "list-timers", "crypto-intel-*",
+             "--no-pager", "--output=json"],
+            capture_output=True, text=True, timeout=10, check=False,
+        )
+        if result and output.returncode == 0 and output.stdout.strip():
+            for row in json.loads(output.stdout):
+                unit = str(row.get("unit") or "")
+                when = row.get("next") or row.get("NEXT")
+                key = "light" if "light" in unit else "full"
+                result[key] = str(when) if when else None
+    except (OSError, ValueError, subprocess.SubprocessError):
+        # Health must still report when systemd cannot be queried.
+        pass
+    return result
 
 
 def render(report: HealthReport) -> str:
@@ -150,6 +281,15 @@ def render(report: HealthReport) -> str:
     if report.notes:
         lines += ["", "  Détail :"]
         lines += [f"    {note}" for note in report.notes]
+    if report.sources:
+        lines += ["", "  Sources :"]
+        for row in sorted(report.sources, key=lambda item: item["source_id"]):
+            age = f"{row['age_min']:.0f} min" if row["age_min"] is not None else "—"
+            lines.append(
+                f"    {row['source_id']:<21} {row['health']:<15} "
+                f"{row['freshness']:<12} âge {age:<9} "
+                f"max {int(row['max_age_min'])} min  [{row['criticality']}]"
+            )
     if report.alerts:
         lines += ["", "  Alertes :"]
         lines += [f"    ⚠️  {alert}" for alert in report.alerts]

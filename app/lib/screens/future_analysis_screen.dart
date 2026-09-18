@@ -2539,12 +2539,20 @@ class _MarketContextCard extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Text(
-                    timeframes!.alignmentLabel,
-                    style: const TextStyle(
-                      color: mobileBlue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                  // The alignment label varies with the data and grew past the
+                  // row when more timeframes started agreeing; it yields rather
+                  // than pushing the heading off screen.
+                  Flexible(
+                    child: Text(
+                      timeframes!.alignmentLabel,
+                      textAlign: TextAlign.end,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: mobileBlue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],

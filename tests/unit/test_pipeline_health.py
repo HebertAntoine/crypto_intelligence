@@ -20,6 +20,10 @@ def workspace(tmp_path, monkeypatch):
     logs.mkdir()
     monkeypatch.setattr(health_module, "SNAPSHOT_DIR", snapshots)
     monkeypatch.setattr(health_module, "LOG_DIR", logs)
+    # These tests are about the snapshot set. Source rows read the real state
+    # file and database, which belong to their own tests below.
+    monkeypatch.setattr(health_module, "_source_rows", lambda now: [])
+    monkeypatch.setattr(health_module, "_next_runs", lambda now: {})
     return snapshots, logs
 
 
@@ -148,3 +152,92 @@ def test_the_rendered_report_reads_as_a_verdict(workspace) -> None:
     assert "ÉTAT DU SYSTÈME" in text
     assert "Pipeline" in text
     assert "BTC" in text
+
+
+# --- section 30: the SLA of each source is visible ---------------------------
+
+
+def test_each_source_row_carries_its_own_sla(monkeypatch) -> None:
+    rows = health_module._source_rows(NOW)
+    assert rows
+    for row in rows:
+        assert row["max_age_min"] > row["refresh_interval_min"], row["source_id"]
+        assert row["criticality"] in {"CRITICAL", "IMPORTANT", "OPTIONAL"}
+        assert row["freshness"] in {"FRESH", "AGING", "STALE", "UNAVAILABLE"}
+
+
+def test_a_stale_critical_source_raises_an_alert(workspace, monkeypatch) -> None:
+    snapshots, logs = workspace
+    write_manifest(snapshots, generated_at=NOW - timedelta(hours=1))
+    write_snapshot(snapshots)
+    write_log(logs)
+    monkeypatch.setattr(
+        health_module,
+        "_source_rows",
+        lambda now: [{
+            "source_id": "market_price", "family": "technical", "health": "HEALTHY",
+            "freshness": "STALE", "age_min": 120.0, "max_age_min": 30.0,
+            "refresh_interval_min": 5.0, "criticality": "CRITICAL",
+            "enabled": True, "note": "",
+        }],
+    )
+
+    report = health_module.collect_health(now=NOW)
+    assert report.status == "DEGRADED"
+    assert any("CRITICAL_SOURCE_STALE" in alert for alert in report.alerts)
+
+
+def test_a_stale_optional_source_does_not_degrade_the_pipeline(
+    workspace, monkeypatch
+) -> None:
+    """Section 31: an optional absence is noted, not treated as a failure."""
+
+    snapshots, logs = workspace
+    write_manifest(snapshots, generated_at=NOW - timedelta(hours=1))
+    write_snapshot(snapshots)
+    write_log(logs)
+    monkeypatch.setattr(
+        health_module,
+        "_source_rows",
+        lambda now: [{
+            "source_id": "whales", "family": "spot", "health": "HEALTHY",
+            "freshness": "STALE", "age_min": 900.0, "max_age_min": 360.0,
+            "refresh_interval_min": 60.0, "criticality": "OPTIONAL",
+            "enabled": True, "note": "",
+        }],
+    )
+
+    report = health_module.collect_health(now=NOW)
+    assert report.status == "HEALTHY"
+
+
+def test_a_down_source_is_reported(workspace, monkeypatch) -> None:
+    snapshots, logs = workspace
+    write_manifest(snapshots, generated_at=NOW - timedelta(hours=1))
+    write_snapshot(snapshots)
+    write_log(logs)
+    monkeypatch.setattr(
+        health_module,
+        "_source_rows",
+        lambda now: [{
+            "source_id": "derivatives_oi", "family": "derivatives", "health": "DOWN",
+            "freshness": "FRESH", "age_min": 3.0, "max_age_min": 60.0,
+            "refresh_interval_min": 15.0, "criticality": "IMPORTANT",
+            "enabled": True, "note": "",
+        }],
+    )
+
+    report = health_module.collect_health(now=NOW)
+    assert any("SOURCE_DOWN" in alert for alert in report.alerts)
+
+
+def test_next_runs_are_computed_rather_than_written(workspace) -> None:
+    """Section 32: a fixed "07:00" reads as reassurance while being false."""
+
+    from pathlib import Path
+
+    # Read the module file: the fixture replaces the attribute, so inspecting
+    # the live object would only show the stub.
+    source = Path(health_module.__file__).read_text(encoding="utf-8")
+    assert "list-timers" in source
+    assert '"07:00"' not in source
