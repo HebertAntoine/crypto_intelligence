@@ -1,5 +1,5 @@
 {
-  "alignment": "TRANSITION",
+  "alignment": "CONFLICT",
   "asset": "BTC",
   "available_timeframes": [
     "1w",
@@ -9,11 +9,13 @@
     "15m"
   ],
   "caveat": "Timeframe alignment is descriptive. A conflict between timeframes is the normal state of a market, not an error, and alignment has not been shown to precede better returns.",
-  "conflicts": [],
+  "conflicts": [
+    "1w is bearish while 1h is bullish"
+  ],
   "dominant_direction": "MIXED",
   "missing_timeframes": [],
-  "narrative": "1w: bearish, mid range \u00b7 1d: bullish, upper third \u00b7 4h: range, lower third \u00b7 1h: range, mid range \u00b7 15m: transition, mid range. The higher timeframe holds a direction while a lower one consolidates - a pause inside a move rather than a disagreement.",
-  "run_id": "run_20260918T001656Z",
+  "narrative": "1w: bearish, mid range \u00b7 1d: bullish, upper third \u00b7 4h: range, mid range \u00b7 1h: bullish, above range \u00b7 15m: range. Timeframes disagree, which is ordinary: they describe different horizons and both readings can be correct at once. 1w is bearish while 1h is bullish.",
+  "run_id": "run_20260918T064437Z_light",
   "timeframes": [
     {
       "available": true,
@@ -24,7 +26,7 @@
       "range_bottom": 24850.5,
       "range_top": 125336.815,
       "reason_unavailable": "",
-      "relative_position": 0.5134,
+      "relative_position": 0.5242,
       "structure": "BEARISH_STRUCTURE",
       "timeframe": "1w"
     },
@@ -37,47 +39,47 @@
       "range_bottom": 62405.12,
       "range_top": 82164.435,
       "reason_unavailable": "",
-      "relative_position": 0.7102,
+      "relative_position": 0.7653,
       "structure": "BULLISH_STRUCTURE",
       "timeframe": "1d"
     },
     {
       "available": true,
-      "bars": 19897,
+      "bars": 19899,
       "direction": 0,
-      "invalidation": "Une cl\u00f4ture 4h sous 74810.13 casserait la zone basse du range et invaliderait cette lecture.",
-      "location": "LOWER_THIRD",
+      "invalidation": "Une cl\u00f4ture 4h hors de 74808.05-79890.00 invaliderait cette lecture du range.",
+      "location": "MID_RANGE",
       "range_bottom": 75016.395,
       "range_top": 79570.0,
       "reason_unavailable": "",
-      "relative_position": 0.3118,
+      "relative_position": 0.5511,
       "structure": "RANGE_STRUCTURE",
       "timeframe": "4h"
     },
     {
       "available": true,
-      "bars": 79525,
-      "direction": 0,
-      "invalidation": "Une cl\u00f4ture 1h hors de 75937.13-77374.26 invaliderait cette lecture du range.",
-      "location": "MID_RANGE",
-      "range_bottom": 76023.29,
-      "range_top": 77276.863292,
+      "bars": 79531,
+      "direction": 1,
+      "invalidation": "Une cl\u00f4ture 1h de retour sous 77179.47 signifierait que la cassure a \u00e9chou\u00e9 et que le prix a r\u00e9int\u00e9gr\u00e9 le range.",
+      "location": "ABOVE_RANGE",
+      "range_bottom": 76379.99,
+      "range_top": 77277.962534,
       "reason_unavailable": "",
-      "relative_position": 0.3321,
-      "structure": "RANGE_STRUCTURE",
+      "relative_position": 1.2762,
+      "structure": "BULLISH_STRUCTURE",
       "timeframe": "1h"
     },
     {
       "available": true,
-      "bars": 71874,
+      "bars": 71902,
       "direction": 0,
-      "invalidation": "Une cl\u00f4ture 15m hors de 76149.96-76792.07 invaliderait cette lecture du range.",
-      "location": "MID_RANGE",
-      "range_bottom": 76183.0,
-      "range_top": 76759.023333,
+      "invalidation": "",
+      "location": "NO_VALID_RANGE",
+      "range_bottom": null,
+      "range_top": null,
       "reason_unavailable": "",
-      "relative_position": 0.4394,
-      "structure": "TRANSITION",
+      "relative_position": null,
+      "structure": "RANGE_STRUCTURE",
       "timeframe": "15m"
     }
   ]
