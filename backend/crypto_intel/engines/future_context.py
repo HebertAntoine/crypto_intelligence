@@ -329,6 +329,7 @@ def build_five_family_snapshot(
     funding_state: str | None = None,
     macro_observations: list[Any] | None = None,
     horizon: DecisionHorizon = DecisionHorizon.D7,
+    whales: Any = None,
 ) -> FiveFamilySnapshot:
     """Create all five slots from one immutable analysis context."""
     events = usable_events_for_horizon(events, horizon, as_of)
@@ -770,6 +771,13 @@ def build_five_family_snapshot(
             provider="Deribit" if dvol_available else "",
         ).to_dict()
     )
+
+    # Published even when nothing is measured: an absent whale reading has to
+    # be visible as absent, not silently missing from the list.
+    if whales is not None:
+        from .factor_semantics import whale_flow_assessment
+
+        normalised.append(whale_flow_assessment(whales).to_dict())
 
     snapshot = FiveFamilySnapshot.from_partial(partial)
     snapshot.normalised_factors = normalised

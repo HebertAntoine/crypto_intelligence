@@ -1156,3 +1156,53 @@ def pressure_component_assessment(component: Any) -> FactorAssessment:
             _COMPONENT_MECHANISM.get(key, "Cette composante pèse sur l'équilibre du marché."),
         ],
     )
+
+
+_WHALE_DIRECTION = {
+    "BULLISH": FactorDirection.POSITIVE,
+    "BEARISH": FactorDirection.NEGATIVE,
+    "NEUTRAL": FactorDirection.NEUTRAL,
+}
+
+
+def whale_flow_assessment(analysis: Any) -> FactorAssessment:
+    """Publish the whale analyser's own reading, or say plainly it has none.
+
+    The direction is the analyser's, never re-derived here: net withdrawals
+    from exchanges are not a purchase and net deposits are not a sale, and the
+    analyser already refuses that shortcut when the evidence is thin
+    (INCONCLUSIVE maps to UNKNOWN, not to NEUTRAL).
+    """
+
+    available = bool(getattr(analysis, "available", False))
+    freshness = str(getattr(getattr(analysis, "freshness", None), "value", "UNAVAILABLE"))
+    providers = ", ".join(getattr(analysis, "configured_providers", None) or [])
+    if not available:
+        reason = getattr(analysis, "unavailable_reason", None)
+        assessment = whale_assessment(available=False, provider=providers)
+        if reason:
+            from dataclasses import replace
+
+            assessment = replace(assessment, missing_requirements=[str(reason)])
+        return assessment
+
+    behaviour = str(getattr(analysis, "behaviour", "") or "neutral")
+    direction_raw = str(getattr(getattr(analysis, "direction", None), "value", "INCONCLUSIVE"))
+    rationale = {
+        "from_exchange": "Retraits nets des plateformes : les gros portefeuilles "
+        "sortent leurs jetons.",
+        "to_exchange": "Dépôts nets vers les plateformes : des ventes sont "
+        "possibles, sans être confirmées.",
+    }.get(behaviour, "Flux des gros portefeuilles équilibrés.")
+    return FactorAssessment(
+        key="whales",
+        label="Mouvements de baleines",
+        direction=_WHALE_DIRECTION.get(direction_raw, FactorDirection.UNKNOWN),
+        impact=FactorImpact.MODERATE,
+        confidence=float(getattr(analysis, "confidence", 0.0) or 0.0),
+        availability=availability_for(freshness, measured=True),
+        freshness=freshness,
+        provider=providers,
+        rationale=rationale,
+        causal_chain=[str(item) for item in getattr(analysis, "findings", [])[:3]],
+    )

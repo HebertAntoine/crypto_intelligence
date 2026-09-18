@@ -1065,6 +1065,7 @@ def build_context(
             leverage_state=str(getattr(leverage_state, "state", "") or ""),
             macro_observations=evidence.get("macro_observations"),
             horizon=horizon,
+            whales=evidence.get("whales"),
         )
     future_families = future_families_by_horizon[DecisionHorizon.D7.value]
     quality_engine = DecisionDataQualityEngine()

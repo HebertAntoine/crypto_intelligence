@@ -491,8 +491,13 @@ void main() {
         'transfert',
         'baleine',
       ]) {
+        // Scoped to the open sheet: the home behind it now carries its own
+        // whale indicator, which is where that wording belongs.
         expect(
-          find.textContaining(whaleWord),
+          find.descendant(
+            of: find.byType(BottomSheet),
+            matching: find.textContaining(whaleWord),
+          ),
           findsNothing,
           reason: 'whale wording "$whaleWord" reached an ETF factor',
         );

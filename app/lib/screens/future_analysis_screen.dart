@@ -219,7 +219,8 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   ),
                   const SizedBox(height: 8),
                   for (var index = 0; index < reasons.length; index++) ...[
-                    if (index > 0) const SizedBox(height: 8),
+                    if (index > 0)
+                      const Divider(height: 1, color: Color(0xFF1D3853)),
                     _ReasonRow(index: index, reason: reasons[index]),
                   ],
                   const SizedBox(height: 16),
@@ -313,6 +314,8 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   onHorizonTap: _chooseHorizon,
                   onTap: () => _showDecisionDetails(decision, bundle),
                 ),
+                const SizedBox(height: 14),
+                _WhaleIndicator(decision: decision),
                 const SizedBox(height: 14),
                 _WhyDecisionCard(
                   decision: decision,
@@ -1068,9 +1071,92 @@ class _WhyDecisionCard extends StatelessWidget {
             )
           else
             for (var index = 0; index < reasons.length; index++) ...[
-              if (index > 0) const SizedBox(height: 8),
+              if (index > 0) const Divider(height: 1, color: Color(0xFF1D3853)),
               _ReasonRow(index: index, reason: reasons[index]),
             ],
+        ],
+      ),
+    );
+  }
+}
+
+/// What the largest holders are doing, or a plain statement that it is not
+/// measured. An absent reading is shown as absent - never as neutral, and
+/// never filled in from something else.
+class _WhaleIndicator extends StatelessWidget {
+  final FutureDecisionRead decision;
+
+  const _WhaleIndicator({required this.decision});
+
+  @override
+  Widget build(BuildContext context) {
+    final reading =
+        decision.factors.where((item) => item.key == 'whales').firstOrNull;
+    if (reading == null) return const SizedBox.shrink();
+    final unavailable = reading.availability == 'UNAVAILABLE' ||
+        reading.availability == 'NOT_APPLICABLE';
+    final (label, tone) = unavailable
+        ? ('INDISPONIBLE', mobileMuted)
+        : switch (reading.direction) {
+            'POSITIVE' => ('FAVORABLE', _badgeGood),
+            'NEGATIVE' => ('DÉFAVORABLE', _badgeBad),
+            'NEUTRAL' => ('NEUTRE', mobileMuted),
+            _ => ('À SURVEILLER', _badgeWatch),
+          };
+    final line = unavailable
+        ? 'Suivi non connecté : aucune source de données baleines n’est '
+            'configurée.'
+        : _plainHomeSentence(reading.rationale);
+    return GlassPanel(
+      key: const ValueKey('whale-indicator'),
+      borderColor: const Color(0xFF245E90),
+      child: Row(
+        children: [
+          const ColorEmoji(emoji: '🐋', size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Baleines',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  line,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: mobileMuted,
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 9),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+            decoration: BoxDecoration(
+              color: tone.withValues(alpha: .13),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: tone.withValues(alpha: .34)),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: tone,
+                fontSize: 8.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1119,28 +1205,19 @@ class _ReasonRow extends StatelessWidget {
       key: ValueKey('decision-reason-${index + 1}'),
       onTap: () => _showReasonDetail(context, reason),
       borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 10, 6, 10),
-        decoration: BoxDecoration(
-          color: const Color(0x590C1C30),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF1F3A57)),
-        ),
+      // No frame of its own: a card inside a card doubled every border on the
+      // page. Only the badge keeps an outline, so it is what the eye finds.
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // The rank used to be a numbered disc. Numbering implied an order
             // the reader had to hold in mind; the subject of the reason is what
             // they actually scan for, so the icon carries the slot instead.
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: badge.tone.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ColorEmoji(emoji: reason.emoji, size: 21),
+            SizedBox(
+              width: 32,
+              child: Center(child: ColorEmoji(emoji: reason.emoji, size: 22)),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -2138,7 +2215,7 @@ class _UpcomingEventsCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           for (var index = 0; index < displayed.length; index++) ...[
-            if (index > 0) const SizedBox(height: 8),
+            if (index > 0) const Divider(height: 1, color: Color(0xFF1D3853)),
             _UpcomingEventRow(event: displayed[index]),
           ],
         ],
@@ -2168,7 +2245,8 @@ Future<void> _showAllEvents(
               const _SectionTitle(emoji: '🗓️', text: 'Prochaines échéances'),
               const SizedBox(height: 12),
               for (var index = 0; index < events.length; index++) ...[
-                if (index > 0) const SizedBox(height: 8),
+                if (index > 0)
+                  const Divider(height: 1, color: Color(0xFF1D3853)),
                 _UpcomingEventRow(event: events[index]),
               ],
             ],
@@ -2190,23 +2268,12 @@ class _UpcomingEventRow extends StatelessWidget {
       key: ValueKey('event-${event.id}'),
       onTap: () => _showEventDetails(context, event),
       borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 8, 6, 8),
-        decoration: BoxDecoration(
-          color: const Color(0x590C1C30),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF1F3A57)),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11),
         child: Row(
           children: [
-            Container(
-              width: 50,
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF14243A),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF304C69)),
-              ),
+            SizedBox(
+              width: 44,
               child: Column(
                 children: [
                   Text(
@@ -3648,7 +3715,11 @@ List<_DecisionFactor> _homeReasons(
   _FutureBundle bundle, {
   int? limit = 3,
 }) {
-  final factors = _decisionFactors(decision, bundle);
+  // Whales have their own indicator on the home; listing them here as well
+  // would say the same thing twice.
+  final factors = _decisionFactors(decision, bundle)
+      .where((item) => item.key != 'whales')
+      .toList();
   final signals = _signalsLabel(factors);
   final gated = decision.decision == 'WAIT' &&
       decision.noMeasurableEdge &&
