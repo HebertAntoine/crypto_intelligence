@@ -60,6 +60,13 @@ def _decision(snapshot: Any, horizon: DecisionHorizon) -> Any:
         analysis_uncertainty=_uncertainty(snapshot),
         data_quality=horizon_quality.get(horizon.value),
         institutional_flow=getattr(snapshot, "institutional_flow", None),
+        # The edge assessment the analysis already produced. A directional call
+        # has to survive it, so that a cleared event gate cannot become a BUY
+        # on its own.
+        edge_state=str(
+            getattr(getattr(snapshot, "edge", None), "state", "") or ""
+        )
+        or None,
     )
 
 

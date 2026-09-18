@@ -13,6 +13,7 @@ returned untouched.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 
 from ..future_events.models import DirectionalBias, EventImportance, ExpectedMovement
@@ -81,22 +82,32 @@ def _directional_families(families: FiveFamilySnapshot) -> list[FamilyAssessment
     ]
 
 
-def blocking_events(events: list[FutureEvent], *, priced: bool) -> list[FutureEvent]:
-    """Tier-1 events whose outcome is material and still unknown.
+def blocking_events(
+    events: list[FutureEvent], *, priced: bool, as_of: datetime | None = None
+) -> list[FutureEvent]:
+    """Tier-1 events whose outcome is material and *still ahead*.
 
     Direction is deliberately not inferred from the event type, so an event
     with a neutral directional effect and no market pricing is *unknown*, not
-    neutral. That is exactly the case a BUY must not be carried across.
+    neutral. That is exactly the case a directional call must not be carried
+    across.
+
+    An event that has already been published is a different thing entirely: its
+    outcome exists, whether or not this system has read it yet. Leaving the
+    scheduled time out of the test kept a past FOMC blocking decisions for as
+    long as it stayed in the horizon window.
     """
 
     if priced:
         return []
+    reference = as_of or datetime.now(UTC)
     return [
         event
         for event in events
         if event.importance in _MATERIAL_IMPORTANCE
         and event.magnitude_effect in _MATERIAL_MOVEMENT
         and event.directional_effect is DirectionalBias.NEUTRAL
+        and (event.scheduled_at is None or event.scheduled_at > reference)
     ]
 
 
@@ -115,6 +126,8 @@ class DecisionConsistencyValidator:
         expectations_available: bool,
         asymmetry_is_favorable: bool = False,
         institutional_flow: Any = None,
+        edge_state: str | None = None,
+        as_of: datetime | None = None,
     ) -> ConsistencyReport:
         issues: list[ConsistencyIssue] = []
         result = action
@@ -125,7 +138,9 @@ class DecisionConsistencyValidator:
         # combination: a material event, an outcome nobody has priced, a large
         # potential move, and a confidence that is only middling. BUY stays
         # available if the scenarios demonstrate a robust favourable asymmetry.
-        blocking = blocking_events(horizon_events, priced=expectations_available)
+        blocking = blocking_events(
+            horizon_events, priced=expectations_available, as_of=as_of
+        )
         risky = event_risk_level in {EventRiskLevel.HIGH, EventRiskLevel.EXTREME}
         if (
             result in {DecisionAction.BUY, DecisionAction.SELL}
@@ -148,7 +163,32 @@ class DecisionConsistencyValidator:
             )
             result = DecisionAction.WAIT
 
-        # 2. A directional call whose own families mostly point the other way.
+        # 2. Removing a blocker is not evidence of an opportunity.
+        #
+        # The decision rule reads: gate active -> WAIT, otherwise bullish ->
+        # BUY. So the moment a scheduled event passes and its gate clears, a
+        # BUY appears without anything positive having been demonstrated. The
+        # project already measures whether an edge exists; a directional call
+        # now has to survive that measurement.
+        if result in {DecisionAction.BUY, DecisionAction.SELL} and edge_state in {
+            "NO_MEASURABLE_EDGE",
+            "INSUFFICIENT_DATA",
+        }:
+            issues.append(
+                ConsistencyIssue(
+                    code="NO_MEASURABLE_EDGE",
+                    detail=(
+                        "Aucun avantage statistique n'est démontré sur cet "
+                        "actif: l'analyse reste en attente plutôt que de "
+                        "prendre position. La disparition d'un blocage ne "
+                        "constitue pas une preuve d'opportunité."
+                    ),
+                    downgraded_to=DecisionAction.WAIT.value,
+                )
+            )
+            result = DecisionAction.WAIT
+
+        # 3. A directional call whose own families mostly point the other way.
         directional = _directional_families(families)
         if result in {DecisionAction.BUY, DecisionAction.SELL} and directional:
             supporting = sum(
@@ -169,7 +209,7 @@ class DecisionConsistencyValidator:
                 )
                 result = DecisionAction.WAIT
 
-        # 3. An institutional-flow direction that its own recent window denies.
+        # 4. An institutional-flow direction that its own recent window denies.
         flow = families.assessments.get(FutureFamily.FLOWS_WHALES)
         if flow is not None and flow.available and institutional_flow is not None:
             recent = getattr(institutional_flow, "rolling_5_sessions_musd", None)
@@ -193,7 +233,7 @@ class DecisionConsistencyValidator:
                     )
                     result = DecisionAction.WAIT
 
-        # 4. An amplitude-only family must never carry a direction.
+        # 5. An amplitude-only family must never carry a direction.
         technical = families.assessments.get(FutureFamily.TECHNICAL_VOLATILITY)
         if (
             technical is not None
@@ -211,7 +251,7 @@ class DecisionConsistencyValidator:
                 )
             )
 
-        # 5. Nothing left to stand on.
+        # 6. Nothing left to stand on.
         if result is DecisionAction.WAIT and not directional and not horizon_events:
             issues.append(
                 ConsistencyIssue(

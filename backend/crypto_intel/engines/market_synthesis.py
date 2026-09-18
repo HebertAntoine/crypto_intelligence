@@ -185,6 +185,7 @@ class MarketSynthesisEngine:
         *,
         next_events: list[dict[str, Any]] | None = None,
         upcoming_events: list[dict[str, Any]] | None = None,
+        degraded_reasons: list[str] | None = None,
         asset: str = "",
         now: datetime | None = None,
     ) -> MarketSynthesis:
@@ -262,10 +263,16 @@ class MarketSynthesisEngine:
                 }
             ]
 
+        summary = self._summary(state, negative, positive, next_events or [])
+        if degraded_reasons:
+            # The engine downgraded the call. Saying so is the difference
+            # between "wait" and "wait, and here is what stopped us".
+            summary = f"{summary} {degraded_reasons[0]}"
+
         return MarketSynthesis(
             state=state,
             headline=self._headline(state, negative, positive),
-            summary=self._summary(state, negative, positive, next_events or []),
+            summary=summary,
             why_now=why_now,
             counter_evidence=counter,
             confirmation_conditions=confirmation,

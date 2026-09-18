@@ -799,6 +799,7 @@ class FutureDecisionEngine:
         analysis_uncertainty: float | None = None,
         data_quality: Any = None,
         institutional_flow: Any = None,
+        edge_state: str | None = None,
     ) -> FutureDecision:
         now = as_of or datetime.now(UTC)
         now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
@@ -894,7 +895,9 @@ class FutureDecisionEngine:
         )
         from .decision_consistency import blocking_events
 
-        unpriced = blocking_events(event_list, priced=expectations_available)
+        unpriced = blocking_events(
+            event_list, priced=expectations_available, as_of=now
+        )
         if unpriced:
             confidence *= 0.75
 
@@ -934,6 +937,8 @@ class FutureDecisionEngine:
             families=families,
             expectations_available=expectations_available,
             institutional_flow=institutional_flow,
+            edge_state=edge_state,
+            as_of=now,
         )
         action = consistency.action
 
@@ -963,6 +968,11 @@ class FutureDecisionEngine:
             ],
             asset=asset.value,
             now=now,
+            degraded_reasons=[
+                item.detail
+                for item in consistency.issues
+                if item.downgraded_to
+            ],
         )
 
         ordered = sorted(

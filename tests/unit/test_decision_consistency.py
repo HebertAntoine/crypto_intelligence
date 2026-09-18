@@ -94,6 +94,9 @@ def validate(action: DecisionAction, **kwargs):
         "horizon_events": [event()],
         "families": five(),
         "expectations_available": False,
+        # Without this the blocking-event test runs against the real clock, so
+        # the fixture silently expires once NOW falls into the past.
+        "as_of": NOW,
     }
     base.update(kwargs)
     return DecisionConsistencyValidator().validate(action, **base)
@@ -109,9 +112,13 @@ def test_event_risk_gate_high_impact_unknown_direction() -> None:
 
 
 def test_high_importance_is_material_even_without_critical() -> None:
-    blocking = blocking_events([event(importance=EventImportance.HIGH)], priced=False)
+    blocking = blocking_events(
+        [event(importance=EventImportance.HIGH)], priced=False, as_of=NOW
+    )
     assert blocking
-    assert not blocking_events([event(importance=EventImportance.MEDIUM)], priced=False)
+    assert not blocking_events(
+        [event(importance=EventImportance.MEDIUM)], priced=False, as_of=NOW
+    )
 
 
 def test_buy_requires_robust_asymmetry_before_tier1_event() -> None:
