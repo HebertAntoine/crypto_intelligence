@@ -61,32 +61,29 @@ Future<void> _openDecisionDetails(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('confidence is a level, never an uncalibrated percentage',
+  testWidgets('the hero card carries three readings and no engine vocabulary',
       (tester) async {
     await _openBtc(tester);
 
-    expect(find.text('Confiance'), findsOneWidget);
-    final levels = find.byWidgetPredicate((widget) =>
-        widget is Text &&
-        const {'FAIBLE', 'MOYENNE', 'ÉLEVÉE'}.contains(widget.data));
-    expect(levels, findsWidgets);
-
-    // The old card rendered "56 %" right under the Confiance label.
+    // Risk, horizon and the balance of signals. Amplitude and confidence were
+    // the other two: both describe how the model feels rather than what the
+    // market is doing, so they belong to the full analysis.
+    expect(find.text('Risque'), findsOneWidget);
+    expect(find.text('Horizon'), findsOneWidget);
+    expect(find.text('Signaux'), findsOneWidget);
+    expect(find.text('Confiance'), findsNothing);
+    expect(find.text('Mouvement att.'), findsNothing);
     expect(find.textContaining(RegExp(r'^\d+ %$')), findsNothing);
   });
 
-  testWidgets('risk and expected movement use their own French scales',
-      (tester) async {
+  testWidgets('the balance of signals is a plain French word', (tester) async {
     await _openBtc(tester);
 
-    expect(find.text('Risque'), findsOneWidget);
-    // The field behind it is expected_movement, an amplitude rather than a
-    // volatility reading, so the label names the amplitude.
-    expect(find.text('Mouvement att.'), findsOneWidget);
     expect(
       find.byWidgetPredicate((widget) =>
           widget is Text &&
-          const {'FAIBLE', 'MODÉRÉ', 'ÉLEVÉ', 'CRITIQUE'}
+          const {'Favorables', 'Défavorables', 'Mitigés', 'Neutres',
+                  'Insuffisants'}
               .contains(widget.data)),
       findsWidgets,
     );
@@ -213,11 +210,17 @@ void main() {
     await _openBtc(tester);
 
     expect(find.text('CONTEXTE ACTUEL'), findsNothing);
+    // The home no longer carries a button to the full analysis: it is not one
+    // of the three questions the page answers. It is reached through the
+    // reasons sheet instead, one tap down.
+    expect(find.byKey(const ValueKey('see-full-details')), findsNothing);
 
+    await tester.tap(find.byKey(const ValueKey('why-see-all')));
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('see-full-details')),
-      450,
-      scrollable: find.byType(Scrollable).first,
+      300,
+      scrollable: find.byType(Scrollable).last,
     );
     await tester.tap(find.byKey(const ValueKey('see-full-details')));
     await tester.pumpAndSettle();
@@ -388,27 +391,32 @@ void main() {
     }
   });
 
-  testWidgets('decision reasons exclude counter signals', (tester) async {
+  testWidgets('both sides argue in one list, each with its own badge',
+      (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final decision =
-        await _shippedClient().futureDecision('BTC', horizon: '7d');
-    if (decision.decision != 'WAIT') return;
+    // The two sides used to sit under separate headings, which cost a whole
+    // section for something the badge already says. Seeing them interleaved
+    // is what makes a mixed verdict legible.
+    expect(find.text('CE QUI RESTE FAVORABLE'), findsNothing);
 
-    // Under "Pourquoi attendre ?" nothing may argue for buying. A healthy
-    // bullish reading is a counter-signal, not a reason to wait.
-    for (var index = 1; index <= 5; index++) {
+    const allowed = {'FAVORABLE', 'DÉFAVORABLE', 'À SURVEILLER', 'NEUTRE'};
+    for (var index = 1; index <= 4; index++) {
       final row = find.byKey(ValueKey('decision-reason-$index'));
       if (row.evaluate().isEmpty) break;
-      final badges = tester
+      final labels = tester
           .widgetList<Text>(
               find.descendant(of: row, matching: find.byType(Text)))
           .map((widget) => widget.data)
+          .whereType<String>()
           .toList();
-      if (badges.contains('CE QUI RESTE FAVORABLE')) break;
+      expect(
+        labels.where(allowed.contains).length,
+        1,
+        reason: 'la raison $index doit porter exactement un badge',
+      );
     }
-    expect(find.text('CE QUI RESTE FAVORABLE'), findsWidgets);
   });
 
   testWidgets('counter signals are displayed separately', (tester) async {
@@ -422,18 +430,29 @@ void main() {
     expect(heading, findsOneWidget);
   });
 
-  testWidgets('change conditions are split by direction', (tester) async {
+  testWidgets('one actionable path, named after the verdict', (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
+    // Only one path is ever actionable: the one away from the verdict on
+    // screen. Two lists side by side asked the reader to compare them on a
+    // phone; the other direction is why the verdict already is what it is.
     await tester.scrollUntilVisible(
-      find.text('Pour passer à acheter'),
+      find.byKey(const ValueKey('what-would-change')),
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Pour passer à acheter'), findsOneWidget);
-    expect(find.text('Pour passer à vendre'), findsOneWidget);
+    expect(find.text('Pour passer à vendre'), findsNothing);
     expect(find.text('Ce qui pourrait changer la décision'), findsNothing);
+
+    final decision =
+        await _shippedClient().futureDecision('BTC', horizon: '7d');
+    expect(
+      find.text(decision.decision == 'BUY'
+          ? 'CE QUI INVALIDERAIT L’ACHAT'
+          : 'CE QUI FERAIT PASSER À ACHETER'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a direction-free reading never shows a direction',

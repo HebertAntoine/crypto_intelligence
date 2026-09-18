@@ -80,11 +80,13 @@ void main() {
         find.text('EST-CE LE BON MOMENT POUR ACHETER ?'),
         findsOneWidget,
       );
-      // The main page now answers the decision in one screen: the market
-      // context, the scenarios and the five families moved behind "Voir les
-      // détails" instead of being stacked under the decision.
+      // The main page answers the decision in one screen: the market context,
+      // the scenarios and the five families sit behind the reasons sheet
+      // instead of being stacked under the decision. The home does not even
+      // carry the button to them - reaching the full analysis is not one of
+      // the three questions the front page exists to answer.
       expect(find.text('CONTEXTE ACTUEL'), findsNothing);
-      expect(find.byKey(const ValueKey('see-full-details')), findsOneWidget);
+      expect(find.byKey(const ValueKey('see-full-details')), findsNothing);
 
       // At most five reasons, so the "why" stays readable at a glance. The
       // exact count follows the data: duplicated families are not repeated.
@@ -92,13 +94,18 @@ void main() {
       expect(find.byKey(const ValueKey('decision-reason-4')), findsOneWidget);
       expect(find.byKey(const ValueKey('decision-reason-6')), findsNothing);
 
-      // Confidence is a coarse level, never an uncalibrated percentage. The
-      // 24 h price change keeps its own percent sign, which is a measurement.
-      expect(find.text('Confiance'), findsOneWidget);
+      // The hero carries risk, horizon and the balance of signals. Confidence
+      // and expected amplitude are engine vocabulary and moved down with the
+      // rest of the analysis. The 24 h price change keeps its own percent
+      // sign, which is a measurement rather than a model output.
+      expect(find.text('Confiance'), findsNothing);
+      expect(find.text('Signaux'), findsOneWidget);
       expect(
         find.byWidgetPredicate((widget) =>
             widget is Text &&
-            const {'FAIBLE', 'MOYENNE', 'ÉLEVÉE'}.contains(widget.data)),
+            const {'Favorables', 'Défavorables', 'Mitigés', 'Neutres',
+                    'Insuffisants'}
+                .contains(widget.data)),
         findsWidgets,
       );
 
@@ -160,27 +167,23 @@ void main() {
       await tester.tap(find.byTooltip('Fermer'));
       await tester.pumpAndSettle();
 
-      // The expand button exists only when the calendar holds more than the
-      // three shown. As events are published the list shrinks, so the walk is
-      // conditional rather than assuming a full calendar.
-      if (timeline.events.length > 3) {
+      // The watchlist no longer expands in place: it shows the three dates
+      // that matter and the rest of the calendar lives in its own page. Which
+      // three those are depends on the data, so the walk looks for whichever
+      // row rendered rather than assuming the first event of the timeline.
+      expect(find.byKey(const ValueKey('events-see-all')), findsNothing);
+      final shownEvent = timeline.events
+          .map((event) => find.byKey(ValueKey('event-${event.id}')))
+          .where((finder) => finder.evaluate().isNotEmpty)
+          .firstOrNull;
+      if (shownEvent != null) {
         await tester.scrollUntilVisible(
-          find.byKey(const ValueKey('events-see-all')),
-          450,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.tap(find.byKey(const ValueKey('events-see-all')));
-        await tester.pumpAndSettle();
-        expect(find.text('Réduire'), findsOneWidget);
-      }
-      if (timeline.events.isNotEmpty) {
-        await tester.scrollUntilVisible(
-          find.byKey(ValueKey('event-${timeline.events.first.id}')),
+          shownEvent,
           450,
           scrollable: find.byType(Scrollable).first,
         );
         await tester.tap(
-          find.byKey(ValueKey('event-${timeline.events.first.id}')),
+          shownEvent,
         );
         await tester.pumpAndSettle();
         expect(find.text('Détail de l’événement'), findsOneWidget);
@@ -189,11 +192,19 @@ void main() {
       }
 
       // Scenarios, market context and the five families left the main page.
-      // They are still in the app, one tap behind "Voir les détails".
+      // They are still in the app, now two taps down: the reasons sheet leads
+      // to them, so the home itself carries no route to the heavy analysis.
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('see-full-details')),
+        find.byKey(const ValueKey('why-see-all')),
         450,
         scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const ValueKey('why-see-all')));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('see-full-details')),
+        300,
+        scrollable: find.byType(Scrollable).last,
       );
       await tester.tap(find.byKey(const ValueKey('see-full-details')));
       await tester.pumpAndSettle();
