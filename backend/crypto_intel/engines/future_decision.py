@@ -962,10 +962,11 @@ class FutureDecisionEngine:
                     key=lambda item: (-item.importance.rank, item.scheduled_at),
                 )[:3]
             ],
-            upcoming_events=[
-                item.to_dict()
-                for item in EventRelevanceEngine().top(event_list, asset, limit=3, now=now)
-            ],
+            upcoming_events=_with_attention(
+                EventRelevanceEngine().top(event_list, asset, limit=3, now=now),
+                event_list,
+                now,
+            ),
             asset=asset.value,
             now=now,
             degraded_reasons=[
@@ -1216,3 +1217,33 @@ def horizon_decisions(
             ),
         }
     return output
+
+
+def _with_attention(
+    ranked: list[Any], events: list[Any], now: datetime
+) -> list[dict[str, Any]]:
+    """Attach the radar's attention reading to the events the home will show.
+
+    Relevance decides what is worth showing; attention says how closely to
+    watch it, and direction stays absent until a result exists to compare.
+    Keeping both on the same payload is what lets the page state one without
+    implying the other.
+    """
+
+    from .market_radar import radar_fields
+
+    # The relevance engine keys on ``event.id``; the store also carries a
+    # canonical id. Register both so a lookup can never miss silently.
+    by_id: dict[str, Any] = {}
+    for event in events:
+        for key in (getattr(event, "id", None), getattr(event, "canonical_event_id", None)):
+            if key:
+                by_id.setdefault(str(key), event)
+    payloads: list[dict[str, Any]] = []
+    for item in ranked:
+        payload = item.to_dict()
+        source_event = by_id.get(str(payload.get("event_id", "")))
+        if source_event is not None:
+            payload.update(radar_fields(source_event, now=now))
+        payloads.append(payload)
+    return payloads

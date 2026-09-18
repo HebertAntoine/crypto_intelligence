@@ -326,6 +326,12 @@ class FutureCatalystRead {
   final String? scheduledAt;
   final String source;
 
+  /// How closely to watch this. Never a direction.
+  final String attention;
+
+  /// Stays UNKNOWN until a result exists to compare with what was expected.
+  final String direction;
+
   const FutureCatalystRead({
     required this.title,
     required this.assetImpact,
@@ -333,7 +339,12 @@ class FutureCatalystRead {
     required this.importance,
     required this.source,
     this.scheduledAt,
+    this.attention = 'LOW',
+    this.direction = 'UNKNOWN',
   });
+
+  /// True while nothing can honestly be said about which way this points.
+  bool get directionIsUnknown => direction == 'UNKNOWN' || direction.isEmpty;
 
   factory FutureCatalystRead.fromJson(Map<String, dynamic> json) =>
       FutureCatalystRead(
@@ -343,6 +354,8 @@ class FutureCatalystRead {
         importance: json['importance']?.toString() ?? 'MEDIUM',
         scheduledAt: json['scheduled_at']?.toString(),
         source: json['source']?.toString() ?? '',
+        attention: json['attention']?.toString() ?? 'LOW',
+        direction: json['direction']?.toString() ?? 'UNKNOWN',
       );
 }
 

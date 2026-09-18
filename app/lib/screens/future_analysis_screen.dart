@@ -1852,21 +1852,70 @@ class _CatalystListCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'IMPACT ${_impactLabelFr(item.assetImpact)}',
-                      style: const TextStyle(
-                        color: Color(0xFFFFB34F),
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          _attentionLabelFr(item.attention),
+                          style: TextStyle(
+                            color: _attentionColor(item.attention),
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'IMPACT ${_impactLabelFr(item.assetImpact)}',
+                          style: const TextStyle(
+                            color: Color(0xFFFFB34F),
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                ),
+              ),
+            // Said once for the whole list rather than repeated on each row:
+            // watching something closely is not the same as knowing which way
+            // it will go, and the card must never let one imply the other.
+            if (events.any((item) => item.directionIsUnknown))
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Text(
+                  'Ces échéances indiquent quoi surveiller, pas dans quel sens '
+                  'le marché ira: le sens ne se connaît qu\'une fois le '
+                  'résultat comparé aux attentes.',
+                  style: TextStyle(
+                    color: mobileMuted,
+                    fontSize: 10,
+                    height: 1.35,
+                  ),
                 ),
               ),
           ],
         ),
       );
 }
+
+/// Attention is a watching instruction, never a direction.
+String _attentionLabelFr(String attention) => switch (attention) {
+      'CRITICAL' => 'ATTENTION CRITIQUE',
+      'HIGH' => 'ATTENTION ÉLEVÉE',
+      'MODERATE' => 'ATTENTION MODÉRÉE',
+      'LOW' => 'ATTENTION FAIBLE',
+      _ => 'ATTENTION MINIME',
+    };
+
+/// Deliberately a single hue at varying strength: green and red would read as
+/// a direction, which is exactly what this scale does not carry.
+Color _attentionColor(String attention) => switch (attention) {
+      'CRITICAL' => const Color(0xFF8FD0FF),
+      'HIGH' => const Color(0xFF6FA8DA),
+      'MODERATE' => const Color(0xFF5B8AB5),
+      _ => mobileMuted,
+    };
 
 /// Main and alternative scenario, always published together.
 class _ScenarioPairCard extends StatelessWidget {

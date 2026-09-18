@@ -24,6 +24,7 @@ def workspace(tmp_path, monkeypatch):
     # file and database, which belong to their own tests below.
     monkeypatch.setattr(health_module, "_source_rows", lambda now: [])
     monkeypatch.setattr(health_module, "_next_runs", lambda now: {})
+    monkeypatch.setattr(health_module, "_radar_summary", lambda now: {})
     return snapshots, logs
 
 
@@ -241,3 +242,32 @@ def test_next_runs_are_computed_rather_than_written(workspace) -> None:
     source = Path(health_module.__file__).read_text(encoding="utf-8")
     assert "list-timers" in source
     assert '"07:00"' not in source
+
+
+def test_an_event_passed_without_a_result_degrades_the_report(workspace, monkeypatch):
+    """A recent row with missing information is the failure freshness misses."""
+
+    snapshots, logs = workspace
+    write_manifest(snapshots, generated_at=NOW - timedelta(hours=2))
+    write_snapshot(snapshots)
+    write_log(logs)
+    monkeypatch.setattr(
+        health_module, "_radar_summary", lambda now: {"tracked": 3, "awaiting_result": 2}
+    )
+
+    report = health_module.collect_health(now=NOW)
+
+    assert report.status == "DEGRADED"
+    assert any("EVENT_RESULT_MISSING" in alert for alert in report.alerts)
+
+
+def test_a_radar_with_every_result_read_does_not_degrade(workspace, monkeypatch):
+    snapshots, logs = workspace
+    write_manifest(snapshots, generated_at=NOW - timedelta(hours=2))
+    write_snapshot(snapshots)
+    write_log(logs)
+    monkeypatch.setattr(
+        health_module, "_radar_summary", lambda now: {"tracked": 3, "awaiting_result": 0}
+    )
+
+    assert health_module.collect_health(now=NOW).status == "HEALTHY"
