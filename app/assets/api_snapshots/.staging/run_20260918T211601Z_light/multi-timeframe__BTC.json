@@ -1,0 +1,87 @@
+{
+  "alignment": "CONFLICT",
+  "asset": "BTC",
+  "available_timeframes": [
+    "1w",
+    "1d",
+    "4h",
+    "1h",
+    "15m"
+  ],
+  "caveat": "Timeframe alignment is descriptive. A conflict between timeframes is the normal state of a market, not an error, and alignment has not been shown to precede better returns.",
+  "conflicts": [
+    "1w is bearish while 1h is bullish",
+    "1w is bearish while 15m is bullish"
+  ],
+  "dominant_direction": "MIXED",
+  "missing_timeframes": [],
+  "narrative": "1w: bearish, mid range \u00b7 1d: bullish, near range top \u00b7 4h: range, above range \u00b7 1h: bullish \u00b7 15m: bullish. Timeframes disagree, which is ordinary: they describe different horizons and both readings can be correct at once. 1w is bearish while 1h is bullish; 1w is bearish while 15m is bullish.",
+  "run_id": "run_20260918T211601Z_light",
+  "timeframes": [
+    {
+      "available": true,
+      "bars": 475,
+      "direction": -1,
+      "invalidation": "Une cl\u00f4ture 1w hors de 23271.53-126915.79 invaliderait cette lecture du range.",
+      "location": "MID_RANGE",
+      "range_bottom": 24850.5,
+      "range_top": 125336.815,
+      "reason_unavailable": "",
+      "relative_position": 0.5604,
+      "structure": "BEARISH_STRUCTURE",
+      "timeframe": "1w"
+    },
+    {
+      "available": true,
+      "bars": 3320,
+      "direction": 1,
+      "invalidation": "Une cl\u00f4ture 1d au-dessus de 82850.00 casserait la zone haute du range et invaliderait cette lecture.",
+      "location": "NEAR_RANGE_TOP",
+      "range_bottom": 62405.12,
+      "range_top": 82164.435,
+      "reason_unavailable": "",
+      "relative_position": 0.9516,
+      "structure": "BULLISH_STRUCTURE",
+      "timeframe": "1d"
+    },
+    {
+      "available": true,
+      "bars": 19903,
+      "direction": 0,
+      "invalidation": "Une cl\u00f4ture 4h de retour sous 79250.00 signifierait que la cassure a \u00e9chou\u00e9 et que le prix a r\u00e9int\u00e9gr\u00e9 le range.",
+      "location": "ABOVE_RANGE",
+      "range_bottom": 75016.395,
+      "range_top": 79570.0,
+      "reason_unavailable": "",
+      "relative_position": 1.3509,
+      "structure": "RANGE_STRUCTURE",
+      "timeframe": "4h"
+    },
+    {
+      "available": true,
+      "bars": 79546,
+      "direction": 1,
+      "invalidation": "",
+      "location": "NO_VALID_RANGE",
+      "range_bottom": null,
+      "range_top": null,
+      "reason_unavailable": "",
+      "relative_position": null,
+      "structure": "BULLISH_STRUCTURE",
+      "timeframe": "1h"
+    },
+    {
+      "available": true,
+      "bars": 71958,
+      "direction": 1,
+      "invalidation": "",
+      "location": "NO_VALID_RANGE",
+      "range_bottom": null,
+      "range_top": null,
+      "reason_unavailable": "",
+      "relative_position": null,
+      "structure": "BULLISH_STRUCTURE",
+      "timeframe": "15m"
+    }
+  ]
+}

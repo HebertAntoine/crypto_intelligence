@@ -285,7 +285,11 @@ def event_proximity(
     if event.scheduled_at is not None:
         distance = event.scheduled_at - now
         if distance < timedelta(0):
-            origin = event.source_published_at or event.detected_at
+            # A calendar release is published at its scheduled time. Decaying
+            # from the detection date instead - often weeks earlier, when the
+            # calendar was read - made a decision published four hours ago
+            # weigh nothing the moment it landed.
+            origin = event.source_published_at or event.scheduled_at
             distance = now - origin
         if distance < timedelta(0) or distance > window:
             return 0.0
@@ -472,6 +476,7 @@ class EventRiskGate:
         analysis_uncertainty: float | None = None,
         favorable_in_all_material_scenarios: bool = False,
         horizon: DecisionHorizon | None = None,
+        asset: Asset | None = None,
     ) -> EventRiskGateResult:
         now = as_of or datetime.now(UTC)
         now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
@@ -480,6 +485,13 @@ class EventRiskGate:
         for event in events:
             if event.importance is not EventImportance.CRITICAL:
                 continue
+            if asset is not None:
+                from .event_relevance import AssetImpact, asset_impact
+
+                # A critical event elsewhere is not a risk to this asset: a
+                # Solana network incident must not hold a Bitcoin decision.
+                if asset_impact(event, asset) in {AssetImpact.NONE, AssetImpact.LOW}:
+                    continue
             status = event.runtime_status(now)
             released_at = event.source_published_at or event.detected_at
             active_unscheduled = event.scheduled_at is None and (
@@ -811,6 +823,7 @@ class FutureDecisionEngine:
             as_of=now,
             analysis_uncertainty=analysis_uncertainty,
             horizon=horizon,
+            asset=asset,
         )
         event_risk = EventRiskEngine().assess(
             event_list,

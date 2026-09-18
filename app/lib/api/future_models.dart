@@ -490,6 +490,10 @@ class FutureDecisionRead {
   /// verdict at WAIT - and the home has to be able to say so.
   final bool noMeasurableEdge;
 
+  /// What can move the market on this horizon, ranked by the engine, and the
+  /// explanation built from that ranking. Null on an older payload.
+  final FutureHierarchyRead? hierarchy;
+
   const FutureDecisionRead({
     required this.asset,
     required this.analysisId,
@@ -514,6 +518,7 @@ class FutureDecisionRead {
     this.conditionsToSell = const [],
     this.synthesis,
     this.noMeasurableEdge = false,
+    this.hierarchy,
   });
 
   /// Build the sentence only from an AVAILABLE, priced expectation.
@@ -562,6 +567,10 @@ class FutureDecisionRead {
       conditionsToSell: (json['conditions_to_sell'] as List? ?? const [])
           .map((value) => value.toString())
           .toList(),
+      hierarchy: json['hierarchy'] is Map
+          ? FutureHierarchyRead.fromJson(
+              Map<String, dynamic>.from(json['hierarchy'] as Map))
+          : null,
       noMeasurableEdge: ((json['consistency'] as Map?)?['issues'] as List? ??
               const [])
           .whereType<Map>()
@@ -612,4 +621,137 @@ class FutureTimelineRead {
                 FutureEventRead.fromJson(Map<String, dynamic>.from(value)))
             .toList(),
       );
+}
+
+
+/// One ranked driver: an event or a measured factor.
+class FutureDriverRead {
+  final String id;
+  final String kind;
+  final String key;
+  final int tier;
+  final String emoji;
+  final String title;
+  final String direction;
+  final String attention;
+  final String role;
+  final double countedWeight;
+  final String status;
+
+  /// RED | ORANGE | YELLOW | GREEN | WHITE
+  final String tone;
+  final String what;
+  final String why;
+  final String? expectation;
+  final String invalidation;
+  final String? scheduledAt;
+  final String source;
+  final String? sourceUrl;
+
+  const FutureDriverRead({
+    required this.id,
+    required this.kind,
+    required this.key,
+    required this.tier,
+    required this.emoji,
+    required this.title,
+    required this.direction,
+    required this.attention,
+    required this.role,
+    required this.countedWeight,
+    required this.status,
+    required this.tone,
+    required this.what,
+    required this.why,
+    required this.invalidation,
+    this.expectation,
+    this.scheduledAt,
+    this.source = '',
+    this.sourceUrl,
+  });
+
+  factory FutureDriverRead.fromJson(Map<String, dynamic> json) =>
+      FutureDriverRead(
+        id: json['id']?.toString() ?? '',
+        kind: json['kind']?.toString() ?? 'FACTOR',
+        key: json['key']?.toString() ?? '',
+        tier: (_number(json['tier']) ?? 4).round(),
+        emoji: json['emoji']?.toString() ?? '📊',
+        title: json['title']?.toString() ?? '',
+        direction: json['direction']?.toString() ?? 'UNKNOWN',
+        attention: json['attention']?.toString() ?? 'NONE',
+        role: json['role']?.toString() ?? 'CONTEXT',
+        countedWeight: (_number(json['counted_weight']) ?? 0).toDouble(),
+        status: json['status']?.toString() ?? '',
+        tone: json['tone']?.toString() ?? 'WHITE',
+        what: json['what']?.toString() ?? '',
+        why: json['why']?.toString() ?? '',
+        expectation: json['expectation']?.toString(),
+        invalidation: json['invalidation']?.toString() ?? '',
+        scheduledAt: json['scheduled_at']?.toString(),
+        source: json['source']?.toString() ?? '',
+        sourceUrl: json['source_url']?.toString(),
+      );
+}
+
+class FutureHierarchyRead {
+  final String reading;
+  final double coverage;
+  final String headline;
+  final List<String> explanation;
+  final FutureDriverRead? primary;
+  final List<FutureDriverRead> homeFactors;
+  final List<FutureDriverRead> upcomingRisks;
+  final List<String> dataGaps;
+  final String whaleStatus;
+  final String whaleTone;
+  final String whaleDetail;
+  final bool whalePrincipal;
+
+  const FutureHierarchyRead({
+    required this.reading,
+    required this.coverage,
+    required this.headline,
+    required this.explanation,
+    required this.homeFactors,
+    required this.upcomingRisks,
+    required this.dataGaps,
+    required this.whaleStatus,
+    required this.whaleTone,
+    required this.whaleDetail,
+    required this.whalePrincipal,
+    this.primary,
+  });
+
+  factory FutureHierarchyRead.fromJson(Map<String, dynamic> json) {
+    List<FutureDriverRead> drivers(Object? raw) => (raw as List? ?? const [])
+        .whereType<Map>()
+        .map((item) => FutureDriverRead.fromJson(Map<String, dynamic>.from(item)))
+        .toList();
+    final whale = json['whale_status'] is Map
+        ? Map<String, dynamic>.from(json['whale_status'] as Map)
+        : const <String, dynamic>{};
+    return FutureHierarchyRead(
+      reading: json['reading']?.toString() ?? 'UNKNOWN',
+      coverage: (_number(json['coverage']) ?? 0).toDouble(),
+      headline: json['headline']?.toString() ?? '',
+      explanation: (json['explanation'] as List? ?? const [])
+          .map((line) => line.toString())
+          .where((line) => line.trim().isNotEmpty)
+          .toList(),
+      primary: json['primary_driver'] is Map
+          ? FutureDriverRead.fromJson(
+              Map<String, dynamic>.from(json['primary_driver'] as Map))
+          : null,
+      homeFactors: drivers(json['home_factors']),
+      upcomingRisks: drivers(json['upcoming_invalidation_risks']),
+      dataGaps: (json['data_gaps'] as List? ?? const [])
+          .map((item) => item.toString())
+          .toList(),
+      whaleStatus: whale['status']?.toString() ?? 'Donnée indisponible',
+      whaleTone: whale['tone']?.toString() ?? 'WHITE',
+      whaleDetail: whale['detail']?.toString() ?? '',
+      whalePrincipal: whale['principal'] == true,
+    );
+  }
 }

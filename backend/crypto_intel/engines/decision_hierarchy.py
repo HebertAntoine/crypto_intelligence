@@ -107,18 +107,19 @@ TIER_WEIGHT: dict[Tier, float] = {
     Tier.CONFIRMATION: 0.35,
 }
 
-#: How much each tier matters on each horizon. Leverage and chart structure
-#: speak about the next hours and days; over a month, the regime and the flows
-#: carry the move.
+#: How much a *measured state* of each tier matters on each horizon. A level of
+#: US yields is a slow regime: it weighs on a month and far less on the next
+#: session, where flows and leverage decide. Events are not scaled here - their
+#: proximity to the horizon already says how much they matter to it.
 HORIZON_TIER_WEIGHT: dict[DecisionHorizon, dict[Tier, float]] = {
     DecisionHorizon.H24: {
-        Tier.REGIME: 1.0,
+        Tier.REGIME: 0.55,
         Tier.FLOWS: 0.9,
         Tier.FRAGILITY: 1.0,
         Tier.CONFIRMATION: 1.0,
     },
     DecisionHorizon.D7: {
-        Tier.REGIME: 1.0,
+        Tier.REGIME: 0.8,
         Tier.FLOWS: 1.0,
         Tier.FRAGILITY: 0.85,
         Tier.CONFIRMATION: 0.8,
@@ -165,6 +166,20 @@ FACTOR_CLUSTER: dict[str, str] = {
     "technical": "price_structure",
     "volatility": "price_structure",
 }
+
+#: Upstream first. ETF creations drive spot demand, not the reverse; a Fed
+#: decision moves yields, which move credit. When members are of comparable
+#: weight the cause leads and the rest confirm it.
+CAUSAL_ORDER: dict[str, tuple[str, ...]] = {
+    "capital_demand": ("flows", "stablecoins", "spot"),
+    "monetary_conditions": ("rates", "credit"),
+    "leverage": ("funding", "positioning", "derivatives"),
+    "price_structure": ("technical", "volatility"),
+}
+
+#: A cause leads its cluster as long as it carries at least this share of the
+#: strongest member's weight.
+CAUSE_LEAD_SHARE = 0.5
 
 #: A follower in a cluster still says something - that the cause is visible
 #: elsewhere - but it is not a second cause.
@@ -522,6 +537,8 @@ class Driver:
     invalidation: str = ""
     status: str = ""
     tone: str = "WHITE"  # RED | ORANGE | YELLOW | GREEN | WHITE
+    source: str = ""
+    source_url: str | None = None
 
     @property
     def effective(self) -> float:
@@ -574,6 +591,8 @@ class Driver:
             "invalidation": self.invalidation,
             "status": self.status,
             "tone": self.tone,
+            "source": self.source,
+            "source_url": self.source_url,
         }
 
 
@@ -706,9 +725,11 @@ def driver_from_event(
         confidence=max(event.confidence, 0.5),
         freshness=1.0,
         asset_relevance=relevance,
-        horizon_weight=HORIZON_TIER_WEIGHT[horizon][tier],
+        horizon_weight=1.0,
         released=released,
         scheduled_at=event.scheduled_at,
+        source=event.source,
+        source_url=event.source_url,
     )
     # Absolute-time attention comes from the radar: a decision tomorrow is
     # CRITICAL whatever the horizon; horizon-relative weight is for ranking.
@@ -807,6 +828,8 @@ def driver_from_factor(
         freshness=_FRESHNESS.get(factor.availability, 0.0),
         asset_relevance=relevance,
         horizon_weight=HORIZON_TIER_WEIGHT[horizon][tier],
+        source=factor.provider,
+        source_url=factor.source_url,
     )
     driver.attention = _attention_from(driver.effective)
     sentence = _FACTOR_SENTENCE.get((factor.key, direction))
@@ -911,9 +934,23 @@ def _dedupe(drivers: list[Driver]) -> None:
     clusters: dict[str, list[Driver]] = {}
     for item in drivers:
         clusters.setdefault(item.cluster, []).append(item)
-    for members in clusters.values():
+    for name, members in clusters.items():
         members.sort(key=lambda item: item.effective, reverse=True)
+        strongest = members[0].effective
         leader = members[0]
+        # A released decision is the cause of the rates move it triggered.
+        events = [m for m in members if m.kind == "EVENT"]
+        order = CAUSAL_ORDER.get(name, ())
+        upstream = events + sorted(
+            (m for m in members if m.key in order),
+            key=lambda item: order.index(item.key),
+        )
+        for candidate in upstream:
+            if candidate.effective >= CAUSE_LEAD_SHARE * strongest:
+                leader = candidate
+                break
+        members.remove(leader)
+        members.insert(0, leader)
         leader.counted_weight = leader.effective
         for follower in members[1:]:
             follower.counted_weight = follower.effective * FOLLOWER_WEIGHT
@@ -959,14 +996,21 @@ def _assign_roles(drivers: list[Driver], reading: Reading) -> None:
         if item.counted_weight < PRINCIPAL_FLOOR:
             item.role = DriverRole.CONTEXT
             continue
-        if not primary_set:
+        calm_fragility = item.tier is Tier.FRAGILITY and not (
+            item.direction is DriverDirection.NEGATIVE
+            or item.magnitude >= _FACTOR_MAGNITUDE[FactorImpact.HIGH]
+        )
+        if not primary_set and not calm_fragility:
             item.role = DriverRole.PRIMARY
             primary_set = True
             continue
         if item.upcoming:
             item.role = DriverRole.INVALIDATION_RISK
         elif item.tier is Tier.FRAGILITY:
-            item.role = DriverRole.AMPLIFIER
+            # Leverage that is not stretched is reassurance, not a factor the
+            # page should lead with; it stays in context.
+            fragile = item.direction is DriverDirection.NEGATIVE or item.magnitude >= _FACTOR_MAGNITUDE[FactorImpact.HIGH]
+            item.role = DriverRole.AMPLIFIER if fragile else DriverRole.CONTEXT
         elif lean is not None and item.direction not in {lean, DriverDirection.UNKNOWN, DriverDirection.NEUTRAL}:
             item.role = DriverRole.CONTRADICTION
         elif reading is Reading.MIXED and item.direction in {
@@ -987,9 +1031,11 @@ def _assign_roles(drivers: list[Driver], reading: Reading) -> None:
             item.role = DriverRole.SECONDARY
 
 
-def _status(item: Driver, now: datetime) -> tuple[str, str]:
+def _status(item: Driver, now: datetime, *, gating: bool = False) -> tuple[str, str]:
     """The one line under a factor on the home, and its colour."""
 
+    if gating and item.upcoming:
+        return f"Bloque l'entrée • {_delay(item.scheduled_at, now)}", "RED"
     if item.upcoming:
         tone = {
             AttentionLevel.CRITICAL: "RED",
@@ -1004,6 +1050,10 @@ def _status(item: Driver, now: datetime) -> tuple[str, str]:
         return f"{level} • {_delay(item.scheduled_at, now)}", tone
     if item.freshness <= 0:
         return "Donnée indisponible", "WHITE"
+    if item.key == "implied_volatility":
+        if item.magnitude >= _FACTOR_MAGNITUDE[FactorImpact.HIGH]:
+            return "Les options anticipent un mouvement ample", "ORANGE"
+        return "Mouvement ordinaire anticipé", "YELLOW"
     if item.tier is Tier.FRAGILITY:
         if item.direction is DriverDirection.NEGATIVE or item.attention in {
             AttentionLevel.HIGH,
@@ -1039,7 +1089,26 @@ def _status(item: Driver, now: datetime) -> tuple[str, str]:
     return "Direction inconnue", "WHITE"
 
 
-def _line(item: Driver, now: datetime, *, opposing: bool = False) -> str:
+#: How a consequence is named inside its cause's sentence.
+_CONFIRMED_BY: dict[tuple[str, DriverDirection], str] = {
+    ("spot", DriverDirection.POSITIVE): "les achats au comptant",
+    ("spot", DriverDirection.NEGATIVE): "les ventes au comptant",
+    ("flows", DriverDirection.POSITIVE): "les entrées sur les ETF",
+    ("flows", DriverDirection.NEGATIVE): "les sorties des ETF",
+    ("credit", DriverDirection.NEGATIVE): "l'élargissement des écarts de crédit",
+    ("rates", DriverDirection.NEGATIVE): "des taux américains élevés",
+    ("funding", DriverDirection.NEGATIVE): "un coût du levier élevé",
+    ("positioning", DriverDirection.NEGATIVE): "un levier chargé",
+}
+
+
+def _line(
+    item: Driver,
+    now: datetime,
+    *,
+    opposing: bool = False,
+    confirmed_by: list[Driver] | None = None,
+) -> str:
     if item.kind == "EVENT":
         if item.upcoming:
             text = (
@@ -1056,6 +1125,13 @@ def _line(item: Driver, now: datetime, *, opposing: bool = False) -> str:
         return ""
     if opposing:
         cause = f"En sens inverse, {cause[0].lower()}{cause[1:]}"
+    echoes = [
+        _CONFIRMED_BY[(other.key, other.direction)]
+        for other in confirmed_by or []
+        if other.direction is item.direction and (other.key, other.direction) in _CONFIRMED_BY
+    ]
+    if echoes:
+        cause = f"{cause}, ce que confirment {' et '.join(echoes)}"
     if not consequence:
         return f"{item.emoji} {cause}."
     return f"{item.emoji} {cause} : {consequence[0].lower()}{consequence[1:]}."
@@ -1158,11 +1234,13 @@ def build_hierarchy(
     _dedupe(drivers)
 
     by_key = {factor.key: factor for factor in factors}
+    # A reading the engine never published is as missing as one it published
+    # as unavailable.
     gaps = [
         _FACTOR_NAME.get(key, key)
         for key in _EXPECTED_KEYS
-        if key in by_key
-        and by_key[key].availability in {Availability.UNAVAILABLE, Availability.NOT_APPLICABLE}
+        if key not in by_key
+        or by_key[key].availability in {Availability.UNAVAILABLE, Availability.NOT_APPLICABLE}
     ]
     measured_weight = sum(
         TIER_WEIGHT[FACTOR_TIER[key]]
@@ -1176,8 +1254,13 @@ def build_hierarchy(
     if coverage < 0.4:
         reading = Reading.INSUFFICIENT_DATA
     _assign_roles(drivers, reading)
+    gating_ids = set(gate_event_ids or []) if gate_active else set()
     for item in drivers:
-        item.status, item.tone = _status(item, now)
+        item.status, item.tone = _status(item, now, gating=item.id in gating_ids)
+        # The event holding the decision is never demoted to background.
+        if item.id in gating_ids and item.role is DriverRole.CONTEXT:
+            item.role = DriverRole.INVALIDATION_RISK
+            item.counted_weight = max(item.counted_weight, PRINCIPAL_FLOOR)
 
     drivers.sort(key=lambda item: item.counted_weight, reverse=True)
     hierarchy = DecisionHierarchy(
@@ -1216,9 +1299,12 @@ def build_hierarchy(
 
     # --- Explanation: cause -> consequence -> decision, four or five lines. ---
     lines: list[str] = []
+    def followers(leader: Driver) -> list[Driver]:
+        return [d for d in drivers if d.counted_in == leader.id]
+
     primary = hierarchy.primary
     if primary is not None:
-        lines.append(_line(primary, now))
+        lines.append(_line(primary, now, confirmed_by=followers(primary)))
     for role in (
         DriverRole.SECONDARY,
         DriverRole.CONTRADICTION,
@@ -1229,7 +1315,12 @@ def build_hierarchy(
         for item in hierarchy.by_role(role):
             if len(lines) >= 3:
                 break
-            text = _line(item, now, opposing=role is DriverRole.CONTRADICTION)
+            text = _line(
+                item,
+                now,
+                opposing=role is DriverRole.CONTRADICTION,
+                confirmed_by=followers(item),
+            )
             if not text or text in lines:
                 continue
             lines.append(text)

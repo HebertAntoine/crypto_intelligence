@@ -10,7 +10,6 @@ import 'package:crypto_intelligence_app/api/client.dart';
 import 'package:crypto_intelligence_app/live_prices/live_price_service.dart';
 import 'package:crypto_intelligence_app/main.dart';
 import 'package:crypto_intelligence_app/theme/app_theme.dart';
-import 'package:crypto_intelligence_app/widgets/color_emoji.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -89,43 +88,32 @@ void main() {
     );
   });
 
-  testWidgets('tapping a reason opens the full explanation', (tester) async {
+  testWidgets('tapping a main factor answers the four questions', (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final firstReason = find.byKey(const ValueKey('decision-reason-1'));
-    await tester.ensureVisible(firstReason);
+    final row = find.byKey(const ValueKey('main-factor-1'));
+    await tester.ensureVisible(row);
     await tester.pumpAndSettle();
-    await tester.tap(firstReason);
+    await tester.tap(row);
     await tester.pumpAndSettle();
 
-    // Factor 1 is the ranked top catalyst, so it uses the event vocabulary.
-    // Which factor ranks first depends on the market; the sheet must carry the
-    // event vocabulary when the factor is a catalyst, whatever its position.
-    final isCatalyst = find.text('CE QUI VA SE PASSER').evaluate().isNotEmpty;
-    final isSignal = find.text('CE QU’ON OBSERVE').evaluate().isNotEmpty;
-    expect(isCatalyst || isSignal, isTrue);
-    if (!isCatalyst) return;
-    expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsOneWidget);
-    expect(find.text('POURQUOI CELA COMPTE'), findsOneWidget);
-    expect(find.byType(ColorEmoji), findsWidgets);
-    // A dated event never carries the observation vocabulary.
-    expect(find.text('CE QU’ON OBSERVE'), findsNothing);
-
-    // The sheet scrolls on its own list; dragging it is steadier than hunting
-    // for the right Scrollable now that the page carries more of them.
-    await tester.drag(find.byType(ListView).last, const Offset(0, -400));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('SI LE RÉSULTAT EST PLUS POSITIF QUE PRÉVU'),
-      findsOneWidget,
+    // Section 4: what is happening, why it matters, what the market expects,
+    // what would invalidate it - the same four for an event or a reading.
+    for (final question in const [
+      'QUE SE PASSE-T-IL ?',
+      'POURQUOI EST-CE IMPORTANT ?',
+      'CE QUE LE MARCHÉ ATTEND',
+      'CE QUI INVALIDERAIT LA LECTURE',
+    ]) {
+      expect(find.textContaining(question), findsOneWidget, reason: question);
+    }
+    await tester.drag(
+      find.byKey(const ValueKey('driver-detail')),
+      const Offset(0, -500),
     );
-    expect(find.text('CE QUE ÇA PEUT ENGENDRER'), findsOneWidget);
-
-    // Sources sit at the bottom so they inform without crowding the summary.
-    await tester.drag(find.byType(ListView).last, const Offset(0, -600));
     await tester.pumpAndSettle();
-    expect(find.text('🔗 SOURCE'), findsOneWidget);
+    expect(find.textContaining('SOURCE'), findsOneWidget);
   });
 
   testWidgets('an absent market expectation is stated, never implied',
@@ -133,41 +121,40 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final firstReason = find.byKey(const ValueKey('decision-reason-1'));
-    await tester.ensureVisible(firstReason);
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final top = decision.hierarchy!.homeFactors.first;
+    final row = find.byKey(const ValueKey('main-factor-1'));
+    await tester.ensureVisible(row);
     await tester.pumpAndSettle();
-    await tester.tap(firstReason);
+    await tester.tap(row);
     await tester.pumpAndSettle();
 
-    // The section belongs to a catalyst. Whether one is in window depends on
-    // the calendar, so the contract is checked only when one is present: an
-    // unavailable expectation is stated, never left blank or invented.
-    if (find.text('CE QUI VA SE PASSER').evaluate().isEmpty) return;
-    expect(
-      find.text('Anticipations actuellement indisponibles.'),
-      findsOneWidget,
-    );
+    if (top.expectation == null) {
+      expect(
+        find.text('Aucune attente de marché mesurée pour ce facteur.'),
+        findsOneWidget,
+      );
+    } else {
+      expect(find.text(top.expectation!), findsOneWidget);
+    }
   });
 
-  testWidgets('the impact badge shows a direction, not an amplitude',
+  testWidgets('each main factor carries one colour status, never an amplitude',
       (tester) async {
     await _openBtc(tester);
 
-    // CRITIQUE/ÉLEVÉ/MODÉRÉ answered "how big" under a label promising "which
-    // way". The badge now carries the directional reading of the family.
-    expect(
-      find.byWidgetPredicate((widget) =>
-          widget is Text &&
-          const {
-            'FAVORABLE',
-            'DÉFAVORABLE',
-            'À SURVEILLER',
-            'NEUTRE',
-          }.contains(widget.data)),
-      findsWidgets,
-    );
-    for (final amplitude in const ['CRITIQUE', 'IMPACT ÉLEVÉ', 'IMPACT MODÉRÉ']) {
-      expect(find.text(amplitude), findsNothing);
+    for (var index = 1; index <= 4; index++) {
+      final row = find.byKey(ValueKey('main-factor-$index'));
+      if (row.evaluate().isEmpty) break;
+      final status = tester
+          .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
+          .map((widget) => widget.data ?? '')
+          .where((text) => text.startsWith(RegExp('[🔴🟠🟡🟢⚪]')))
+          .toList();
+      expect(status.length, 1, reason: 'facteur $index');
+      for (final amplitude in const ['CRITIQUE', 'IMPACT ÉLEVÉ', 'EXTREME']) {
+        expect(status.first.contains(amplitude), isFalse);
+      }
     }
   });
 
@@ -211,19 +198,12 @@ void main() {
     await _openBtc(tester);
 
     expect(find.text('CONTEXTE ACTUEL'), findsNothing);
-    // The home no longer carries a button to the full analysis: it is not one
-    // of the three questions the page answers. It is reached through the
-    // reasons sheet instead, one tap down.
-    expect(find.byKey(const ValueKey('see-full-details')), findsNothing);
-
-    await tester.tap(find.byKey(const ValueKey('why-see-all')));
-    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('see-full-details')),
+      find.byKey(const ValueKey('see-full-analysis')),
       300,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.byKey(const ValueKey('see-full-details')));
+    await tester.tap(find.byKey(const ValueKey('see-full-analysis')));
     await tester.pumpAndSettle();
 
     expect(find.text('Détails complets'), findsOneWidget);
@@ -253,25 +233,18 @@ void main() {
     expect(find.textContaining('sourcé(s) dans la fenêtre'), findsNothing);
   });
 
-  testWidgets('a measured signal uses observation wording, not event wording',
+  testWidgets('a measured reading is never worded as an upcoming event',
       (tester) async {
     await _openBtc(tester);
+    final decision = await _shippedClient().futureDecision('BTC');
 
-    // On the 24 h horizon the FOMC is out of window and a bill auction cannot
-    // be explained, so every factor is a measured signal.
-    await tester.tap(find.byKey(const ValueKey('horizon-24h')).last);
-    await tester.pumpAndSettle();
-    final row = find.byKey(const ValueKey('decision-reason-1'));
-    await tester.ensureVisible(row);
-    await tester.pumpAndSettle();
-    await tester.tap(row);
-    await tester.pumpAndSettle();
-
-    expect(find.text('CE QU’ON OBSERVE'), findsOneWidget);
-    expect(find.text('CE QUI INVALIDERAIT CE SIGNAL'), findsOneWidget);
-    expect(find.text('CE QUI VA SE PASSER'), findsNothing);
-    // A signal already measured has no market expectation to quote.
-    expect(find.text('CE QUE LE MARCHÉ ATTEND'), findsNothing);
+    // Only an event has a date; a reading already measured says what it
+    // observes, never "dans 3 h".
+    for (final driver in decision.hierarchy!.homeFactors) {
+      if (driver.kind != 'FACTOR') continue;
+      expect(driver.what.contains(RegExp(r'dans \d+ (h|j)')), isFalse);
+      expect(driver.status.startsWith('Risque élevé •'), isFalse);
+    }
   });
 
   testWidgets('the top catalyst is ranked by contribution, not by date',
@@ -321,19 +294,28 @@ void main() {
     expect(find.textContaining('Bill Treasury auction'), findsNothing);
   });
 
-  testWidgets('factor ranking uses decision contribution, not date',
-      (tester) async {
+  testWidgets('the main factors follow the engine ranking', (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
-    // The FOMC lands after two Treasury auctions, and a barely-measured
-    // technical reading sits beside it. Contribution puts the unresolved
-    // Tier-1 event first even though its direction is unknown.
-    // Which factor ranks first depends on the data. What must hold is that the
-    // screen renders a factor the engine published rather than one it invented.
+    // The screen renders what the engine ranked, in that order - never a
+    // re-sort by date or by family.
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
-    expect(decision.factors, isNotEmpty);
-    expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
+    final ranked = decision.hierarchy!.homeFactors;
+    expect(ranked, isNotEmpty);
+    for (var index = 0; index < ranked.length; index++) {
+      final row = find.byKey(ValueKey('main-factor-${index + 1}'));
+      expect(
+        find.descendant(of: row, matching: find.text(ranked[index].title)),
+        findsOneWidget,
+      );
+    }
+    for (var index = 2; index < ranked.length; index++) {
+      expect(
+        ranked[index].countedWeight,
+        lessThanOrEqualTo(ranked[index - 1].countedWeight),
+      );
+    }
   });
 
   testWidgets('generic factor explanations are forbidden', (tester) async {
@@ -431,29 +413,18 @@ void main() {
     expect(heading, findsOneWidget);
   });
 
-  testWidgets('one actionable path, named after the verdict', (tester) async {
+  testWidgets('the home names what would change the decision in its reasoning',
+      (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
-    // Only one path is ever actionable: the one away from the verdict on
-    // screen. Two lists side by side asked the reader to compare them on a
-    // phone; the other direction is why the verdict already is what it is.
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('what-would-change')),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Pour passer à vendre'), findsNothing);
-    expect(find.text('Ce qui pourrait changer la décision'), findsNothing);
-
-    final decision =
-        await _shippedClient().futureDecision('BTC', horizon: '7d');
-    expect(
-      find.text(decision.decision == 'BUY'
-          ? 'Ce qui invaliderait l’achat'
-          : 'Pour passer à acheter'),
-      findsOneWidget,
-    );
+    // The separate conditions card left the home: the reasoning ends on what
+    // the decision waits for, which is where a reader looks for it.
+    expect(find.byKey(const ValueKey('what-would-change')), findsNothing);
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    final last = decision.hierarchy!.explanation.last;
+    expect(last, matches(RegExp(r'^[⏳✅❌⚪]')));
+    expect(find.text(last), findsOneWidget);
   });
 
   testWidgets('a direction-free reading never shows a direction',
@@ -512,39 +483,30 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final row = find.byKey(const ValueKey('decision-reason-1'));
+    final row = find.byKey(const ValueKey('main-factor-1'));
     await tester.ensureVisible(row);
     await tester.pumpAndSettle();
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    // A catalyst sheet carries more blocks than a signal sheet, so the source
-    // line sits further down. Drag until it appears rather than guessing.
-    for (var attempt = 0; attempt < 6; attempt++) {
-      if (find.text('🔗 SOURCE').evaluate().isNotEmpty) break;
-      await tester.drag(find.byType(ListView).last, const Offset(0, -300));
-      await tester.pumpAndSettle();
-    }
-    expect(find.text('🔗 SOURCE'), findsOneWidget);
-
-    // Scoped to the source line itself. The evidence sections legitimately
-    // display family labels as the name of a reading, which is not a source,
-    // so searching the whole tree would fail on correct output.
+    await tester.drag(
+      find.byKey(const ValueKey('driver-detail')),
+      const Offset(0, -500),
+    );
+    await tester.pumpAndSettle();
     final lines = tester
         .widgetList<Text>(find.byType(Text))
         .map((widget) => widget.data ?? '')
         .toList();
-    final sourceLine = lines[lines.indexOf('🔗 SOURCE') + 1];
+    final index = lines.indexWhere((line) => line.contains('SOURCE'));
+    expect(index, isNonNegative);
+    final sourceLine = lines[index + 1];
     for (final familyName in const [
       'Positionnement & dérivés',
       'Flux institutionnels & baleines',
       'Technique & volatilité',
     ]) {
-      expect(
-        sourceLine.contains(familyName),
-        isFalse,
-        reason: 'the analytical family is not a data source',
-      );
+      expect(sourceLine.contains(familyName), isFalse);
     }
   });
 
@@ -652,12 +614,13 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('the home page carries three reasons', (tester) async {
+  testWidgets('the home page carries at most four main factors', (tester) async {
     await _openBtc(tester);
 
-    // The rest is one tap away under "Voir tout".
-    expect(find.byKey(const ValueKey('decision-reason-3')), findsOneWidget);
-    expect(find.byKey(const ValueKey('decision-reason-4')), findsNothing);
+    expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
+    // The old flat list of reasons is gone from the home.
+    expect(find.byKey(const ValueKey('decision-reason-1')), findsNothing);
   });
 
   testWidgets('an ETF reading is titled and described as ETF flows',

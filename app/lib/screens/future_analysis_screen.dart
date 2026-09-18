@@ -315,27 +315,48 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   onTap: () => _showDecisionDetails(decision, bundle),
                 ),
                 const SizedBox(height: 14),
-                _WhaleIndicator(decision: decision),
-                const SizedBox(height: 14),
-                _WhyDecisionCard(
-                  decision: decision,
-                  bundle: bundle,
-                  onSeeAll: () => _showReasonDetails(decision, bundle),
-                ),
-                const SizedBox(height: 14),
-                _ChangeAndRiskSection(decision: decision),
+                if (decision.hierarchy != null) ...[
+                  // Cause -> consequence -> decision, from the engine's own
+                  // ranking. The flat list of readings it replaces gave a
+                  // short-term trend the same room as a Fed decision.
+                  _ExplanationCard(
+                    decision: decision,
+                    hierarchy: decision.hierarchy!,
+                  ),
+                  const SizedBox(height: 14),
+                  _MainFactorsCard(
+                    hierarchy: decision.hierarchy!,
+                    onSeeAnalysis: () => _showFullDetails(decision, bundle),
+                  ),
+                ] else ...[
+                  _WhaleIndicator(decision: decision),
+                  const SizedBox(height: 14),
+                  _WhyDecisionCard(
+                    decision: decision,
+                    bundle: bundle,
+                    onSeeAll: () => _showReasonDetails(decision, bundle),
+                  ),
+                  const SizedBox(height: 14),
+                  _ChangeAndRiskSection(decision: decision),
+                ],
                 const SizedBox(height: 14),
                 _UpcomingEventsCard(
                   events: bundle.timeline?.events ?? const [],
-                  // Section 21: an event already argued under "Pourquoi ?"
-                  // must not reappear here as a second, thinner copy of
-                  // itself.
-                  alreadyShown: _decisionFactors(decision, bundle)
-                      .where(
-                        (item) => item.kind == _FactorKind.futureCatalyst,
-                      )
-                      .map((item) => item.title.split(' — ').first)
-                      .toSet(),
+                  // An event already listed among the main factors is not
+                  // repeated in the calendar as a second, thinner copy.
+                  skipIds: {
+                    for (final item
+                        in decision.hierarchy?.homeFactors ?? const <FutureDriverRead>[])
+                      item.id,
+                  },
+                  alreadyShown: decision.hierarchy != null
+                      ? const {}
+                      : _decisionFactors(decision, bundle)
+                          .where(
+                            (item) => item.kind == _FactorKind.futureCatalyst,
+                          )
+                          .map((item) => item.title.split(' — ').first)
+                          .toSet(),
                 ),
               ],
             );
@@ -863,10 +884,7 @@ class _DecisionCard extends StatelessWidget {
                     ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 322),
                       child: Text(
-                        _verdictSentence(
-                          decision,
-                          _decisionFactors(decision, bundle),
-                        ),
+                        _heroSentence(decision, bundle),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1079,6 +1097,296 @@ class _WhyDecisionCard extends StatelessWidget {
     );
   }
 }
+
+/// The hero names the one thing that matters most, not a generic mood.
+String _heroSentence(FutureDecisionRead decision, _FutureBundle bundle) {
+  final primary = decision.hierarchy?.primary;
+  if (primary == null) {
+    return _verdictSentence(decision, _decisionFactors(decision, bundle));
+  }
+  return 'Facteur principal : ${primary.title} — '
+      '${primary.status[0].toLowerCase()}${primary.status.substring(1)}.';
+}
+
+/// 🔴 🟠 🟡 🟢 ⚪ - the colour of a status, as a real emoji.
+String _toneEmoji(String tone) => switch (tone) {
+      'RED' => '🔴',
+      'ORANGE' => '🟠',
+      'YELLOW' => '🟡',
+      'GREEN' => '🟢',
+      _ => '⚪',
+    };
+
+Color _toneColor(String tone) => switch (tone) {
+      'RED' => _badgeBad,
+      'ORANGE' => const Color(0xFFFF9A4D),
+      'YELLOW' => _badgeWatch,
+      'GREEN' => _badgeGood,
+      _ => mobileMuted,
+    };
+
+/// The reasoning under the verdict: four or five lines, each a cause and what
+/// it does, ending on what the decision waits for. Written by the engine from
+/// the ranked drivers; the screen only lays it out.
+class _ExplanationCard extends StatelessWidget {
+  final FutureDecisionRead decision;
+  final FutureHierarchyRead hierarchy;
+
+  const _ExplanationCard({required this.decision, required this.hierarchy});
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        key: const ValueKey('decision-explanation'),
+        borderColor: const Color(0xFF2B669B),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionTitle(
+              emoji: '🔎',
+              text: switch (decision.decision) {
+                'BUY' => 'Pourquoi acheter ?',
+                'SELL' => 'Pourquoi vendre ?',
+                'INSUFFICIENT_DATA' => 'Pourquoi pas de recommandation ?',
+                _ => 'Pourquoi attendre ?',
+              },
+            ),
+            const SizedBox(height: 10),
+            for (final line in hierarchy.explanation) ...[
+              Text(
+                line,
+                style: const TextStyle(
+                  color: Color(0xFFE6EEF9),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 7),
+            ],
+          ],
+        ),
+      );
+}
+
+/// The few drivers that weigh most right now, primary first. Each keeps one
+/// status line; everything else about it is one tap away.
+class _MainFactorsCard extends StatelessWidget {
+  final FutureHierarchyRead hierarchy;
+  final VoidCallback onSeeAnalysis;
+
+  const _MainFactorsCard({required this.hierarchy, required this.onSeeAnalysis});
+
+  @override
+  Widget build(BuildContext context) {
+    final factors = hierarchy.homeFactors;
+    final whaleListed = factors.any((item) => item.key == 'whales');
+    return GlassPanel(
+      key: const ValueKey('main-factors'),
+      borderColor: const Color(0xFF245E90),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(emoji: '📌', text: 'Facteurs principaux'),
+          const SizedBox(height: 4),
+          if (factors.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'Aucun facteur ne se détache nettement en ce moment.',
+                style: TextStyle(color: mobileMuted, fontSize: 13),
+              ),
+            ),
+          for (var index = 0; index < factors.length; index++) ...[
+            if (index > 0) const Divider(height: 1, color: Color(0xFF1D3853)),
+            _DriverRow(
+              key: ValueKey('main-factor-${index + 1}'),
+              driver: factors[index],
+            ),
+          ],
+          // Whales always have a line, even when they do not rank: an absent
+          // or minor reading is said as such, never dropped silently.
+          if (!whaleListed) ...[
+            const Divider(height: 1, color: Color(0xFF1D3853)),
+            _StatusRow(
+              key: const ValueKey('whale-status'),
+              emoji: '🐋',
+              title: 'Baleines',
+              status: hierarchy.whaleStatus,
+              tone: hierarchy.whaleTone,
+            ),
+          ],
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: const ValueKey('see-full-analysis'),
+              onPressed: onSeeAnalysis,
+              style: TextButton.styleFrom(foregroundColor: mobileBlue),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Voir l’analyse complète',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, size: 20),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusRow extends StatelessWidget {
+  final String emoji;
+  final String title;
+  final String status;
+  final String tone;
+  final VoidCallback? onTap;
+
+  const _StatusRow({
+    super.key,
+    required this.emoji,
+    required this.title,
+    required this.status,
+    required this.tone,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 34,
+                child: Text(emoji, style: const TextStyle(fontSize: 22)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${_toneEmoji(tone)} $status',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _toneColor(tone),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Color(0xFF55749B),
+                ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _DriverRow extends StatelessWidget {
+  final FutureDriverRead driver;
+
+  const _DriverRow({super.key, required this.driver});
+
+  @override
+  Widget build(BuildContext context) => _StatusRow(
+        emoji: driver.emoji,
+        title: driver.title,
+        status: driver.status,
+        tone: driver.tone,
+        onTap: () => _showDriverDetail(context, driver),
+      );
+}
+
+/// Section 4: what is happening, why it matters, what the market expects,
+/// and what would invalidate the reading - for one driver.
+Future<void> _showDriverDetail(BuildContext context, FutureDriverRead driver) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF061525),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          key: const ValueKey('driver-detail'),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 26),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${driver.emoji} ${driver.title}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${_toneEmoji(driver.tone)} ${driver.status}',
+                style: TextStyle(color: _toneColor(driver.tone), fontSize: 13),
+              ),
+              _ReasonDetailBlock(
+                title: '📊 QUE SE PASSE-T-IL ?',
+                body: driver.what.isEmpty ? 'Non renseigné.' : driver.what,
+                muted: driver.what.isEmpty,
+              ),
+              _ReasonDetailBlock(
+                title: '💡 POURQUOI EST-CE IMPORTANT ?',
+                body: driver.why.isEmpty ? 'Non renseigné.' : driver.why,
+                muted: driver.why.isEmpty,
+              ),
+              _ReasonDetailBlock(
+                title: '🎯 CE QUE LE MARCHÉ ATTEND',
+                body: driver.expectation ??
+                    'Aucune attente de marché mesurée pour ce facteur.',
+                muted: driver.expectation == null,
+              ),
+              _ReasonDetailBlock(
+                title: '❌ CE QUI INVALIDERAIT LA LECTURE',
+                body: driver.invalidation,
+              ),
+              _ReasonDetailBlock(
+                title: '🔗 SOURCE',
+                body: driver.source.isEmpty
+                    ? 'Calcul interne à partir des données collectées.'
+                    : driver.source,
+                muted: driver.source.isEmpty,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
 /// What the largest holders are doing, or a plain statement that it is not
 /// measured. An absent reading is shown as absent - never as neutral, and
@@ -2151,9 +2459,13 @@ class _UpcomingEventsCard extends StatelessWidget {
   /// same thing twice in two different shapes.
   final Set<String> alreadyShown;
 
+  /// Event ids already shown among the main factors.
+  final Set<String> skipIds;
+
   const _UpcomingEventsCard({
     required this.events,
     this.alreadyShown = const {},
+    this.skipIds = const {},
   });
 
   /// Dated events only - a row whose first thing is a date cannot show one
@@ -2161,11 +2473,13 @@ class _UpcomingEventsCard extends StatelessWidget {
   static List<FutureEventRead> ranked(
     List<FutureEventRead> events, {
     Set<String> skip = const {},
+    Set<String> skipIds = const {},
   }) {
     const rank = {'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0};
     return [...events]
       ..removeWhere((event) =>
           event.scheduledAt == null ||
+          skipIds.contains(event.id) ||
           skip.contains(_eventTitleFr(event.title)))
       ..sort((left, right) {
         final byRank = (rank[right.importance.toUpperCase()] ?? 0)
@@ -2177,7 +2491,7 @@ class _UpcomingEventsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final all = ranked(events, skip: alreadyShown);
+    final all = ranked(events, skip: alreadyShown, skipIds: skipIds);
     // Chosen by importance so the FOMC is not buried behind bill auctions,
     // then read in date order, which is how a calendar is read.
     final displayed = all.take(3).toList()

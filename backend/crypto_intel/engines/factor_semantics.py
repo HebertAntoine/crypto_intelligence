@@ -1158,20 +1158,13 @@ def pressure_component_assessment(component: Any) -> FactorAssessment:
     )
 
 
-_WHALE_DIRECTION = {
-    "BULLISH": FactorDirection.POSITIVE,
-    "BEARISH": FactorDirection.NEGATIVE,
-    "NEUTRAL": FactorDirection.NEUTRAL,
-}
-
-
 def whale_flow_assessment(analysis: Any) -> FactorAssessment:
     """Publish the whale analyser's own reading, or say plainly it has none.
 
-    The direction is the analyser's, never re-derived here: net withdrawals
-    from exchanges are not a purchase and net deposits are not a sale, and the
-    analyser already refuses that shortcut when the evidence is thin
-    (INCONCLUSIVE maps to UNKNOWN, not to NEUTRAL).
+    Net withdrawals from exchanges are not a purchase and net deposits are
+    not a sale. The analyser's own direction reads a deposit as bearish as soon
+    as its score crosses a threshold; that shortcut is not taken here - a
+    direction needs the exchange-held supply to move the same way.
     """
 
     available = bool(getattr(analysis, "available", False))
@@ -1187,7 +1180,34 @@ def whale_flow_assessment(analysis: Any) -> FactorAssessment:
         return assessment
 
     behaviour = str(getattr(analysis, "behaviour", "") or "neutral")
-    direction_raw = str(getattr(getattr(analysis, "direction", None), "value", "INCONCLUSIVE"))
+    findings = [str(item) for item in getattr(analysis, "findings", []) or []]
+    # A net flow is one measurement. It only earns a direction when the
+    # exchange-held supply moves the same way - a second, independent view of
+    # the same coins. Deposits alone are not a sale; withdrawals alone are
+    # not a purchase.
+    supply_down = any("supply down" in item for item in findings)
+    supply_up = any("supply up" in item for item in findings)
+    if behaviour == "from_exchange" and supply_down:
+        direction = FactorDirection.POSITIVE
+    elif behaviour == "to_exchange" and supply_up:
+        direction = FactorDirection.NEGATIVE
+    elif behaviour == "neutral":
+        direction = FactorDirection.NEUTRAL
+    else:
+        direction = FactorDirection.UNKNOWN
+    # How large the move is decides how much it can matter. A small transfer
+    # must barely register; the analyser's score runs from -100 to 100.
+    size = abs(float(getattr(analysis, "strength", 0.0) or 0.0))
+    impact = (
+        FactorImpact.HIGH
+        if size >= 40
+        else FactorImpact.MODERATE
+        if size >= 20
+        else FactorImpact.LOW
+    )
+    confidence = float(getattr(analysis, "confidence", 0.0) or 0.0)
+    if confidence > 1.0:  # the analyser reports a percentage
+        confidence /= 100.0
     rationale = {
         "from_exchange": "Retraits nets des plateformes : les gros portefeuilles "
         "sortent leurs jetons.",
@@ -1197,9 +1217,9 @@ def whale_flow_assessment(analysis: Any) -> FactorAssessment:
     return FactorAssessment(
         key="whales",
         label="Mouvements de baleines",
-        direction=_WHALE_DIRECTION.get(direction_raw, FactorDirection.UNKNOWN),
-        impact=FactorImpact.MODERATE,
-        confidence=float(getattr(analysis, "confidence", 0.0) or 0.0),
+        direction=direction,
+        impact=impact,
+        confidence=max(0.0, min(1.0, confidence)),
         availability=availability_for(freshness, measured=True),
         freshness=freshness,
         provider=providers,

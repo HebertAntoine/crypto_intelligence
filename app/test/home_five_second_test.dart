@@ -120,36 +120,31 @@ void main() {
         }
       });
 
-      testWidgets('shows at most three reasons however many signals exist',
+      testWidgets('shows at most four main factors however many signals exist',
           (tester) async {
         await _open(tester, asset);
 
-        // The engine tracks far more than this. The page shows the few that
-        // weigh most on the verdict; a fourth row means the cap leaked.
-        expect(find.byKey(const ValueKey('decision-reason-4')), findsNothing);
-        expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
+        // The engine ranks every reading and event. The page shows the few
+        // that weigh most; a fifth row means the cap leaked.
+        expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
+        expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
+        // The generic gate wording no longer takes a factor's place.
+        expect(find.text('Confirmation encore insuffisante'), findsNothing);
       });
 
-      testWidgets('each reason carries exactly one badge', (tester) async {
+      testWidgets('each main factor carries exactly one colour status',
+          (tester) async {
         await _open(tester, asset);
 
-        const badges = {
-          'FAVORABLE',
-          'DÉFAVORABLE',
-          'À SURVEILLER',
-          'NEUTRE',
-        };
         for (var index = 1; index <= 4; index++) {
-          final row = find.byKey(ValueKey('decision-reason-$index'));
+          final row = find.byKey(ValueKey('main-factor-$index'));
           if (row.evaluate().isEmpty) break;
-          final labels = tester
+          final statuses = tester
               .widgetList<Text>(
                   find.descendant(of: row, matching: find.byType(Text)))
-              .map((widget) => widget.data)
-              .whereType<String>()
-              .where(badges.contains)
-              .toList();
-          expect(labels.length, 1, reason: 'raison $index');
+              .map((widget) => widget.data ?? '')
+              .where((text) => text.startsWith(RegExp('[🔴🟠🟡🟢⚪]')));
+          expect(statuses.length, 1, reason: 'facteur $index');
         }
       });
 
@@ -167,30 +162,20 @@ void main() {
         expect(rows.evaluate().length, inInclusiveRange(1, 3));
       });
 
-      testWidgets('the watchlist does not repeat a reason', (tester) async {
+      testWidgets('the watchlist does not repeat a main factor', (tester) async {
         await _open(tester, asset);
-
-        final card = find.byKey(const ValueKey('upcoming-events'));
-        if (card.evaluate().isEmpty) return;
-        final watchTitles = tester
-            .widgetList<Text>(
-                find.descendant(of: card, matching: find.byType(Text)))
-            .map((widget) => widget.data)
-            .whereType<String>()
-            .toSet();
-
-        for (var index = 1; index <= 4; index++) {
-          final row = find.byKey(ValueKey('decision-reason-$index'));
-          if (row.evaluate().isEmpty) break;
-          final title = tester
-              .widgetList<Text>(
-                  find.descendant(of: row, matching: find.byType(Text)))
-              .map((widget) => widget.data)
-              .whereType<String>()
-              .first;
-          // Reason titles carry a date suffix; the watchlist carries the bare
-          // subject. Neither may be a copy of the other.
-          expect(watchTitles.contains(title), isFalse);
+        final decision = await _shippedClient().futureDecision(asset);
+        final shownIds = {
+          for (final driver in decision.hierarchy!.homeFactors) driver.id,
+        };
+        for (final id in shownIds) {
+          expect(
+            find.descendant(
+              of: find.byKey(const ValueKey('upcoming-events')),
+              matching: find.byKey(ValueKey('event-$id')),
+            ),
+            findsNothing,
+          );
         }
       });
 
@@ -217,11 +202,10 @@ void main() {
     // signals pulling against each other, or too little measured to justify a
     // position at all.
     final explained = [
-      'n’a pas encore livré son résultat',
-      'se contredisent',
-      'avantage suffisamment clair',
-      'sans avantage',
-      'pas assez nets',
+      'avantage mesurable',
+      'différée',
+      'tirent en sens opposé',
+      'Aucun facteur ne domine',
     ].any((phrase) => find.textContaining(phrase).evaluate().isNotEmpty);
     expect(explained, isTrue);
   });
@@ -271,42 +255,24 @@ List<String> _badgesOnHome(WidgetTester tester) {
 void _mockupRules() {
   group('validated mockup', () {
     for (final asset in ['BTC', 'ETH', 'SOL']) {
-      testWidgets('$asset: a mixed tendency shows both sides', (tester) async {
+      testWidgets('$asset: a mixed reading shows both sides', (tester) async {
         await _open(tester, asset);
-        if (find.text('Mitigée').evaluate().isEmpty) return;
+        final decision = await _shippedClient().futureDecision(asset);
+        if (decision.hierarchy?.reading != 'MIXED') return;
 
-        // "Mitigée" above three green badges was the bug: ranking by weight
-        // pushed every opposing signal past the cut.
-        final badges = _badgesOnHome(tester);
-        expect(badges, contains('FAVORABLE'));
-        expect(badges, contains('DÉFAVORABLE'));
+        final tones = decision.hierarchy!.homeFactors.map((d) => d.tone).toSet();
+        expect(tones.contains('GREEN'), isTrue);
+        expect(tones.intersection({'RED', 'ORANGE'}), isNotEmpty);
       });
 
-      testWidgets('$asset: the confirmation row follows the engine, not looks',
+      testWidgets('$asset: the reasoning is the engine\'s, line for line',
           (tester) async {
         await _open(tester, asset);
         final decision = await _shippedClient().futureDecision(asset);
 
-        final shown =
-            find.text('Confirmation encore insuffisante').evaluate().isNotEmpty;
-        if (!decision.noMeasurableEdge || decision.decision != 'WAIT') {
-          expect(shown, isFalse,
-              reason: 'sans NO_MEASURABLE_EDGE, la ligne serait inventée');
-        }
-        if (shown) {
-          // It is a reason to watch, never a direction.
-          final row = find.ancestor(
-            of: find.text('Confirmation encore insuffisante'),
-            matching: find.byWidgetPredicate((widget) =>
-                widget.key is ValueKey<String> &&
-                (widget.key! as ValueKey<String>)
-                    .value
-                    .startsWith('decision-reason-')),
-          );
-          expect(
-            find.descendant(of: row, matching: find.text('À SURVEILLER')),
-            findsOneWidget,
-          );
+        // The screen lays the engine's explanation out; it writes none.
+        for (final line in decision.hierarchy!.explanation) {
+          expect(find.text(line), findsOneWidget, reason: line);
         }
       });
 
