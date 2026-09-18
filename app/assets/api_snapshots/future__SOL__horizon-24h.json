@@ -1,6 +1,6 @@
 {
-  "analysis_id": "an_ac22d21c27d51cb8",
-  "as_of": "2026-09-17T23:41:08.544882+00:00",
+  "analysis_id": "an_0c438efec90008aa",
+  "as_of": "2026-09-18T00:19:27.578711+00:00",
   "asset": "SOL",
   "causal_graph": {
     "chains": [
@@ -13,7 +13,7 @@
         "direction": "BEARISH",
         "root_factor": "family:flows_whales",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0
       },
@@ -26,7 +26,7 @@
         "direction": "NEUTRAL",
         "root_factor": "family:macro_liquidity",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0
       },
@@ -39,7 +39,7 @@
         "direction": "BULLISH",
         "root_factor": "family:positioning_derivatives",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0
       },
@@ -52,7 +52,7 @@
         "direction": "NEUTRAL",
         "root_factor": "family:technical_volatility",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0
       }
@@ -66,9 +66,9 @@
         "confidence": 0.65,
         "direction": "NEUTRAL",
         "id": "family:macro_liquidity",
-        "observed_at": "2026-09-17T23:41:08.544882Z",
+        "observed_at": "2026-09-18T00:19:27.578711Z",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0,
         "type": "macro_liquidity"
@@ -82,7 +82,7 @@
         "id": "family:flows_whales",
         "observed_at": "2026-09-17T00:00:00Z",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0,
         "type": "flows_whales"
@@ -94,9 +94,9 @@
         "confidence": 0.9,
         "direction": "BULLISH",
         "id": "family:positioning_derivatives",
-        "observed_at": "2026-09-17T23:41:08.544882Z",
+        "observed_at": "2026-09-18T00:19:27.578711Z",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0,
         "type": "positioning_derivatives"
@@ -108,9 +108,9 @@
         "confidence": 0.0,
         "direction": "BULLISH",
         "id": "family:technical_volatility",
-        "observed_at": "2026-09-17T23:41:08.544882Z",
+        "observed_at": "2026-09-18T00:19:27.578711Z",
         "source_ids": [
-          "an_ac22d21c27d51cb8"
+          "an_0c438efec90008aa"
         ],
         "strength": 1.0,
         "type": "technical_volatility"
@@ -140,8 +140,13 @@
     "Technique: invalidation de la structure haussi\u00e8re sur l'unit\u00e9 de temps de r\u00e9f\u00e9rence."
   ],
   "consistency": {
-    "action": "SELL",
+    "action": "WAIT",
     "issues": [
+      {
+        "code": "NO_MEASURABLE_EDGE",
+        "detail": "Aucun avantage statistique n'est d\u00e9montr\u00e9 sur cet actif: l'analyse reste en attente plut\u00f4t que de prendre position. La disparition d'un blocage ne constitue pas une preuve d'opportunit\u00e9.",
+        "downgraded_to": "WAIT"
+      },
       {
         "code": "AMPLITUDE_USED_AS_DIRECTION",
         "detail": "La famille technique publie une direction sans confiance mesur\u00e9e; une compression renseigne l'ampleur, pas le sens.",
@@ -149,7 +154,7 @@
       }
     ],
     "methodology": "Chaque contr\u00f4le compare la d\u00e9cision aux preuves affich\u00e9es \u00e0 c\u00f4t\u00e9 d'elle. Un contr\u00f4le ne peut que d\u00e9grader vers ATTENDRE ou DONN\u00c9ES INSUFFISANTES, jamais renforcer une conviction.",
-    "status": "FLAGGED"
+    "status": "DEGRADED"
   },
   "contradiction_resolution": {
     "convergence": {
@@ -220,14 +225,14 @@
         {
           "as_of": "2026-09-17T20:00:00+00:00",
           "evidence_ids": [],
-          "reference": "an_ac22d21c27d51cb8",
+          "reference": "an_0c438efec90008aa",
           "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
           "tier": "MEASURED"
         },
         {
           "as_of": "2026-09-17T16:00:00+00:00",
           "evidence_ids": [],
-          "reference": "an_ac22d21c27d51cb8",
+          "reference": "an_0c438efec90008aa",
           "source": "funding.rate Binance, percentile glissant par actif",
           "tier": "MEASURED"
         }
@@ -249,9 +254,9 @@
         "event_calendar": {
           "available": true,
           "critical": false,
-          "freshness": "RECENT",
+          "freshness": "LIVE",
           "input": "event_calendar",
-          "observed_at": "2026-09-17T19:47:57.831906+00:00",
+          "observed_at": "2026-09-17T23:48:24.334869+00:00",
           "reason": null,
           "source": "sources officielles des \u00e9v\u00e9nements",
           "usable": true,
@@ -284,7 +289,7 @@
           "critical": true,
           "freshness": "LIVE",
           "input": "ohlcv_4h",
-          "observed_at": "2026-09-17T20:00:00+00:00",
+          "observed_at": "2026-09-18T00:00:00+00:00",
           "reason": null,
           "source": "candle store",
           "usable": true,
@@ -315,9 +320,9 @@
         "price": {
           "available": true,
           "critical": true,
-          "freshness": "RECENT",
+          "freshness": "LIVE",
           "input": "price",
-          "observed_at": "2026-09-17T23:38:55.975908+00:00",
+          "observed_at": "2026-09-18T00:19:10.215173+00:00",
           "reason": null,
           "source": "ticker spot persist\u00e9",
           "usable": true,
@@ -446,7 +451,7 @@
     "stale_inputs": [],
     "status": "PARTIAL"
   },
-  "decision": "SELL",
+  "decision": "WAIT",
   "decision_confidence": 0.49,
   "directional_bias": "BEARISH",
   "disclaimer": "Analyse de risque d\u00e9terministe; aucun ordre n'est ex\u00e9cut\u00e9.",
@@ -604,7 +609,7 @@
         "label": "\u00c9nergie",
         "missing_requirements": [],
         "provider": "yahoo_finance",
-        "rationale": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.0 %",
+        "rationale": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.1 %",
         "source_url": "https://finance.yahoo.com/quote/CL=F",
         "transmission_chain": [
           "Le p\u00e9trole progresse rapidement (WTI 101 $).",
@@ -686,7 +691,7 @@
     ],
     "items": {
       "catalysts_regulation": {
-        "as_of": "2026-09-17T23:41:08.544882+00:00",
+        "as_of": "2026-09-18T00:19:27.578711+00:00",
         "available": false,
         "confidence": 0.0,
         "directional_bias": null,
@@ -716,7 +721,7 @@
           {
             "as_of": "2026-09-17T00:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_ac22d21c27d51cb8",
+            "reference": "an_0c438efec90008aa",
             "source": "Binance klines, taker buy base volume / volume total",
             "tier": "MEASURED"
           }
@@ -726,7 +731,7 @@
         "unavailable_reason": null
       },
       "macro_liquidity": {
-        "as_of": "2026-09-17T23:41:08.544882+00:00",
+        "as_of": "2026-09-18T00:19:27.578711+00:00",
         "available": true,
         "confidence": 0.65,
         "directional_bias": "NEUTRAL",
@@ -737,9 +742,9 @@
         "reasons": [],
         "sources": [
           {
-            "as_of": "2026-09-17T23:41:08.544882+00:00",
+            "as_of": "2026-09-18T00:19:27.578711+00:00",
             "evidence_ids": [],
-            "reference": "an_ac22d21c27d51cb8",
+            "reference": "an_0c438efec90008aa",
             "source": "MacroAnalyzer",
             "tier": "DERIVED"
           }
@@ -749,7 +754,7 @@
         "unavailable_reason": null
       },
       "positioning_derivatives": {
-        "as_of": "2026-09-17T23:41:08.544882+00:00",
+        "as_of": "2026-09-18T00:19:27.578711+00:00",
         "available": true,
         "confidence": 0.9,
         "directional_bias": "BULLISH",
@@ -765,14 +770,14 @@
           {
             "as_of": "2026-09-17T20:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_ac22d21c27d51cb8",
+            "reference": "an_0c438efec90008aa",
             "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
             "tier": "MEASURED"
           },
           {
             "as_of": "2026-09-17T16:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_ac22d21c27d51cb8",
+            "reference": "an_0c438efec90008aa",
             "source": "funding.rate Binance, percentile glissant par actif",
             "tier": "MEASURED"
           }
@@ -782,7 +787,7 @@
         "unavailable_reason": null
       },
       "technical_volatility": {
-        "as_of": "2026-09-17T23:41:08.544882+00:00",
+        "as_of": "2026-09-18T00:19:27.578711+00:00",
         "available": true,
         "confidence": 0.0,
         "directional_bias": "BULLISH",
@@ -793,23 +798,23 @@
         "reasons": [],
         "sources": [
           {
-            "as_of": "2026-09-17T23:41:08.544882+00:00",
+            "as_of": "2026-09-18T00:19:27.578711+00:00",
             "evidence_ids": [],
-            "reference": "an_ac22d21c27d51cb8",
+            "reference": "an_0c438efec90008aa",
             "source": "MarketStructureEngine",
             "tier": "DERIVED"
           },
           {
-            "as_of": "2026-09-17T23:41:08.544882+00:00",
+            "as_of": "2026-09-18T00:19:27.578711+00:00",
             "evidence_ids": [],
-            "reference": "an_ac22d21c27d51cb8",
+            "reference": "an_0c438efec90008aa",
             "source": "VolatilityRegimeEngine",
             "tier": "DERIVED"
           },
           {
-            "as_of": "2026-09-17T23:41:08.544882+00:00",
+            "as_of": "2026-09-18T00:19:27.578711+00:00",
             "evidence_ids": [],
-            "reference": "an_ac22d21c27d51cb8",
+            "reference": "an_0c438efec90008aa",
             "source": "ExpectedVolatilityEngine",
             "tier": "DERIVED"
           }
@@ -842,9 +847,9 @@
             "event_calendar": {
               "available": true,
               "critical": false,
-              "freshness": "RECENT",
+              "freshness": "LIVE",
               "input": "event_calendar",
-              "observed_at": "2026-09-17T19:47:57.831906+00:00",
+              "observed_at": "2026-09-17T23:48:24.334869+00:00",
               "reason": null,
               "source": "sources officielles des \u00e9v\u00e9nements",
               "usable": true,
@@ -877,7 +882,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "ohlcv_4h",
-              "observed_at": "2026-09-17T20:00:00+00:00",
+              "observed_at": "2026-09-18T00:00:00+00:00",
               "reason": null,
               "source": "candle store",
               "usable": true,
@@ -908,9 +913,9 @@
             "price": {
               "available": true,
               "critical": true,
-              "freshness": "RECENT",
+              "freshness": "LIVE",
               "input": "price",
-              "observed_at": "2026-09-17T23:38:55.975908+00:00",
+              "observed_at": "2026-09-18T00:19:10.215173+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -1080,9 +1085,9 @@
             "event_calendar": {
               "available": true,
               "critical": false,
-              "freshness": "RECENT",
+              "freshness": "LIVE",
               "input": "event_calendar",
-              "observed_at": "2026-09-17T19:47:57.831906+00:00",
+              "observed_at": "2026-09-17T23:48:24.334869+00:00",
               "reason": null,
               "source": "sources officielles des \u00e9v\u00e9nements",
               "usable": true,
@@ -1093,7 +1098,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "liquidity",
-              "observed_at": "2026-09-17T23:34:30.967944+00:00",
+              "observed_at": "2026-09-18T00:18:55.983982+00:00",
               "reason": null,
               "source": "DefiLlama stablecoins",
               "usable": true,
@@ -1148,7 +1153,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "onchain",
-              "observed_at": "2026-09-17T23:34:50.713078+00:00",
+              "observed_at": "2026-09-18T00:19:10.216864+00:00",
               "reason": null,
               "source": "fournisseurs on-chain",
               "usable": true,
@@ -1157,9 +1162,9 @@
             "price": {
               "available": true,
               "critical": true,
-              "freshness": "RECENT",
+              "freshness": "LIVE",
               "input": "price",
-              "observed_at": "2026-09-17T23:38:55.975908+00:00",
+              "observed_at": "2026-09-18T00:19:10.215173+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -1193,7 +1198,7 @@
           "whale_intelligence"
         ],
         "source_quality": {
-          "named_sources": 17,
+          "named_sources": 18,
           "sources": [
             {
               "source": "ticker spot persist\u00e9",
@@ -1236,9 +1241,315 @@
               "url": "https://www.cnbc.com/2026/09/14/prediction-markets-traders-think-gas-prices-will-hit-new-highs-in-2026.html"
             },
             {
+              "source": "U.S. Treasury / TreasuryDirect",
+              "tier": "A",
+              "url": "https://www.treasurydirect.gov/TA_WS/securities/announced?format=json"
+            },
+            {
               "source": "U.S. Bureau of Economic Analysis",
               "tier": "A",
               "url": "https://www.bea.gov/news/schedule/full"
+            },
+            {
+              "source": "MacroAnalyzer",
+              "tier": "DERIVED",
+              "url": null
+            },
+            {
+              "source": "StablecoinLiquidityAnalyzer",
+              "tier": "DERIVED",
+              "url": null
+            },
+            {
+              "source": "Binance klines, taker buy base volume / volume total",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "funding.rate Binance, percentile glissant par actif",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "MarketStructureEngine",
+              "tier": "DERIVED",
+              "url": null
+            },
+            {
+              "source": "VolatilityRegimeEngine",
+              "tier": "DERIVED",
+              "url": null
+            },
+            {
+              "source": "ExpectedVolatilityEngine",
+              "tier": "DERIVED",
+              "url": null
+            }
+          ],
+          "sources_with_url": 4,
+          "status": "PARTIAL",
+          "tiers": {
+            "A": 3,
+            "B": 0,
+            "C": 1,
+            "D": 0,
+            "DERIVED": 5,
+            "E": 0,
+            "MEASURED": 9,
+            "UNKNOWN": 0
+          }
+        },
+        "stale_inputs": [
+          "cross_asset"
+        ],
+        "status": "PARTIAL"
+      },
+      "decision": "WAIT",
+      "decision_confidence": 0.42,
+      "directional_bias": "BEARISH",
+      "event_risk": "HIGH",
+      "event_risk_gate": {
+        "active": true,
+        "bypassed": false,
+        "event_ids": [
+          "fev_b2dce6bef31ee6282c294b5b"
+        ],
+        "level": "HIGH",
+        "reasons": [
+          "Personal Income and Outlays, August 2026: \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 12,5 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9."
+        ],
+        "status": "TRIGGERED"
+      },
+      "expected_movement": "HIGH"
+    },
+    "7d": {
+      "data_quality": {
+        "blocks_directional_decision": false,
+        "coverage": {
+          "applicable_inputs": 12,
+          "label": "10/12 utilisables",
+          "present_inputs": 10,
+          "usable_inputs": 10
+        },
+        "critical_missing_inputs": [],
+        "freshness": {
+          "fresh_inputs": 10,
+          "inputs": {
+            "event_calendar": {
+              "available": true,
+              "critical": false,
+              "freshness": "LIVE",
+              "input": "event_calendar",
+              "observed_at": "2026-09-17T23:48:24.334869+00:00",
+              "reason": null,
+              "source": "sources officielles des \u00e9v\u00e9nements",
+              "usable": true,
+              "valid": true
+            },
+            "funding": {
+              "available": true,
+              "critical": false,
+              "freshness": "LIVE",
+              "input": "funding",
+              "observed_at": "2026-09-17T16:00:00+00:00",
+              "reason": null,
+              "source": "funding.rate",
+              "usable": true,
+              "valid": true
+            },
+            "liquidity": {
+              "available": true,
+              "critical": false,
+              "freshness": "LIVE",
+              "input": "liquidity",
+              "observed_at": "2026-09-18T00:18:55.983982+00:00",
+              "reason": null,
+              "source": "DefiLlama stablecoins",
+              "usable": true,
+              "valid": true
+            },
+            "macro": {
+              "available": true,
+              "critical": false,
+              "freshness": "LIVE",
+              "input": "macro",
+              "observed_at": "2026-09-17T13:30:00+00:00",
+              "reason": null,
+              "source": "s\u00e9ries macro FRED/Stooq",
+              "usable": true,
+              "valid": true
+            },
+            "market_rate_expectations": {
+              "available": false,
+              "critical": false,
+              "freshness": "UNAVAILABLE",
+              "input": "market_rate_expectations",
+              "observed_at": null,
+              "reason": "aucune distribution de march\u00e9 horodat\u00e9e et r\u00e9cente disponible",
+              "source": null,
+              "usable": false,
+              "valid": false
+            },
+            "ohlcv_4h": {
+              "available": true,
+              "critical": true,
+              "freshness": "LIVE",
+              "input": "ohlcv_4h",
+              "observed_at": "2026-09-18T00:00:00+00:00",
+              "reason": null,
+              "source": "candle store",
+              "usable": true,
+              "valid": true
+            },
+            "ohlcv_daily": {
+              "available": true,
+              "critical": true,
+              "freshness": "LIVE",
+              "input": "ohlcv_daily",
+              "observed_at": "2026-09-17T00:00:00+00:00",
+              "reason": null,
+              "source": "candle store",
+              "usable": true,
+              "valid": true
+            },
+            "onchain": {
+              "available": true,
+              "critical": false,
+              "freshness": "LIVE",
+              "input": "onchain",
+              "observed_at": "2026-09-18T00:19:10.216864+00:00",
+              "reason": null,
+              "source": "fournisseurs on-chain",
+              "usable": true,
+              "valid": true
+            },
+            "open_interest": {
+              "available": true,
+              "critical": false,
+              "freshness": "RECENT",
+              "input": "open_interest",
+              "observed_at": "2026-09-17T00:00:00+00:00",
+              "reason": null,
+              "source": "oi.contracts_bybit",
+              "usable": true,
+              "valid": true
+            },
+            "price": {
+              "available": true,
+              "critical": true,
+              "freshness": "LIVE",
+              "input": "price",
+              "observed_at": "2026-09-18T00:19:10.215173+00:00",
+              "reason": null,
+              "source": "ticker spot persist\u00e9",
+              "usable": true,
+              "valid": true
+            },
+            "spot": {
+              "available": true,
+              "critical": false,
+              "freshness": "LIVE",
+              "input": "spot",
+              "observed_at": "2026-09-17T00:00:00+00:00",
+              "reason": null,
+              "source": "spot.taker_buy_ratio (Binance)",
+              "usable": true,
+              "valid": true
+            },
+            "whale_intelligence": {
+              "available": false,
+              "critical": false,
+              "freshness": "UNAVAILABLE",
+              "input": "whale_intelligence",
+              "observed_at": null,
+              "reason": "aucun fournisseur baleines fiable n'est configur\u00e9; suivre les gros portefeuilles demande un service payant, et rien n'est estim\u00e9 \u00e0 la place",
+              "source": "fournisseur on-chain v\u00e9rifi\u00e9",
+              "usable": false,
+              "valid": false
+            }
+          },
+          "stale_inputs": 0,
+          "status": "PARTIAL",
+          "unavailable_inputs": 2
+        },
+        "horizon": "7d",
+        "methodology": {
+          "coverage": "Nombre d'entr\u00e9es applicables pr\u00e9sentes, valides et fra\u00eeches; une entr\u00e9e stale n'est jamais compt\u00e9e comme utilisable.",
+          "critical_missing_inputs": "Prix et bougies structurelles minimales propres \u00e0 l'horizon.",
+          "freshness": "\u00c9tat runtime de chaque entr\u00e9e selon la cadence propre \u00e0 sa source.",
+          "source_quality": "Inventaire de provenance par tiers; aucun score num\u00e9rique composite."
+        },
+        "missing_inputs": [
+          "market_rate_expectations",
+          "whale_intelligence"
+        ],
+        "source_quality": {
+          "named_sources": 20,
+          "sources": [
+            {
+              "source": "ticker spot persist\u00e9",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "candle store",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "funding.rate",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "oi.contracts_bybit",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "spot.taker_buy_ratio (Binance)",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "s\u00e9ries macro FRED/Stooq",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "fournisseurs on-chain",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "DefiLlama stablecoins",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "sources officielles des \u00e9v\u00e9nements",
+              "tier": "MEASURED",
+              "url": null
+            },
+            {
+              "source": "Solana Foundation",
+              "tier": "A",
+              "url": "https://solana.com/news/solana-building-trust-in-public"
+            },
+            {
+              "source": "CNBC Finance",
+              "tier": "C",
+              "url": "https://www.cnbc.com/2026/09/14/prediction-markets-traders-think-gas-prices-will-hit-new-highs-in-2026.html"
+            },
+            {
+              "source": "U.S. Treasury / TreasuryDirect",
+              "tier": "A",
+              "url": "https://www.treasurydirect.gov/TA_WS/securities/announced?format=json"
             },
             {
               "source": "MacroAnalyzer",
@@ -1290,302 +1601,6 @@
             "D": 0,
             "DERIVED": 5,
             "E": 0,
-            "MEASURED": 9,
-            "UNKNOWN": 0
-          }
-        },
-        "stale_inputs": [
-          "cross_asset"
-        ],
-        "status": "PARTIAL"
-      },
-      "decision": "WAIT",
-      "decision_confidence": 0.42,
-      "directional_bias": "BEARISH",
-      "event_risk": "HIGH",
-      "event_risk_gate": {
-        "active": true,
-        "bypassed": false,
-        "event_ids": [
-          "fev_b2dce6bef31ee6282c294b5b"
-        ],
-        "level": "HIGH",
-        "reasons": [
-          "Personal Income and Outlays, August 2026: \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 12,5 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9."
-        ],
-        "status": "TRIGGERED"
-      },
-      "expected_movement": "HIGH"
-    },
-    "7d": {
-      "data_quality": {
-        "blocks_directional_decision": false,
-        "coverage": {
-          "applicable_inputs": 12,
-          "label": "10/12 utilisables",
-          "present_inputs": 10,
-          "usable_inputs": 10
-        },
-        "critical_missing_inputs": [],
-        "freshness": {
-          "fresh_inputs": 10,
-          "inputs": {
-            "event_calendar": {
-              "available": true,
-              "critical": false,
-              "freshness": "RECENT",
-              "input": "event_calendar",
-              "observed_at": "2026-09-17T19:47:57.831906+00:00",
-              "reason": null,
-              "source": "sources officielles des \u00e9v\u00e9nements",
-              "usable": true,
-              "valid": true
-            },
-            "funding": {
-              "available": true,
-              "critical": false,
-              "freshness": "LIVE",
-              "input": "funding",
-              "observed_at": "2026-09-17T16:00:00+00:00",
-              "reason": null,
-              "source": "funding.rate",
-              "usable": true,
-              "valid": true
-            },
-            "liquidity": {
-              "available": true,
-              "critical": false,
-              "freshness": "LIVE",
-              "input": "liquidity",
-              "observed_at": "2026-09-17T23:34:30.967944+00:00",
-              "reason": null,
-              "source": "DefiLlama stablecoins",
-              "usable": true,
-              "valid": true
-            },
-            "macro": {
-              "available": true,
-              "critical": false,
-              "freshness": "LIVE",
-              "input": "macro",
-              "observed_at": "2026-09-17T13:30:00+00:00",
-              "reason": null,
-              "source": "s\u00e9ries macro FRED/Stooq",
-              "usable": true,
-              "valid": true
-            },
-            "market_rate_expectations": {
-              "available": false,
-              "critical": false,
-              "freshness": "UNAVAILABLE",
-              "input": "market_rate_expectations",
-              "observed_at": null,
-              "reason": "aucune distribution de march\u00e9 horodat\u00e9e et r\u00e9cente disponible",
-              "source": null,
-              "usable": false,
-              "valid": false
-            },
-            "ohlcv_4h": {
-              "available": true,
-              "critical": true,
-              "freshness": "LIVE",
-              "input": "ohlcv_4h",
-              "observed_at": "2026-09-17T20:00:00+00:00",
-              "reason": null,
-              "source": "candle store",
-              "usable": true,
-              "valid": true
-            },
-            "ohlcv_daily": {
-              "available": true,
-              "critical": true,
-              "freshness": "LIVE",
-              "input": "ohlcv_daily",
-              "observed_at": "2026-09-17T00:00:00+00:00",
-              "reason": null,
-              "source": "candle store",
-              "usable": true,
-              "valid": true
-            },
-            "onchain": {
-              "available": true,
-              "critical": false,
-              "freshness": "LIVE",
-              "input": "onchain",
-              "observed_at": "2026-09-17T23:34:50.713078+00:00",
-              "reason": null,
-              "source": "fournisseurs on-chain",
-              "usable": true,
-              "valid": true
-            },
-            "open_interest": {
-              "available": true,
-              "critical": false,
-              "freshness": "RECENT",
-              "input": "open_interest",
-              "observed_at": "2026-09-17T00:00:00+00:00",
-              "reason": null,
-              "source": "oi.contracts_bybit",
-              "usable": true,
-              "valid": true
-            },
-            "price": {
-              "available": true,
-              "critical": true,
-              "freshness": "RECENT",
-              "input": "price",
-              "observed_at": "2026-09-17T23:38:55.975908+00:00",
-              "reason": null,
-              "source": "ticker spot persist\u00e9",
-              "usable": true,
-              "valid": true
-            },
-            "spot": {
-              "available": true,
-              "critical": false,
-              "freshness": "LIVE",
-              "input": "spot",
-              "observed_at": "2026-09-17T00:00:00+00:00",
-              "reason": null,
-              "source": "spot.taker_buy_ratio (Binance)",
-              "usable": true,
-              "valid": true
-            },
-            "whale_intelligence": {
-              "available": false,
-              "critical": false,
-              "freshness": "UNAVAILABLE",
-              "input": "whale_intelligence",
-              "observed_at": null,
-              "reason": "aucun fournisseur baleines fiable n'est configur\u00e9; suivre les gros portefeuilles demande un service payant, et rien n'est estim\u00e9 \u00e0 la place",
-              "source": "fournisseur on-chain v\u00e9rifi\u00e9",
-              "usable": false,
-              "valid": false
-            }
-          },
-          "stale_inputs": 0,
-          "status": "PARTIAL",
-          "unavailable_inputs": 2
-        },
-        "horizon": "7d",
-        "methodology": {
-          "coverage": "Nombre d'entr\u00e9es applicables pr\u00e9sentes, valides et fra\u00eeches; une entr\u00e9e stale n'est jamais compt\u00e9e comme utilisable.",
-          "critical_missing_inputs": "Prix et bougies structurelles minimales propres \u00e0 l'horizon.",
-          "freshness": "\u00c9tat runtime de chaque entr\u00e9e selon la cadence propre \u00e0 sa source.",
-          "source_quality": "Inventaire de provenance par tiers; aucun score num\u00e9rique composite."
-        },
-        "missing_inputs": [
-          "market_rate_expectations",
-          "whale_intelligence"
-        ],
-        "source_quality": {
-          "named_sources": 19,
-          "sources": [
-            {
-              "source": "ticker spot persist\u00e9",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "candle store",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "funding.rate",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "oi.contracts_bybit",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "spot.taker_buy_ratio (Binance)",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "s\u00e9ries macro FRED/Stooq",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "fournisseurs on-chain",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "DefiLlama stablecoins",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "sources officielles des \u00e9v\u00e9nements",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "Solana Foundation",
-              "tier": "A",
-              "url": "https://solana.com/news/solana-building-trust-in-public"
-            },
-            {
-              "source": "CNBC Finance",
-              "tier": "C",
-              "url": "https://www.cnbc.com/2026/09/14/prediction-markets-traders-think-gas-prices-will-hit-new-highs-in-2026.html"
-            },
-            {
-              "source": "MacroAnalyzer",
-              "tier": "DERIVED",
-              "url": null
-            },
-            {
-              "source": "StablecoinLiquidityAnalyzer",
-              "tier": "DERIVED",
-              "url": null
-            },
-            {
-              "source": "Binance klines, taker buy base volume / volume total",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "funding.rate Binance, percentile glissant par actif",
-              "tier": "MEASURED",
-              "url": null
-            },
-            {
-              "source": "MarketStructureEngine",
-              "tier": "DERIVED",
-              "url": null
-            },
-            {
-              "source": "VolatilityRegimeEngine",
-              "tier": "DERIVED",
-              "url": null
-            },
-            {
-              "source": "ExpectedVolatilityEngine",
-              "tier": "DERIVED",
-              "url": null
-            }
-          ],
-          "sources_with_url": 2,
-          "status": "PARTIAL",
-          "tiers": {
-            "A": 1,
-            "B": 0,
-            "C": 1,
-            "D": 0,
-            "DERIVED": 5,
-            "E": 0,
             "MEASURED": 12,
             "UNKNOWN": 0
           }
@@ -1594,9 +1609,9 @@
         "status": "PARTIAL"
       },
       "decision": "SELL",
-      "decision_confidence": 0.49,
+      "decision_confidence": 0.56,
       "directional_bias": "BEARISH",
-      "event_risk": "LOW",
+      "event_risk": "HIGH",
       "event_risk_gate": {
         "active": false,
         "bypassed": false,
@@ -1610,54 +1625,54 @@
   },
   "market_expectations": [],
   "next_major_event": null,
-  "price_at_analysis": 101.44,
+  "price_at_analysis": 101.45,
   "provenance": [
     {
-      "as_of": "2026-09-17T23:41:08.544882+00:00",
+      "as_of": "2026-09-18T00:19:27.578711+00:00",
       "evidence_ids": [],
-      "reference": "an_ac22d21c27d51cb8",
+      "reference": "an_0c438efec90008aa",
       "source": "MacroAnalyzer",
       "tier": "DERIVED"
     },
     {
       "as_of": "2026-09-17T00:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_ac22d21c27d51cb8",
+      "reference": "an_0c438efec90008aa",
       "source": "Binance klines, taker buy base volume / volume total",
       "tier": "MEASURED"
     },
     {
       "as_of": "2026-09-17T20:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_ac22d21c27d51cb8",
+      "reference": "an_0c438efec90008aa",
       "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
       "tier": "MEASURED"
     },
     {
       "as_of": "2026-09-17T16:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_ac22d21c27d51cb8",
+      "reference": "an_0c438efec90008aa",
       "source": "funding.rate Binance, percentile glissant par actif",
       "tier": "MEASURED"
     },
     {
-      "as_of": "2026-09-17T23:41:08.544882+00:00",
+      "as_of": "2026-09-18T00:19:27.578711+00:00",
       "evidence_ids": [],
-      "reference": "an_ac22d21c27d51cb8",
+      "reference": "an_0c438efec90008aa",
       "source": "MarketStructureEngine",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-17T23:41:08.544882+00:00",
+      "as_of": "2026-09-18T00:19:27.578711+00:00",
       "evidence_ids": [],
-      "reference": "an_ac22d21c27d51cb8",
+      "reference": "an_0c438efec90008aa",
       "source": "VolatilityRegimeEngine",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-17T23:41:08.544882+00:00",
+      "as_of": "2026-09-18T00:19:27.578711+00:00",
       "evidence_ids": [],
-      "reference": "an_ac22d21c27d51cb8",
+      "reference": "an_0c438efec90008aa",
       "source": "ExpectedVolatilityEngine",
       "tier": "DERIVED"
     }
@@ -1674,7 +1689,7 @@
       "title": "Flux institutionnels & baleines"
     },
     {
-      "date_time": "2026-09-17T23:41:08.544882+00:00",
+      "date_time": "2026-09-18T00:19:27.578711+00:00",
       "evidence_ids": [],
       "explanation": "US 10Y yield 4.95%; VIX 15.4",
       "icon": "signal",
@@ -1684,7 +1699,7 @@
       "title": "Macro & liquidit\u00e9"
     },
     {
-      "date_time": "2026-09-17T23:41:08.544882+00:00",
+      "date_time": "2026-09-18T00:19:27.578711+00:00",
       "evidence_ids": [],
       "explanation": "L'open interest recule dans la hausse : des shorts se rach\u00e8tent.; Le co\u00fbt du levier reste proche de sa normale.",
       "icon": "signal",
@@ -1694,7 +1709,7 @@
       "title": "Positionnement & d\u00e9riv\u00e9s"
     },
     {
-      "date_time": "2026-09-17T23:41:08.544882+00:00",
+      "date_time": "2026-09-18T00:19:27.578711+00:00",
       "evidence_ids": [],
       "explanation": "Aucune \u00e9chelle de temps ne donne de direction claire sur 24 heures; volatilit\u00e9 tr\u00e8s faible. Pas de compression des bandes de Bollinger.",
       "icon": "signal",
@@ -1704,6 +1719,7 @@
       "title": "Technique & volatilit\u00e9"
     }
   ],
+  "run_id": "run_20260918T001656Z",
   "scenarios": [
     {
       "confidence": 0.613,
@@ -1826,7 +1842,7 @@
         "weight": 2
       },
       {
-        "evidence": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.0 %",
+        "evidence": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.1 %",
         "met": true,
         "text": "L'\u00e9nergie continue de progresser",
         "weight": 1
@@ -1852,7 +1868,7 @@
       }
     ],
     "data_status": "PARTIAL_DATA",
-    "generated_at": "2026-09-17T23:41:08.544882+00:00",
+    "generated_at": "2026-09-18T00:19:27.578711+00:00",
     "headline": "Risque de correction \u00e9lev\u00e9, mais baisse majeure non confirm\u00e9e",
     "invalidation_conditions": [
       {
@@ -1862,7 +1878,7 @@
         "weight": 2
       },
       {
-        "evidence": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.0 %",
+        "evidence": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.1 %",
         "met": false,
         "text": "Le p\u00e9trole reflue",
         "weight": 1
@@ -1881,7 +1897,7 @@
     ],
     "state": "ELEVATED_RISK",
     "state_label": "\ud83d\udfe0 RISQUE \u00c9LEV\u00c9",
-    "summary": "Le contexte se d\u00e9grade du c\u00f4t\u00e9 de spot / agressivit\u00e9, funding / levier, \u00e9nergie.",
+    "summary": "Le contexte se d\u00e9grade du c\u00f4t\u00e9 de spot / agressivit\u00e9, funding / levier, \u00e9nergie. Aucun avantage statistique n'est d\u00e9montr\u00e9 sur cet actif: l'analyse reste en attente plut\u00f4t que de prendre position. La disparition d'un blocage ne constitue pas une preuve d'opportunit\u00e9.",
     "uncertainty": "MEDIUM",
     "upcoming_events": [],
     "why_now": [
@@ -1900,7 +1916,7 @@
         "freshness": "HOUR_1",
         "impact": "HIGH",
         "label": "\u00c9nergie",
-        "observation": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.0 %",
+        "observation": "WTI 101.1 $ \u00b7 7 j -1.3 % \u00b7 30 j +19.1 %",
         "reliability": "MEDIUM",
         "source": "yahoo_finance",
         "why_it_matters": "Un contexte moins favorable aux actifs risqu\u00e9s en d\u00e9coule \u2014 sans que ce lien soit automatique: il doit \u00eatre confront\u00e9 aux taux et au dollar."
