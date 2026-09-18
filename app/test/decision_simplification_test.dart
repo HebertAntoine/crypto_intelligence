@@ -149,7 +149,7 @@ void main() {
       final status = tester
           .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
           .map((widget) => widget.data ?? '')
-          .where((text) => text.startsWith(RegExp('[🔴🟠🟡🟢⚪]')))
+          .where((text) => text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪)')))
           .toList();
       expect(status.length, 1, reason: 'facteur $index');
       for (final amplitude in const ['CRITIQUE', 'IMPACT ÉLEVÉ', 'EXTREME']) {

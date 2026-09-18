@@ -924,8 +924,18 @@ class _DecisionCard extends StatelessWidget {
                             // describe how the model feels rather than what
                             // the market is doing; the balance of measured
                             // signals is what the verdict actually rests on.
-                            final signals =
-                                _signalsLabel(_decisionFactors(decision, bundle));
+                            // It is the hierarchy's reading, so the tile can
+                            // never disagree with the reasoning beneath it.
+                            final reading = decision.hierarchy?.reading;
+                            final signals = reading == null
+                                ? _signalsLabel(_decisionFactors(decision, bundle))
+                                : switch (reading) {
+                                    'POSITIVE' => 'Favorables',
+                                    'NEGATIVE' => 'Défavorables',
+                                    'MIXED' => 'Mitigés',
+                                    'NEUTRAL' => 'Neutres',
+                                    _ => 'Insuffisants',
+                                  };
                             return _DecisionMetric(
                               key: const ValueKey('decision-signals'),
                               emoji: '📊',
@@ -1108,13 +1118,18 @@ String _heroSentence(FutureDecisionRead decision, _FutureBundle bundle) {
       '${primary.status[0].toLowerCase()}${primary.status.substring(1)}.';
 }
 
+/// Text that mixes words and emoji names the colour emoji fonts as fallback,
+/// so a flag or a 🔴 never drops to a monochrome glyph mid-sentence.
+const _emojiFallback = ['Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji'];
+
 /// 🔴 🟠 🟡 🟢 ⚪ - the colour of a status, as a real emoji.
 String _toneEmoji(String tone) => switch (tone) {
       'RED' => '🔴',
       'ORANGE' => '🟠',
       'YELLOW' => '🟡',
       'GREEN' => '🟢',
-      _ => '⚪',
+      // U+FE0F asks for the colour form; without it ⚪ can render as text.
+      _ => '⚪️',
     };
 
 Color _toneColor(String tone) => switch (tone) {
@@ -1158,6 +1173,7 @@ class _ExplanationCard extends StatelessWidget {
                   color: Color(0xFFE6EEF9),
                   fontSize: 14,
                   height: 1.4,
+                  fontFamilyFallback: _emojiFallback,
                 ),
               ),
               const SizedBox(height: 7),
@@ -1268,7 +1284,13 @@ class _StatusRow extends StatelessWidget {
             children: [
               SizedBox(
                 width: 34,
-                child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                child: Text(
+                  emoji,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontFamilyFallback: _emojiFallback,
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -1294,6 +1316,7 @@ class _StatusRow extends StatelessWidget {
                         color: _toneColor(tone),
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
+                        fontFamilyFallback: _emojiFallback,
                       ),
                     ),
                   ],
@@ -1348,12 +1371,17 @@ Future<void> _showDriverDetail(BuildContext context, FutureDriverRead driver) =>
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
+                  fontFamilyFallback: _emojiFallback,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 '${_toneEmoji(driver.tone)} ${driver.status}',
-                style: TextStyle(color: _toneColor(driver.tone), fontSize: 13),
+                style: TextStyle(
+                  color: _toneColor(driver.tone),
+                  fontSize: 13,
+                  fontFamilyFallback: _emojiFallback,
+                ),
               ),
               _ReasonDetailBlock(
                 title: '📊 QUE SE PASSE-T-IL ?',

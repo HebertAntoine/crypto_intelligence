@@ -143,7 +143,7 @@ void main() {
               .widgetList<Text>(
                   find.descendant(of: row, matching: find.byType(Text)))
               .map((widget) => widget.data ?? '')
-              .where((text) => text.startsWith(RegExp('[🔴🟠🟡🟢⚪]')));
+              .where((text) => text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪)')));
           expect(statuses.length, 1, reason: 'facteur $index');
         }
       });
@@ -236,21 +236,6 @@ void _plainLanguage() {
   });
 }
 
-
-List<String> _badgesOnHome(WidgetTester tester) {
-  const badges = {'FAVORABLE', 'DÉFAVORABLE', 'À SURVEILLER', 'NEUTRE'};
-  final found = <String>[];
-  for (var index = 1; index <= 4; index++) {
-    final row = find.byKey(ValueKey('decision-reason-$index'));
-    if (row.evaluate().isEmpty) break;
-    found.addAll(tester
-        .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
-        .map((widget) => widget.data)
-        .whereType<String>()
-        .where(badges.contains));
-  }
-  return found;
-}
 
 void _mockupRules() {
   group('validated mockup', () {

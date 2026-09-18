@@ -6,7 +6,9 @@ export through failure cases and check that the previous set survives.
 """
 
 import json
+import os
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -219,6 +221,8 @@ def test_a_staging_directory_left_by_a_killed_run_is_never_promoted(
     orphan = snapshot_dir / ".staging" / "run_KILLED"
     orphan.mkdir(parents=True)
     (orphan / "future__BTC__horizon-7d.json").write_text('{"asset": "BTC"}')
+    old = time.time() - 3 * 3600
+    os.utime(orphan, (old, old))
 
     fetch = fetcher({("BTC", "7d"): payload()})
     exporter._export_atomically(fetch, "", endpoints(("BTC", "7d")), "run_NEW")
@@ -228,6 +232,21 @@ def test_a_staging_directory_left_by_a_killed_run_is_never_promoted(
         (snapshot_dir / "future__BTC__horizon-7d.json").read_text()
     )
     assert published["run_id"] == "run_NEW"
+
+
+def test_a_run_still_writing_is_left_alone_and_never_promoted(snapshot_dir) -> None:
+    """The light pass exports every 15 minutes. Deleting a fresh staging
+    directory pulled the floor from under another run mid-write."""
+
+    concurrent = snapshot_dir / ".staging" / "run_WRITING"
+    concurrent.mkdir(parents=True)
+    (concurrent / "future__ETH__horizon-7d.json").write_text('{"asset": "ETH"}')
+
+    fetch = fetcher({("BTC", "7d"): payload()})
+    exporter._export_atomically(fetch, "", endpoints(("BTC", "7d")), "run_NEW")
+
+    assert concurrent.exists()
+    assert not (snapshot_dir / "future__ETH__horizon-7d.json").exists()
 
 
 def test_staging_is_cleaned_up_after_a_refused_export(snapshot_dir) -> None:

@@ -90,8 +90,9 @@ void main() {
 
       // Three reasons on the home, so the "why" reads at a glance; the
       // rest is under "Voir tout".
-      expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('decision-reason-4')), findsNothing);
+      expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
+      expect(find.byKey(const ValueKey('decision-explanation')), findsOneWidget);
 
       // The hero carries risk, horizon and the balance of signals. Confidence
       // and expected amplitude are engine vocabulary and moved down with the
@@ -133,8 +134,8 @@ void main() {
       await tester.pumpAndSettle();
       // Switching horizon rebuilds the reasons; the five-reason cap holds on
       // every horizon, not only the one the page opened on.
-      expect(find.byKey(const ValueKey('decision-reason-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('decision-reason-6')), findsNothing);
+      expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
+      expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('decision-horizon')));
       await tester.pumpAndSettle();
@@ -155,15 +156,16 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('decision-detail-back')));
       await tester.pumpAndSettle();
 
+      // A main factor opens its four-question sheet.
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('why-see-all')),
+        find.byKey(const ValueKey('main-factor-1')),
         250,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.byKey(const ValueKey('why-see-all')));
+      await tester.tap(find.byKey(const ValueKey('main-factor-1')));
       await tester.pumpAndSettle();
-      expect(find.text('Détails des facteurs'), findsOneWidget);
-      await tester.tap(find.byTooltip('Fermer'));
+      expect(find.textContaining('QUE SE PASSE-T-IL ?'), findsOneWidget);
+      await tester.tapAt(const Offset(200, 20));
       await tester.pumpAndSettle();
 
       // The watchlist shows the three dates that matter; the rest of the
@@ -190,21 +192,13 @@ void main() {
       }
 
       // Scenarios, market context and the five families left the main page.
-      // They are still in the app, now two taps down: the reasons sheet leads
-      // to them, so the home itself carries no route to the heavy analysis.
+      // "Voir l'analyse complète" under the main factors leads to them.
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('why-see-all')),
+        find.byKey(const ValueKey('see-full-analysis')),
         450,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.byKey(const ValueKey('why-see-all')));
-      await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('see-full-details')),
-        300,
-        scrollable: find.byType(Scrollable).last,
-      );
-      await tester.tap(find.byKey(const ValueKey('see-full-details')));
+      await tester.tap(find.byKey(const ValueKey('see-full-analysis')));
       await tester.pumpAndSettle();
       expect(find.text('Détails complets'), findsOneWidget);
       expect(find.byKey(const ValueKey('scenarios-see-details')), findsWidgets);

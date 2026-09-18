@@ -11,7 +11,8 @@ import argparse
 import json
 import os
 import shutil
-from datetime import UTC, datetime
+import time
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -235,6 +236,11 @@ def _validate_snapshot(path: Path, data: dict, run_id: str) -> list[str]:
     return problems
 
 
+#: A staging directory older than this was left by a run that died; a full
+#: export takes minutes, so two hours cannot be a run still in progress.
+STAGING_ABANDONED_AFTER = timedelta(hours=2)
+
+
 def _export_atomically(
     fetch, base_url: str, endpoints, run_id: str
 ) -> list[str]:
@@ -252,8 +258,15 @@ def _export_atomically(
     staging.mkdir(parents=True, exist_ok=True)
 
     # A staging directory left by a run that was killed must never be promoted.
+    # Only an old one is removed: a fresh one belongs to a run still writing -
+    # deleting it made that run fail on a file whose directory had vanished.
+    abandoned_after = time.time() - STAGING_ABANDONED_AFTER.total_seconds()
     for leftover in (OUT_DIR / ".staging").iterdir():
-        if leftover.is_dir() and leftover.name != run_id:
+        if (
+            leftover.is_dir()
+            and leftover.name != run_id
+            and leftover.stat().st_mtime < abandoned_after
+        ):
             shutil.rmtree(leftover, ignore_errors=True)
 
     # Several endpoints can share a snapshot name. Keyed by target rather than

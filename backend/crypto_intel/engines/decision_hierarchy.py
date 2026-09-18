@@ -1156,7 +1156,7 @@ def _decision_line(
     )
     if action == "INSUFFICIENT_DATA":
         missing = ", ".join(hierarchy.data_gaps) or "plusieurs familles"
-        return f"⚪ Données majeures manquantes ({missing}) : aucune recommandation n'est donnée."
+        return f"⚪️ Données majeures manquantes ({missing}) : aucune recommandation n'est donnée."
     if action == "WAIT":
         if gate_active and gate_event is not None:
             return (
@@ -1325,7 +1325,7 @@ def build_hierarchy(
                 continue
             lines.append(text)
     if gaps and len(lines) < 4 and any(g in {"Crédit", "Baleines", "ETF", "Spot", "Taux US"} for g in gaps):
-        lines.append(f"⚪ {', '.join(gaps)} : donnée indisponible, la lecture est moins complète.")
+        lines.append(f"⚪️ {', '.join(gaps)} : donnée indisponible, la lecture est moins complète.")
     gate_event = next(
         (d for d in drivers if gate_event_ids and d.id in gate_event_ids),
         None,

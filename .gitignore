@@ -66,3 +66,7 @@ data/.refresh.lock
 
 # Per-source runtime state, rebuilt by the pipeline.
 data/source_state.json
+
+# Snapshot export works in a staging directory before swapping the set in.
+# It is transient by construction and must never be committed.
+app/assets/api_snapshots/.staging/
