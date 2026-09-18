@@ -1111,6 +1111,19 @@ def cmd_lot6b(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_health(args) -> int:
+    """What the app is actually being served, and whether it is sound."""
+
+    from .pipeline.health import collect_health, render, write_health_json
+
+    report = collect_health()
+    print(render(report))
+    if getattr(args, "json", False):
+        target = write_health_json(report)
+        print(f"\n  health.json écrit: {target}")
+    return {"HEALTHY": 0, "DEGRADED": 0, "INVALID": 1}[report.status]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="crypto-intel",
@@ -1293,6 +1306,10 @@ def main() -> int:
 
     p = sub.add_parser("coverage", help="Show available historical depth")
     p.set_defaults(func=cmd_coverage, is_async=False)
+
+    p = sub.add_parser("health", help="État du pipeline, des snapshots et des familles")
+    p.add_argument("--json", action="store_true", help="Écrire aussi health.json")
+    p.set_defaults(func=cmd_health)
 
     p = sub.add_parser(
         "data-health",

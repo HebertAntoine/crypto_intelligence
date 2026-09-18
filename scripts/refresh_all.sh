@@ -19,6 +19,17 @@ LOG="$LOG_DIR/refresh_$STAMP.log"
 log() { printf '%s %s\n' "$(date -u +%H:%M:%S)" "$*" | tee -a "$LOG"; }
 
 cd "$ROOT" || exit 1
+
+# One pipeline writer at a time. A manual run launched while the 07:00 timer is
+# still working would otherwise interleave two collections into the same
+# database and export a set built from both.
+LOCK="$ROOT/data/.refresh.lock"
+mkdir -p "$(dirname "$LOCK")"
+exec 9>"$LOCK"
+if ! flock -n 9; then
+  echo "$(date -u +%H:%M:%S) refresh already running, skipping this start" >&2
+  exit 75   # EX_TEMPFAIL: not a failure, simply not this run's turn
+fi
 # The package lives under backend/, which is why the export script adds it to
 # sys.path itself. The CLI needs the same, or it cannot import crypto_intel.
 export PYTHONPATH="$ROOT/backend${PYTHONPATH:+:$PYTHONPATH}"
@@ -43,10 +54,18 @@ run_step() {
 
 run_step "collect"  "$PY" -m crypto_intel.cli collect
 run_step "analyze"  "$PY" -m crypto_intel.cli analyze
-run_step "snapshots" "$PY" scripts/export_flutter_static_api.py --in-process
+# One identifier for the whole cycle, stamped on every snapshot, so a mixed set
+# is detectable rather than invisible.
+RUN_ID="run_$(date -u +%Y%m%dT%H%M%SZ)"
+log "run_id $RUN_ID"
+run_step "snapshots" "$PY" scripts/export_flutter_static_api.py --in-process --run-id "$RUN_ID"
 
-# The snapshot timestamps are what the screen shows. Report them so a failed
-# export is visible in the log rather than only in the app.
+# The run reports its own state rather than waiting to be asked. health.json is
+# written on every cycle so a person, a page or a later check reads the same
+# thing the pipeline concluded.
+log "health:"
+"$PY" -m crypto_intel.cli health --json >>"$LOG" 2>&1 || status=1
+
 log "snapshot freshness:"
 "$PY" - <<'PYEOF' >>"$LOG" 2>&1
 import json, pathlib, datetime
@@ -63,5 +82,15 @@ for path in sorted(snap.glob("future__*__horizon-7d.json")):
     print(f"  {path.name:<44} as_of={str(as_of)[:19]}  age={age}")
 PYEOF
 
-log "refresh done (status $status)"
-exit "$status"
+# Exit codes carry meaning: a failed optional source is a degraded success, an
+# unusable export is a failure. The timer's journal then says which happened.
+if [ "$status" -eq 0 ]; then
+  log "refresh done: SUCCESS"
+  exit 0
+fi
+if grep -q "✗ snapshots" "$LOG"; then
+  log "refresh done: FAILED (export unusable, previous set kept)"
+  exit 1
+fi
+log "refresh done: DEGRADED_SUCCESS (a step failed, snapshots published)"
+exit 0
