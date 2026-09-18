@@ -1111,6 +1111,27 @@ def cmd_lot6b(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_light_refresh(args) -> int:
+    """Collect only what its own policy says is due, then republish."""
+
+    import json as _json
+
+    from .pipeline.light_refresh import run_light_refresh
+
+    outcome = run_light_refresh(trigger=getattr(args, "trigger", "MANUAL"))
+    if getattr(args, "json", False):
+        print(_json.dumps(outcome.to_dict(), ensure_ascii=False, indent=2))
+    else:
+        print(f"run {outcome.run_id}  [{outcome.status}]")
+        print(f"  dues       : {', '.join(outcome.due) or '—'}")
+        print(f"  réussies   : {', '.join(outcome.succeeded) or '—'}")
+        print(f"  échouées   : {', '.join(outcome.failed) or '—'}")
+        print(f"  circuit    : {', '.join(outcome.skipped_open_circuit) or '—'}")
+        print(f"  familles   : {', '.join(sorted(outcome.dirty_families)) or '—'}")
+        print(f"  exporté    : {outcome.exported}")
+    return {"SUCCESS": 0, "DEGRADED_SUCCESS": 0, "FAILED": 1}[outcome.status]
+
+
 def cmd_health(args) -> int:
     """What the app is actually being served, and whether it is sound."""
 
@@ -1306,6 +1327,14 @@ def main() -> int:
 
     p = sub.add_parser("coverage", help="Show available historical depth")
     p.set_defaults(func=cmd_coverage, is_async=False)
+
+    p = sub.add_parser(
+        "light-refresh",
+        help="Collecter uniquement les sources rapides arrivées à échéance",
+    )
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--trigger", default="MANUAL")
+    p.set_defaults(func=cmd_light_refresh)
 
     p = sub.add_parser("health", help="État du pipeline, des snapshots et des familles")
     p.add_argument("--json", action="store_true", help="Écrire aussi health.json")

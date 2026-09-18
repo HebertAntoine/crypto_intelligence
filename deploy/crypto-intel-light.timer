@@ -1,0 +1,15 @@
+[Unit]
+Description=Passe légère Crypto Intelligence
+
+[Timer]
+# Every fifteen minutes. The fastest policy asks for five, but a pass costs a
+# few minutes of work: a quarter of an hour refreshes the five-minute sources
+# three times per full-cycle hour while leaving the machine idle in between,
+# and the policies themselves decide which sources are actually called.
+OnCalendar=*:00/15
+Persistent=true
+RandomizedDelaySec=60
+Unit=crypto-intel-light.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,17 @@
+[Unit]
+Description=Crypto Intelligence — passe légère (sources rapides arrivées à échéance)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/antoineh/crypto_intelligence
+Environment=PYTHONPATH=/home/antoineh/crypto_intelligence/backend
+# The same flock as the full pass: one pipeline writer at a time. A light run
+# that collides with 07:00 exits 75 and waits for the next slot.
+ExecStart=/usr/bin/flock -n /home/antoineh/crypto_intelligence/data/.refresh.lock \
+  /home/antoineh/crypto_intelligence/.venv/bin/python -m crypto_intel.cli light-refresh --trigger SYSTEMD_LIGHT
+TimeoutStartSec=900
+Nice=15
+# Colliding with the full pass is not a failure, it is simply not this run's turn.
+SuccessExitStatus=75
