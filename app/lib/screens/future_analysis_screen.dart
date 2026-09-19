@@ -11,6 +11,7 @@ import '../theme/app_theme.dart';
 import '../widgets/color_emoji.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
+import 'full_analysis_page.dart';
 
 class FutureAnalysisScreen extends StatefulWidget {
   final ApiClient client;
@@ -124,6 +125,25 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
       ),
     );
     if (selected != null) _selectHorizon(selected);
+  }
+
+  /// The full analysis page: the gated decision, the six families and their
+  /// measures. The older scenario sheet stays one tap further.
+  void _openFullAnalysis(FutureDecisionRead decision, _FutureBundle bundle) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: '/${_asset.toLowerCase()}/analysis'),
+        builder: (_) => FullAnalysisPage(
+          client: widget.client,
+          asset: _asset,
+          initialHorizon: _horizon,
+          livePrices: widget.livePrices,
+          fallbackPrice: bundle.market?.marketData?.displayPrice,
+          fallbackChange24h: bundle.market?.marketData?.change24hPct,
+          onTechnicalDetails: () => _showFullDetails(decision, bundle),
+        ),
+      ),
+    );
   }
 
   /// Everything that left the main page. Nothing is removed from the app: the
@@ -315,7 +335,21 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   onTap: () => _showDecisionDetails(decision, bundle),
                 ),
                 const SizedBox(height: 14),
-                if (decision.hierarchy != null) ...[
+                if (decision.analysis != null) ...[
+                  // The gated six-family decision: why, with figures, then
+                  // the factors that actually move it - one tap from the full
+                  // analysis.
+                  _AnalysisExplanationCard(
+                    decision: decision,
+                    analysis: decision.analysis!,
+                  ),
+                  const SizedBox(height: 14),
+                  _AnalysisFactorsCard(
+                    analysis: decision.analysis!,
+                    asset: _asset,
+                    onSeeAnalysis: () => _openFullAnalysis(decision, bundle),
+                  ),
+                ] else if (decision.hierarchy != null) ...[
                   // Cause -> consequence -> decision, from the engine's own
                   // ranking. The flat list of readings it replaces gave a
                   // short-term trend the same room as a Fed decision.
@@ -926,7 +960,18 @@ class _DecisionCard extends StatelessWidget {
                             // signals is what the verdict actually rests on.
                             // It is the hierarchy's reading, so the tile can
                             // never disagree with the reasoning beneath it.
-                            final reading = decision.hierarchy?.reading;
+                            final analysis = decision.analysis;
+                            final reading = analysis != null
+                                ? (analysis.blockingGate == 'CONTRADICTION'
+                                    ? 'MIXED'
+                                    : (analysis.score ?? 0) >= 15
+                                        ? 'POSITIVE'
+                                        : (analysis.score ?? 0) <= -15
+                                            ? 'NEGATIVE'
+                                            : analysis.score == null
+                                                ? 'UNKNOWN'
+                                                : 'NEUTRAL')
+                                : decision.hierarchy?.reading;
                             final signals = reading == null
                                 ? _signalsLabel(_decisionFactors(decision, bundle))
                                 : switch (reading) {
@@ -1110,6 +1155,10 @@ class _WhyDecisionCard extends StatelessWidget {
 
 /// The hero names the one thing that matters most, not a generic mood.
 String _heroSentence(FutureDecisionRead decision, _FutureBundle bundle) {
+  final analysis = decision.analysis;
+  if (analysis != null && analysis.subtitle.isNotEmpty) {
+    return '${analysis.subtitle}.';
+  }
   final primary = decision.hierarchy?.primary;
   if (primary == null) {
     return _verdictSentence(decision, _decisionFactors(decision, bundle));
@@ -1429,6 +1478,147 @@ Future<void> _showDriverDetail(BuildContext context, FutureDriverRead driver) =>
         ),
       ),
     );
+
+/// Why the decision is what it is: the gate that holds it, then the figures.
+class _AnalysisExplanationCard extends StatelessWidget {
+  final FutureDecisionRead decision;
+  final FutureAnalysisRead analysis;
+
+  const _AnalysisExplanationCard({required this.decision, required this.analysis});
+
+  @override
+  Widget build(BuildContext context) {
+    final lead = switch (analysis.action) {
+      'BUY' => '✅',
+      'SELL' => '❌',
+      'INSUFFICIENT_DATA' => '⚪',
+      _ => '⏳',
+    };
+    return GlassPanel(
+      key: const ValueKey('decision-explanation'),
+      borderColor: const Color(0xFF2B669B),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(
+            emoji: '🔎',
+            text: switch (analysis.action) {
+              'BUY' => 'Pourquoi acheter ?',
+              'SELL' => 'Pourquoi vendre ?',
+              'INSUFFICIENT_DATA' => 'Pourquoi pas de recommandation ?',
+              _ => 'Pourquoi attendre ?',
+            },
+          ),
+          const SizedBox(height: 10),
+          for (final line in ['$lead ${analysis.headline}', ...analysis.reasons.take(4)]) ...[
+            Text(
+              line,
+              style: const TextStyle(
+                color: Color(0xFFE6EEF9),
+                fontSize: 14,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 7),
+          ],
+          const SizedBox(height: 2),
+          Text(
+            'Confiance ${analysis.confidence} % · données ${analysis.dataQuality} % · '
+            'dernière donnée ${freshnessLabel(analysis.newestData)}',
+            key: const ValueKey('home-data-trust'),
+            style: const TextStyle(color: mobileMuted, fontSize: 11.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The families that move the decision now, chosen by their contribution.
+class _AnalysisFactorsCard extends StatelessWidget {
+  final FutureAnalysisRead analysis;
+  final String asset;
+  final VoidCallback onSeeAnalysis;
+
+  const _AnalysisFactorsCard({
+    required this.analysis,
+    required this.asset,
+    required this.onSeeAnalysis,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final factors = analysis.homeFactors;
+    final families = {for (final f in analysis.families) f.family: f};
+    final onchain = families['onchain'];
+    final onchainListed = factors.any((f) => f.family == 'onchain');
+    return GlassPanel(
+      key: const ValueKey('main-factors'),
+      borderColor: const Color(0xFF245E90),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionTitle(emoji: '📌', text: 'Facteurs principaux'),
+          const SizedBox(height: 4),
+          for (var index = 0; index < factors.length; index++) ...[
+            if (index > 0) const Divider(height: 1, color: Color(0xFF1D3853)),
+            _StatusRow(
+              key: ValueKey('main-factor-${index + 1}'),
+              emoji: factors[index].emoji,
+              title: factors[index].label,
+              status: factors[index].status,
+              tone: factors[index].tone,
+              value: factors[index].value,
+              onTap: families[factors[index].family] == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => FamilyDetailPage(
+                            family: families[factors[index].family]!,
+                            asset: asset,
+                            horizon: analysis.horizon,
+                          ),
+                        ),
+                      ),
+            ),
+          ],
+          if (onchain != null && !onchainListed) ...[
+            const Divider(height: 1, color: Color(0xFF1D3853)),
+            _StatusRow(
+              key: const ValueKey('whale-status'),
+              emoji: '🐋',
+              title: 'Baleines & on-chain',
+              status: onchain.usable ? onchain.stateLabel : 'Donnée indisponible',
+              tone: onchain.usable ? 'YELLOW' : 'WHITE',
+            ),
+          ],
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              key: const ValueKey('see-full-analysis'),
+              onPressed: onSeeAnalysis,
+              style: TextButton.styleFrom(foregroundColor: mobileBlue),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Voir l’analyse complète',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, size: 20),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 /// What the largest holders are doing, or a plain statement that it is not
 /// measured. An absent reading is shown as absent - never as neutral, and

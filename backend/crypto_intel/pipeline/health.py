@@ -283,7 +283,7 @@ def _observed_freshness() -> dict[str, datetime]:
             continue
         if when.tzinfo is None:
             when = when.replace(tzinfo=UTC)
-        for prefix in {"etf.", "stablecoin", "macro.", "macro.hy_spread", "whale"}:
+        for prefix in {"etf.", "stablecoin", "macro.", "macro.hy_spread", "whale", "liquidity."}:
             if str(metric).startswith(prefix):
                 current = newest.get(prefix)
                 if current is None or when > current:

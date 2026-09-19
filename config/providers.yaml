@@ -28,10 +28,19 @@ capabilities:
   stablecoins.supply:  [defillama_stables]
 
   macro.series:        [fred]
+  # Primary official sources, keyless. Each has its own capability so one
+  # outage never hides another source's data.
+  macro.rates:                 [us_treasury_yields]
+  liquidity.tga:               [us_treasury_tga]
+  liquidity.rrp:               [nyfed_markets]
+  liquidity.fed_balance_sheet: [fed_h41]
+  macro.inflation:             [bls]
   macro.indices:       [yahoo_finance, stooq]
   # Each official calendar has its own capability so one successful source
   # cannot mask another source's outage.
   events.macro.fed:      [fed_calendar]
+  events.macro.ecb:      [ecb_calendar]
+  events.macro.boj:      [boj_calendar]
   events.macro.bls:      [bls_calendar]
   events.macro.bea:      [bea_calendar]
   events.macro.treasury: [treasury_auctions]

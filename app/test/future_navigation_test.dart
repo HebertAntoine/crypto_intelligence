@@ -156,7 +156,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('decision-detail-back')));
       await tester.pumpAndSettle();
 
-      // A main factor opens its four-question sheet.
+      // A main factor opens its family, measure by measure, and comes back.
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('main-factor-1')),
         250,
@@ -164,8 +164,8 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('main-factor-1')));
       await tester.pumpAndSettle();
-      expect(find.textContaining('QUE SE PASSE-T-IL ?'), findsOneWidget);
-      await tester.tapAt(const Offset(200, 20));
+      expect(find.byKey(const ValueKey('family-detail-back')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('family-detail-back')));
       await tester.pumpAndSettle();
 
       // The watchlist shows the three dates that matter; the rest of the
@@ -191,7 +191,7 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // Scenarios, market context and the five families left the main page.
+      // Scenarios, market context and the six families left the main page.
       // "Voir l'analyse complète" under the main factors leads to them.
       await tester.scrollUntilVisible(
         find.byKey(const ValueKey('see-full-analysis')),
@@ -200,9 +200,31 @@ void main() {
       );
       await tester.tap(find.byKey(const ValueKey('see-full-analysis')));
       await tester.pumpAndSettle();
+      // The full page: the gated decision, then the six families.
+      expect(find.byKey(const ValueKey('analysis-decision')), findsOneWidget);
+      expect(find.byKey(const ValueKey('confidence-disclaimer')), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('family-macro')),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.byKey(const ValueKey('family-macro')), findsOneWidget);
+      // Scenarios and the older detail sheet stay one tap further.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('technical-details')),
+        400,
+        scrollable: find.byType(Scrollable).last,
+      );
+      // Clear the bottom navigation bar, which sits over the page's last row.
+      await tester.drag(find.byType(Scrollable).last, const Offset(0, -200));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('technical-details')));
+      await tester.pumpAndSettle();
       expect(find.text('Détails complets'), findsOneWidget);
       expect(find.byKey(const ValueKey('scenarios-see-details')), findsWidgets);
       await tester.tapAt(const Offset(200, 20));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('full-analysis-back')));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('ETH'));

@@ -224,6 +224,17 @@ POLICIES: dict[str, SourceRefreshPolicy] = {
         note="ICE BofA via FRED: désactivée tant qu'aucune clé n'est "
         "configurée, plutôt que d'échouer deux fois par jour.",
     ),
+    "liquidity_official": SourceRefreshPolicy(
+        source_id="liquidity_official",
+        family="liquidity",
+        refresh_interval=_m(720),
+        max_age=_m(60 * 24 * 5),
+        criticality=Criticality.IMPORTANT,
+        metric_prefix="liquidity.",
+        note="Bilan de la Fed (hebdomadaire), TGA et RRP (quotidiens, jours "
+        "ouvrés) : cinq jours couvrent un week-end prolongé et la publication "
+        "hebdomadaire du H.4.1.",
+    ),
     "event_calendars": SourceRefreshPolicy(
         source_id="event_calendars",
         family="events",

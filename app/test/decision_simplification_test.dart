@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:crypto_intelligence_app/api/client.dart';
 import 'package:crypto_intelligence_app/live_prices/live_price_service.dart';
 import 'package:crypto_intelligence_app/main.dart';
+import 'package:crypto_intelligence_app/screens/full_analysis_page.dart';
 import 'package:crypto_intelligence_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -88,55 +89,40 @@ void main() {
     );
   });
 
-  testWidgets('tapping a main factor answers the four questions', (tester) async {
-    await _openBtc(tester);
-    await _select7d(tester);
-
-    final row = find.byKey(const ValueKey('main-factor-1'));
-    await tester.ensureVisible(row);
-    await tester.pumpAndSettle();
-    await tester.tap(row);
-    await tester.pumpAndSettle();
-
-    // Section 4: what is happening, why it matters, what the market expects,
-    // what would invalidate it - the same four for an event or a reading.
-    for (final question in const [
-      'QUE SE PASSE-T-IL ?',
-      'POURQUOI EST-CE IMPORTANT ?',
-      'CE QUE LE MARCHÉ ATTEND',
-      'CE QUI INVALIDERAIT LA LECTURE',
-    ]) {
-      expect(find.textContaining(question), findsOneWidget, reason: question);
-    }
-    await tester.drag(
-      find.byKey(const ValueKey('driver-detail')),
-      const Offset(0, -500),
-    );
-    await tester.pumpAndSettle();
-    expect(find.textContaining('SOURCE'), findsOneWidget);
-  });
-
-  testWidgets('an absent market expectation is stated, never implied',
+  testWidgets('tapping a main factor opens its family, measure by measure',
       (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
-    final top = decision.hierarchy!.homeFactors.first;
     final row = find.byKey(const ValueKey('main-factor-1'));
     await tester.ensureVisible(row);
     await tester.pumpAndSettle();
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    if (top.expectation == null) {
-      expect(
-        find.text('Aucune attente de marché mesurée pour ce facteur.'),
-        findsOneWidget,
-      );
-    } else {
-      expect(find.text(top.expectation!), findsOneWidget);
-    }
+    // Every measure: value, change, state, date, source, and why it matters.
+    expect(find.byType(MetricTile), findsWidgets);
+    expect(find.textContaining('Pourquoi ça compte'), findsWidgets);
+    expect(find.textContaining('Mise à jour'), findsWidgets);
+  });
+
+  testWidgets('an unavailable family is declared, never shown as neutral',
+      (tester) async {
+    await _openBtc(tester);
+    await _select7d(tester);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('see-full-analysis')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byKey(const ValueKey('see-full-analysis')));
+    await tester.pumpAndSettle();
+
+    // On-chain has no connected source: it says so, with its reason.
+    final card = find.byKey(const ValueKey('family-onchain'));
+    await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).last);
+    expect(find.descendant(of: card, matching: find.text('Indisponible')), findsOneWidget);
+    expect(find.descendant(of: card, matching: find.text('Neutre')), findsNothing);
   });
 
   testWidgets('each main factor carries one colour status, never an amplitude',
@@ -206,6 +192,14 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('see-full-analysis')));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const ValueKey('analysis-decision')), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('technical-details')),
+      400,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.byKey(const ValueKey('technical-details')));
+    await tester.pumpAndSettle();
     expect(find.text('Détails complets'), findsOneWidget);
   });
 
@@ -298,22 +292,15 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    // The screen renders what the engine ranked, in that order - never a
-    // re-sort by date or by family.
+    // The screen renders what the engine ranked by contribution, in order.
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
-    final ranked = decision.hierarchy!.homeFactors;
+    final ranked = decision.analysis!.homeFactors;
     expect(ranked, isNotEmpty);
     for (var index = 0; index < ranked.length; index++) {
       final row = find.byKey(ValueKey('main-factor-${index + 1}'));
       expect(
-        find.descendant(of: row, matching: find.text(ranked[index].title)),
+        find.descendant(of: row, matching: find.text(ranked[index].label)),
         findsOneWidget,
-      );
-    }
-    for (var index = 2; index < ranked.length; index++) {
-      expect(
-        ranked[index].countedWeight,
-        lessThanOrEqualTo(ranked[index - 1].countedWeight),
       );
     }
   });
@@ -413,18 +400,34 @@ void main() {
     expect(heading, findsOneWidget);
   });
 
-  testWidgets('the home names what would change the decision in its reasoning',
+  testWidgets('what would change the decision sits one tap away',
       (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
-    // The separate conditions card left the home: the reasoning ends on what
-    // the decision waits for, which is where a reader looks for it.
-    expect(find.byKey(const ValueKey('what-would-change')), findsNothing);
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
-    final last = decision.hierarchy!.explanation.last;
-    expect(last, matches(RegExp(r'^[⏳✅❌⚪]')));
-    expect(find.text(last), findsOneWidget);
+    final analysis = decision.analysis!;
+    // The home says which gate holds the decision...
+    expect(find.textContaining(analysis.headline), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('see-full-analysis')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byKey(const ValueKey('see-full-analysis')));
+    await tester.pumpAndSettle();
+
+    // ...and the full page lists what would move it, three at most.
+    if (analysis.toBuy.isNotEmpty) {
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('analysis-to-buy')),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.byKey(const ValueKey('analysis-to-buy')), findsOneWidget);
+    }
+    expect(analysis.toBuy.length, lessThanOrEqualTo(3));
+    expect(analysis.toWorsen.length, lessThanOrEqualTo(3));
   });
 
   testWidgets('a direction-free reading never shows a direction',
@@ -478,35 +481,23 @@ void main() {
     }
   });
 
-  testWidgets('the source shown is a real provider, not the family name',
+  testWidgets('each measure names a real source, never a family',
       (tester) async {
     await _openBtc(tester);
     await _select7d(tester);
 
-    final row = find.byKey(const ValueKey('main-factor-1'));
-    await tester.ensureVisible(row);
-    await tester.pumpAndSettle();
-    await tester.tap(row);
-    await tester.pumpAndSettle();
-
-    await tester.drag(
-      find.byKey(const ValueKey('driver-detail')),
-      const Offset(0, -500),
-    );
-    await tester.pumpAndSettle();
-    final lines = tester
-        .widgetList<Text>(find.byType(Text))
-        .map((widget) => widget.data ?? '')
-        .toList();
-    final index = lines.indexWhere((line) => line.contains('SOURCE'));
-    expect(index, isNonNegative);
-    final sourceLine = lines[index + 1];
-    for (final familyName in const [
-      'Positionnement & dérivés',
-      'Flux institutionnels & baleines',
-      'Technique & volatilité',
-    ]) {
-      expect(sourceLine.contains(familyName), isFalse);
+    final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
+    for (final family in decision.analysis!.families) {
+      for (final metric in family.metrics.where((m) => m.usable)) {
+        expect(metric.source, isNotEmpty, reason: metric.key);
+        for (final familyName in const [
+          'Macro & banques centrales',
+          'ETF & flux spot',
+          'Technique & structure',
+        ]) {
+          expect(metric.source.contains(familyName), isFalse);
+        }
+      }
     }
   });
 

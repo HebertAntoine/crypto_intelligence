@@ -215,6 +215,11 @@ class Pipeline:
         tasks = {
             "stablecoins": self._fetch("stablecoins.supply"),
             "macro_series": self._fetch("macro.series"),
+            "macro_rates": self._fetch("macro.rates"),
+            "macro_inflation": self._fetch("macro.inflation"),
+            "liquidity_tga": self._fetch("liquidity.tga"),
+            "liquidity_rrp": self._fetch("liquidity.rrp"),
+            "liquidity_fed_balance_sheet": self._fetch("liquidity.fed_balance_sheet"),
             "macro_indices": self._fetch("macro.indices"),
             "news": self._fetch("news.feed"),
             "regulation": self._fetch("regulation.feed"),

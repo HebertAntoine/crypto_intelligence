@@ -494,6 +494,10 @@ class FutureDecisionRead {
   /// explanation built from that ranking. Null on an older payload.
   final FutureHierarchyRead? hierarchy;
 
+  /// The six scored families and the gated BUY / WAIT / SELL. Null on an
+  /// older payload.
+  final FutureAnalysisRead? analysis;
+
   const FutureDecisionRead({
     required this.asset,
     required this.analysisId,
@@ -519,6 +523,7 @@ class FutureDecisionRead {
     this.synthesis,
     this.noMeasurableEdge = false,
     this.hierarchy,
+    this.analysis,
   });
 
   /// Build the sentence only from an AVAILABLE, priced expectation.
@@ -567,6 +572,10 @@ class FutureDecisionRead {
       conditionsToSell: (json['conditions_to_sell'] as List? ?? const [])
           .map((value) => value.toString())
           .toList(),
+      analysis: json['analysis'] is Map
+          ? FutureAnalysisRead.fromJson(
+              Map<String, dynamic>.from(json['analysis'] as Map))
+          : null,
       hierarchy: json['hierarchy'] is Map
           ? FutureHierarchyRead.fromJson(
               Map<String, dynamic>.from(json['hierarchy'] as Map))
@@ -757,6 +766,279 @@ class FutureHierarchyRead {
       whaleTone: whale['tone']?.toString() ?? 'WHITE',
       whaleDetail: whale['detail']?.toString() ?? '',
       whalePrincipal: whale['principal'] == true,
+    );
+  }
+}
+
+
+List<String> _strings(Object? raw) =>
+    (raw as List? ?? const []).map((item) => item.toString()).toList();
+
+Map<String, dynamic> _map(Object? raw) =>
+    raw is Map ? Map<String, dynamic>.from(raw) : const <String, dynamic>{};
+
+/// One measure inside a family: value, change, date, source, freshness.
+class AnalysisMetricRead {
+  final String key;
+  final String label;
+  final String emoji;
+
+  /// AVAILABLE | STALE | UNAVAILABLE | NOT_APPLICABLE | ...
+  final String status;
+  final String displayValue;
+  final String deltaLabel;
+  final DateTime? timestamp;
+  final String source;
+  final String sourceTier;
+
+  /// FAVORABLE | UNFAVORABLE | NEUTRAL | UNKNOWN
+  final String state;
+  final String why;
+  final String note;
+
+  const AnalysisMetricRead({
+    required this.key,
+    required this.label,
+    required this.emoji,
+    required this.status,
+    required this.displayValue,
+    required this.deltaLabel,
+    required this.source,
+    required this.sourceTier,
+    required this.state,
+    required this.why,
+    required this.note,
+    this.timestamp,
+  });
+
+  bool get usable => status == 'AVAILABLE';
+
+  factory AnalysisMetricRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisMetricRead(
+        key: json['key']?.toString() ?? '',
+        label: json['label']?.toString() ?? '',
+        emoji: json['emoji']?.toString() ?? '📊',
+        status: json['status']?.toString() ?? 'UNAVAILABLE',
+        displayValue: json['display_value']?.toString() ?? '—',
+        deltaLabel: json['delta_label']?.toString() ?? '',
+        timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '')?.toLocal(),
+        source: json['source']?.toString() ?? '',
+        sourceTier: json['source_tier']?.toString() ?? '',
+        state: json['state']?.toString() ?? 'UNKNOWN',
+        why: json['why']?.toString() ?? '',
+        note: json['note']?.toString() ?? '',
+      );
+}
+
+class AnalysisFamilyRead {
+  final String family;
+  final String label;
+  final String emoji;
+  final String status;
+  final double? score;
+  final String state;
+  final String stateLabel;
+  final int confidence;
+  final int dataQuality;
+  final String headline;
+  final List<String> reasons;
+  final List<String> contradictions;
+  final List<String> invalidationConditions;
+  final List<String> importantValues;
+  final List<AnalysisMetricRead> metrics;
+  final String unavailableReason;
+  final Map<String, dynamic> extra;
+
+  const AnalysisFamilyRead({
+    required this.family,
+    required this.label,
+    required this.emoji,
+    required this.status,
+    required this.state,
+    required this.stateLabel,
+    required this.confidence,
+    required this.dataQuality,
+    required this.headline,
+    required this.reasons,
+    required this.contradictions,
+    required this.invalidationConditions,
+    required this.importantValues,
+    required this.metrics,
+    required this.unavailableReason,
+    required this.extra,
+    this.score,
+  });
+
+  bool get usable =>
+      (status == 'AVAILABLE' || status == 'PARTIAL') && score != null;
+
+  /// The two or three figures the card shows, most important first.
+  List<AnalysisMetricRead> get keyMetrics {
+    final byKey = {for (final m in metrics) m.key: m};
+    final picked = [
+      for (final key in importantValues)
+        if (byKey[key] != null) byKey[key]!,
+    ];
+    if (picked.isEmpty) {
+      picked.addAll(metrics.where((m) => m.usable).take(3));
+    }
+    return picked.take(3).toList();
+  }
+
+  factory AnalysisFamilyRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisFamilyRead(
+        family: json['family']?.toString() ?? '',
+        label: json['label']?.toString() ?? '',
+        emoji: json['emoji']?.toString() ?? '📊',
+        status: json['status']?.toString() ?? 'UNAVAILABLE',
+        score: _number(json['score']),
+        state: json['state']?.toString() ?? 'UNKNOWN',
+        stateLabel: json['state_label']?.toString() ?? 'Indéterminé',
+        confidence: (_number(json['confidence']) ?? 0).round(),
+        dataQuality: (_number(json['data_quality']) ?? 0).round(),
+        headline: json['headline']?.toString() ?? '',
+        reasons: _strings(json['reasons']),
+        contradictions: _strings(json['contradictions']),
+        invalidationConditions: _strings(json['invalidation_conditions']),
+        importantValues: _strings(json['important_values']),
+        metrics: (json['metrics'] as List? ?? const [])
+            .whereType<Map>()
+            .map((m) => AnalysisMetricRead.fromJson(Map<String, dynamic>.from(m)))
+            .toList(),
+        unavailableReason: json['unavailable_reason']?.toString() ?? '',
+        extra: _map(json['extra']),
+      );
+}
+
+class AnalysisGateRead {
+  final String name;
+  final String label;
+  final String status;
+  final String detail;
+
+  const AnalysisGateRead({
+    required this.name,
+    required this.label,
+    required this.status,
+    required this.detail,
+  });
+
+  bool get blocks => status == 'BLOCK';
+
+  factory AnalysisGateRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisGateRead(
+        name: json['name']?.toString() ?? '',
+        label: json['label']?.toString() ?? '',
+        status: json['status']?.toString() ?? 'PASS',
+        detail: json['detail']?.toString() ?? '',
+      );
+}
+
+class AnalysisHomeFactorRead {
+  final String family;
+  final String emoji;
+  final String label;
+  final String status;
+  final String tone;
+  final String value;
+
+  const AnalysisHomeFactorRead({
+    required this.family,
+    required this.emoji,
+    required this.label,
+    required this.status,
+    required this.tone,
+    required this.value,
+  });
+
+  factory AnalysisHomeFactorRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisHomeFactorRead(
+        family: json['family']?.toString() ?? '',
+        emoji: json['emoji']?.toString() ?? '📊',
+        label: json['label']?.toString() ?? '',
+        status: json['status']?.toString() ?? '',
+        tone: json['tone']?.toString() ?? 'WHITE',
+        value: json['value']?.toString() ?? '',
+      );
+}
+
+/// The gated decision for one horizon.
+class FutureAnalysisRead {
+  final String horizon;
+  final String action;
+  final double? score;
+  final int confidence;
+  final String confidenceMeaning;
+  final int dataQuality;
+  final DateTime? newestData;
+  final String headline;
+  final String subtitle;
+  final List<String> reasons;
+  final List<String> toBuy;
+  final List<String> toWorsen;
+  final List<AnalysisGateRead> gates;
+  final String? blockingGate;
+  final List<AnalysisHomeFactorRead> homeFactors;
+  final List<AnalysisFamilyRead> families;
+
+  const FutureAnalysisRead({
+    required this.horizon,
+    required this.action,
+    required this.confidence,
+    required this.confidenceMeaning,
+    required this.dataQuality,
+    required this.headline,
+    required this.subtitle,
+    required this.reasons,
+    required this.toBuy,
+    required this.toWorsen,
+    required this.gates,
+    required this.homeFactors,
+    required this.families,
+    this.score,
+    this.newestData,
+    this.blockingGate,
+  });
+
+  static const familyOrder = [
+    'macro',
+    'liquidity',
+    'flows',
+    'derivatives',
+    'onchain',
+    'technical',
+  ];
+
+  factory FutureAnalysisRead.fromJson(Map<String, dynamic> json) {
+    final familyMap = _map(json['families']);
+    return FutureAnalysisRead(
+      horizon: json['horizon']?.toString() ?? '7d',
+      action: json['action']?.toString() ?? 'WAIT',
+      score: _number(json['score']),
+      confidence: (_number(json['confidence']) ?? 0).round(),
+      confidenceMeaning: json['confidence_meaning']?.toString() ?? '',
+      dataQuality: (_number(json['data_quality']) ?? 0).round(),
+      newestData: DateTime.tryParse(json['newest_data']?.toString() ?? '')?.toLocal(),
+      headline: json['headline']?.toString() ?? '',
+      subtitle: json['subtitle']?.toString() ?? '',
+      reasons: _strings(json['reasons']),
+      toBuy: _strings(json['to_buy']),
+      toWorsen: _strings(json['to_worsen']),
+      gates: (json['gates'] as List? ?? const [])
+          .whereType<Map>()
+          .map((g) => AnalysisGateRead.fromJson(Map<String, dynamic>.from(g)))
+          .toList(),
+      blockingGate: json['blocking_gate']?.toString(),
+      homeFactors: (json['home_factors'] as List? ?? const [])
+          .whereType<Map>()
+          .map((f) => AnalysisHomeFactorRead.fromJson(Map<String, dynamic>.from(f)))
+          .toList(),
+      families: [
+        for (final key in familyOrder)
+          if (familyMap[key] is Map)
+            AnalysisFamilyRead.fromJson(
+                Map<String, dynamic>.from(familyMap[key] as Map)),
+      ],
     );
   }
 }

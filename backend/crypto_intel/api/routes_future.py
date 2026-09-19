@@ -67,6 +67,9 @@ def _decision(snapshot: Any, horizon: DecisionHorizon) -> Any:
             getattr(getattr(snapshot, "edge", None), "state", "") or ""
         )
         or None,
+        decision_families=(
+            getattr(snapshot, "decision_families_by_horizon", {}) or {}
+        ).get(horizon.value),
     )
 
 

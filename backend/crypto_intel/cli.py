@@ -1111,6 +1111,16 @@ def cmd_lot6b(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backfill_official(args) -> int:
+    """History of the official US series and stablecoin supply, keyless."""
+    from .providers.macro.official_backfill import backfill
+
+    written = backfill(since_year=args.since)
+    for name, rows in written.items():
+        print(f"  {name:<16} {rows} lignes")
+    return 0
+
+
 def cmd_light_refresh(args) -> int:
     """Collect only what its own policy says is due, then republish."""
 
@@ -1327,6 +1337,13 @@ def main() -> int:
 
     p = sub.add_parser("coverage", help="Show available historical depth")
     p.set_defaults(func=cmd_coverage, is_async=False)
+
+    p = sub.add_parser(
+        "backfill-official",
+        help="Historique des séries officielles US et des stablecoins (sans clé)",
+    )
+    p.add_argument("--since", type=int, default=2019)
+    p.set_defaults(func=cmd_backfill_official)
 
     p = sub.add_parser(
         "light-refresh",

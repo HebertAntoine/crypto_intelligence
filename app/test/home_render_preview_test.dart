@@ -83,4 +83,47 @@ void main() {
       );
     });
   }
+
+  for (final asset in ['BTC']) {
+    testWidgets('full analysis $asset', (tester) async {
+      await tester.runAsync(_loadRealFonts);
+      tester.view.physicalSize = const Size(430, 2600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(RepaintBoundary(
+        key: const ValueKey('shot'),
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.dark,
+          home: HomeShell(
+            client: ApiClient(
+              baseUrl: '',
+              loadAsset: (path) async => File(path).readAsStringSync(),
+            ),
+            livePrices: _SilentLivePrices(),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('horizon-7d')).last);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('see-full-analysis')),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.byKey(const ValueKey('see-full-analysis')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byKey(const ValueKey('shot')),
+        matchesGoldenFile('$_out/full-$asset.png'),
+      );
+      await tester.tap(find.byKey(const ValueKey('family-derivatives')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byKey(const ValueKey('shot')),
+        matchesGoldenFile('$_out/family-derivatives-$asset.png'),
+      );
+    });
+  }
 }

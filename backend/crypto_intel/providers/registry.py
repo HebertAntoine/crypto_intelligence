@@ -172,6 +172,13 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         TreasuryAuctionProvider,
     )
     from .macro.fred import FredProvider
+    from .macro.official_us import (
+        BlsProvider,
+        FedBalanceSheetProvider,
+        NewYorkFedProvider,
+        TreasuryGeneralAccountProvider,
+        TreasuryYieldsProvider,
+    )
     from .macro.stooq import StooqProvider
     from .macro.yahoo import YahooFinanceProvider
     from .market.binance import BinanceSpotProvider
@@ -211,6 +218,11 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         DefiLlamaRWAProvider,
         DefiLlamaStablecoinsProvider,
         FredProvider,
+        TreasuryYieldsProvider,
+        TreasuryGeneralAccountProvider,
+        NewYorkFedProvider,
+        FedBalanceSheetProvider,
+        BlsProvider,
         YahooFinanceProvider,
         StooqProvider,
         FederalReserveCalendarProvider,

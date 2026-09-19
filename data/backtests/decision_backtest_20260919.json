@@ -1,0 +1,625 @@
+{
+  "period": {
+    "start": "2024-03-01T00:00:00+00:00",
+    "end": "2026-08-19T12:25:45.295845+00:00",
+    "step_days": 1
+  },
+  "method": {
+    "point_in_time": "Chaque date ne voit que les données publiées avant elle (available_at).",
+    "excluded": "Veto « aucun avantage mesurable » exclu : il fait l'objet du test.",
+    "entry": "Dernière clôture horaire connue à la date de décision."
+  },
+  "assets": {
+    "BTC": {
+      "24h": {
+        "horizon": "24h",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 826,
+          "BUY": 52,
+          "SELL": 24
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 0.04,
+          "median_return_pct": 0.0,
+          "hit_rate_pct": 50.0,
+          "false_positive_rate_pct": 50.0
+        },
+        "buy": {
+          "n": 52,
+          "mean_return_pct": 0.01,
+          "median_return_pct": 0.04,
+          "hit_rate_pct": 50.0,
+          "false_positive_rate_pct": 50.0,
+          "mean_adverse_move_pct": -1.53,
+          "worst_adverse_move_pct": -5.48
+        },
+        "sell": {
+          "n": 24,
+          "mean_return_pct": -1.18,
+          "median_return_pct": -0.45,
+          "hit_rate_pct": 58.33,
+          "false_positive_rate_pct": 41.67,
+          "mean_adverse_move_pct": -1.3,
+          "worst_adverse_move_pct": -4.44
+        },
+        "wait_forward_return": {
+          "n": 826,
+          "mean_return_pct": 0.07,
+          "median_return_pct": 0.0,
+          "hit_rate_pct": 50.24,
+          "false_positive_rate_pct": 49.76
+        },
+        "decision_changes": 113,
+        "change_rate_pct": 12.54,
+        "blocking_gates": {
+          "FINAL": 747,
+          "CONTRADICTION": 32,
+          "EVENT_RISK": 34,
+          "CROWDING": 13
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 19,
+            "direction_hit_rate": 63.16
+          },
+          {
+            "confidence": "60-70",
+            "readings": 491,
+            "direction_hit_rate": 47.86
+          },
+          {
+            "confidence": "70-80",
+            "readings": 244,
+            "direction_hit_rate": 50.82
+          },
+          {
+            "confidence": "80-100",
+            "readings": 2,
+            "direction_hit_rate": 50.0
+          }
+        ]
+      },
+      "7d": {
+        "horizon": "7d",
+        "evaluations": 902,
+        "counts": {
+          "BUY": 41,
+          "WAIT": 841,
+          "SELL": 20
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 0.32,
+          "median_return_pct": 0.22,
+          "hit_rate_pct": 51.77,
+          "false_positive_rate_pct": 48.23
+        },
+        "buy": {
+          "n": 41,
+          "mean_return_pct": -0.01,
+          "median_return_pct": 1.01,
+          "hit_rate_pct": 53.66,
+          "false_positive_rate_pct": 46.34,
+          "mean_adverse_move_pct": -4.58,
+          "worst_adverse_move_pct": -17.4
+        },
+        "sell": {
+          "n": 20,
+          "mean_return_pct": -2.45,
+          "median_return_pct": -1.17,
+          "hit_rate_pct": 75.0,
+          "false_positive_rate_pct": 25.0,
+          "mean_adverse_move_pct": -2.52,
+          "worst_adverse_move_pct": -6.37
+        },
+        "wait_forward_return": {
+          "n": 841,
+          "mean_return_pct": 0.4,
+          "median_return_pct": 0.27,
+          "hit_rate_pct": 52.32,
+          "false_positive_rate_pct": 47.68
+        },
+        "decision_changes": 55,
+        "change_rate_pct": 6.1,
+        "blocking_gates": {
+          "FINAL": 628,
+          "EVENT_RISK": 187,
+          "CROWDING": 14,
+          "CONTRADICTION": 12
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 30,
+            "direction_hit_rate": 40.0
+          },
+          {
+            "confidence": "60-70",
+            "readings": 459,
+            "direction_hit_rate": 50.54
+          },
+          {
+            "confidence": "70-80",
+            "readings": 268,
+            "direction_hit_rate": 57.09
+          }
+        ]
+      },
+      "30d": {
+        "horizon": "30d",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 840,
+          "BUY": 39,
+          "SELL": 23
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 1.31,
+          "median_return_pct": 0.74,
+          "hit_rate_pct": 53.1,
+          "false_positive_rate_pct": 46.9
+        },
+        "buy": {
+          "n": 39,
+          "mean_return_pct": -1.74,
+          "median_return_pct": -0.7,
+          "hit_rate_pct": 43.59,
+          "false_positive_rate_pct": 56.41,
+          "mean_adverse_move_pct": -8.64,
+          "worst_adverse_move_pct": -25.27
+        },
+        "sell": {
+          "n": 23,
+          "mean_return_pct": 2.23,
+          "median_return_pct": 4.1,
+          "hit_rate_pct": 30.43,
+          "false_positive_rate_pct": 69.57,
+          "mean_adverse_move_pct": -8.83,
+          "worst_adverse_move_pct": -27.34
+        },
+        "wait_forward_return": {
+          "n": 840,
+          "mean_return_pct": 1.42,
+          "median_return_pct": 0.77,
+          "hit_rate_pct": 53.1,
+          "false_positive_rate_pct": 46.9
+        },
+        "decision_changes": 38,
+        "change_rate_pct": 4.22,
+        "blocking_gates": {
+          "FINAL": 629,
+          "EVENT_RISK": 182,
+          "CONTRADICTION": 22,
+          "CROWDING": 7
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 37,
+            "direction_hit_rate": 59.46
+          },
+          {
+            "confidence": "60-70",
+            "readings": 477,
+            "direction_hit_rate": 39.83
+          },
+          {
+            "confidence": "70-80",
+            "readings": 222,
+            "direction_hit_rate": 36.49
+          }
+        ]
+      }
+    },
+    "ETH": {
+      "24h": {
+        "horizon": "24h",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 860,
+          "BUY": 37,
+          "SELL": 5
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": -0.0,
+          "median_return_pct": 0.01,
+          "hit_rate_pct": 50.22,
+          "false_positive_rate_pct": 49.78
+        },
+        "buy": {
+          "n": 37,
+          "mean_return_pct": -0.5,
+          "median_return_pct": -0.95,
+          "hit_rate_pct": 32.43,
+          "false_positive_rate_pct": 67.57,
+          "mean_adverse_move_pct": -2.42,
+          "worst_adverse_move_pct": -7.56
+        },
+        "sell": {
+          "n": 5,
+          "mean_return_pct": -3.46,
+          "median_return_pct": -2.96,
+          "hit_rate_pct": 80.0,
+          "false_positive_rate_pct": 20.0,
+          "mean_adverse_move_pct": -1.49,
+          "worst_adverse_move_pct": -2.65
+        },
+        "wait_forward_return": {
+          "n": 860,
+          "mean_return_pct": 0.04,
+          "median_return_pct": 0.06,
+          "hit_rate_pct": 51.16,
+          "false_positive_rate_pct": 48.84
+        },
+        "decision_changes": 68,
+        "change_rate_pct": 7.55,
+        "blocking_gates": {
+          "FINAL": 754,
+          "EVENT_RISK": 34,
+          "CROWDING": 42,
+          "CONTRADICTION": 30
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 49,
+            "direction_hit_rate": 38.78
+          },
+          {
+            "confidence": "60-70",
+            "readings": 509,
+            "direction_hit_rate": 51.67
+          },
+          {
+            "confidence": "70-80",
+            "readings": 182,
+            "direction_hit_rate": 44.51
+          }
+        ]
+      },
+      "7d": {
+        "horizon": "7d",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 868,
+          "BUY": 29,
+          "SELL": 5
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 0.14,
+          "median_return_pct": -0.17,
+          "hit_rate_pct": 49.0,
+          "false_positive_rate_pct": 51.0
+        },
+        "buy": {
+          "n": 29,
+          "mean_return_pct": -0.28,
+          "median_return_pct": 0.14,
+          "hit_rate_pct": 51.72,
+          "false_positive_rate_pct": 48.28,
+          "mean_adverse_move_pct": -6.48,
+          "worst_adverse_move_pct": -23.45
+        },
+        "sell": {
+          "n": 5,
+          "mean_return_pct": -0.57,
+          "median_return_pct": 0.33,
+          "hit_rate_pct": 40.0,
+          "false_positive_rate_pct": 60.0,
+          "mean_adverse_move_pct": -5.14,
+          "worst_adverse_move_pct": -8.8
+        },
+        "wait_forward_return": {
+          "n": 868,
+          "mean_return_pct": 0.16,
+          "median_return_pct": -0.24,
+          "hit_rate_pct": 48.85,
+          "false_positive_rate_pct": 51.15
+        },
+        "decision_changes": 40,
+        "change_rate_pct": 4.44,
+        "blocking_gates": {
+          "FINAL": 620,
+          "CROWDING": 54,
+          "EVENT_RISK": 189,
+          "CONTRADICTION": 5
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 41,
+            "direction_hit_rate": 43.9
+          },
+          {
+            "confidence": "60-70",
+            "readings": 515,
+            "direction_hit_rate": 46.8
+          },
+          {
+            "confidence": "70-80",
+            "readings": 194,
+            "direction_hit_rate": 56.19
+          }
+        ]
+      },
+      "30d": {
+        "horizon": "30d",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 872,
+          "BUY": 18,
+          "SELL": 12
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 0.82,
+          "median_return_pct": -2.12,
+          "hit_rate_pct": 45.23,
+          "false_positive_rate_pct": 54.77
+        },
+        "buy": {
+          "n": 18,
+          "mean_return_pct": 21.2,
+          "median_return_pct": 39.13,
+          "hit_rate_pct": 55.56,
+          "false_positive_rate_pct": 44.44,
+          "mean_adverse_move_pct": -8.96,
+          "worst_adverse_move_pct": -22.53
+        },
+        "sell": {
+          "n": 12,
+          "mean_return_pct": 7.95,
+          "median_return_pct": 6.9,
+          "hit_rate_pct": 33.33,
+          "false_positive_rate_pct": 66.67,
+          "mean_adverse_move_pct": -16.24,
+          "worst_adverse_move_pct": -26.04
+        },
+        "wait_forward_return": {
+          "n": 872,
+          "mean_return_pct": 0.3,
+          "median_return_pct": -2.34,
+          "hit_rate_pct": 44.72,
+          "false_positive_rate_pct": 55.28
+        },
+        "decision_changes": 26,
+        "change_rate_pct": 2.89,
+        "blocking_gates": {
+          "FINAL": 635,
+          "EVENT_RISK": 179,
+          "CROWDING": 49,
+          "CONTRADICTION": 9
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 50,
+            "direction_hit_rate": 32.0
+          },
+          {
+            "confidence": "60-70",
+            "readings": 534,
+            "direction_hit_rate": 35.02
+          },
+          {
+            "confidence": "70-80",
+            "readings": 174,
+            "direction_hit_rate": 36.78
+          }
+        ]
+      }
+    },
+    "SOL": {
+      "24h": {
+        "horizon": "24h",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 857,
+          "BUY": 37,
+          "SELL": 8
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 0.03,
+          "median_return_pct": -0.07,
+          "hit_rate_pct": 49.22,
+          "false_positive_rate_pct": 50.78
+        },
+        "buy": {
+          "n": 37,
+          "mean_return_pct": -0.23,
+          "median_return_pct": -0.16,
+          "hit_rate_pct": 48.65,
+          "false_positive_rate_pct": 51.35,
+          "mean_adverse_move_pct": -2.82,
+          "worst_adverse_move_pct": -10.56
+        },
+        "sell": {
+          "n": 8,
+          "mean_return_pct": -0.64,
+          "median_return_pct": -0.31,
+          "hit_rate_pct": 62.5,
+          "false_positive_rate_pct": 37.5,
+          "mean_adverse_move_pct": -2.91,
+          "worst_adverse_move_pct": -7.46
+        },
+        "wait_forward_return": {
+          "n": 857,
+          "mean_return_pct": 0.04,
+          "median_return_pct": -0.05,
+          "hit_rate_pct": 49.36,
+          "false_positive_rate_pct": 50.64
+        },
+        "decision_changes": 80,
+        "change_rate_pct": 8.88,
+        "blocking_gates": {
+          "CROWDING": 29,
+          "FINAL": 747,
+          "CONTRADICTION": 47,
+          "EVENT_RISK": 34
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 41,
+            "direction_hit_rate": 36.59
+          },
+          {
+            "confidence": "60-70",
+            "readings": 565,
+            "direction_hit_rate": 53.1
+          },
+          {
+            "confidence": "70-80",
+            "readings": 136,
+            "direction_hit_rate": 51.47
+          }
+        ]
+      },
+      "7d": {
+        "horizon": "7d",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 849,
+          "SELL": 7,
+          "BUY": 46
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 0.29,
+          "median_return_pct": -0.46,
+          "hit_rate_pct": 48.23,
+          "false_positive_rate_pct": 51.77
+        },
+        "buy": {
+          "n": 46,
+          "mean_return_pct": -2.02,
+          "median_return_pct": -2.26,
+          "hit_rate_pct": 34.78,
+          "false_positive_rate_pct": 65.22,
+          "mean_adverse_move_pct": -7.51,
+          "worst_adverse_move_pct": -27.51
+        },
+        "sell": {
+          "n": 7,
+          "mean_return_pct": -1.7,
+          "median_return_pct": -0.77,
+          "hit_rate_pct": 57.14,
+          "false_positive_rate_pct": 42.86,
+          "mean_adverse_move_pct": -7.67,
+          "worst_adverse_move_pct": -13.87
+        },
+        "wait_forward_return": {
+          "n": 849,
+          "mean_return_pct": 0.43,
+          "median_return_pct": -0.29,
+          "hit_rate_pct": 49.0,
+          "false_positive_rate_pct": 51.0
+        },
+        "decision_changes": 52,
+        "change_rate_pct": 5.77,
+        "blocking_gates": {
+          "CROWDING": 52,
+          "FINAL": 594,
+          "EVENT_RISK": 186,
+          "CONTRADICTION": 17
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 9,
+            "direction_hit_rate": 66.67
+          },
+          {
+            "confidence": "60-70",
+            "readings": 459,
+            "direction_hit_rate": 52.07
+          },
+          {
+            "confidence": "70-80",
+            "readings": 262,
+            "direction_hit_rate": 49.24
+          }
+        ]
+      },
+      "30d": {
+        "horizon": "30d",
+        "evaluations": 902,
+        "counts": {
+          "WAIT": 865,
+          "BUY": 34,
+          "SELL": 3
+        },
+        "baseline_all_dates": {
+          "n": 902,
+          "mean_return_pct": 0.63,
+          "median_return_pct": -0.35,
+          "hit_rate_pct": 49.0,
+          "false_positive_rate_pct": 51.0
+        },
+        "buy": {
+          "n": 34,
+          "mean_return_pct": -11.06,
+          "median_return_pct": -14.25,
+          "hit_rate_pct": 26.47,
+          "false_positive_rate_pct": 73.53,
+          "mean_adverse_move_pct": -23.54,
+          "worst_adverse_move_pct": -47.32
+        },
+        "sell": {
+          "n": 3,
+          "mean_return_pct": -3.85,
+          "median_return_pct": -5.15,
+          "hit_rate_pct": 100.0,
+          "false_positive_rate_pct": 0.0,
+          "mean_adverse_move_pct": -12.52,
+          "worst_adverse_move_pct": -15.14
+        },
+        "wait_forward_return": {
+          "n": 865,
+          "mean_return_pct": 1.1,
+          "median_return_pct": 0.05,
+          "hit_rate_pct": 50.06,
+          "false_positive_rate_pct": 49.94
+        },
+        "decision_changes": 24,
+        "change_rate_pct": 2.66,
+        "blocking_gates": {
+          "CROWDING": 33,
+          "FINAL": 636,
+          "EVENT_RISK": 180,
+          "CONTRADICTION": 16
+        },
+        "confidence_calibration": [
+          {
+            "confidence": "50-60",
+            "readings": 43,
+            "direction_hit_rate": 48.84
+          },
+          {
+            "confidence": "60-70",
+            "readings": 445,
+            "direction_hit_rate": 38.2
+          },
+          {
+            "confidence": "70-80",
+            "readings": 272,
+            "direction_hit_rate": 37.13
+          },
+          {
+            "confidence": "80-100",
+            "readings": 4,
+            "direction_hit_rate": 25.0
+          }
+        ]
+      }
+    }
+  },
+  "runtime_s": 956.6
+}

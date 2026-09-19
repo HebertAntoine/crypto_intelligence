@@ -255,9 +255,11 @@ void _mockupRules() {
           (tester) async {
         await _open(tester, asset);
         final decision = await _shippedClient().futureDecision(asset);
+        final analysis = decision.analysis!;
 
         // The screen lays the engine's explanation out; it writes none.
-        for (final line in decision.hierarchy!.explanation) {
+        expect(find.textContaining(analysis.headline), findsOneWidget);
+        for (final line in analysis.reasons.take(4)) {
           expect(find.text(line), findsOneWidget, reason: line);
         }
       });
@@ -331,9 +333,9 @@ void _iphoneRendering() {
       await _open(tester, 'BTC');
       final decision = await _shippedClient().futureDecision('BTC');
 
-      for (final driver in decision.hierarchy!.homeFactors) {
-        if (driver.value.isEmpty) continue;
-        expect(find.text(driver.value), findsOneWidget, reason: driver.title);
+      for (final factor in decision.analysis!.homeFactors) {
+        if (factor.value.isEmpty) continue;
+        expect(find.text(factor.value), findsOneWidget, reason: factor.label);
       }
     });
   });

@@ -16,6 +16,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
+DEFAULT_DATABASE_URL = "sqlite:///data/crypto_intel.db"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=str(PROJECT_ROOT / ".env"),
@@ -30,7 +33,7 @@ class Settings(BaseSettings):
     env: str = "local"
 
     # --- storage ----------------------------------------------------------
-    database_url: str = "sqlite:///data/crypto_intel.db"
+    database_url: str = DEFAULT_DATABASE_URL
 
     # --- api --------------------------------------------------------------
     api_host: str = "127.0.0.1"
@@ -120,6 +123,12 @@ class Settings(BaseSettings):
         open the same file regardless of the working directory."""
         url = self.database_url
         prefix = "sqlite:///"
+        # Synthetic fixtures once landed in the production file because
+        # MOCK_MODE used the same default path: fixture rows with timestamps
+        # up to a week ahead then passed for the latest real value. Mock mode
+        # without an explicit database gets a file of its own.
+        if self.mock_mode and url == DEFAULT_DATABASE_URL:
+            url = "sqlite:///data/crypto_intel_mock.db"
         if url.startswith(prefix):
             raw = url[len(prefix) :]
             p = Path(raw)

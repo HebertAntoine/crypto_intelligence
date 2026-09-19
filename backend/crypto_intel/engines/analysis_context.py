@@ -859,6 +859,7 @@ class AnalysisContextSnapshot:
     future_events: list[Any] = field(default_factory=list)
     future_families: Any = None
     future_families_by_horizon: dict[str, Any] = field(default_factory=dict)
+    decision_families_by_horizon: dict[str, Any] = field(default_factory=dict)
     future_data_quality_by_horizon: dict[str, Any] = field(default_factory=dict)
     future_decision: Any = None
     future_horizons: dict[str, Any] = field(default_factory=dict)
@@ -1082,6 +1083,17 @@ def build_context(
         for horizon in DecisionHorizon
     }
     uncertainty_fraction = min(1.0, max(0.0, float(uncertainty.score or 0) / 100.0))
+    # The six scored families, one independent reading per horizon, through
+    # the same point-in-time door the backtest uses.
+    from .decision_families import build_families
+    from .pit_view import DataCache, PointInTimeView
+
+    decision_view = PointInTimeView(DataCache(), reference)
+    decision_families_by_horizon = {
+        horizon.value: build_families(decision_view, asset, horizon)
+        for horizon in DecisionHorizon
+    }
+    edge_state = str(getattr(edge, "state", "") or "") or None
     future_engine = FutureDecisionEngine()
     future_decision = future_engine.decide(
         asset,
@@ -1091,6 +1103,8 @@ def build_context(
         analysis_uncertainty=uncertainty_fraction,
         data_quality=future_data_quality_by_horizon[DecisionHorizon.D7.value],
         institutional_flow=institutional_flow,
+        edge_state=edge_state,
+        decision_families=decision_families_by_horizon[DecisionHorizon.D7.value],
     )
     future_horizon_views = horizon_decisions(
         future_engine,
@@ -1100,6 +1114,8 @@ def build_context(
         as_of=reference,
         analysis_uncertainty=uncertainty_fraction,
         data_quality=future_data_quality_by_horizon,
+        edge_state=edge_state,
+        decision_families=decision_families_by_horizon,
     )
 
     from ..engines.buy_opportunity import decide
@@ -1176,6 +1192,7 @@ def build_context(
         future_events=future_events,
         future_families=future_families,
         future_families_by_horizon=future_families_by_horizon,
+        decision_families_by_horizon=decision_families_by_horizon,
         future_data_quality_by_horizon=future_data_quality_by_horizon,
         future_decision=future_decision,
         future_horizons=future_horizon_views,

@@ -754,6 +754,7 @@ class FutureDecision:
     conditions_to_buy: list[str] = field(default_factory=list)
     conditions_to_sell: list[str] = field(default_factory=list)
     hierarchy: Any = None
+    analysis: Any = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -772,6 +773,7 @@ class FutureDecision:
             "consistency": self.consistency.to_dict() if self.consistency else None,
             "synthesis": self.synthesis.to_dict() if self.synthesis else None,
             "hierarchy": self.hierarchy.to_dict() if self.hierarchy else None,
+            "analysis": self.analysis.to_dict() if self.analysis else None,
             "causal_graph": self.causal_graph,
             "signal_convergence": self.signal_convergence,
             "contradiction_resolution": self.contradiction_resolution,
@@ -814,6 +816,7 @@ class FutureDecisionEngine:
         data_quality: Any = None,
         institutional_flow: Any = None,
         edge_state: str | None = None,
+        decision_families: dict[str, Any] | None = None,
     ) -> FutureDecision:
         now = as_of or datetime.now(UTC)
         now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
@@ -956,6 +959,48 @@ class FutureDecisionEngine:
             as_of=now,
         )
         action = consistency.action
+
+        # The six scored families decide, through the ordered gates. Everything
+        # the checks above found is fed in as a gate input, so nothing they
+        # would have blocked can pass: the event gate, the data-quality block,
+        # the missing edge. Without families (tests, older callers) the action
+        # above stands.
+        gated = None
+        if decision_families:
+            from .decision_gates import ExternalChecks, event_candidates
+            from .decision_gates import decide as gated_decide
+
+            codes = [item.code for item in consistency.issues]
+            # The validator only raises the missing-edge finding when its own
+            # provisional action was directional. When an older gate had
+            # already said WAIT, the finding never appeared - and the graded
+            # event gate could then let a BUY through with no edge at all.
+            # The veto is taken from the edge measurement itself.
+            if edge_state in {"NO_MEASURABLE_EDGE", "INSUFFICIENT_DATA"} and (
+                "NO_MEASURABLE_EDGE" not in codes
+            ):
+                codes.append("NO_MEASURABLE_EDGE")
+            blocking_event = next(
+                (event for event in event_list if event.id in set(gate.event_ids)), None
+            )
+            gated = gated_decide(
+                decision_families,
+                horizon,
+                ExternalChecks(
+                    # The graded event gate decides; the binary EventRiskGate
+                    # above stays computed and published for audit.
+                    event_candidates=event_candidates(event_list, asset, horizon, now),
+                    event_gate_active=gate.active,
+                    event_title=blocking_event.title if blocking_event else "",
+                    event_delay=_delay_phrase(blocking_event, now) if blocking_event else "",
+                    data_quality_blocks=quality_blocks or "NO_USABLE_EVIDENCE" in codes,
+                    missing_critical_inputs=list(
+                        getattr(data_quality, "critical_missing_inputs", []) or []
+                    ),
+                    consistency_codes=codes,
+                ),
+            )
+            action = DecisionAction(gated.action.value)
 
         # The synthesis reads the same normalised factors the screen shows, so
         # the headline can never disagree with the evidence listed beneath it.
@@ -1198,6 +1243,7 @@ class FutureDecisionEngine:
             conditions_to_buy=list(dict.fromkeys(to_buy)),
             conditions_to_sell=list(dict.fromkeys(to_sell)),
             hierarchy=hierarchy,
+            analysis=gated,
         )
 
 
@@ -1217,6 +1263,8 @@ def horizon_decisions(
     as_of: datetime,
     analysis_uncertainty: float | None,
     data_quality: dict[str, Any] | None = None,
+    edge_state: str | None = None,
+    decision_families: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Return independent 24h/7d/30d decisions from one timestamp."""
     # Imported here to avoid a module-load cycle: ``future_context`` builds the
@@ -1238,6 +1286,8 @@ def horizon_decisions(
             as_of=as_of,
             analysis_uncertainty=analysis_uncertainty,
             data_quality=(data_quality or {}).get(horizon.value),
+            edge_state=edge_state,
+            decision_families=(decision_families or {}).get(horizon.value),
         )
         output[horizon.value] = {
             "decision": result.decision.value,

@@ -13,6 +13,8 @@ from .models import FutureEvent
 
 OFFICIAL_MACRO_CAPABILITIES = (
     "events.macro.fed",
+    "events.macro.ecb",
+    "events.macro.boj",
     "events.macro.bls",
     "events.macro.bea",
     "events.macro.treasury",
