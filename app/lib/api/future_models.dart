@@ -811,6 +811,9 @@ class AnalysisMetricRead {
   /// The raw figure behind a derived one ("indice 337,76"), details only.
   final String rawValue;
 
+  /// CRITICAL | HIGH | MEDIUM | LOW | HIDDEN - what matters now.
+  final String importance;
+
   const AnalysisMetricRead({
     required this.key,
     required this.label,
@@ -831,6 +834,7 @@ class AnalysisMetricRead {
     this.publicationEstimated = false,
     this.fetchedAt,
     this.rawValue = '',
+    this.importance = 'MEDIUM',
   });
 
   bool get usable => status == 'AVAILABLE';
@@ -856,6 +860,7 @@ class AnalysisMetricRead {
         publicationEstimated: json['publication_estimated'] == true,
         fetchedAt: DateTime.tryParse(json['fetched_at']?.toString() ?? '')?.toLocal(),
         rawValue: json['raw_value']?.toString() ?? '',
+        importance: json['importance']?.toString() ?? 'MEDIUM',
       );
 }
 
@@ -1048,6 +1053,7 @@ class AnalysisSummaryRead {
   final String validationMessage;
   final String confidenceLabel;
   final List<String> dataIssues;
+  final List<String> displayFamilies;
 
   const AnalysisSummaryRead({
     this.sentence = '',
@@ -1060,6 +1066,7 @@ class AnalysisSummaryRead {
     this.validationMessage = '',
     this.confidenceLabel = '',
     this.dataIssues = const [],
+    this.displayFamilies = const [],
   });
 
   bool get isEmpty => sentence.isEmpty && reasons.isEmpty && homeFamilies.isEmpty;
@@ -1086,6 +1093,7 @@ class AnalysisSummaryRead {
       validationMessage: validation['message']?.toString() ?? '',
       confidenceLabel: json['confidence_label']?.toString() ?? '',
       dataIssues: _strings(json['data_issues']),
+      displayFamilies: _strings(json['display_families']),
     );
   }
 }
@@ -1276,13 +1284,24 @@ class FutureAnalysisRead {
   });
 
   static const familyOrder = [
-    'macro',
-    'liquidity',
-    'flows',
-    'derivatives',
-    'onchain',
     'technical',
+    'derivatives',
+    'flows',
+    'macro',
+    'cycle',
+    'onchain',
+    'liquidity',
   ];
+
+  /// The families the full page shows, in the engine's reading order.
+  /// Liquidity stays inside Macro's advanced data.
+  List<AnalysisFamilyRead> get displayFamilies {
+    final order = summary.displayFamilies.isNotEmpty
+        ? summary.displayFamilies
+        : familyOrder.where((k) => k != 'liquidity').toList();
+    final byKey = {for (final f in families) f.family: f};
+    return [for (final key in order) if (byKey[key] != null) byKey[key]!];
+  }
 
   factory FutureAnalysisRead.fromJson(Map<String, dynamic> json) {
     final familyMap = _map(json['families']);

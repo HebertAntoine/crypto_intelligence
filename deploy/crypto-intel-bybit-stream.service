@@ -1,0 +1,16 @@
+[Unit]
+Description=Crypto Intelligence — flux Bybit en direct (transactions spot, liquidations)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/antoineh/crypto_intelligence
+Environment=PYTHONPATH=/home/antoineh/crypto_intelligence/backend
+ExecStart=/home/antoineh/crypto_intelligence/.venv/bin/python -m crypto_intel.cli stream-bybit
+Restart=always
+RestartSec=15
+Nice=10
+
+[Install]
+WantedBy=default.target

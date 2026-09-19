@@ -246,6 +246,28 @@ def save_derivatives(
     return written
 
 
+def upsert_derivatives(
+    asset: Asset, metric: str, points: list[tuple[datetime, float]], source: str = ""
+) -> int:
+    """Insert or overwrite - for buckets that fill up over time (an hour of
+    trades still in progress, an hourly total revised by its exchange)."""
+
+    if not points:
+        return 0
+    with session_scope() as s:
+        for ts, value in points:
+            ts = _as_utc(ts)
+            rid = _row_id(asset.value, metric, ts.isoformat())
+            row = s.get(DerivativesHistoryRow, rid)
+            if row is None:
+                s.add(DerivativesHistoryRow(id=rid, asset=asset.value, metric=metric,
+                                            timestamp=ts, value=float(value), source=source))
+            else:
+                row.value = float(value)
+                row.source = source
+    return len(points)
+
+
 def load_derivatives(asset: Asset, metric: str, start: datetime | None = None) -> pd.Series:
     with session_scope() as s:
         stmt = select(DerivativesHistoryRow).where(

@@ -21,6 +21,7 @@ import math
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import StrEnum
+from itertools import pairwise
 from typing import Any
 
 import pandas as pd
@@ -28,6 +29,7 @@ import pandas as pd
 from ..core.enums import Asset, Timeframe
 from ..future_events.models import DecisionHorizon
 from .decision_config import (
+    CYCLE,
     DERIVATIVES,
     FAMILY_EMOJI,
     FAMILY_LABEL,
@@ -121,6 +123,11 @@ class MetricReading:
     #: 1 = can change the decision now, 2 = confirmation / context,
     #: 3 = technical detail. Recomputed each time: a fresh surprise climbs.
     priority: int = 2
+    #: CRITICAL | HIGH | MEDIUM | LOW | HIDDEN - set by the presentation from
+    #: what is happening now (a fresh surprise, a meeting in 48 h), not fixed.
+    importance: str = "MEDIUM"
+    #: The exact endpoint behind ``source``, when the collector recorded it.
+    endpoint: str = ""
     #: What the value describes ("août 2026", "18/09") - never shown as the
     #: date it was updated.
     period_label: str = ""
@@ -157,6 +164,11 @@ class MetricReading:
             "why_short": _first_sentence(self.why),
             "note": self.note,
             "priority": self.priority,
+            "importance": self.importance,
+            "endpoint": self.endpoint,
+            # The currency a figure is in, so no screen can mix $ and €.
+            "currency": "USD" if self.unit in {"$", "M$", "Md$"} else None,
+            "freshness": self.status.value,
             "period_label": self.period_label,
             "published_at": self.available_at.isoformat() if self.available_at else None,
             "publication_estimated": self.publication_estimated,
@@ -540,6 +552,100 @@ def _inflation_display(view: PointInTimeView, reading: MetricReading) -> None:
 # ---------------------------------------------------------------------------
 
 
+#: (key, flag, name, rate metric, decision metric, calendar source)
+_CENTRAL_BANKS = (
+    ("fed", "🇺🇸", "Fed", "cb.fed.target_upper", "cb.fed.target_upper", "Federal Reserve"),
+    ("ecb", "🇪🇺", "BCE", "cb.ecb.deposit_rate", "cb.ecb.deposit_rate", "European Central Bank"),
+    ("boj", "🇯🇵", "BoJ", "cb.boj.call_rate", "cb.boj.basic_loan_rate", "Bank of Japan"),
+)
+
+
+def central_banks(view: PointInTimeView) -> list[dict[str, Any]]:
+    """Rate in force, last decision, next meeting - from each bank's own data.
+
+    The rate the market expects at the next meeting needs a pricing source
+    (fed funds futures, OIS). None is connected: the field says so and is
+    never filled with a value the engine finds plausible.
+    """
+
+    out: list[dict[str, Any]] = []
+    meetings = view.cache.meetings()
+    for key, flag, name, rate_metric, decision_metric, calendar in _CENTRAL_BANKS:
+        rate_points = view.points(rate_metric)
+        if not rate_points:
+            out.append({"key": key, "flag": flag, "name": name, "available": False})
+            continue
+        current = rate_points[-1]
+        lower = view.latest("cb.fed.target_lower") if key == "fed" else None
+        if key == "fed" and lower is not None:
+            rate_text = f"{fr_number(lower.value, 2)} – {fr_number(current.value, 2)} %"
+        elif key == "boj":
+            rate_text = f"{fr_number(current.value, 2)} % (taux au jour le jour)"
+        else:
+            rate_text = f"{fr_number(current.value, 2)} %"
+
+        decision_points = view.points(decision_metric)
+        change = None
+        for before, after in pairwise(decision_points):
+            if abs(after.value - before.value) > 1e-9:
+                change = (after.timestamp, (after.value - before.value) * 100)
+        bank_meetings = [m for m in meetings if m[0] == calendar]
+        past = [m for m in bank_meetings if m[1] <= view.as_of]
+        upcoming = [m for m in bank_meetings if m[1] > view.as_of]
+        last_meeting = past[-1][1] if past else None
+        if change and (last_meeting is None or change[0] >= last_meeting - timedelta(days=1)):
+            move = change[1]
+            verb = "Hausse" if move > 0 else "Baisse"
+            # The new rate applies from the day after the announcement: the
+            # decision is dated to its meeting when one precedes the change.
+            decided = (
+                last_meeting
+                if last_meeting is not None and timedelta(0) <= change[0] - last_meeting <= timedelta(days=7)
+                else change[0]
+            )
+            last = {
+                "date": decided.isoformat(),
+                "label": f"{verb} de {fr_number(abs(move), 0)} pb",
+                "change_bp": round(move),
+            }
+        elif last_meeting is not None:
+            last = {"date": last_meeting.isoformat(), "label": "Maintien", "change_bp": 0}
+        else:
+            last = None
+        next_meeting = upcoming[0][1] if upcoming else None
+        days_to_next = (next_meeting - view.as_of).total_seconds() / 86400 if next_meeting else None
+        days_since_last = (
+            (view.as_of - datetime.fromisoformat(last["date"])).total_seconds() / 86400
+            if last else None
+        )
+        # Importance follows the calendar: a meeting within 48 h or a decision
+        # within 48 h is critical; the Fed weighs most the rest of the time.
+        if (days_to_next is not None and days_to_next <= 2) or (
+            days_since_last is not None and days_since_last <= 2 and last and last["change_bp"]
+        ):
+            importance = "CRITICAL"
+        elif (days_to_next is not None and days_to_next <= 7) or (
+            days_since_last is not None and days_since_last <= 7
+        ):
+            importance = "HIGH"
+        else:
+            importance = "MEDIUM" if key == "fed" else "LOW"
+        out.append({
+            "key": key, "flag": flag, "name": name, "available": True,
+            "rate": current.value, "rate_label": rate_text,
+            "rate_date": current.timestamp.isoformat(),
+            "source": {"fed": "Réserve fédérale de New York", "ecb": "Banque centrale européenne",
+                       "boj": "Banque du Japon"}[key],
+            "last_decision": last,
+            "next_meeting": next_meeting.isoformat() if next_meeting else None,
+            "days_to_next": days_to_next,
+            "expectation": None,
+            "expectation_label": "Anticipation de marché indisponible",
+            "importance": importance,
+        })
+    return out
+
+
 def macro_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) -> FamilyScore:
     window = HORIZON_WINDOW[horizon]
     scale = SCALES[horizon]
@@ -675,11 +781,33 @@ def macro_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) 
             "rapprocher des baisses de taux. Affiché, non noté."
         )
 
-    return finish_family(
+    # Central banks: rate in force, last decision, next meeting. Context and
+    # event risk only - a hike or a cut is never mapped to a direction here.
+    banks = central_banks(view)
+    for bank in banks:
+        if not bank.get("available"):
+            continue
+        reading = MetricReading(
+            key=f"cb.{bank['key']}.rate", label=f"{bank['flag']} {bank['name']}", emoji=bank["flag"],
+            status=DataStatus.AVAILABLE, unit="%", value=bank["rate"],
+            display_value=bank["rate_label"],
+            timestamp=datetime.fromisoformat(bank["rate_date"]), source=bank["source"],
+            source_tier="OFFICIAL", quality=100, confidence=95, state="CONTEXT",
+            why="Le taux directeur fixe le coût de l'argent ; ses décisions et leurs "
+                "surprises déplacent tous les actifs risqués.",
+        )
+        if bank.get("last_decision"):
+            decided = datetime.fromisoformat(bank["last_decision"]["date"])
+            reading.delta_label = f"{bank['last_decision']['label']} le {decided:%d/%m}"
+        metrics.append(reading)
+
+    result = finish_family(
         MACRO, horizon, components, metrics,
         headline_positive="Conditions macro plutôt porteuses pour les actifs risqués.",
         headline_negative="Les conditions macro pèsent sur les actifs risqués.",
     )
+    result.extra["central_banks"] = banks
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -828,6 +956,101 @@ def _zscore(value: float, history: list[float]) -> float | None:
     return None if std == 0 else (value - mean) / std
 
 
+#: Window of aggressive-flow sums per horizon, and the step between the past
+#: windows it is compared with.
+_SPOT_WINDOW = {
+    DecisionHorizon.H24: (timedelta(hours=24), timedelta(hours=6)),
+    DecisionHorizon.D7: (timedelta(days=7), timedelta(days=1)),
+    DecisionHorizon.D30: (timedelta(days=30), timedelta(days=2)),
+}
+SPOT_EXCHANGES = ("binance", "okx", "bybit")
+_EXCHANGE_FR = {"binance": "Binance", "okx": "OKX", "bybit": "Bybit"}
+
+
+def _hour_map(points: list[Point]) -> dict[datetime, float]:
+    return {p.timestamp: p.value for p in points}
+
+
+def spot_pressure(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) -> dict[str, Any] | None:
+    """Aggressive buy / sell notional over the horizon, from hourly exchange data.
+
+    An exchange counts only if it covers at least 90 % of the window's hours;
+    Bybit's live stream counts an hour only when it was connected for 55
+    minutes of it. Returns None when no exchange covers the window - the
+    caller then falls back to the long daily history.
+    """
+
+    span, step = _SPOT_WINDOW[horizon]
+    end = view.as_of.replace(minute=0, second=0, microsecond=0)
+    hours = int(span.total_seconds() // 3600)
+    wanted = [end - timedelta(hours=h + 1) for h in range(hours)]
+    exchanges: dict[str, tuple[dict[datetime, float], dict[datetime, float]]] = {}
+    coverage: dict[str, float] = {}
+    for exchange in SPOT_EXCHANGES:
+        buys = _hour_map(view.points(f"spot.flow.buy_usd.{exchange}", asset.value))
+        sells = _hour_map(view.points(f"spot.flow.sell_usd.{exchange}", asset.value))
+        if exchange == "bybit":
+            minutes = _hour_map(view.points("stream.bybit_spot.minutes", asset.value))
+            complete = {h for h, m in minutes.items() if m >= 55}
+            buys = {h: v for h, v in buys.items() if h in complete}
+            sells = {h: v for h, v in sells.items() if h in complete}
+        covered = sum(1 for h in wanted if h in buys and h in sells)
+        coverage[exchange] = covered / hours if hours else 0.0
+        if coverage[exchange] >= 0.9:
+            exchanges[exchange] = (buys, sells)
+    if not exchanges:
+        return {"coverage": coverage, "usable": False}
+
+    def window(stop: datetime) -> tuple[float, float] | None:
+        buy = sell = 0.0
+        slots = [stop - timedelta(hours=h + 1) for h in range(hours)]
+        for buys, sells in exchanges.values():
+            present = [h for h in slots if h in buys and h in sells]
+            if len(present) < 0.9 * hours:
+                return None
+            buy += sum(buys[h] for h in present)
+            sell += sum(sells[h] for h in present)
+        return (buy, sell) if buy + sell > 0 else None
+
+    current = window(end)
+    if current is None:
+        return {"coverage": coverage, "usable": False}
+    buy, sell = current
+    share = buy / (buy + sell)
+    previous = window(end - span)
+    prev_share = previous[0] / sum(previous) if previous else None
+    history: list[float] = []
+    stop = end - step
+    while len(history) < 200:
+        past = window(stop)
+        if past is None:
+            break
+        history.append(past[0] / sum(past))
+        stop -= step
+    return {
+        "usable": True,
+        "buy_usd": buy,
+        "sell_usd": sell,
+        "delta_usd": buy - sell,
+        "share": share,
+        "previous_share": prev_share,
+        "history": history,
+        "exchanges": sorted(exchanges),
+        "coverage": coverage,
+        "hours": hours,
+    }
+
+
+def _usd_compact(value: float) -> str:
+    sign = "-" if value < 0 else ""
+    value = abs(value)
+    if value >= 1e9:
+        return f"{sign}{fr_number(value / 1e9, 2)} Md$"
+    if value >= 1e6:
+        return f"{sign}{fr_number(value / 1e6, 0)} M$"
+    return f"{sign}{fr_number(value / 1e3, 0)} k$"
+
+
 def flows_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) -> FamilyScore:
     metrics: list[MetricReading] = []
     components: list[Component] = []
@@ -916,52 +1139,126 @@ def flows_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) 
         elif stale:
             reading.note = f"Dernière séance publiée le {last.timestamp:%d/%m} : trop ancienne."
 
-    # Spot aggression: who crosses the spread, relative to its own history.
-    ratio_points = view.points("spot.taker_buy_ratio", asset.value)
-    days = {DecisionHorizon.H24: 1, DecisionHorizon.D7: 7, DecisionHorizon.D30: 30}[horizon]
-    if len(ratio_points) >= days + 60:
-        last = ratio_points[-1]
-        stale = view.as_of - last.available_at > timedelta(days=2)
-        recent = [p.value for p in ratio_points[-days:]]
-        base = [p.value for p in ratio_points[-(days + 180):-days]]
-        mean_recent = sum(recent) / len(recent)
-        z = _zscore(mean_recent, base)
+    # Spot pressure: who takes the initiative - aggressive buyers or sellers.
+    # Every trade has a buyer and a seller; the taker side is what is measured.
+    pressure = spot_pressure(view, asset, horizon)
+    window_fr = {DecisionHorizon.H24: "24 h", DecisionHorizon.D7: "7 j", DecisionHorizon.D30: "30 j"}[horizon]
+    spot_extra: dict[str, Any] = {"coverage": (pressure or {}).get("coverage", {})}
+    if pressure and pressure.get("usable"):
+        share = pressure["share"]
+        history = pressure["history"]
+        z = _zscore(share, history) if len(history) >= 15 else None
+        # Too little history for a z-score: distance from balance, where two
+        # percentage points is a clear lean.
+        signal = _squash(z, 1.5) if z is not None else _squash((share - 0.5) * 100, 2.0)
+        names = ", ".join(_EXCHANGE_FR[e] for e in pressure["exchanges"])
+        newest = max(
+            (p.timestamp for e in pressure["exchanges"]
+             for p in view.points(f"spot.flow.buy_usd.{e}", asset.value)[-1:]),
+            default=None,
+        )
         reading = MetricReading(
-            key="spot.taker_buy_ratio", label="Part des achats agressifs au comptant", emoji="🪙",
-            status=DataStatus.STALE if stale else DataStatus.AVAILABLE, unit="%",
-            value=mean_recent * 100, display_value=f"{fr_number(mean_recent * 100, 1)} %",
-            timestamp=last.timestamp, available_at=last.available_at, source=last.source,
-            source_tier="EXCHANGE", quality=100 if not stale else 40, confidence=75,
+            key="spot.pressure", label=f"Pression acheteurs / vendeurs ({window_fr})", emoji="🪙",
+            status=DataStatus.AVAILABLE, unit="%", value=share * 100,
+            display_value=f"{fr_number(share * 100, 0)} % acheteurs",
+            timestamp=newest, available_at=(newest + timedelta(hours=1)) if newest else None,
+            source=names, source_tier="EXCHANGE", quality=100, confidence=85,
+            endpoint="klines 1 h / taker-volume 1 h / publicTrade",
+            delta_label=f"delta {_usd_compact(pressure['delta_usd'])}",
             why=(
-                "La part du volume initiée par des acheteurs qui acceptent le prix "
-                "demandé : au-dessus de sa normale, la demande immédiate domine."
+                "Chaque transaction a un acheteur et un vendeur. On mesure qui prend "
+                "l'initiative : l'acheteur qui accepte le prix demandé ou le vendeur "
+                "qui accepte le prix offert."
             ),
         )
+        reading.raw_value = (
+            f"achats agressifs {_usd_compact(pressure['buy_usd'])} · ventes agressives "
+            f"{_usd_compact(pressure['sell_usd'])}"
+        )
         metrics.append(reading)
-        if not stale and z is not None:
-            signal = _squash(z, 1.5)
-            _mark(reading, signal)
-            # Spot and ETF share one cause (demand); spot weighs less when ETF speaks.
-            weight = 0.5 if any(c.key == "etf" for c in components) else 1.0
-            components.append(Component(
-                "spot", "Pression spot", weight, signal,
-                f"🪙 Achats agressifs au comptant à {reading.display_value} : "
-                + ("au-dessus" if signal > 0 else "en dessous")
-                + " de leur normale.",
-                metrics=["spot.taker_buy_ratio"],
-            ))
-    else:
-        metrics.append(unavailable(
-            "spot.taker_buy_ratio", "Pression spot", "🪙", "Historique spot insuffisant."
+        _mark(reading, signal)
+        trend = None
+        if pressure["previous_share"] is not None:
+            move = (share - pressure["previous_share"]) * 100
+            trend = "UP" if move >= 1 else "DOWN" if move <= -1 else "FLAT"
+        spot_extra.update({
+            "source": "hourly",
+            "buy_usd": pressure["buy_usd"],
+            "sell_usd": pressure["sell_usd"],
+            "delta_usd": pressure["delta_usd"],
+            "share": share,
+            "previous_share": pressure["previous_share"],
+            "trend": trend,
+            "exchanges": pressure["exchanges"],
+            "window": window_fr,
+        })
+        components.append(Component(
+            "spot", "Pression spot", 1.0, signal,
+            f"🪙 Achats agressifs {fr_number(share * 100, 0)} % sur {window_fr} "
+            f"({len(pressure['exchanges'])} plateforme{'s' if len(pressure['exchanges']) > 1 else ''}) : "
+            f"{'les acheteurs' if share >= 0.5 else 'les vendeurs'} prennent "
+            "plus souvent l'initiative.",
+            turn_condition=(
+                "Des ventes agressives qui repassent majoritaires."
+                if share >= 0.5 else "Des achats agressifs qui redeviennent majoritaires."
+            ),
+            metrics=["spot.pressure"],
         ))
+    else:
+        # The long daily history (Binance, since 2017): the same question on a
+        # coarser clock - and the only one a backtest can replay.
+        ratio_points = view.points("spot.taker_buy_ratio", asset.value)
+        days = {DecisionHorizon.H24: 1, DecisionHorizon.D7: 7, DecisionHorizon.D30: 30}[horizon]
+        if len(ratio_points) >= days + 60:
+            last = ratio_points[-1]
+            stale = view.as_of - last.available_at > timedelta(days=2)
+            recent = [p.value for p in ratio_points[-days:]]
+            base = [p.value for p in ratio_points[-(days + 180):-days]]
+            mean_recent = sum(recent) / len(recent)
+            z = _zscore(mean_recent, base)
+            reading = MetricReading(
+                key="spot.pressure", label=f"Pression acheteurs / vendeurs ({window_fr})", emoji="🪙",
+                status=DataStatus.STALE if stale else DataStatus.AVAILABLE, unit="%",
+                value=mean_recent * 100, display_value=f"{fr_number(mean_recent * 100, 0)} % acheteurs",
+                timestamp=last.timestamp, available_at=last.available_at, source=last.source,
+                source_tier="EXCHANGE", quality=100 if not stale else 40, confidence=75,
+                why=(
+                    "Chaque transaction a un acheteur et un vendeur. On mesure qui prend "
+                    "l'initiative, d'après l'historique quotidien d'une plateforme majeure."
+                ),
+            )
+            metrics.append(reading)
+            spot_extra.update({"source": "daily", "share": mean_recent, "window": window_fr,
+                               "exchanges": ["binance"]})
+            if not stale and z is not None:
+                signal = _squash(z, 1.5)
+                _mark(reading, signal)
+                components.append(Component(
+                    "spot", "Pression spot", 1.0, signal,
+                    f"🪙 Achats agressifs à {reading.display_value} sur {window_fr} : "
+                    + ("au-dessus" if signal > 0 else "en dessous") + " de leur normale.",
+                    metrics=["spot.pressure"],
+                ))
+        else:
+            metrics.append(unavailable(
+                "spot.pressure", "Pression acheteurs / vendeurs", "🪙",
+                "Aucune plateforme ne couvre la période et l'historique est insuffisant.",
+            ))
+
+    # ETF flows stay an internal sub-signal: real demand, but a daily file
+    # published the next morning. They weigh less than the live spot tape.
+    for component in components:
+        if component.key == "etf":
+            component.weight = 0.35
 
     result = finish_family(
         FLOWS, horizon, components, metrics,
-        headline_positive="Les capitaux entrent.",
-        headline_negative="Les capitaux sortent.",
-        headline_neutral="Flux sans direction nette.",
+        headline_positive="Les acheteurs prennent plus souvent l'initiative.",
+        headline_negative="Les vendeurs prennent plus souvent l'initiative.",
+        headline_neutral="Acheteurs et vendeurs s'équilibrent.",
     )
     result.extra["etf_applicable"] = etf_applicable and bool(flows)
+    result.extra["spot"] = spot_extra
     return result
 
 
@@ -1008,6 +1305,77 @@ def _percentile(value: float, history: list[float]) -> float | None:
     return 100 * (below + 0.5 * equal) / len(history)
 
 
+def liquidation_totals(view: PointInTimeView, asset: Asset) -> dict[str, Any]:
+    """Forced liquidations over 1 h, 4 h and 24 h, from the Bybit live feed.
+
+    Only hours the stream covered for 55 minutes or more are summed, and the
+    covered share is stated: a quiet feed and a disconnected one must never
+    read the same. Liquidations measure the violence of a move, not its
+    direction - they feed the risk reading, not the score.
+    """
+
+    a = asset.value
+    longs = _hour_map(view.points("liq.long_usd.bybit", a))
+    shorts = _hour_map(view.points("liq.short_usd.bybit", a))
+    minutes = _hour_map(view.points("stream.bybit_liq.minutes", a))
+    end = view.as_of.replace(minute=0, second=0, microsecond=0)
+    out: dict[str, Any] = {}
+    for label, hours in (("1h", 1), ("4h", 4), ("24h", 24)):
+        slots = [end - timedelta(hours=h + 1) for h in range(hours)]
+        complete = [h for h in slots if minutes.get(h, 0) >= 55]
+        out[label] = {
+            "long_usd": sum(longs.get(h, 0.0) for h in complete),
+            "short_usd": sum(shorts.get(h, 0.0) for h in complete),
+            "covered_hours": len(complete),
+            "hours": hours,
+        }
+    day = out["24h"]
+    total = day["long_usd"] + day["short_usd"]
+    why = (
+        "Des positions à levier fermées de force : elles amplifient le mouvement "
+        "en cours. Elles disent sa violence, jamais sa direction à venir."
+    )
+    if day["covered_hours"] < 20:
+        reading = MetricReading(
+            key="liquidations", label="Liquidations 24 h", emoji="💥",
+            status=DataStatus.INSUFFICIENT_DATA if day["covered_hours"] else DataStatus.UNAVAILABLE,
+            why=why, source="Bybit (flux public en direct)", source_tier="EXCHANGE",
+            display_value="—",
+            note=(
+                f"Flux en direct couvert sur {day['covered_hours']} h des dernières 24 h : "
+                "total non publié tant que la couverture est incomplète."
+            ),
+        )
+        dominance = "UNKNOWN"
+    else:
+        dominance = (
+            "LONGS" if day["long_usd"] >= 1.5 * max(day["short_usd"], 1)
+            else "SHORTS" if day["short_usd"] >= 1.5 * max(day["long_usd"], 1)
+            else "BALANCED"
+        )
+        newest = max((h for h in longs if minutes.get(h, 0) >= 55), default=None)
+        reading = MetricReading(
+            key="liquidations", label="Liquidations 24 h", emoji="💥",
+            status=DataStatus.AVAILABLE, unit="$", value=total,
+            display_value=_usd_compact(total),
+            delta_label=(
+                f"longs {_usd_compact(day['long_usd'])} · shorts {_usd_compact(day['short_usd'])}"
+            ),
+            timestamp=newest, available_at=(newest + timedelta(hours=1)) if newest else None,
+            source="Bybit (flux public en direct)", source_tier="EXCHANGE",
+            quality=round(100 * day["covered_hours"] / 24), confidence=80, state="CONTEXT",
+            why=why,
+        )
+        if day["covered_hours"] < 24:
+            reading.note = f"Couverture : {day['covered_hours']} h sur 24."
+    out["dominance"] = dominance
+    # Buckets exist from the moment the stream runs, even before a first hour
+    # has closed: "being collected" and "no source" are different states.
+    out["stream_started"] = len(view.cache.series("stream.bybit_liq.minutes", a).values) > 0
+    out["reading"] = reading
+    return out
+
+
 def derivatives_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) -> FamilyScore:
     window = HORIZON_WINDOW[horizon]
     scale = SCALES[horizon]
@@ -1043,7 +1411,7 @@ def derivatives_family(view: PointInTimeView, asset: Asset, horizon: DecisionHor
         # Bybit series covers years: same question, one named venue.
         fallback = read_metric(
             view, "oi.contracts_bybit", asset=a, window=max(window, timedelta(days=1)),
-            label="Open interest (Bybit)", emoji="📊", unit="", max_age=timedelta(days=3),
+            label="Open interest (historique)", emoji="📊", unit="", max_age=timedelta(days=3),
             why=oi.why, source_tier="EXCHANGE", decimals=0,
         )
         if fallback.usable and fallback.delta_pct is not None:
@@ -1052,7 +1420,7 @@ def derivatives_family(view: PointInTimeView, asset: Asset, horizon: DecisionHor
     bybit = [p.value for p in view.points("oi.contracts_bybit", a)]
     oi_pct = _percentile(bybit[-1], bybit[-730:]) if bybit else None
     if oi_pct is not None:
-        oi.note = f"Niveau historique (Bybit, 2 ans) : {fr_number(oi_pct, 0)}e percentile."
+        oi.note = f"Niveau historique (2 ans) : {fr_number(oi_pct, 0)}e centile."
 
     funding = read_metric(
         view, "funding.rate", asset=a, window=window, label="Funding (8 h)", emoji="💰",
@@ -1108,11 +1476,8 @@ def derivatives_family(view: PointInTimeView, asset: Asset, horizon: DecisionHor
     dvol_pct = _percentile(dvol_points[-1], dvol_points[-730:]) if dvol_points else None
     if dvol_pct is not None:
         dvol.note = f"{fr_number(dvol_pct, 0)}e percentile sur deux ans."
-    metrics.append(unavailable(
-        "liquidations", "Liquidations longs / shorts", "💥",
-        "Aucune source publique fiable des liquidations n'est branchée : rien n'est simulé.",
-        why="Les liquidations forcent des ordres dans le sens du mouvement et l'amplifient.",
-    ))
+    liquidations = liquidation_totals(view, asset)
+    metrics.append(liquidations.pop("reading"))
 
     regime = CrowdingRegime.UNKNOWN
     if oi.usable and oi.delta_pct is not None and price_change is not None:
@@ -1180,6 +1545,7 @@ def derivatives_family(view: PointInTimeView, asset: Asset, horizon: DecisionHor
         "oi_percentile": oi_pct,
         "dvol_percentile": dvol_pct,
         "price_change_pct": price_change,
+        "liquidations": liquidations,
     })
     return result
 
@@ -1394,32 +1760,51 @@ def technical_family(view: PointInTimeView, asset: Asset, horizon: DecisionHoriz
     squeeze = "compression" if bw_pct is not None and bw_pct <= 15 else (
         "expansion" if bw_pct is not None and bw_pct >= 85 else "normale")
     add("technical.bollinger_bandwidth", "Largeur de Bollinger", "📊", bw,
-        f"{squeeze}" + (f" ({fr_number(bw_pct, 0)}e pct.)" if bw_pct is not None else ""),
+        f"{squeeze}" + (f" ({fr_number(bw_pct, 0)}e centile)" if bw_pct is not None else ""),
         "Des bandes resserrées annoncent souvent un mouvement ample à venir, sans en dire le sens.")
 
-    structure, levels = _structure(asset, timeframe, frame)
+    structure, _swing_levels = _structure(asset, timeframe, frame)
+    # Support and resistance come from clusters of confirmed pivots on a frame
+    # where a pivot means something (4 h, or daily for the 30 d call), not
+    # from the last swing - which could sit below the price and still be
+    # called "resistance".
+    from .key_levels import find_key_levels
+
+    level_tf = Timeframe.D1 if horizon is DecisionHorizon.D30 else Timeframe.H4
+    level_frame = frame if level_tf is timeframe else view.candles(asset.value, level_tf)
+    key_support, key_resistance, _all_levels = find_key_levels(level_frame, level_tf.value)
+    levels = {
+        "support": key_support.price if key_support else None,
+        "resistance": key_resistance.price if key_resistance else None,
+    }
     structure_reading = add(
         "technical.structure", "Structure de marché", "🧱", _STRUCTURE_SIGNAL[structure],
         STRUCTURE_FR[structure],
         "La suite des sommets et des creux confirmés : elle dit si la tendance tient.",
     )
     _mark(structure_reading, _STRUCTURE_SIGNAL[structure])
-    if levels.get("support"):
-        add("technical.support", "Support", "🟩", float(levels["support"]),
-            fr_number(float(levels["support"]), 0), "Le dernier creux confirmé.")
-    if levels.get("resistance"):
-        add("technical.resistance", "Résistance", "🟥", float(levels["resistance"]),
-            fr_number(float(levels["resistance"]), 0), "Le dernier sommet confirmé.")
+    if key_support is not None:
+        reading = add("technical.support", "Support clé", "🟢", key_support.price,
+                      f"{fr_number(key_support.price, 0)} $",
+                      "Le niveau le plus proche sous le prix où le marché a déjà rebondi.")
+        reading.note = key_support.explanation
+        reading.unit = "$"
+    if key_resistance is not None:
+        reading = add("technical.resistance", "Prochaine résistance", "🔴", key_resistance.price,
+                      f"{fr_number(key_resistance.price, 0)} $",
+                      "Le prochain niveau au-dessus du prix où le marché a déjà reculé.")
+        reading.note = key_resistance.explanation
+        reading.unit = "$"
     components.append(Component(
         "structure", "Structure", 0.8, _STRUCTURE_SIGNAL[structure],
         f"🧱 {STRUCTURE_FR[structure]}"
-        + (f" ; support {fr_number(float(levels['support']), 0)}" if levels.get("support") else "")
-        + (f", résistance {fr_number(float(levels['resistance']), 0)}" if levels.get("resistance") else "")
+        + (f" ; support {fr_number(float(levels['support']), 0)} $" if levels.get("support") else "")
+        + (f", résistance {fr_number(float(levels['resistance']), 0)} $" if levels.get("resistance") else "")
         + ".",
         turn_condition=(
-            f"Une clôture sous le support ({fr_number(float(levels['support']), 0)})."
+            f"Une clôture sous le support ({fr_number(float(levels['support']), 0)} $)."
             if levels.get("support") and _STRUCTURE_SIGNAL[structure] > 0
-            else f"Une clôture au-dessus de la résistance ({fr_number(float(levels['resistance']), 0)})."
+            else f"Une clôture au-dessus de la résistance ({fr_number(float(levels['resistance']), 0)} $)."
             if levels.get("resistance") and _STRUCTURE_SIGNAL[structure] < 0 else ""
         ),
         metrics=[structure_reading.key],
@@ -1468,11 +1853,142 @@ def technical_family(view: PointInTimeView, asset: Asset, horizon: DecisionHoriz
         "structure_label": STRUCTURE_FR[structure],
         "support": levels.get("support"),
         "resistance": levels.get("resistance"),
+        "support_detail": key_support.to_dict() if key_support else None,
+        "resistance_detail": key_resistance.to_dict() if key_resistance else None,
+        "levels_timeframe": level_tf.value,
         "timeframe": timeframe.value,
         "rsi": rsi,
         "bollinger_percentile": bw_pct,
     })
     return result
+
+
+
+# ---------------------------------------------------------------------------
+# G. Bitcoin cycle / crypto regime - context, never a trigger
+# ---------------------------------------------------------------------------
+
+#: Relative move against BTC that counts as a clear out- or under-performance.
+_RELATIVE_SCALE = {DecisionHorizon.H24: 2.0, DecisionHorizon.D7: 5.0, DecisionHorizon.D30: 10.0}
+#: The cycle family can never lean harder than this, whatever it reads.
+CYCLE_SIGNAL_CAP = 0.4
+
+
+def _btc_cycle(view: PointInTimeView):
+    from .bitcoin_cycle import read_cycle
+
+    halvings = [
+        datetime.fromtimestamp(p.value, tz=view.as_of.tzinfo)
+        for p in view.points("btc.halving.block_epoch")
+    ]
+    estimate = view.latest("btc.halving.next_epoch_estimate")
+    next_halving = datetime.fromtimestamp(estimate.value, tz=view.as_of.tzinfo) if estimate else None
+    return read_cycle(view.candles("BTC", Timeframe.D1), halvings=halvings,
+                      next_halving=next_halving, as_of=view.as_of)
+
+
+def cycle_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) -> FamilyScore:
+    cycle = _btc_cycle(view)
+    metrics: list[MetricReading] = []
+    components: list[Component] = []
+    if cycle is None:
+        return FamilyScore(
+            family=CYCLE, horizon=horizon.value, status=DataStatus.INSUFFICIENT_DATA,
+            unavailable_reason="Historique journalier de BTC insuffisant pour situer le cycle.",
+            headline="Cycle indéterminé.",
+        )
+    daily = view.candles("BTC", Timeframe.D1)
+    stamp = daily.index[-1].to_pydatetime() if len(daily) else view.as_of
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=view.as_of.tzinfo)
+
+    def add(key: str, label: str, emoji: str, value: float | None, display: str, why: str,
+            source: str = "Binance (bougies journalières)", tier: str = "EXCHANGE") -> MetricReading:
+        reading = MetricReading(
+            key=key, label=label, emoji=emoji,
+            status=DataStatus.AVAILABLE if value is not None else DataStatus.UNAVAILABLE,
+            value=value, display_value=display if value is not None else "—",
+            timestamp=stamp, available_at=stamp, source=source, source_tier=tier,
+            quality=100, confidence=85, state="CONTEXT", why=why,
+        )
+        metrics.append(reading)
+        return reading
+
+    name = "Cycle Bitcoin" if asset is Asset.BTC else "Régime Bitcoin"
+    add("cycle.phase", name, "🔄", PHASE_ORDER.index(cycle.phase.value), cycle.label,
+        "La phase décrit où se situe Bitcoin par rapport à son record, à sa tendance "
+        "longue et au dernier halving. C'est du contexte, jamais une prévision.")
+    add("cycle.drawdown", "Écart au record (ATH)", "📉", cycle.drawdown_pct,
+        f"{fr_number(cycle.drawdown_pct, 0, signed=True)} %",
+        f"Record de {fr_number(cycle.ath, 0)} $ le {cycle.ath_date:%d/%m/%Y}.")
+    if cycle.days_since_halving is not None:
+        add("cycle.days_since_halving", "Jours depuis le halving", "⛏️", float(cycle.days_since_halving),
+            f"{cycle.days_since_halving} jours",
+            "Le halving divise par deux l'émission de nouveaux bitcoins tous les 210 000 blocs.",
+            source="mempool.space (horodatage du bloc)", tier="OFFICIAL")
+    if cycle.next_halving_estimate is not None and asset is Asset.BTC:
+        reading = add("cycle.next_halving", "Prochain halving (estimation)", "⏳",
+                      cycle.next_halving_estimate.timestamp(),
+                      f"vers {_MONTHS_FR[cycle.next_halving_estimate.month - 1]} "
+                      f"{cycle.next_halving_estimate.year}",
+                      "Estimé à partir du rythme réel des 2 016 derniers blocs.",
+                      source="mempool.space (rythme des blocs)", tier="OFFICIAL")
+        reading.note = "Estimation : la date exacte dépend du rythme de production des blocs."
+    if cycle.sma200 is not None:
+        add("cycle.sma200", "Moyenne 200 jours (BTC)", "〽️", cycle.sma200,
+            f"{fr_number(cycle.sma200, 0)} $",
+            "La tendance longue : un prix au-dessus d'une moyenne qui monte est un régime sain.")
+
+    trend = 0.0
+    if cycle.sma200 is not None and cycle.sma200_slope_pct is not None:
+        above = cycle.price > cycle.sma200
+        rising = cycle.sma200_slope_pct > 0
+        trend = 0.1 if above and rising else -0.1 if not above and not rising else 0.0
+    lean = max(-CYCLE_SIGNAL_CAP, min(CYCLE_SIGNAL_CAP, cycle.lean + trend))
+    components.append(Component(
+        "btc_cycle", name, 1.0 if asset is Asset.BTC else 0.6, lean,
+        f"🔄 {name} : {cycle.label.lower()}. {cycle.sentence}",
+        metrics=["cycle.phase"],
+    ))
+
+    relative: dict[str, Any] | None = None
+    if asset is not Asset.BTC:
+        window = HORIZON_WINDOW[horizon]
+        own = view.candles(asset.value, Timeframe.H1)
+        btc = view.candles("BTC", Timeframe.H1)
+        hours = int(window.total_seconds() // 3600)
+        if len(own) > hours + 1 and len(btc) > hours + 1:
+            ratio_now = float(own["close"].iloc[-1]) / float(btc["close"].iloc[-1])
+            ratio_then = float(own["close"].iloc[-hours - 1]) / float(btc["close"].iloc[-hours - 1])
+            change = (ratio_now / ratio_then - 1) * 100
+            signal = _squash(change, _RELATIVE_SCALE[horizon]) * 0.5
+            reading = add(f"cycle.relative_{asset.value.lower()}_btc", f"{asset.value}/BTC",
+                          "⚖️", change, f"{fr_number(change, 1, signed=True)} %",
+                          f"La performance de {asset.value} face à BTC sur la période.")
+            reading.state = "FAVORABLE" if signal > 0.15 else "UNFAVORABLE" if signal < -0.15 else "NEUTRAL"
+            relative = {"change_pct": change, "window": _window_label(window)}
+            components.append(Component(
+                "relative_strength", f"{asset.value} face à BTC", 0.4, signal,
+                f"⚖️ {asset.value} {'surperforme' if change > 0 else 'sous-performe'} BTC "
+                f"({fr_number(change, 1, signed=True)} % sur {_window_label(window)}).",
+                metrics=[reading.key],
+            ))
+
+    result = finish_family(
+        CYCLE, horizon, components, metrics,
+        headline_positive=cycle.sentence,
+        headline_negative=cycle.sentence,
+        headline_neutral=cycle.sentence,
+    )
+    result.extra.update({"cycle": cycle.to_dict(), "relative": relative, "is_context": True,
+                         "asset": asset.value})
+    return result
+
+
+PHASE_ORDER = [
+    "DEEP_DRAWDOWN", "POST_ATH_DRAWDOWN", "RECOVERY", "MATURE_RANGE",
+    "EARLY_POST_HALVING", "EXPANSION", "PRICE_DISCOVERY", "UNKNOWN",
+]
 
 
 FAMILY_BUILDERS = {
@@ -1482,6 +1998,7 @@ FAMILY_BUILDERS = {
     DERIVATIVES: derivatives_family,
     ONCHAIN: onchain_family,
     TECHNICAL: technical_family,
+    CYCLE: cycle_family,
 }
 
 

@@ -12,6 +12,7 @@ import pytest
 
 from crypto_intel.core.enums import Asset, Timeframe
 from crypto_intel.engines.decision_config import (
+    CYCLE,
     DERIVATIVES,
     FLOWS,
     HORIZON_WEIGHTS,
@@ -89,7 +90,16 @@ def view(cache):
 def family(name, score, *, status=DataStatus.AVAILABLE, confidence=80, quality=100,
            horizon=DecisionHorizon.D7, extra=None):
     signal = None if score is None else score / 100
-    components = [] if score is None else [Component(name, name, 1.0, signal, f"{name} {score}")]
+    # The gates read the spot component and the technical structure by name:
+    # a synthetic family carries the same shape as a real one.
+    key = "spot" if name == FLOWS else name
+    components = [] if score is None else [Component(key, name, 1.0, signal, f"{name} {score}")]
+    if name == TECHNICAL and extra is None and score is not None:
+        extra = {
+            "structure": "TREND_UP" if score > 0 else "TREND_DOWN" if score < 0 else "RANGE",
+            "rsi": 55.0, "price": 100.0, "resistance": 110.0, "support": 90.0,
+            "trend_signal": 0.5 if score > 0 else -0.5 if score < 0 else 0.0,
+        }
     return FamilyScore(
         family=name, horizon=horizon.value, status=status, score=score,
         state=FamilyState.UNKNOWN if score is None else (
@@ -293,7 +303,7 @@ def test_missing_family_weights_are_renormalised():
 
 
 def test_strong_contradictions_hold_the_decision():
-    families = all_families({MACRO: -70, LIQUIDITY: -60, FLOWS: 70, DERIVATIVES: 10, TECHNICAL: 70})
+    families = all_families({MACRO: -70, LIQUIDITY: -60, FLOWS: 70, DERIVATIVES: -60, TECHNICAL: 70})
     decision = decide(families, DecisionHorizon.D7)
     assert decision.action is FinalAction.WAIT
     assert decision.blocking_gate == "CONTRADICTION"
@@ -346,8 +356,8 @@ def test_no_measurable_edge_holds_even_a_clean_setup():
 def test_every_gate_is_reported_in_order():
     decision = decide(all_families({MACRO: 10, FLOWS: 10, TECHNICAL: 10}), DecisionHorizon.D7)
     assert [g.name for g in decision.gates] == [
-        "DATA_QUALITY", "FRESHNESS", "EVENT_RISK", "UNCERTAINTY",
-        "CONTRADICTION", "CROWDING", "FINAL",
+        "DATA_QUALITY", "FRESHNESS", "EVENT_RISK", "MARKET_REGIME", "UNCERTAINTY",
+        "TECHNICAL_SETUP", "CONTRADICTION", "CROWDING", "SPOT_CONFIRMATION", "FINAL",
     ]
     assert all(g.status in set(GateStatus) for g in decision.gates)
 
@@ -373,7 +383,7 @@ def test_explanations_are_bounded():
 
 def test_the_live_builder_never_crashes_on_an_empty_store():
     families = build_families(view(FakeCache()), Asset.BTC, DecisionHorizon.H24)
-    assert set(families) == {MACRO, LIQUIDITY, FLOWS, DERIVATIVES, ONCHAIN, TECHNICAL}
+    assert set(families) == {MACRO, LIQUIDITY, FLOWS, DERIVATIVES, ONCHAIN, TECHNICAL, CYCLE}
     decision = decide(families, DecisionHorizon.H24)
     assert decision.action is FinalAction.INSUFFICIENT_DATA
 

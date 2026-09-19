@@ -220,7 +220,7 @@ class _FullAnalysisPageState extends State<FullAnalysisPage> {
                           const SizedBox(height: 18),
                           const _SectionLabel('Familles d’analyse'),
                           const SizedBox(height: 8),
-                          for (final family in analysis.families) ...[
+                          for (final family in analysis.displayFamilies) ...[
                             FamilyCard(
                               family: family,
                               onTap: () => Navigator.of(context).push(
@@ -996,7 +996,9 @@ class FamilyDetailPage extends StatelessWidget {
                     ]
                   else
                     for (final section in view.sections) ...[
-                      _SectionCard(section: section, family: family),
+                      section.secondary
+                          ? _AdvancedSection(section: section, family: family)
+                          : _SectionCard(section: section, family: family),
                       const SizedBox(height: 10),
                     ],
                   if (lecture.isNotEmpty) ...[
@@ -1023,6 +1025,64 @@ class FamilyDetailPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Données avancées": everything the engine reads but the reader does not
+/// need first - folded until asked for.
+class _AdvancedSection extends StatefulWidget {
+  final AnalysisSectionRead section;
+  final AnalysisFamilyRead family;
+
+  const _AdvancedSection({required this.section, required this.family});
+
+  @override
+  State<_AdvancedSection> createState() => _AdvancedSectionState();
+}
+
+class _AdvancedSectionState extends State<_AdvancedSection> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        key: ValueKey('advanced-${widget.section.title}'),
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+        borderColor: const Color(0xFF1A3049),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              key: const ValueKey('advanced-toggle'),
+              onTap: () => setState(() => _open = !_open),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Text(widget.section.emoji, style: const TextStyle(fontSize: 16)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.section.title,
+                        style: const TextStyle(
+                          color: Color(0xFFB7C6DC),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                      color: const Color(0xFF55749B),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_open)
+              for (final row in widget.section.rows)
+                _SectionRow(row: row, metric: widget.family.metric(row.metric)),
+          ],
+        ),
+      );
 }
 
 /// A section of related figures: a verdict, compact rows, one sentence.

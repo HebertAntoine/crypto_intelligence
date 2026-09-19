@@ -19,38 +19,49 @@ FLOWS = "flows"
 DERIVATIVES = "derivatives"
 ONCHAIN = "onchain"
 TECHNICAL = "technical"
+CYCLE = "cycle"
 
-FAMILIES = (MACRO, LIQUIDITY, FLOWS, DERIVATIVES, ONCHAIN, TECHNICAL)
+FAMILIES = (MACRO, LIQUIDITY, FLOWS, DERIVATIVES, ONCHAIN, TECHNICAL, CYCLE)
+
+#: Families that describe the backdrop. They move the score a little but never
+#: count as an independent confirmation: a BUY or a SELL needs families that
+#: read the market itself.
+CONTEXT_FAMILIES = frozenset({CYCLE})
 
 FAMILY_LABEL = {
     MACRO: "Macro & banques centrales",
     LIQUIDITY: "Liquidité",
-    FLOWS: "ETF & flux spot",
+    FLOWS: "Flux spot",
     DERIVATIVES: "Dérivés",
     ONCHAIN: "On-chain & baleines",
     TECHNICAL: "Technique & structure",
+    CYCLE: "Cycle Bitcoin & régime crypto",
 }
 FAMILY_EMOJI = {
     MACRO: "🏛️",
     LIQUIDITY: "💵",
-    FLOWS: "💸",
+    FLOWS: "🪙",
     DERIVATIVES: "📈",
     ONCHAIN: "🐋",
     TECHNICAL: "📊",
+    CYCLE: "🔄",
 }
 
-#: Initial weights per horizon (percent). The 24 h call leans on what moves in
-#: hours - leverage, flows, chart; the 30 d call on regime and liquidity.
+#: Initial weights per horizon (percent), one reasoning per horizon:
+#:   24 h - short-term chart, spot tape, leverage; the cycle barely counts.
+#:   7 d  - structure, leverage, spot, macro and central banks.
+#:   30 d - long structure, macro trajectory, cycle, structural flows;
+#:          funding at one instant matters little.
 #: A family with no usable data is dropped and the rest renormalised.
 HORIZON_WEIGHTS: dict[DecisionHorizon, dict[str, float]] = {
     DecisionHorizon.H24: {
-        MACRO: 20, LIQUIDITY: 10, FLOWS: 15, DERIVATIVES: 25, ONCHAIN: 10, TECHNICAL: 20,
+        TECHNICAL: 30, FLOWS: 25, DERIVATIVES: 25, MACRO: 12, LIQUIDITY: 3, ONCHAIN: 3, CYCLE: 2,
     },
     DecisionHorizon.D7: {
-        MACRO: 20, LIQUIDITY: 15, FLOWS: 20, DERIVATIVES: 15, ONCHAIN: 15, TECHNICAL: 15,
+        TECHNICAL: 25, DERIVATIVES: 20, FLOWS: 20, MACRO: 20, LIQUIDITY: 5, ONCHAIN: 5, CYCLE: 5,
     },
     DecisionHorizon.D30: {
-        MACRO: 25, LIQUIDITY: 25, FLOWS: 20, DERIVATIVES: 5, ONCHAIN: 15, TECHNICAL: 10,
+        TECHNICAL: 20, MACRO: 22, LIQUIDITY: 13, FLOWS: 15, CYCLE: 15, ONCHAIN: 10, DERIVATIVES: 5,
     },
 }
 
@@ -96,6 +107,16 @@ class DecisionThresholds:
     #: evidence is confident enough to justify crossing it.
     event_caution_score: float = 0.3
     event_caution_confidence: float = 75.0
+    #: Entry quality: RSI at or above this is a stretched market - the trend
+    #: may hold, the entry is late.
+    stretched_rsi: float = 70.0
+    #: Price within this distance under the next resistance (percent, per
+    #: horizon) waits for the break rather than buying into the ceiling.
+    resistance_margin_pct: dict[str, float] = field(
+        default_factory=lambda: {"24h": 0.7, "7d": 1.5, "30d": 3.0}
+    )
+    #: A spot-pressure signal at or below minus this opposes a BUY.
+    spot_opposition_signal: float = 0.2
 
 
 THRESHOLDS = DecisionThresholds()

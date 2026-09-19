@@ -220,6 +220,8 @@ class Pipeline:
             "liquidity_tga": self._fetch("liquidity.tga"),
             "liquidity_rrp": self._fetch("liquidity.rrp"),
             "liquidity_fed_balance_sheet": self._fetch("liquidity.fed_balance_sheet"),
+            "central_banks": self._fetch("macro.central_banks"),
+            "btc_chain": self._fetch("onchain.btc_cycle"),
             "macro_indices": self._fetch("macro.indices"),
             "news": self._fetch("news.feed"),
             "regulation": self._fetch("regulation.feed"),

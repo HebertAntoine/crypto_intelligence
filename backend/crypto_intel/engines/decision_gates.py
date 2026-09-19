@@ -27,13 +27,17 @@ from typing import Any
 
 from ..future_events.models import DecisionHorizon
 from .decision_config import (
+    CONTEXT_FAMILIES,
     CRITICAL_FAMILIES,
+    CYCLE,
     DERIVATIVES,
     FAMILIES,
     FAMILY_EMOJI,
     FAMILY_LABEL,
+    FLOWS,
     HORIZON_WEIGHTS,
     LIQUIDITY,
+    MACRO,
     ONCHAIN,
     TECHNICAL,
     THRESHOLDS,
@@ -158,6 +162,9 @@ class ExternalChecks:
     consistency_codes: list[str] = field(default_factory=list)
     #: The moment of the reading, for recency-based display priorities.
     as_of: datetime | None = None
+    #: The asset decided on ("BTC", "ETH", "SOL") - the cycle reads as the
+    #: asset's own cycle only for BTC.
+    asset: str = ""
 
 
 @dataclass(slots=True)
@@ -356,7 +363,38 @@ def decide(
         gates.append(GateResult("EVENT_RISK", "Risque événementiel", GateStatus.PASS,
                                 FinalAction.WAIT, "Aucun événement majeur non résolu dans l'horizon."))
 
-    # 4. Uncertainty - including the existing no-measurable-edge finding
+    direction = _sign(score)
+    technical = families.get(TECHNICAL)
+    tech_extra = technical.extra if technical is not None else {}
+    cycle = families.get(CYCLE)
+    cycle_phase = ((cycle.extra.get("cycle") or {}).get("phase") if cycle is not None else None)
+    macro = families.get(MACRO)
+    macro_state = macro.state if macro is not None and macro.usable else None
+
+    # 4. Market regime - the backdrop can forbid swimming against it, never
+    # push a decision on its own.
+    regime_block = None
+    if direction > 0 and macro_state is FamilyState.VERY_NEGATIVE and cycle_phase in {
+        "DEEP_DRAWDOWN", "POST_ATH_DRAWDOWN",
+    }:
+        regime_block = (
+            "Régime hostile : conditions macro très défavorables et Bitcoin en repli "
+            "après son sommet."
+        )
+    elif direction < 0 and macro_state is FamilyState.VERY_POSITIVE and cycle_phase in {
+        "EXPANSION", "PRICE_DISCOVERY",
+    }:
+        regime_block = "Régime porteur : macro très favorable et tendance longue haussière."
+    gates.append(GateResult(
+        "MARKET_REGIME", "Régime de marché",
+        GateStatus.BLOCK if regime_block else GateStatus.PASS, FinalAction.WAIT,
+        regime_block or (
+            f"Cycle : {(cycle.extra.get('cycle') or {}).get('phase_label', 'indéterminé').lower()}."
+            if cycle is not None and cycle.usable else "Régime sans opposition marquée."
+        ),
+    ))
+
+    # 5. Uncertainty - including the existing no-measurable-edge finding
     no_edge = "NO_MEASURABLE_EDGE" in external.consistency_codes
     if score is not None and confidence < thresholds.uncertainty_confidence:
         gates.append(GateResult(
@@ -374,7 +412,46 @@ def decide(
         gates.append(GateResult("UNCERTAINTY", "Incertitude", GateStatus.PASS, FinalAction.WAIT,
                                 f"Confiance {confidence} %."))
 
-    # 5. Contradiction
+    # 6. Technical setup - a BUY needs a structure that holds and an entry that
+    # is not already stretched or pressed under resistance; a SELL needs a
+    # structural break, not an overbought reading.
+    setup_block = None
+    structure = str(tech_extra.get("structure") or "UNCLEAR")
+    rsi = tech_extra.get("rsi")
+    price = tech_extra.get("price")
+    resistance = tech_extra.get("resistance")
+    margin = thresholds.resistance_margin_pct.get(horizon.value, 1.0)
+    if direction > 0:
+        if technical is None or not technical.usable:
+            setup_block = "Structure de prix non mesurée : pas d'achat sans elle."
+        elif structure in {"TREND_DOWN", "BREAKDOWN_CONFIRMED", "BREAKDOWN_PENDING"}:
+            setup_block = "La structure de prix reste baissière."
+        elif rsi is not None and rsi >= thresholds.stretched_rsi:
+            setup_block = (
+                f"Marché étiré (RSI {fr_number(rsi, 0)}) : la tendance tient, mais le point "
+                "d'entrée est tardif."
+            )
+        elif price and resistance and 0 <= (resistance - price) / price * 100 <= margin:
+            setup_block = (
+                f"Résistance proche ({fr_number(resistance, 0)} $, à "
+                f"{fr_number((resistance - price) / price * 100, 1)} %) : l'entrée attend sa cassure."
+            )
+    elif direction < 0:
+        if technical is None or not technical.usable:
+            setup_block = "Structure de prix non mesurée : pas de vente sans elle."
+        elif structure not in {"TREND_DOWN", "BREAKDOWN_CONFIRMED"}:
+            setup_block = (
+                "Pas de cassure structurelle : un indicateur tendu ne suffit pas pour vendre."
+            )
+    gates.append(GateResult(
+        "TECHNICAL_SETUP", "Structure & point d'entrée",
+        GateStatus.BLOCK if setup_block else GateStatus.PASS, FinalAction.WAIT,
+        setup_block or (
+            "Structure et point d'entrée compatibles." if direction else "Pas de direction à valider."
+        ),
+    ))
+
+    # 7. Contradiction
     strong_pos = [k for k in usable if (families[k].score or 0) >= thresholds.contradiction_family_score]
     strong_neg = [k for k in usable if (families[k].score or 0) <= -thresholds.contradiction_family_score]
     share_pos = sum(weights.get(k, 0) for k in strong_pos)
@@ -391,11 +468,10 @@ def decide(
         gates.append(GateResult("CONTRADICTION", "Contradictions", GateStatus.PASS,
                                 FinalAction.WAIT, "Pas d'opposition forte entre familles."))
 
-    # 6. Crowding / extreme risk
+    # 8. Crowding / extreme risk
     derivatives = families.get(DERIVATIVES)
     crowding = (derivatives.extra.get("crowding") if derivatives else None) or "UNKNOWN"
     dvol_pct = derivatives.extra.get("dvol_percentile") if derivatives else None
-    direction = _sign(score)
     crowding_block = None
     if direction > 0 and crowding == "CROWDED_LONGS":
         crowding_block = (
@@ -417,10 +493,38 @@ def decide(
         crowding_block or "Pas d'excès de levier contre le mouvement.",
     ))
 
-    # 7. Final decision
+    # 9. Spot confirmation - buyers must not be the ones stepping back, and a
+    # sale needs sellers taking the initiative.
+    spot = families.get(FLOWS)
+    spot_component = next(
+        (c for c in (spot.components if spot is not None else []) if c.key == "spot" and c.active),
+        None,
+    )
+    spot_block = None
+    if direction > 0:
+        if spot_component is None:
+            spot_block = "Pression spot non mesurée : l'achat n'est pas confirmé par le comptant."
+        elif (spot_component.signal or 0) <= -thresholds.spot_opposition_signal:
+            spot_block = "Les vendeurs prennent l'initiative au comptant : l'achat n'est pas confirmé."
+    elif direction < 0:
+        if spot_component is None:
+            spot_block = "Pression spot non mesurée : la vente n'est pas confirmée par le comptant."
+        elif (spot_component.signal or 0) >= 0:
+            spot_block = "Les vendeurs ne dominent pas au comptant : la vente n'est pas confirmée."
+    gates.append(GateResult(
+        "SPOT_CONFIRMATION", "Confirmation au comptant",
+        GateStatus.BLOCK if spot_block else GateStatus.PASS, FinalAction.WAIT,
+        spot_block or (
+            "Le comptant ne contredit pas la direction." if direction else "Pas de direction à valider."
+        ),
+    ))
+
+    # 10. Final decision - context families (the cycle) never count as an
+    # independent confirmation.
     confirming = [
         k for k in usable
-        if direction != 0
+        if k not in CONTEXT_FAMILIES
+        and direction != 0
         and _sign(families[k].score) == direction
         and abs(families[k].score or 0) >= thresholds.confirming_family_score
     ]
@@ -428,9 +532,14 @@ def decide(
     final_detail = ""
     if score is not None:
         meets = confidence >= thresholds.min_confidence and len(confirming) >= thresholds.min_confirming_families
+        # Reducing needs the backdrop to degrade too: macro or regime.
+        degraded = (
+            (macro is not None and macro.usable and (macro.score or 0) < 0)
+            or (cycle is not None and cycle.usable and (cycle.score or 0) < 0)
+        )
         if score >= thresholds.buy_score and meets:
             final = FinalAction.BUY
-        elif score <= thresholds.sell_score and meets:
+        elif score <= thresholds.sell_score and meets and degraded:
             final = FinalAction.SELL
         else:
             missing = []
@@ -438,6 +547,8 @@ def decide(
                 missing.append(f"score {fr_number(score, 0, signed=True)} (seuil ±{fr_number(thresholds.buy_score, 0)})")
             if confidence < thresholds.min_confidence:
                 missing.append(f"confiance {confidence} % (minimum {fr_number(thresholds.min_confidence, 0)} %)")
+            if score <= thresholds.sell_score and meets and not degraded:
+                missing.append("contexte macro ou régime non dégradé")
             if len(confirming) < thresholds.min_confirming_families:
                 missing.append(
                     f"{len(confirming)} famille{'s' if len(confirming) > 1 else ''} concordante"
@@ -486,7 +597,8 @@ def decide(
 
     top_event = (external.event_candidates or [None])[0]
     decision.summary = summarize(
-        decision, as_of=external.as_of or decision.newest_data, top_event=top_event
+        decision, as_of=external.as_of or decision.newest_data, top_event=top_event,
+        asset=external.asset,
     )
     return decision
 

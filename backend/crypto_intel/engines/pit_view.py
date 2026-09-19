@@ -97,6 +97,19 @@ _STORE_DERIVATIVES = {
     "spot.net_taker_volume", "derivatives.long_account_share", "oi.value",
 }
 
+#: Hourly buckets (aggressive spot flow, liquidations, stream coverage): an
+#: hour is complete - and usable - once it has closed.
+_STORE_HOURLY_PREFIXES = ("spot.flow.", "liq.", "stream.")
+_HOURLY_SOURCE = {
+    "binance": "Binance spot (klines 1 h)",
+    "okx": "OKX spot (taker-volume 1 h)",
+    "bybit": "Bybit (flux public en direct)",
+}
+
+
+def _is_hourly(metric: str) -> bool:
+    return metric.startswith(_STORE_HOURLY_PREFIXES)
+
 
 class DataCache:
     """Everything one asset's decision can read, loaded once."""
@@ -107,6 +120,7 @@ class DataCache:
         self.database = Path(database) if database else PROJECT_ROOT / "data" / "crypto_intel.db"
         self._series: dict[tuple[str, str | None], _Series] = {}
         self._candles: dict[tuple[str, str], pd.DataFrame] = {}
+        self._meetings: list[tuple[str, datetime, str]] | None = None
 
     # -- loading ------------------------------------------------------------
 
@@ -147,6 +161,14 @@ class DataCache:
     def _store_points(self, metric: str, asset: str | None) -> list[Point]:
         from ..history import store
 
+        if _is_hourly(metric) and asset is not None:
+            series = store.load_derivatives(Asset(asset), metric)
+            source = _HOURLY_SOURCE.get(metric.rsplit(".", 1)[-1], "Bybit (flux public en direct)")
+            return [
+                Point(_utc(stamp), _utc(stamp) + timedelta(hours=1), float(value), source)
+                for stamp, value in series.items()
+                if value is not None and np.isfinite(value)
+            ]
         if metric in _STORE_MACRO:
             series = store.load_macro(metric)
             source = "Yahoo Finance (historique)"
@@ -218,6 +240,30 @@ class DataCache:
                 points = unique
             self._series[key] = _Series.build(points)
         return self._series[key]
+
+    def meetings(self) -> list[tuple[str, datetime, str]]:
+        """Scheduled central-bank decisions: (source, time, title), all dates.
+
+        A meeting date is public long before it happens, so the whole
+        calendar is visible to every view.
+        """
+
+        if getattr(self, "_meetings", None) is None:
+            rows: list[tuple[str, datetime, str]] = []
+            if self.database.exists():
+                con = sqlite3.connect(f"file:{self.database}?mode=ro", uri=True)
+                try:
+                    for source, stamp, title in con.execute(
+                        "SELECT source, scheduled_at, title FROM future_events "
+                        "WHERE category = 'MONETARY_POLICY' AND scheduled_at IS NOT NULL"
+                    ).fetchall():
+                        rows.append((str(source), _utc(stamp), str(title)))
+                except sqlite3.Error:
+                    rows = []
+                finally:
+                    con.close()
+            self._meetings = sorted(rows, key=lambda r: r[1])
+        return self._meetings
 
     def candles(self, asset: str, timeframe: Timeframe) -> pd.DataFrame:
         key = (asset, timeframe.value)

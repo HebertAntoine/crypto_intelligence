@@ -171,6 +171,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         SolanaProtocolProvider,
         TreasuryAuctionProvider,
     )
+    from .macro.central_bank_rates import CentralBankRatesProvider
     from .macro.fred import FredProvider
     from .macro.official_us import (
         BlsProvider,
@@ -188,6 +189,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     from .news.rss import RSSNewsProvider, RSSRegulationProvider
     from .onchain.blockchain_info import BlockchainInfoProvider
     from .onchain.blockchair import BlockchairBTCProvider, BlockchairETHProvider
+    from .onchain.btc_chain import BitcoinChainProvider
     from .onchain.solana_rpc import SolanaRPCProvider
     from .stablecoins.defillama_stables import DefiLlamaStablecoinsProvider
     from .volatility.deribit import DeribitVolatilityProvider
@@ -223,6 +225,8 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         NewYorkFedProvider,
         FedBalanceSheetProvider,
         BlsProvider,
+        CentralBankRatesProvider,
+        BitcoinChainProvider,
         YahooFinanceProvider,
         StooqProvider,
         FederalReserveCalendarProvider,

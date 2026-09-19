@@ -35,6 +35,8 @@ capabilities:
   liquidity.rrp:               [nyfed_markets]
   liquidity.fed_balance_sheet: [fed_h41]
   macro.inflation:             [bls]
+  macro.central_banks:         [central_bank_rates]   # NY Fed, BCE, BoJ - officiels
+  onchain.btc_cycle:           [mempool_space_chain]  # halving et rythme des blocs
   macro.indices:       [yahoo_finance, stooq]
   # Each official calendar has its own capability so one successful source
   # cannot mask another source's outage.

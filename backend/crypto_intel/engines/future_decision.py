@@ -999,6 +999,7 @@ class FutureDecisionEngine:
                     ),
                     consistency_codes=codes,
                     as_of=now,
+                    asset=asset.value,
                 ),
             )
             action = DecisionAction(gated.action.value)

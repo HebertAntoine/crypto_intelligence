@@ -54,6 +54,14 @@ async def cmd_collect(args) -> int:
             print(f"  {'OK ' if res.ok else '-- '} {name:<16} {len(res.observations):>4} obs"
                   + ("" if res.ok else f"  {res.user_message[:60]}"))
 
+    # Hourly aggressive buy/sell notional per exchange - the spot pressure
+    # the decision reads. A failing exchange only leaves its own hours empty.
+    from .history.spot_flows import collect_all_spot_flows
+
+    flows = await collect_all_spot_flows(hours=48)
+    for asset_name, per_exchange in flows.items():
+        print(f"  spot flows {asset_name}: " + ", ".join(f"{k} {v} h" for k, v in per_exchange.items()))
+
     print(f"\nTotal observations stored: {total}")
     await get_http().close()
     return 0
@@ -1121,6 +1129,15 @@ def cmd_backfill_official(args) -> int:
     return 0
 
 
+def cmd_stream_bybit(args) -> int:
+    """Long-running: Bybit spot trades and liquidations into hourly buckets."""
+
+    from .streams.bybit import main
+
+    main()
+    return 0
+
+
 def cmd_light_refresh(args) -> int:
     """Collect only what its own policy says is due, then republish."""
 
@@ -1344,6 +1361,9 @@ def main() -> int:
     )
     p.add_argument("--since", type=int, default=2019)
     p.set_defaults(func=cmd_backfill_official)
+
+    p = sub.add_parser("stream-bybit", help="flux Bybit en direct (transactions spot, liquidations)")
+    p.set_defaults(func=cmd_stream_bybit)
 
     p = sub.add_parser(
         "light-refresh",
