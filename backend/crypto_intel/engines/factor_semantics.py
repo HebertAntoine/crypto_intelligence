@@ -119,6 +119,11 @@ class FactorAssessment:
     source_url: str | None = None
     availability: Availability = Availability.AVAILABLE
 
+    #: The one figure a reader wants beside the sentence - "10 ans 4,95 %",
+    #: "WTI 95,4 $". Set where the number is measured, never parsed back out of
+    #: the rationale; empty when the reading has no single headline figure.
+    value: str = ""
+
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> FactorAssessment:
         """Rebuild a reading from its published form.
@@ -143,6 +148,7 @@ class FactorAssessment:
             provider=str(payload.get("provider") or ""),
             source_url=payload.get("source_url"),
             availability=Availability(payload.get("availability") or "AVAILABLE"),
+            value=str(payload.get("value") or ""),
         )
 
     @property
@@ -167,7 +173,15 @@ class FactorAssessment:
             "source_url": self.source_url,
             "availability": self.availability.value,
             "confidence_band": self.confidence_band.value,
+            "value": self.value,
         }
+
+
+def fr_number(value: float, decimals: int = 1, *, signed: bool = False) -> str:
+    """12345.6 -> "12 345,6" - the way the figure is read in French."""
+
+    text = f"{value:{'+' if signed else ''},.{decimals}f}"
+    return text.replace(",", "\u202f").replace(".", ",")
 
 
 # ---------------------------------------------------------------------------
@@ -280,6 +294,7 @@ def flow_assessment(flow: Any, *, label: str = "Flux institutionnels") -> Factor
         direction=direction,
         impact=impact,
         trend=trend,
+        value=f"{fr_number(regime, 0, signed=True)} M$ sur {sessions} séances",
         confidence=min(0.9, float(getattr(flow, "sessions_available", 0) or 0) / 20),
         availability=availability_for(freshness, measured=True),
         freshness=freshness,

@@ -502,6 +502,73 @@ _FACTOR_SENTENCE: dict[tuple[str, DriverDirection], tuple[str, str]] = {
 }
 
 
+#: What the reader is told a reading comes from: the nature of the data. The
+#: vendor behind it stays in the API for audit and off the screen.
+_SOURCE_LABEL = {
+    "rates": "Rendements du Trésor américain (cotations de marché)",
+    "energy": "Cours du pétrole (cotations de marché)",
+    "credit": "Écarts de crédit des obligations d'entreprise",
+    "flows": "Flux quotidiens publiés des ETF au comptant",
+    "spot": "Transactions des plateformes au comptant",
+    "whales": "Transferts on-chain attribués aux plateformes",
+    "positioning": "Intérêt ouvert des contrats à terme",
+    "derivatives": "Intérêt ouvert des contrats à terme",
+    "funding": "Taux de financement des contrats perpétuels",
+    "implied_volatility": "Volatilité implicite des options",
+    "technical": "Historique des prix",
+    "volatility": "Historique des prix",
+}
+
+#: What would reverse each reading - specific to the measure, never a generic
+#: "a durable reversal". No threshold is invented: only the observable change.
+_INVALIDATION: dict[tuple[str, DriverDirection], str] = {
+    ("rates", DriverDirection.NEGATIVE): (
+        "Un repli durable des taux longs américains, qui détendrait les "
+        "conditions financières."
+    ),
+    ("rates", DriverDirection.POSITIVE): (
+        "Une remontée des taux longs américains, qui resserrerait à nouveau "
+        "les conditions financières."
+    ),
+    ("flows", DriverDirection.POSITIVE): (
+        "Plusieurs séances consécutives de sorties nettes des ETF."
+    ),
+    ("flows", DriverDirection.NEGATIVE): (
+        "Plusieurs séances consécutives d'entrées nettes dans les ETF."
+    ),
+    ("spot", DriverDirection.POSITIVE): (
+        "Un retour des vendeurs au comptant pendant plusieurs heures."
+    ),
+    ("spot", DriverDirection.NEGATIVE): (
+        "Un retour durable des acheteurs au comptant."
+    ),
+    ("energy", DriverDirection.NEGATIVE): (
+        "Un repli net du pétrole, qui allégerait la pression inflationniste."
+    ),
+    ("energy", DriverDirection.POSITIVE): (
+        "Un rebond net du pétrole, qui raviverait la pression inflationniste."
+    ),
+    ("credit", DriverDirection.NEGATIVE): (
+        "Un resserrement des écarts de crédit."
+    ),
+    ("credit", DriverDirection.POSITIVE): (
+        "Un élargissement des écarts de crédit."
+    ),
+    ("technical", DriverDirection.POSITIVE): (
+        "La perte du dernier creux de la structure haussière."
+    ),
+    ("technical", DriverDirection.NEGATIVE): (
+        "La reprise du dernier sommet de la structure baissière."
+    ),
+    ("funding", DriverDirection.NEGATIVE): (
+        "Un retour du coût du levier vers sa normale."
+    ),
+    ("positioning", DriverDirection.NEGATIVE): (
+        "Une purge du levier, par liquidations ou fermetures de positions."
+    ),
+}
+
+
 # ---------------------------------------------------------------------------
 # Drivers
 # ---------------------------------------------------------------------------
@@ -539,6 +606,8 @@ class Driver:
     tone: str = "WHITE"  # RED | ORANGE | YELLOW | GREEN | WHITE
     source: str = ""
     source_url: str | None = None
+    provider: str = ""
+    value: str = ""
 
     @property
     def effective(self) -> float:
@@ -593,6 +662,9 @@ class Driver:
             "tone": self.tone,
             "source": self.source,
             "source_url": self.source_url,
+            # Kept for audit through the API; the reader sees ``source``.
+            "provider": self.provider,
+            "value": self.value,
         }
 
 
@@ -828,14 +900,16 @@ def driver_from_factor(
         freshness=_FRESHNESS.get(factor.availability, 0.0),
         asset_relevance=relevance,
         horizon_weight=HORIZON_TIER_WEIGHT[horizon][tier],
-        source=factor.provider,
+        source=_SOURCE_LABEL.get(factor.key, "Données de marché collectées"),
         source_url=factor.source_url,
+        provider=factor.provider,
+        value=factor.value,
     )
     driver.attention = _attention_from(driver.effective)
     sentence = _FACTOR_SENTENCE.get((factor.key, direction))
     rationale = (factor.rationale or "").strip().rstrip(".")
     if sentence is not None:
-        driver.what = sentence[0] + "."
+        driver.what = sentence[0] + (f" ({factor.value})." if factor.value else ".")
         driver.why = sentence[1][0].upper() + sentence[1][1:] + "."
     else:
         driver.what = (rationale + ".") if rationale else ""
@@ -844,7 +918,10 @@ def driver_from_factor(
     driver.invalidation = (
         factor.missing_requirements[0]
         if factor.missing_requirements
-        else "Un retournement durable de cette lecture."
+        else _INVALIDATION.get(
+            (factor.key, direction),
+            "Un changement net et durable de cette mesure.",
+        )
     )
     return driver
 

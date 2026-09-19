@@ -504,3 +504,48 @@ def test_the_event_holding_the_decision_is_shown_as_the_blocker():
     assert driver.status.startswith("Bloque l'entrée")
     assert driver.tone == "RED"
     assert driver in result.home_factors()
+
+
+# --- one figure where a reader wants it -------------------------------------
+
+
+def test_the_rates_level_travels_with_its_sentence():
+    from dataclasses import replace
+
+    rates = replace(
+        factor("rates", FactorDirection.NEGATIVE, impact=FactorImpact.HIGH, confidence=0.8),
+        value="10 ans 4,95 %",
+    )
+    result = hierarchy([rates], horizon=DecisionHorizon.D30)
+
+    driver = result.primary
+    assert driver.value == "10 ans 4,95 %"
+    assert "(10 ans 4,95 %)" in driver.what
+    assert "(10 ans 4,95 %)" in result.explanation[0]
+
+
+def test_invalidation_names_the_measure_not_a_generic_reversal():
+    result = hierarchy(
+        [factor("rates", FactorDirection.NEGATIVE, impact=FactorImpact.HIGH, confidence=0.8)],
+        horizon=DecisionHorizon.D30,
+    )
+    assert "taux longs" in result.primary.invalidation
+    assert "retournement durable de cette lecture" not in result.primary.invalidation
+
+
+def test_the_reader_sees_the_nature_of_the_data_not_a_vendor_id():
+    from dataclasses import replace
+
+    flows = replace(factor("flows", impact=FactorImpact.HIGH), provider="farside")
+    driver = hierarchy([flows]).primary
+
+    assert driver.source == "Flux quotidiens publiés des ETF au comptant"
+    assert driver.provider == "farside"  # kept for audit, through the API only
+    assert "farside" not in driver.source
+
+
+def test_french_number_format():
+    from crypto_intel.engines.factor_semantics import fr_number
+
+    assert fr_number(4.953, 2) == "4,95"
+    assert fr_number(1751.7, 0, signed=True) == "+1 752"

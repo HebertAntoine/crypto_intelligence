@@ -26,6 +26,7 @@ from .factor_semantics import (
     FactorImpact,
     FactorTrend,
     availability_for,
+    fr_number,
 )
 
 #: A move of this size over a month is a shock rather than a level. Energy
@@ -171,6 +172,7 @@ def oil_assessment(
     return MacroReading(
         FactorAssessment(
             key="energy",
+            value=f"{benchmark} {fr_number(price, 1)} $",
             label="Énergie",
             direction=direction,
             impact=impact,
@@ -282,6 +284,7 @@ def credit_assessment(
     return MacroReading(
         FactorAssessment(
             key="credit",
+            value=f"haut rendement {fr_number(hy_spread_pct, 2)} %",
             label="Crédit",
             direction=direction,
             impact=impact,
@@ -385,6 +388,7 @@ def rates_assessment(
     return MacroReading(
         FactorAssessment(
             key="rates",
+            value=f"10 ans {fr_number(us10y, 2)} %",
             label="Taux",
             direction=direction,
             impact=impact,

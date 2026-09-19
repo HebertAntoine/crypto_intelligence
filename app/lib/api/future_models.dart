@@ -648,6 +648,9 @@ class FutureDriverRead {
   final String source;
   final String? sourceUrl;
 
+  /// The headline figure of a measured reading, empty when it has none.
+  final String value;
+
   const FutureDriverRead({
     required this.id,
     required this.kind,
@@ -668,6 +671,7 @@ class FutureDriverRead {
     this.scheduledAt,
     this.source = '',
     this.sourceUrl,
+    this.value = '',
   });
 
   factory FutureDriverRead.fromJson(Map<String, dynamic> json) =>
@@ -691,6 +695,7 @@ class FutureDriverRead {
         scheduledAt: json['scheduled_at']?.toString(),
         source: json['source']?.toString() ?? '',
         sourceUrl: json['source_url']?.toString(),
+        value: json['value']?.toString() ?? '',
       );
 }
 

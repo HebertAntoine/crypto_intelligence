@@ -78,6 +78,7 @@ const _jargon = <String>[
 void main() {
   _plainLanguage();
   _mockupRules();
+  _iphoneRendering();
 
   for (final asset in ['BTC', 'ETH', 'SOL']) {
     group(asset, () {
@@ -213,14 +214,14 @@ void main() {
 
 void _plainLanguage() {
   group('plain French on the home', () {
-    testWidgets('no reason row shows raw flow figures', (tester) async {
+    testWidgets('figures are shown clean, never in the engine raw format', (tester) async {
       await _open(tester, 'BTC');
 
       // "20 séances: +1 751.7 M$ 5 dernières séances: -623.8 M$" is accurate
-      // and unreadable at a glance. The signs are the information; the
-      // magnitudes belong to the sheet the row opens.
-      expect(find.textContaining(RegExp(r'M\$')), findsNothing);
+      // and unreadable at a glance. One clean figure per reading is shown
+      // ("+1 762 M$ sur 20 séances"); the engine's raw format never is.
       expect(find.textContaining(RegExp(r'\d+\s*séances?\s*:')), findsNothing);
+      expect(find.textContaining(RegExp(r'\d\.\d')), findsNothing);
     });
 
     testWidgets('no placeholder plural reaches the screen', (tester) async {
@@ -294,6 +295,46 @@ void _mockupRules() {
     testWidgets('a two-part maturity is not read as "(1 ans)"', (tester) async {
       await _open(tester, 'BTC');
       expect(find.textContaining('(1 ans)'), findsNothing);
+    });
+  });
+}
+
+void _iphoneRendering() {
+  group('iPhone rendering', () {
+    testWidgets('running text never borrows an emoji font for its spaces',
+        (tester) async {
+      await _open(tester, 'BTC');
+
+      // An emoji font listed as fallback on a sentence made every space
+      // render with the emoji font's very wide advance on iPhone:
+      // "Les    taux    américains". Emoji go through the web engine's own
+      // colour fallback instead.
+      for (final key in const ['decision-explanation', 'main-factors']) {
+        final card = find.byKey(ValueKey(key));
+        if (card.evaluate().isEmpty) continue;
+        for (final text in tester.widgetList<Text>(
+          find.descendant(of: card, matching: find.byType(Text)),
+        )) {
+          // Emoji-only glyphs (section icons) legitimately use the emoji font.
+          if (!(text.data ?? '').contains(' ')) continue;
+          final fallback = text.style?.fontFamilyFallback ?? const <String>[];
+          expect(
+            fallback.any((font) => font.contains('Emoji')),
+            isFalse,
+            reason: text.data,
+          );
+        }
+      }
+    });
+
+    testWidgets('a factor with a measured figure shows it', (tester) async {
+      await _open(tester, 'BTC');
+      final decision = await _shippedClient().futureDecision('BTC');
+
+      for (final driver in decision.hierarchy!.homeFactors) {
+        if (driver.value.isEmpty) continue;
+        expect(find.text(driver.value), findsOneWidget, reason: driver.title);
+      }
     });
   });
 }

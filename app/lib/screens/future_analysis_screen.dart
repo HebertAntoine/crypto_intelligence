@@ -1118,10 +1118,6 @@ String _heroSentence(FutureDecisionRead decision, _FutureBundle bundle) {
       '${primary.status[0].toLowerCase()}${primary.status.substring(1)}.';
 }
 
-/// Text that mixes words and emoji names the colour emoji fonts as fallback,
-/// so a flag or a 🔴 never drops to a monochrome glyph mid-sentence.
-const _emojiFallback = ['Apple Color Emoji', 'Noto Color Emoji', 'Segoe UI Emoji'];
-
 /// 🔴 🟠 🟡 🟢 ⚪ - the colour of a status, as a real emoji.
 String _toneEmoji(String tone) => switch (tone) {
       'RED' => '🔴',
@@ -1173,7 +1169,6 @@ class _ExplanationCard extends StatelessWidget {
                   color: Color(0xFFE6EEF9),
                   fontSize: 14,
                   height: 1.4,
-                  fontFamilyFallback: _emojiFallback,
                 ),
               ),
               const SizedBox(height: 7),
@@ -1265,6 +1260,9 @@ class _StatusRow extends StatelessWidget {
   final String tone;
   final VoidCallback? onTap;
 
+  /// One figure, when the reading has one: "4,95 %", "95,4 $".
+  final String value;
+
   const _StatusRow({
     super.key,
     required this.emoji,
@@ -1272,6 +1270,7 @@ class _StatusRow extends StatelessWidget {
     required this.status,
     required this.tone,
     this.onTap,
+    this.value = '',
   });
 
   @override
@@ -1288,7 +1287,6 @@ class _StatusRow extends StatelessWidget {
                   emoji,
                   style: const TextStyle(
                     fontSize: 22,
-                    fontFamilyFallback: _emojiFallback,
                   ),
                 ),
               ),
@@ -1316,12 +1314,29 @@ class _StatusRow extends StatelessWidget {
                         color: _toneColor(tone),
                         fontSize: 12.5,
                         fontWeight: FontWeight.w600,
-                        fontFamilyFallback: _emojiFallback,
                       ),
                     ),
                   ],
                 ),
               ),
+              if (value.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 130),
+                  child: Text(
+                    value,
+                    key: const ValueKey('factor-value'),
+                    textAlign: TextAlign.right,
+                    maxLines: 2,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.25,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
               if (onTap != null)
                 const Icon(
                   Icons.chevron_right_rounded,
@@ -1345,6 +1360,7 @@ class _DriverRow extends StatelessWidget {
         title: driver.title,
         status: driver.status,
         tone: driver.tone,
+        value: driver.value,
         onTap: () => _showDriverDetail(context, driver),
       );
 }
@@ -1371,7 +1387,6 @@ Future<void> _showDriverDetail(BuildContext context, FutureDriverRead driver) =>
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  fontFamilyFallback: _emojiFallback,
                 ),
               ),
               const SizedBox(height: 4),
@@ -1380,7 +1395,6 @@ Future<void> _showDriverDetail(BuildContext context, FutureDriverRead driver) =>
                 style: TextStyle(
                   color: _toneColor(driver.tone),
                   fontSize: 13,
-                  fontFamilyFallback: _emojiFallback,
                 ),
               ),
               _ReasonDetailBlock(

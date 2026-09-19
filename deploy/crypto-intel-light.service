@@ -8,8 +8,9 @@ Type=oneshot
 WorkingDirectory=/home/antoineh/crypto_intelligence
 Environment=PYTHONPATH=/home/antoineh/crypto_intelligence/backend
 # The same flock as the full pass: one pipeline writer at a time. A light run
-# that collides with 07:00 exits 75 and waits for the next slot.
-ExecStart=/usr/bin/flock -n /home/antoineh/crypto_intelligence/data/.refresh.lock \
+# that finds the lock held exits 75 (flock -E) and waits for the next slot;
+# without -E, flock exits 1 and every skipped turn showed as a failure.
+ExecStart=/usr/bin/flock -n -E 75 /home/antoineh/crypto_intelligence/data/.refresh.lock \
   /home/antoineh/crypto_intelligence/.venv/bin/python -m crypto_intel.cli light-refresh --trigger SYSTEMD_LIGHT
 TimeoutStartSec=900
 Nice=15
