@@ -15,7 +15,6 @@ import pandas as pd
 from tests.unit.test_decision_engine_v2 import NOW, FakeCache, all_families, family, view
 
 from crypto_intel.core.enums import Asset, Timeframe
-from crypto_intel.engines.bitcoin_cycle import CyclePhase, classify
 from crypto_intel.engines.decision_config import (
     CYCLE,
     DERIVATIVES,
@@ -221,17 +220,8 @@ def test_the_cycle_never_counts_as_a_confirming_family():
     assert CYCLE not in decision.confirming_families
 
 
-def test_the_phase_is_never_read_from_the_halving_clock_alone():
-    # The same 900 days after the halving, four different markets.
-    base = {"days_since_halving": 900, "rebound_from_low_pct": 10.0}
-    assert classify(drawdown_pct=-2, days_since_ath=5, above_sma200=True, sma200_rising=True, **base) \
-        is CyclePhase.PRICE_DISCOVERY
-    assert classify(drawdown_pct=-35, days_since_ath=300, above_sma200=False, sma200_rising=False, **base) \
-        is CyclePhase.POST_ATH_DRAWDOWN
-    assert classify(drawdown_pct=-35, days_since_ath=300, above_sma200=True, sma200_rising=True, **base) \
-        is CyclePhase.RECOVERY
-    assert classify(drawdown_pct=-60, days_since_ath=400, above_sma200=False, sma200_rising=False, **base) \
-        is CyclePhase.DEEP_DRAWDOWN
+# The phase rules and their regressions live with the cycle engine, in
+# tests/unit/test_cycle_regime.py.
 
 
 # --- 29.7  No expected Fed rate without a pricing source --------------------
@@ -433,13 +423,18 @@ def test_validation_is_separate_and_never_a_reason():
 
 def test_the_home_lists_six_families_and_hides_silent_whales():
     families = all_families({MACRO: 10, LIQUIDITY: 5, FLOWS: 20, DERIVATIVES: 10, TECHNICAL: 20})
-    families[CYCLE] = family(CYCLE, 10, extra={"cycle": {"phase": "RECOVERY", "phase_label": "Post-ATH / récupération",
-                                                         "drawdown_pct": -35.0, "days_since_halving": 882}})
+    families[CYCLE] = family(CYCLE, 10, extra={"cycle": {
+        "phase": "RECOVERY", "phase_label": "Récupération", "phase_emoji": "🔵",
+        "tone": "BLUE", "direction_label": "Amélioration", "direction_emoji": "↗️",
+        "days_in_phase": 29,
+        "dimensions": {"drawdown_pct": -35.0, "days_since_halving": 882},
+    }})
     summary = decide(families, DecisionHorizon.D7, ExternalChecks(asset="BTC")).summary
     names = [f["family"] for f in summary["home_families"]]
     assert names == [TECHNICAL, DERIVATIVES, FLOWS, MACRO, CYCLE]
     cycle_line = summary["home_families"][-1]
     assert cycle_line["key_info"] == "882 j depuis le halving · -35 % sous l'ATH"
+    assert cycle_line["status"].startswith("Récupération")
 
 
 def test_a_sell_needs_a_structural_break():
