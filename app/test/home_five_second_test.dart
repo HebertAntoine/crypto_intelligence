@@ -127,7 +127,8 @@ void main() {
 
         // The engine ranks every reading and event. The page shows the few
         // that weigh most; a fifth row means the cap leaked.
-        expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
+        // Six families at most; whales disappear when they carry nothing.
+    expect(find.byKey(const ValueKey('main-factor-7')), findsNothing);
         expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
         // The generic gate wording no longer takes a factor's place.
         expect(find.text('Confirmation encore insuffisante'), findsNothing);

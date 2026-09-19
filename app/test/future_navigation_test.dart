@@ -91,7 +91,8 @@ void main() {
       // Three reasons on the home, so the "why" reads at a glance; the
       // rest is under "Voir tout".
       expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
+      // Six families at most; whales disappear when they carry nothing.
+    expect(find.byKey(const ValueKey('main-factor-7')), findsNothing);
       expect(find.byKey(const ValueKey('decision-explanation')), findsOneWidget);
 
       // The hero carries risk, horizon and the balance of signals. Confidence
@@ -135,7 +136,8 @@ void main() {
       // Switching horizon rebuilds the reasons; the five-reason cap holds on
       // every horizon, not only the one the page opened on.
       expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
-      expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
+      // Six families at most; whales disappear when they carry nothing.
+    expect(find.byKey(const ValueKey('main-factor-7')), findsNothing);
 
       await tester.tap(find.byKey(const ValueKey('decision-horizon')));
       await tester.pumpAndSettle();

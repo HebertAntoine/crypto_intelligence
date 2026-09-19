@@ -473,7 +473,12 @@ def present_derivatives(family: FamilyScore) -> dict[str, Any]:
         *for_liq,
     ])
 
-    lecture = [f"📈 {_CROWDING_SHORT.get(crowding, '')}"]
+    # A synthesis, not the card's own sentence again.
+    lecture = [
+        f"📈 Levier : {verdict.lower()}"
+        + (f", funding au {fr_number(funding_pct, 0)}e centile de l'année" if funding_pct is not None else "")
+        + "."
+    ]
     if dvol_pct is not None and dvol_pct >= 80:
         lecture.append("🌪️ Volatilité anticipée élevée : un mouvement ample est attendu, dans un sens ou dans l'autre.")
     if liq_metric is not None and liq_metric.usable and dominance in {"LONGS", "SHORTS"}:

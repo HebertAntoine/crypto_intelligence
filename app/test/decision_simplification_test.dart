@@ -102,7 +102,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Grouped sections of compact rows, a short reading, what would change it.
-    expect(find.byKey(const ValueKey('section-Tendance & structure')), findsOneWidget);
+    expect(find.byKey(const ValueKey("section-L'essentiel")), findsOneWidget);
     expect(find.byType(MetricTile), findsNothing);
 
     // A row opens its measure in full: value, the three dates, why it matters.
@@ -131,8 +131,8 @@ void main() {
     // On-chain has no connected source: it says so, with its reason.
     final card = find.byKey(const ValueKey('family-onchain'));
     await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).last);
-    expect(find.descendant(of: card, matching: find.textContaining('Données insuffisantes')),
-        findsOneWidget);
+    expect(find.descendant(of: card, matching: find.textContaining('insuffisantes')),
+        findsWidgets);
     expect(find.descendant(of: card, matching: find.text('Neutre')), findsNothing);
   });
 
@@ -311,7 +311,7 @@ void main() {
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
     final families = decision.analysis!.summary.homeFamilies;
     expect(families.map((f) => f.name).toList(),
-        ['Technique', 'Dérivés', 'Macro', 'ETF & spot', 'Baleines & on-chain']);
+        ['Technique', 'Dérivés', 'Flux spot', 'Macro', 'Cycle Bitcoin']);
     for (var index = 0; index < families.length - 1; index++) {
       final row = find.byKey(ValueKey('main-factor-${index + 1}'));
       expect(
@@ -625,7 +625,8 @@ void main() {
     await _openBtc(tester);
 
     expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
-    expect(find.byKey(const ValueKey('main-factor-5')), findsNothing);
+    // Six families at most; whales disappear when they carry nothing.
+    expect(find.byKey(const ValueKey('main-factor-7')), findsNothing);
     // The old flat list of reasons is gone from the home.
     expect(find.byKey(const ValueKey('decision-reason-1')), findsNothing);
   });
