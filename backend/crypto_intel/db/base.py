@@ -433,6 +433,46 @@ class DerivativesHistoryRow(Base):
     )
 
 
+class CycleSnapshotRow(Base):
+    """One monthly reading of the Bitcoin cycle, kept exactly as it was.
+
+    A September snapshot must still say in December what it said in September:
+    rows are written once and never rewritten with later knowledge. That is
+    what makes the history of the analysis readable without hindsight bias.
+    """
+
+    __tablename__ = "cycle_snapshots"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    asset: Mapped[str] = mapped_column(String(16), index=True, default="BTC")
+    #: The month this snapshot describes, "2026-09".
+    month: Mapped[str] = mapped_column(String(7), index=True)
+    taken_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    data_cutoff: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    phase: Mapped[str] = mapped_column(String(32), index=True)
+    previous_phase: Mapped[str] = mapped_column(String(32), default="")
+    candidate_phase: Mapped[str] = mapped_column(String(32), default="")
+    phase_confidence: Mapped[int] = mapped_column(Integer, default=0)
+    direction: Mapped[str] = mapped_column(String(16), default="STABLE")
+    btc_price: Mapped[float] = mapped_column(Float)
+    ath: Mapped[float] = mapped_column(Float)
+    drawdown_from_ath: Mapped[float] = mapped_column(Float)
+    days_since_ath: Mapped[int] = mapped_column(Integer, default=0)
+    days_since_halving: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    long_term_trend: Mapped[str] = mapped_column(String(24), default="")
+    market_structure: Mapped[str] = mapped_column(String(24), default="")
+    momentum_regime: Mapped[str] = mapped_column(String(24), default="")
+    relative_strength: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    changes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    evidence: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    engine_version: Mapped[str] = mapped_column(String(32), default="")
+
+    __table_args__ = (
+        Index("ix_cycle_snapshot_asset_month", "asset", "month", unique=True),
+    )
+
+
 class ResearchResultRow(Base):
     """Output of a quantitative study, stored so the UI and the report can read
     it without recomputing, and so results can be compared over time.
