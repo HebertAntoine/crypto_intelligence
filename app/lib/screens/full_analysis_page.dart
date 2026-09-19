@@ -9,6 +9,7 @@ import '../api/future_models.dart';
 import '../live_prices/live_price_service.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
+import 'cycle_page.dart';
 
 const _green = Color(0xFF55DD8B);
 const _red = Color(0xFFFF6676);
@@ -225,11 +226,16 @@ class _FullAnalysisPageState extends State<FullAnalysisPage> {
                               family: family,
                               onTap: () => Navigator.of(context).push(
                                 MaterialPageRoute<void>(
-                                  builder: (_) => FamilyDetailPage(
-                                    family: family,
-                                    asset: widget.asset,
-                                    horizon: _horizon,
-                                  ),
+                                  builder: (_) => family.family == 'cycle'
+                                      ? CyclePage(
+                                          client: widget.client,
+                                          asset: widget.asset,
+                                        )
+                                      : FamilyDetailPage(
+                                          family: family,
+                                          asset: widget.asset,
+                                          horizon: _horizon,
+                                        ),
                                 ),
                               ),
                             ),

@@ -58,6 +58,8 @@ run_step() {
 
 run_step "collect"  "$PY" -m crypto_intel.cli collect
 run_step "analyze"  "$PY" -m crypto_intel.cli analyze
+# The regime moves slowly and its written history moves once a month.
+run_step "cycle-snapshot" "$PY" -m crypto_intel.cli cycle-snapshot
 # One identifier for the whole cycle, stamped on every snapshot, so a mixed set
 # is detectable rather than invisible.
 RUN_ID="run_$(date -u +%Y%m%dT%H%M%SZ)"

@@ -800,76 +800,94 @@ def present_cycle(family: FamilyScore, asset: str) -> dict[str, Any]:
     cycle = family.extra.get("cycle") or {}
     if not cycle:
         return _unavailable_view(family)
+    dims = cycle.get("dimensions") or {}
     relative = family.extra.get("relative") or {}
     phase = cycle.get("phase_label", "Indéterminé")
-    drawdown = cycle.get("drawdown_pct")
-    days = cycle.get("days_since_halving")
+    phase_emoji = cycle.get("phase_emoji", "🔄")
+    direction = cycle.get("direction_label", "Stable")
+    direction_emoji = cycle.get("direction_emoji", "➡️")
+    drawdown = dims.get("drawdown_pct")
+    days_halving = dims.get("days_since_halving")
+    days_in_phase = cycle.get("days_in_phase")
     elevated = bool(cycle.get("elevated_structural_risk"))
+    tone = {
+        "GREEN": GREEN, "BLUE": "BLUE", "FIRE": "FIRE", "ORANGE": ORANGE,
+        "RED": RED, "WHITE": WHITE,
+    }.get(cycle.get("tone", "WHITE"), WHITE)
+
+    # Three figures on the main card, never more.
     rows = []
-    if asset == "BTC":
-        if days is not None:
-            rows.append(_row("⛏️ Depuis le halving", f"{days} jours", WHITE, "cycle.days_since_halving"))
-        if drawdown is not None:
-            rows.append(_row("📉 Sous le record", f"{fr_number(drawdown, 0, signed=True)} %",
-                             WHITE, "cycle.drawdown"))
-        title = "Cycle Bitcoin"
-    else:
-        if drawdown is not None:
-            rows.append(_row("📉 BTC sous son record", f"{fr_number(drawdown, 0, signed=True)} %",
-                             WHITE, "cycle.drawdown"))
-        title = "Régime Bitcoin"
+    if asset == "BTC" and days_halving is not None:
+        rows.append(_row("⚡ Depuis le halving", f"{days_halving} jours", WHITE,
+                         "cycle.days_since_halving"))
+    if drawdown is not None:
+        label = "🏆 Distance de l'ATH" if asset == "BTC" else "🏆 BTC sous son record"
+        rows.append(_row(label, f"{fr_number(drawdown, 0, signed=True)} %", WHITE, "cycle.drawdown"))
+    if days_in_phase is not None:
+        rows.append(_row("📅 Phase actuelle depuis", f"{days_in_phase} jours", WHITE,
+                         "cycle.days_in_phase"))
     change = relative.get("change_pct")
     notable_relative = change is not None and abs(change) >= 2.0
-    if change is not None and notable_relative:
+    if notable_relative:
         rows.append(_row(
-            f"⚖️ {asset} face à BTC",
-            f"{'🟢' if change > 0 else '🔴'} {'surperforme' if change > 0 else 'sous-performe'}",
+            f"📊 {asset} face à BTC", relative.get("label", ""),
             GREEN if change > 0 else RED, f"cycle.relative_{asset.lower()}_btc",
             f"{fr_number(change, 1, signed=True)} % sur {relative.get('window', '')}",
         ))
     main = _section(
-        "🔄", title, rows,
-        verdict=f"🔄 {phase}", tone=ORANGE if elevated else WHITE,
-        sentence=cycle.get("sentence", ""),
+        "🔄", "Cycle Bitcoin" if asset == "BTC" else "Régime crypto", rows,
+        verdict=f"{phase_emoji} {phase} {direction_emoji} {direction}", tone=tone,
+        sentence=(family.headline or ""),
         why="Le cycle est du contexte : il ne déclenche jamais seul un achat ou une vente.",
     )
-    ath_date = cycle.get("ath_date")
-    next_halving = cycle.get("next_halving_estimate")
-    details = _details([
-        _row("Record (ATH)", _usd(cycle.get("ath_usd")),
-             detail=f"le {datetime.fromisoformat(ath_date):%d/%m/%Y}" if ath_date else ""),
-        _row("Moyenne 200 jours", _usd(cycle.get("sma200_usd")),
-             detail=(f"pente 30 j {fr_number(cycle['sma200_slope_pct'], 1, signed=True)} %"
-                     if cycle.get("sma200_slope_pct") is not None else "")),
-        _row("Rebond depuis le plus bas", f"{fr_number(cycle['rebound_from_low_pct'], 0, signed=True)} %")
-        if cycle.get("rebound_from_low_pct") is not None else None,
-        _row("Prochain halving (estimation)",
-             f"{datetime.fromisoformat(next_halving):%m/%Y}", detail="d'après le rythme réel des blocs")
-        if next_halving and asset == "BTC" else None,
-        _row(f"{asset}/BTC", f"{fr_number(change, 1, signed=True)} %") if change is not None else None,
-    ])
+    candidate = cycle.get("candidate_label")
+    details_rows = [
+        _row("Record (ATH)", _usd(dims.get("ath")),
+             detail=(f"le {datetime.fromisoformat(dims['ath_date']):%d/%m/%Y}"
+                     if dims.get("ath_date") else "")),
+        _row("Moyenne 200 jours", _usd(dims.get("sma200")),
+             detail=(f"pente 30 j {fr_number(dims['sma200_slope_pct'], 1, signed=True)} %"
+                     if dims.get("sma200_slope_pct") is not None else "")),
+        _row("Structure long terme", {
+            "HIGHER": "Sommets et creux ascendants", "LOWER": "Sommets et creux descendants",
+            "MIXED": "Mixte", "UNCLEAR": "Indéterminée",
+        }.get(dims.get("structure", ""), "—")),
+        _row("Momentum long terme", {
+            "ACCELERATING": "Accélère", "SLOWING": "Ralentit",
+            "REVERSING": "Se retourne", "STEADY": "Stable",
+        }.get(dims.get("momentum", ""), "—")),
+        _row("Rebond depuis le plus bas",
+             f"{fr_number(dims['rebound_from_low_pct'], 0, signed=True)} %")
+        if dims.get("rebound_from_low_pct") is not None else None,
+    ]
+    if candidate:
+        details_rows.append(_row(
+            "Phase candidate", candidate,
+            detail=f"confirmée à {cycle.get('candidate_days', 0)}/{cycle.get('confirmation_days', 15)}",
+        ))
+    lecture = list(cycle.get("evidence") or [])[:3]
+    if elevated:
+        lecture.append("⚠️ Risque structurel supérieur, sans signal de calendrier.")
     key_parts = []
-    if asset == "BTC" and days is not None:
-        key_parts.append(f"{days} j depuis le halving")
+    if asset == "BTC" and days_halving is not None:
+        key_parts.append(f"{days_halving} j depuis le halving")
     if drawdown is not None:
         key_parts.append(f"{fr_number(drawdown, 0, signed=True)} % sous l'ATH")
     if asset != "BTC" and notable_relative:
-        key_parts.append(f"{asset} {'surperforme' if change > 0 else 'sous-performe'} BTC")
-    lecture = [cycle.get("sentence", "")]
-    if elevated:
-        lecture.append("⚠️ Risque structurel supérieur, sans signal de timing.")
+        key_parts.append(relative.get("label", ""))
     return {
-        "sections": [main, details],
-        "lecture": [line for line in lecture if line][:3],
+        "sections": [main, _details(details_rows)],
+        "lecture": lecture[:3],
         "changes": [],
         "home": {
-            "status": phase,
-            "tone": ORANGE if elevated else WHITE,
+            "status": f"{phase} {direction_emoji}",
+            "tone": tone if tone in {GREEN, ORANGE, RED, YELLOW, WHITE} else WHITE,
             "key_info": " · ".join(key_parts),
-            "status_emoji": "🔄",
+            "status_emoji": phase_emoji,
         },
         "elevated": elevated,
         "phase_label": phase,
+        "direction": cycle.get("direction", "STABLE"),
     }
 
 

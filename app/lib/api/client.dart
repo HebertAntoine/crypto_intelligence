@@ -13,6 +13,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
+import 'cycle_models.dart';
 import 'future_models.dart';
 import 'models.dart';
 
@@ -237,6 +238,10 @@ class ApiClient {
       FutureDecisionRead.fromJson(
         await _get('/future/$asset', {'horizon': horizon})
             as Map<String, dynamic>,
+      );
+
+  Future<CycleRead> cycle(String asset) async => CycleRead.fromJson(
+        await _get('/cycle/$asset') as Map<String, dynamic>,
       );
 
   Future<FutureTimelineRead> futureTimeline(

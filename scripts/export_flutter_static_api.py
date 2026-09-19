@@ -91,6 +91,7 @@ def _endpoints() -> list[tuple[str, dict[str, str] | None]]:
         for horizon in DECISION_HORIZONS:
             endpoints.append((f"/future/{asset}", {"horizon": horizon}))
         endpoints.append((f"/future/{asset}/timeline", {"days": "30"}))
+        endpoints.append((f"/cycle/{asset}", None))
         endpoints.append((f"/derivatives/aggregate/{asset}", None))
         endpoints.append((f"/cross-asset/{asset}", None))
         endpoints.append((f"/multi-timeframe/{asset}", None))
@@ -137,6 +138,7 @@ def _in_process_fetcher():
     import sys
 
     sys.path.insert(0, str(PROJECT_ROOT / "backend"))
+    from crypto_intel.api.routes_cycle import cycle_page
     from crypto_intel.api.routes_future import future_decision, future_timeline
 
     client = None
@@ -146,6 +148,8 @@ def _in_process_fetcher():
         # analysis context. Calling them directly avoids starting a server and
         # also avoids the TestClient/AnyIO incompatibility seen with recent
         # dependency combinations during static builds.
+        if path.startswith("/cycle/"):
+            return cycle_page(path.strip("/").split("/")[1])
         if path.startswith("/future/"):
             parts = path.strip("/").split("/")
             symbol = parts[1]

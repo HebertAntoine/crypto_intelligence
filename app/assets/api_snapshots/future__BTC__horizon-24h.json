@@ -2,12 +2,10 @@
   "analysis": {
     "action": "WAIT",
     "blocking_gate": "UNCERTAINTY",
-    "confidence": 72,
+    "confidence": 66,
     "confidence_meaning": "Confiance dans les donn\u00e9es et leur coh\u00e9rence - ce n'est pas une probabilit\u00e9 de hausse ou de baisse.",
     "confirming_families": [
-      "macro",
-      "liquidity",
-      "derivatives"
+      "technical"
     ],
     "data_quality": 92,
     "disclaimer": "Signal analytique interne \u00e0 l'application, jamais un ordre d'ex\u00e9cution.",
@@ -20,8 +18,8 @@
             "metrics": [
               "cycle.phase"
             ],
-            "sentence": "\ud83d\udd04 Cycle Bitcoin : post-ath / r\u00e9cup\u00e9ration. Bitcoin reste 36 % sous son sommet de cycle malgr\u00e9 un rebond de 40 % depuis son plus bas.",
-            "signal": 0.2,
+            "sentence": "\ud83d\udd04 Cycle Bitcoin : r\u00e9cup\u00e9ration (am\u00e9lioration). Le prix remonte de 40 % depuis son dernier creux majeur.",
+            "signal": 0.1,
             "turn_condition": "",
             "weight": 1.0
           }
@@ -33,23 +31,386 @@
         "extra": {
           "asset": "BTC",
           "cycle": {
-            "ath_date": "2025-10-06T00:00:00+00:00",
-            "ath_usd": 126199.63,
-            "days_since_ath": 348,
-            "days_since_halving": 882,
-            "drawdown_pct": -35.9,
+            "calculated_at": "2026-09-19T23:38:06.524435+00:00",
+            "candidate_days": 0,
+            "candidate_label": null,
+            "candidate_phase": null,
+            "confidence": 70,
+            "confirmation_days": 15,
+            "data_cutoff": "2026-09-18T00:00:00+00:00",
+            "days_in_phase": 29,
+            "dimensions": {
+              "ath": 126199.63,
+              "ath_date": "2025-10-06T00:00:00+00:00",
+              "days_since_ath": 347,
+              "days_since_halving": 880,
+              "drawdown_pct": -35.9,
+              "momentum": "STEADY",
+              "new_high": false,
+              "price": 80883.87,
+              "rebound_from_low_pct": 39.9,
+              "sma200": 70432.91,
+              "sma200_slope_pct": 2.03,
+              "structure": "LOWER",
+              "volatility": "NORMAL"
+            },
+            "direction": "IMPROVING",
+            "direction_emoji": "\u2197\ufe0f",
+            "direction_label": "Am\u00e9lioration",
             "elevated_structural_risk": false,
-            "last_halving": "2024-04-20T00:09:27+00:00",
+            "engine_version": "cycle-regime-1",
+            "evidence": [
+              "Le prix remonte de 40 % depuis son dernier creux majeur.",
+              "La structure de moyen terme s'am\u00e9liore.",
+              "L'ancien record n'est pas repris (36 % en dessous)."
+            ],
+            "health": -0.458,
+            "health_change": 0.542,
             "lean": 0.1,
-            "next_halving_estimate": "2028-03-26T19:19:14.967262+00:00",
-            "next_halving_is_estimate": true,
             "phase": "RECOVERY",
-            "phase_label": "Post-ATH / r\u00e9cup\u00e9ration",
-            "price_usd": 80883.87,
-            "rebound_from_low_pct": 39.9,
-            "sentence": "Bitcoin reste 36 % sous son sommet de cycle malgr\u00e9 un rebond de 40 % depuis son plus bas.",
-            "sma200_slope_pct": 2.03,
-            "sma200_usd": 70432.91
+            "phase_emoji": "\ud83d\udd35",
+            "phase_label": "R\u00e9cup\u00e9ration",
+            "phase_since": "2026-08-20T00:00:00+00:00",
+            "previous_phase": "BEAR_MARKET",
+            "runs": [
+              {
+                "days": 829,
+                "end": "2014-08-11T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2012-05-04T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 54,
+                "end": "2014-10-04T00:00:00+00:00",
+                "label": "Accumulation",
+                "phase": "ACCUMULATION",
+                "start": "2014-08-11T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 222,
+                "end": "2015-05-14T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2014-10-04T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 46,
+                "end": "2015-06-29T00:00:00+00:00",
+                "label": "Accumulation",
+                "phase": "ACCUMULATION",
+                "start": "2015-05-14T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 69,
+                "end": "2015-09-06T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2015-06-29T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 34,
+                "end": "2015-10-10T00:00:00+00:00",
+                "label": "Accumulation",
+                "phase": "ACCUMULATION",
+                "start": "2015-09-06T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 479,
+                "end": "2017-01-31T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2015-10-10T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 371,
+                "end": "2018-02-06T00:00:00+00:00",
+                "label": "Expansion haussi\u00e8re",
+                "phase": "EXPANSION",
+                "start": "2017-01-31T00:00:00+00:00",
+                "tone": "GREEN"
+              },
+              {
+                "days": 123,
+                "end": "2018-06-09T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2018-02-06T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 32,
+                "end": "2018-07-11T00:00:00+00:00",
+                "label": "Drawdown profond",
+                "phase": "DEEP_DRAWDOWN",
+                "start": "2018-06-09T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 103,
+                "end": "2018-10-22T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2018-07-11T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 24,
+                "end": "2018-11-15T00:00:00+00:00",
+                "label": "Drawdown profond",
+                "phase": "DEEP_DRAWDOWN",
+                "start": "2018-10-22T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 138,
+                "end": "2019-04-02T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2018-11-15T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 258,
+                "end": "2019-12-16T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2019-04-02T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 21,
+                "end": "2020-01-06T00:00:00+00:00",
+                "label": "Accumulation",
+                "phase": "ACCUMULATION",
+                "start": "2019-12-16T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 22,
+                "end": "2020-01-28T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2020-01-06T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 40,
+                "end": "2020-03-08T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2020-01-28T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 52,
+                "end": "2020-04-29T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2020-03-08T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 197,
+                "end": "2020-11-12T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2020-04-29T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 230,
+                "end": "2021-06-30T00:00:00+00:00",
+                "label": "Expansion haussi\u00e8re",
+                "phase": "EXPANSION",
+                "start": "2020-11-12T00:00:00+00:00",
+                "tone": "GREEN"
+              },
+              {
+                "days": 26,
+                "end": "2021-07-26T00:00:00+00:00",
+                "label": "Drawdown profond",
+                "phase": "DEEP_DRAWDOWN",
+                "start": "2021-06-30T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 87,
+                "end": "2021-10-21T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2021-07-26T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 76,
+                "end": "2022-01-05T00:00:00+00:00",
+                "label": "Transition",
+                "phase": "TRANSITION",
+                "start": "2021-10-21T00:00:00+00:00",
+                "tone": "ORANGE"
+              },
+              {
+                "days": 75,
+                "end": "2022-03-21T00:00:00+00:00",
+                "label": "Accumulation",
+                "phase": "ACCUMULATION",
+                "start": "2022-01-05T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 209,
+                "end": "2022-10-16T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2022-03-21T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 23,
+                "end": "2022-11-08T00:00:00+00:00",
+                "label": "Drawdown profond",
+                "phase": "DEEP_DRAWDOWN",
+                "start": "2022-10-16T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 66,
+                "end": "2023-01-13T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2022-11-08T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 426,
+                "end": "2024-03-14T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2023-01-13T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 100,
+                "end": "2024-06-22T00:00:00+00:00",
+                "label": "Expansion haussi\u00e8re",
+                "phase": "EXPANSION",
+                "start": "2024-03-14T00:00:00+00:00",
+                "tone": "GREEN"
+              },
+              {
+                "days": 17,
+                "end": "2024-07-09T00:00:00+00:00",
+                "label": "Transition",
+                "phase": "TRANSITION",
+                "start": "2024-06-22T00:00:00+00:00",
+                "tone": "ORANGE"
+              },
+              {
+                "days": 162,
+                "end": "2024-12-18T00:00:00+00:00",
+                "label": "Distribution possible",
+                "phase": "DISTRIBUTION_POSSIBLE",
+                "start": "2024-07-09T00:00:00+00:00",
+                "tone": "ORANGE"
+              },
+              {
+                "days": 68,
+                "end": "2025-02-24T00:00:00+00:00",
+                "label": "Expansion haussi\u00e8re",
+                "phase": "EXPANSION",
+                "start": "2024-12-18T00:00:00+00:00",
+                "tone": "GREEN"
+              },
+              {
+                "days": 57,
+                "end": "2025-04-22T00:00:00+00:00",
+                "label": "Transition",
+                "phase": "TRANSITION",
+                "start": "2025-02-24T00:00:00+00:00",
+                "tone": "ORANGE"
+              },
+              {
+                "days": 51,
+                "end": "2025-06-12T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2025-04-22T00:00:00+00:00",
+                "tone": "BLUE"
+              },
+              {
+                "days": 41,
+                "end": "2025-07-23T00:00:00+00:00",
+                "label": "Expansion haussi\u00e8re",
+                "phase": "EXPANSION",
+                "start": "2025-06-12T00:00:00+00:00",
+                "tone": "GREEN"
+              },
+              {
+                "days": 22,
+                "end": "2025-08-14T00:00:00+00:00",
+                "label": "Transition",
+                "phase": "TRANSITION",
+                "start": "2025-07-23T00:00:00+00:00",
+                "tone": "ORANGE"
+              },
+              {
+                "days": 57,
+                "end": "2025-10-10T00:00:00+00:00",
+                "label": "Expansion haussi\u00e8re",
+                "phase": "EXPANSION",
+                "start": "2025-08-14T00:00:00+00:00",
+                "tone": "GREEN"
+              },
+              {
+                "days": 119,
+                "end": "2026-02-06T00:00:00+00:00",
+                "label": "Transition",
+                "phase": "TRANSITION",
+                "start": "2025-10-10T00:00:00+00:00",
+                "tone": "ORANGE"
+              },
+              {
+                "days": 120,
+                "end": "2026-06-06T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2026-02-06T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 19,
+                "end": "2026-06-25T00:00:00+00:00",
+                "label": "Drawdown profond",
+                "phase": "DEEP_DRAWDOWN",
+                "start": "2026-06-06T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 56,
+                "end": "2026-08-20T00:00:00+00:00",
+                "label": "Bear market",
+                "phase": "BEAR_MARKET",
+                "start": "2026-06-25T00:00:00+00:00",
+                "tone": "RED"
+              },
+              {
+                "days": 29,
+                "end": "2026-09-18T00:00:00+00:00",
+                "label": "R\u00e9cup\u00e9ration",
+                "phase": "RECOVERY",
+                "start": "2026-08-20T00:00:00+00:00",
+                "tone": "BLUE"
+              }
+            ],
+            "tone": "BLUE"
           },
           "is_context": true,
           "relative": null,
@@ -57,42 +418,52 @@
             "changes": [],
             "confidence_label": "Confiance \u00e9lev\u00e9e",
             "data_issues": [],
+            "direction": "IMPROVING",
             "display_name": "Cycle Bitcoin",
             "elevated": false,
             "home": {
-              "key_info": "882 j depuis le halving \u00b7 -36 % sous l'ATH",
-              "status": "Post-ATH / r\u00e9cup\u00e9ration",
-              "status_emoji": "\ud83d\udd04",
+              "key_info": "880 j depuis le halving \u00b7 -36 % sous l'ATH",
+              "status": "R\u00e9cup\u00e9ration \u2197\ufe0f",
+              "status_emoji": "\ud83d\udd35",
               "tone": "WHITE"
             },
             "lecture": [
-              "Bitcoin reste 36 % sous son sommet de cycle malgr\u00e9 un rebond de 40 % depuis son plus bas."
+              "Le prix remonte de 40 % depuis son dernier creux majeur.",
+              "La structure de moyen terme s'am\u00e9liore.",
+              "L'ancien record n'est pas repris (36 % en dessous)."
             ],
-            "phase_label": "Post-ATH / r\u00e9cup\u00e9ration",
+            "phase_label": "R\u00e9cup\u00e9ration",
             "sections": [
               {
                 "emoji": "\ud83d\udd04",
                 "rows": [
                   {
                     "detail": "",
-                    "label": "\u26cf\ufe0f Depuis le halving",
+                    "label": "\u26a1 Depuis le halving",
                     "metric": "cycle.days_since_halving",
                     "tone": "WHITE",
-                    "value": "882 jours"
+                    "value": "880 jours"
                   },
                   {
                     "detail": "",
-                    "label": "\ud83d\udcc9 Sous le record",
+                    "label": "\ud83c\udfc6 Distance de l'ATH",
                     "metric": "cycle.drawdown",
                     "tone": "WHITE",
                     "value": "-36 %"
+                  },
+                  {
+                    "detail": "",
+                    "label": "\ud83d\udcc5 Phase actuelle depuis",
+                    "metric": "cycle.days_in_phase",
+                    "tone": "WHITE",
+                    "value": "29 jours"
                   }
                 ],
                 "secondary": false,
-                "sentence": "Bitcoin reste 36 % sous son sommet de cycle malgr\u00e9 un rebond de 40 % depuis son plus bas.",
+                "sentence": "Le prix remonte de 40 % depuis son dernier creux majeur.",
                 "title": "Cycle Bitcoin",
-                "tone": "WHITE",
-                "verdict": "\ud83d\udd04 Post-ATH / r\u00e9cup\u00e9ration",
+                "tone": "BLUE",
+                "verdict": "\ud83d\udd35 R\u00e9cup\u00e9ration \u2197\ufe0f Am\u00e9lioration",
                 "why": "Le cycle est du contexte : il ne d\u00e9clenche jamais seul un achat ou une vente."
               },
               {
@@ -114,17 +485,24 @@
                   },
                   {
                     "detail": "",
+                    "label": "Structure long terme",
+                    "metric": null,
+                    "tone": "WHITE",
+                    "value": "Sommets et creux descendants"
+                  },
+                  {
+                    "detail": "",
+                    "label": "Momentum long terme",
+                    "metric": null,
+                    "tone": "WHITE",
+                    "value": "Stable"
+                  },
+                  {
+                    "detail": "",
                     "label": "Rebond depuis le plus bas",
                     "metric": null,
                     "tone": "WHITE",
                     "value": "+40 %"
-                  },
-                  {
-                    "detail": "d'apr\u00e8s le rythme r\u00e9el des blocs",
-                    "label": "Prochain halving (estimation)",
-                    "metric": null,
-                    "tone": "WHITE",
-                    "value": "03/2028"
                   }
                 ],
                 "secondary": true,
@@ -139,24 +517,24 @@
         },
         "family": "cycle",
         "freshness": "FRESH",
-        "headline": "Bitcoin reste 36 % sous son sommet de cycle malgr\u00e9 un rebond de 40 % depuis son plus bas.",
+        "headline": "Le prix remonte de 40 % depuis son dernier creux majeur.",
         "horizon": "24h",
         "important_values": [
           "cycle.phase",
-          "cycle.drawdown",
-          "cycle.days_since_halving"
+          "cycle.direction",
+          "cycle.days_in_phase"
         ],
         "invalidation_conditions": [],
         "label": "Cycle Bitcoin & r\u00e9gime crypto",
         "metrics": [
           {
             "available_at": "2026-09-18T00:00:00+00:00",
-            "confidence": 85,
+            "confidence": 70,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "Post-ATH / r\u00e9cup\u00e9ration",
+            "display_value": "\ud83d\udd35 R\u00e9cup\u00e9ration",
             "emoji": "\ud83d\udd04",
             "endpoint": "",
             "fetched_at": null,
@@ -172,31 +550,31 @@
             "published_at": "2026-09-18T00:00:00+00:00",
             "quality": 100,
             "raw_value": "",
-            "source": "Binance (bougies journali\u00e8res)",
+            "source": "Bougies journali\u00e8res",
             "source_tier": "EXCHANGE",
             "state": "CONTEXT",
             "status": "AVAILABLE",
             "timestamp": "2026-09-18T00:00:00+00:00",
             "unit": "",
-            "value": 2,
-            "why": "La phase d\u00e9crit o\u00f9 se situe Bitcoin par rapport \u00e0 son record, \u00e0 sa tendance longue et au dernier halving. C'est du contexte, jamais une pr\u00e9vision.",
-            "why_short": "La phase d\u00e9crit o\u00f9 se situe Bitcoin par rapport \u00e0 son record, \u00e0 sa tendance longue et au dernier halving."
+            "value": 70.0,
+            "why": "La phase vient de plusieurs mesures du march\u00e9 - \u00e9cart au record, structure long terme, momentum, volatilit\u00e9. Jamais du seul nombre de jours depuis le halving.",
+            "why_short": "La phase vient de plusieurs mesures du march\u00e9 - \u00e9cart au record, structure long terme, momentum, volatilit\u00e9."
           },
           {
             "available_at": "2026-09-18T00:00:00+00:00",
-            "confidence": 85,
+            "confidence": 70,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "-36 %",
-            "emoji": "\ud83d\udcc9",
+            "display_value": "Am\u00e9lioration",
+            "emoji": "\u2197\ufe0f",
             "endpoint": "",
             "fetched_at": null,
             "freshness": "AVAILABLE",
             "importance": "MEDIUM",
-            "key": "cycle.drawdown",
-            "label": "\u00c9cart au record (ATH)",
+            "key": "cycle.direction",
+            "label": "Direction du r\u00e9gime",
             "note": "",
             "period_label": "",
             "previous_value": null,
@@ -205,7 +583,73 @@
             "published_at": "2026-09-18T00:00:00+00:00",
             "quality": 100,
             "raw_value": "",
-            "source": "Binance (bougies journali\u00e8res)",
+            "source": "Bougies journali\u00e8res",
+            "source_tier": "EXCHANGE",
+            "state": "CONTEXT",
+            "status": "AVAILABLE",
+            "timestamp": "2026-09-18T00:00:00+00:00",
+            "unit": "",
+            "value": 0.5421711804948947,
+            "why": "L'\u00e9volution de la sant\u00e9 du r\u00e9gime sur un mois : la phase peut tenir alors que la situation s'am\u00e9liore ou se d\u00e9grade.",
+            "why_short": "L'\u00e9volution de la sant\u00e9 du r\u00e9gime sur un mois : la phase peut tenir alors que la situation s'am\u00e9liore ou se d\u00e9grade."
+          },
+          {
+            "available_at": "2026-09-18T00:00:00+00:00",
+            "confidence": 70,
+            "currency": null,
+            "delta": null,
+            "delta_label": "",
+            "delta_pct": null,
+            "display_value": "29 jours",
+            "emoji": "\ud83d\udcc5",
+            "endpoint": "",
+            "fetched_at": null,
+            "freshness": "AVAILABLE",
+            "importance": "MEDIUM",
+            "key": "cycle.days_in_phase",
+            "label": "Phase actuelle depuis",
+            "note": "",
+            "period_label": "",
+            "previous_value": null,
+            "priority": 2,
+            "publication_estimated": false,
+            "published_at": "2026-09-18T00:00:00+00:00",
+            "quality": 100,
+            "raw_value": "",
+            "source": "Bougies journali\u00e8res",
+            "source_tier": "EXCHANGE",
+            "state": "CONTEXT",
+            "status": "AVAILABLE",
+            "timestamp": "2026-09-18T00:00:00+00:00",
+            "unit": "",
+            "value": 29.0,
+            "why": "Une phase ne change qu'une fois confirm\u00e9e sur plusieurs cl\u00f4tures.",
+            "why_short": "Une phase ne change qu'une fois confirm\u00e9e sur plusieurs cl\u00f4tures."
+          },
+          {
+            "available_at": "2026-09-18T00:00:00+00:00",
+            "confidence": 70,
+            "currency": null,
+            "delta": null,
+            "delta_label": "",
+            "delta_pct": null,
+            "display_value": "-36 %",
+            "emoji": "\ud83c\udfc6",
+            "endpoint": "",
+            "fetched_at": null,
+            "freshness": "AVAILABLE",
+            "importance": "MEDIUM",
+            "key": "cycle.drawdown",
+            "label": "Distance de l'ATH",
+            "note": "",
+            "period_label": "",
+            "previous_value": null,
+            "priority": 2,
+            "publication_estimated": false,
+            "published_at": "2026-09-18T00:00:00+00:00",
+            "quality": 100,
+            "raw_value": "",
+            "source": "Bougies journali\u00e8res",
             "source_tier": "EXCHANGE",
             "state": "CONTEXT",
             "status": "AVAILABLE",
@@ -217,19 +661,19 @@
           },
           {
             "available_at": "2026-09-18T00:00:00+00:00",
-            "confidence": 85,
+            "confidence": 70,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "882 jours",
-            "emoji": "\u26cf\ufe0f",
+            "display_value": "880 jours",
+            "emoji": "\u26a1",
             "endpoint": "",
             "fetched_at": null,
             "freshness": "AVAILABLE",
             "importance": "MEDIUM",
             "key": "cycle.days_since_halving",
-            "label": "Jours depuis le halving",
+            "label": "Depuis le halving",
             "note": "",
             "period_label": "",
             "previous_value": null,
@@ -238,89 +682,23 @@
             "published_at": "2026-09-18T00:00:00+00:00",
             "quality": 100,
             "raw_value": "",
-            "source": "mempool.space (horodatage du bloc)",
+            "source": "Horodatage du bloc",
             "source_tier": "OFFICIAL",
             "state": "CONTEXT",
             "status": "AVAILABLE",
             "timestamp": "2026-09-18T00:00:00+00:00",
             "unit": "",
-            "value": 882.0,
-            "why": "Le halving divise par deux l'\u00e9mission de nouveaux bitcoins tous les 210 000 blocs.",
-            "why_short": "Le halving divise par deux l'\u00e9mission de nouveaux bitcoins tous les 210 000 blocs."
-          },
-          {
-            "available_at": "2026-09-18T00:00:00+00:00",
-            "confidence": 85,
-            "currency": null,
-            "delta": null,
-            "delta_label": "",
-            "delta_pct": null,
-            "display_value": "vers mars 2028",
-            "emoji": "\u23f3",
-            "endpoint": "",
-            "fetched_at": null,
-            "freshness": "AVAILABLE",
-            "importance": "MEDIUM",
-            "key": "cycle.next_halving",
-            "label": "Prochain halving (estimation)",
-            "note": "Estimation : la date exacte d\u00e9pend du rythme de production des blocs.",
-            "period_label": "",
-            "previous_value": null,
-            "priority": 2,
-            "publication_estimated": false,
-            "published_at": "2026-09-18T00:00:00+00:00",
-            "quality": 100,
-            "raw_value": "",
-            "source": "mempool.space (rythme des blocs)",
-            "source_tier": "OFFICIAL",
-            "state": "CONTEXT",
-            "status": "AVAILABLE",
-            "timestamp": "2026-09-18T00:00:00+00:00",
-            "unit": "",
-            "value": 1837711154.967262,
-            "why": "Estim\u00e9 \u00e0 partir du rythme r\u00e9el des 2 016 derniers blocs.",
-            "why_short": "Estim\u00e9 \u00e0 partir du rythme r\u00e9el des 2 016 derniers blocs."
-          },
-          {
-            "available_at": "2026-09-18T00:00:00+00:00",
-            "confidence": 85,
-            "currency": null,
-            "delta": null,
-            "delta_label": "",
-            "delta_pct": null,
-            "display_value": "70\u202f433 $",
-            "emoji": "\u303d\ufe0f",
-            "endpoint": "",
-            "fetched_at": null,
-            "freshness": "AVAILABLE",
-            "importance": "MEDIUM",
-            "key": "cycle.sma200",
-            "label": "Moyenne 200 jours (BTC)",
-            "note": "",
-            "period_label": "",
-            "previous_value": null,
-            "priority": 2,
-            "publication_estimated": false,
-            "published_at": "2026-09-18T00:00:00+00:00",
-            "quality": 100,
-            "raw_value": "",
-            "source": "Binance (bougies journali\u00e8res)",
-            "source_tier": "EXCHANGE",
-            "state": "CONTEXT",
-            "status": "AVAILABLE",
-            "timestamp": "2026-09-18T00:00:00+00:00",
-            "unit": "",
-            "value": 70432.91145,
-            "why": "La tendance longue : un prix au-dessus d'une moyenne qui monte est un r\u00e9gime sain.",
-            "why_short": "La tendance longue : un prix au-dessus d'une moyenne qui monte est un r\u00e9gime sain."
+            "value": 880.0,
+            "why": "Le halving est un rep\u00e8re historique, pas une r\u00e8gle pr\u00e9dictive.",
+            "why_short": "Le halving est un rep\u00e8re historique, pas une r\u00e8gle pr\u00e9dictive."
           }
         ],
         "newest": "2026-09-18T00:00:00+00:00",
         "oldest": "2026-09-18T00:00:00+00:00",
         "reasons": [
-          "\ud83d\udd04 Cycle Bitcoin : post-ath / r\u00e9cup\u00e9ration. Bitcoin reste 36 % sous son sommet de cycle malgr\u00e9 un rebond de 40 % depuis son plus bas."
+          "\ud83d\udd04 Cycle Bitcoin : r\u00e9cup\u00e9ration (am\u00e9lioration). Le prix remonte de 40 % depuis son dernier creux majeur."
         ],
-        "score": 20.0,
+        "score": 10.0,
         "state": "SLIGHTLY_POSITIVE",
         "state_label": "Plut\u00f4t favorable",
         "status": "AVAILABLE",
@@ -335,7 +713,7 @@
               "oi.value_history",
               "funding.rate"
             ],
-            "sentence": "\ud83d\udcc8 Calme : prix +0,1 %, open interest -0,9 % sur 24 h. Ni le prix ni le levier ne bougent nettement.",
+            "sentence": "\ud83d\udcc8 Calme : prix +0,2 %, open interest -0,4 % sur 24 h. Ni le prix ni le levier ne bougent nettement.",
             "signal": 0.0,
             "turn_condition": "",
             "weight": 1.0
@@ -346,7 +724,7 @@
             "metrics": [
               "funding.rate"
             ],
-            "sentence": "\ud83d\udcb0 Funding au 88e percentile de l'ann\u00e9e : les acheteurs \u00e0 levier paient plus que d'habitude, le march\u00e9 penche d'un c\u00f4t\u00e9.",
+            "sentence": "\ud83d\udcb0 Funding au 96e percentile de l'ann\u00e9e : les acheteurs \u00e0 levier paient plus que d'habitude, le march\u00e9 penche d'un c\u00f4t\u00e9.",
             "signal": -0.5,
             "turn_condition": "",
             "weight": 0.5
@@ -360,34 +738,34 @@
           "crowding": "QUIET",
           "crowding_label": "Calme",
           "dvol_percentile": 0.0684931506849315,
-          "funding_percentile": 87.94520547945206,
+          "funding_percentile": 96.11872146118722,
           "liquidations": {
             "1h": {
-              "covered_hours": 0,
+              "covered_hours": 1,
               "hours": 1,
-              "long_usd": 0,
-              "short_usd": 0
+              "long_usd": 80.6947,
+              "short_usd": 28599.7642
             },
             "24h": {
-              "covered_hours": 0,
+              "covered_hours": 2,
               "hours": 24,
-              "long_usd": 0,
-              "short_usd": 0
+              "long_usd": 212450.7733,
+              "short_usd": 28599.7642
             },
             "4h": {
-              "covered_hours": 0,
+              "covered_hours": 2,
               "hours": 4,
-              "long_usd": 0,
-              "short_usd": 0
+              "long_usd": 212450.7733,
+              "short_usd": 28599.7642
             },
             "dominance": "UNKNOWN",
             "stream_started": true
           },
           "oi_percentile": 51.43835616438356,
-          "price_change_pct": 0.05587473112136365,
+          "price_change_pct": 0.1507659323467303,
           "view": {
             "changes": [
-              "\ud83d\udcb0 Un funding au-del\u00e0 du 85e centile (aujourd'hui 88e) signalerait un levier excessif.",
+              "\ud83d\udcb0 Un funding au-del\u00e0 du 85e centile (aujourd'hui 96e) signalerait un levier excessif.",
               "\ud83d\udcc9 Un OI en hausse pendant une baisse du prix : nouveaux shorts."
             ],
             "confidence_label": "Confiance \u00e9lev\u00e9e",
@@ -396,13 +774,13 @@
             "display_name": "D\u00e9riv\u00e9s",
             "dvol_level": "Basse",
             "home": {
-              "key_info": "Funding \u00e9lev\u00e9 \u00b7 OI -0,9 %",
+              "key_info": "Funding \u00e9lev\u00e9 \u00b7 OI -0,4 %",
               "status": "Levier calme",
               "status_emoji": "\ud83d\udfe2",
               "tone": "GREEN"
             },
             "lecture": [
-              "\ud83d\udcc8 Levier : levier calme, funding au 88e centile de l'ann\u00e9e."
+              "\ud83d\udcc8 Levier : levier calme, funding au 96e centile de l'ann\u00e9e."
             ],
             "liquidations_dominance": "UNKNOWN",
             "sections": [
@@ -414,14 +792,14 @@
                     "label": "Prix / open interest",
                     "metric": null,
                     "tone": "GREEN",
-                    "value": "prix +0,1 % \u00b7 OI -0,9 %"
+                    "value": "prix +0,2 % \u00b7 OI -0,4 %"
                   },
                   {
-                    "detail": "88e centile sur un an",
+                    "detail": "96e centile sur un an",
                     "label": "Funding",
                     "metric": "funding.rate",
                     "tone": "RED",
-                    "value": "\u00e9lev\u00e9"
+                    "value": "extr\u00eame"
                   }
                 ],
                 "secondary": false,
@@ -435,7 +813,7 @@
                 "emoji": "\ud83d\udca5",
                 "rows": [
                   {
-                    "detail": "Flux en direct couvert 0 h sur 24 : total publi\u00e9 \u00e0 partir de 20 h",
+                    "detail": "Flux en direct couvert 2 h sur 24 : total publi\u00e9 \u00e0 partir de 20 h",
                     "label": "Liquidations",
                     "metric": "liquidations",
                     "tone": "WHITE",
@@ -471,7 +849,7 @@
                 "emoji": "\ud83d\uddc2\ufe0f",
                 "rows": [
                   {
-                    "detail": "-0,9 % sur 24 h",
+                    "detail": "-0,4 % sur 24 h",
                     "label": "Open interest",
                     "metric": "oi.value_history",
                     "tone": "WHITE",
@@ -489,10 +867,10 @@
                     "label": "Funding (8 h)",
                     "metric": "funding.rate",
                     "tone": "RED",
-                    "value": "0,0088 %"
+                    "value": "0,0100 %"
                   },
                   {
-                    "detail": "-1 pb sur 24 h",
+                    "detail": "+2 pb sur 24 h",
                     "label": "Prime des futures",
                     "metric": "derivatives.basis_pct",
                     "tone": "WHITE",
@@ -506,18 +884,18 @@
                     "value": "33,6"
                   },
                   {
-                    "detail": "couverture 0 h / 1 h",
+                    "detail": "couverture 1 h / 1 h",
                     "label": "Liquidations 1h",
                     "metric": null,
                     "tone": "WHITE",
-                    "value": "longs 0 k$ \u00b7 shorts 0 k$"
+                    "value": "longs 0 k$ \u00b7 shorts 29 k$"
                   },
                   {
-                    "detail": "couverture 0 h / 4 h",
+                    "detail": "couverture 2 h / 4 h",
                     "label": "Liquidations 4h",
                     "metric": null,
                     "tone": "WHITE",
-                    "value": "longs 0 k$ \u00b7 shorts 0 k$"
+                    "value": "longs 212 k$ \u00b7 shorts 29 k$"
                   }
                 ],
                 "secondary": true,
@@ -543,101 +921,101 @@
         "label": "D\u00e9riv\u00e9s",
         "metrics": [
           {
-            "available_at": "2026-09-19T21:00:00+00:00",
+            "available_at": "2026-09-19T23:00:00+00:00",
             "confidence": 80,
             "currency": "USD",
-            "delta": -0.0765224404373619,
-            "delta_label": "-0,9 % sur 24 h",
-            "delta_pct": -0.8685198807135617,
+            "delta": -0.03495072828960133,
+            "delta_label": "-0,4 % sur 24 h",
+            "delta_pct": -0.3987836870119508,
             "display_value": "8,7 Md$",
             "emoji": "\ud83d\udcca",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:22.216848+00:00",
+            "fetched_at": "2026-09-19T23:32:54.128746+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIDDEN",
             "key": "oi.value_history",
             "label": "Open interest",
             "note": "Niveau historique (2 ans) : 51e centile.",
             "period_label": "19/09",
-            "previous_value": 8.8106722870284,
+            "previous_value": 8.764332501031799,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T21:00:00+00:00",
+            "published_at": "2026-09-19T23:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance Futures",
             "source_tier": "EXCHANGE",
             "state": "CONTEXT",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T21:00:00+00:00",
+            "timestamp": "2026-09-19T23:00:00+00:00",
             "unit": "Md$",
-            "value": 8.734149846591038,
+            "value": 8.729381772742197,
             "why": "Le montant total des positions \u00e0 levier ouvertes. Il ne dit rien seul : c'est son \u00e9volution face au prix qui r\u00e9v\u00e8le qui entre et qui sort.",
             "why_short": "Le montant total des positions \u00e0 levier ouvertes."
           },
           {
-            "available_at": "2026-09-19T21:31:24+00:00",
+            "available_at": "2026-09-19T23:31:11+00:00",
             "confidence": 80,
             "currency": null,
-            "delta": 0.0016530000000000008,
+            "delta": 0.003563000000000001,
             "delta_label": "moyenne 24 h 0,0089 % \u00b7 7 j 0,0066 %",
-            "delta_pct": 23.242407199100125,
-            "display_value": "0,0088 %",
+            "delta_pct": 55.3518719900575,
+            "display_value": "0,0100 %",
             "emoji": "\ud83d\udcb0",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:22.216204+00:00",
+            "fetched_at": "2026-09-19T23:32:54.128122+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIGH",
             "key": "funding.rate",
             "label": "Funding (8 h)",
-            "note": "88e percentile sur un an.",
+            "note": "96e percentile sur un an.",
             "period_label": "19/09",
-            "previous_value": 0.007111999999999999,
+            "previous_value": 0.006436999999999999,
             "priority": 1,
             "publication_estimated": false,
-            "published_at": "2026-09-19T21:31:24+00:00",
+            "published_at": "2026-09-19T23:31:11+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance Futures",
             "source_tier": "EXCHANGE",
             "state": "UNFAVORABLE",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T21:31:24+00:00",
+            "timestamp": "2026-09-19T23:31:11+00:00",
             "unit": "%",
-            "value": 0.008765,
+            "value": 0.01,
             "why": "Ce que les acheteurs \u00e0 levier paient aux vendeurs pour garder leur position. Tr\u00e8s positif : beaucoup de longs, souvent trop.",
             "why_short": "Ce que les acheteurs \u00e0 levier paient aux vendeurs pour garder leur position."
           },
           {
-            "available_at": "2026-09-19T21:31:24+00:00",
+            "available_at": "2026-09-19T23:31:11+00:00",
             "confidence": 80,
             "currency": null,
-            "delta": -0.006773234334016748,
-            "delta_label": "-1 pb sur 24 h",
-            "delta_pct": -22.32493883161907,
+            "delta": 0.01912448790447907,
+            "delta_label": "+2 pb sur 24 h",
+            "delta_pct": 33.90478767699804,
             "display_value": "-0,037 %",
             "emoji": "\ud83d\udcd0",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:22.216204+00:00",
+            "fetched_at": "2026-09-19T23:32:54.128122+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIDDEN",
             "key": "derivatives.basis_pct",
             "label": "Base (prime du perp\u00e9tuel)",
             "note": "",
             "period_label": "19/09",
-            "previous_value": -0.0303393186655622,
+            "previous_value": -0.05640645234729979,
             "priority": 3,
             "publication_estimated": false,
-            "published_at": "2026-09-19T21:31:24+00:00",
+            "published_at": "2026-09-19T23:31:11+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance Futures",
             "source_tier": "EXCHANGE",
             "state": "CONTEXT",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T21:31:24+00:00",
+            "timestamp": "2026-09-19T23:31:11+00:00",
             "unit": "%",
-            "value": -0.03711255299957895,
+            "value": -0.03728196444282072,
             "why": "L'\u00e9cart entre le prix du contrat perp\u00e9tuel et le prix au comptant.",
             "why_short": "L'\u00e9cart entre le prix du contrat perp\u00e9tuel et le prix au comptant."
           },
@@ -685,11 +1063,11 @@
             "emoji": "\ud83d\udca5",
             "endpoint": "",
             "fetched_at": null,
-            "freshness": "UNAVAILABLE",
+            "freshness": "INSUFFICIENT_DATA",
             "importance": "MEDIUM",
             "key": "liquidations",
             "label": "Liquidations 24 h",
-            "note": "Flux en direct couvert sur 0 h des derni\u00e8res 24 h : total non publi\u00e9 tant que la couverture est incompl\u00e8te.",
+            "note": "Flux en direct couvert sur 2 h des derni\u00e8res 24 h : total non publi\u00e9 tant que la couverture est incompl\u00e8te.",
             "period_label": "",
             "previous_value": null,
             "priority": 2,
@@ -700,7 +1078,7 @@
             "source": "Bybit (flux public en direct)",
             "source_tier": "EXCHANGE",
             "state": "UNKNOWN",
-            "status": "UNAVAILABLE",
+            "status": "INSUFFICIENT_DATA",
             "timestamp": null,
             "unit": "",
             "value": null,
@@ -708,11 +1086,11 @@
             "why_short": "Des positions \u00e0 levier ferm\u00e9es de force : elles amplifient le mouvement en cours."
           }
         ],
-        "newest": "2026-09-19T21:31:24+00:00",
+        "newest": "2026-09-19T23:31:11+00:00",
         "oldest": "2026-09-18T00:00:00+00:00",
         "reasons": [
-          "\ud83d\udcb0 Funding au 88e percentile de l'ann\u00e9e : les acheteurs \u00e0 levier paient plus que d'habitude, le march\u00e9 penche d'un c\u00f4t\u00e9.",
-          "\ud83d\udcc8 Calme : prix +0,1 %, open interest -0,9 % sur 24 h. Ni le prix ni le levier ne bougent nettement."
+          "\ud83d\udcb0 Funding au 96e percentile de l'ann\u00e9e : les acheteurs \u00e0 levier paient plus que d'habitude, le march\u00e9 penche d'un c\u00f4t\u00e9.",
+          "\ud83d\udcc8 Calme : prix +0,2 %, open interest -0,4 % sur 24 h. Ni le prix ni le levier ne bougent nettement."
         ],
         "score": -16.7,
         "state": "SLIGHTLY_NEGATIVE",
@@ -739,13 +1117,13 @@
             "metrics": [
               "spot.pressure"
             ],
-            "sentence": "\ud83e\ude99 Achats agressifs 48 % sur 24 h (2 plateformes) : les vendeurs prennent plus souvent l'initiative.",
-            "signal": -0.432,
+            "sentence": "\ud83e\ude99 Achats agressifs 47 % sur 24 h (2 plateformes) : les vendeurs prennent plus souvent l'initiative.",
+            "signal": -0.606,
             "turn_condition": "Des achats agressifs qui redeviennent majoritaires.",
             "weight": 1.0
           }
         ],
-        "confidence": 76,
+        "confidence": 72,
         "contradictions": [
           "Flux ETF va dans un sens, Pression spot dans l'autre."
         ],
@@ -754,20 +1132,20 @@
         "extra": {
           "etf_applicable": true,
           "spot": {
-            "buy_usd": 604668574.2430396,
+            "buy_usd": 587707911.0426028,
             "coverage": {
               "binance": 1.0,
-              "bybit": 0.0,
+              "bybit": 0.08333333333333333,
               "okx": 1.0
             },
-            "delta_usd": -48277368.135662675,
+            "delta_usd": -72562098.60563827,
             "exchanges": [
               "binance",
               "okx"
             ],
-            "previous_share": 0.546554173435157,
-            "sell_usd": 652945942.3787023,
-            "share": 0.48080597532169583,
+            "previous_share": 0.5441933244666549,
+            "sell_usd": 660270009.648241,
+            "share": 0.4709281320596321,
             "source": "hourly",
             "trend": "DOWN",
             "window": "24 h"
@@ -777,11 +1155,11 @@
               "Plusieurs s\u00e9ances cons\u00e9cutives de sorties nettes des ETF.",
               "Des achats agressifs qui redeviennent majoritaires."
             ],
-            "confidence_label": "Confiance \u00e9lev\u00e9e",
+            "confidence_label": "Confiance moyenne",
             "data_issues": [],
             "display_name": "Flux spot",
             "home": {
-              "key_info": "Achats agressifs 48 % \u00b7 delta -48 M$",
+              "key_info": "Achats agressifs 47 % \u00b7 delta -73 M$",
               "status": "Vendeurs l\u00e9g\u00e8rement dominants",
               "status_emoji": "\ud83d\udd34",
               "tone": "RED"
@@ -792,7 +1170,7 @@
               "\ud83d\udcb8 ETF (contexte) : +433 M$."
             ],
             "pressure": {
-              "share": 0.48080597532169583,
+              "share": 0.4709281320596321,
               "tone": "RED",
               "trend": "DOWN",
               "verdict": "Pression vendeuse l\u00e9g\u00e8re"
@@ -802,25 +1180,25 @@
                 "emoji": "\ud83e\ude99",
                 "rows": [
                   {
-                    "detail": "605 M$",
+                    "detail": "588 M$",
                     "label": "Achats agressifs",
                     "metric": "spot.pressure",
                     "tone": "WHITE",
-                    "value": "48 %"
+                    "value": "47 %"
                   },
                   {
-                    "detail": "653 M$",
+                    "detail": "660 M$",
                     "label": "Ventes agressives",
                     "metric": "spot.pressure",
                     "tone": "RED",
-                    "value": "52 %"
+                    "value": "53 %"
                   },
                   {
                     "detail": "",
                     "label": "Delta",
                     "metric": null,
                     "tone": "RED",
-                    "value": "-48 M$"
+                    "value": "-73 M$"
                   }
                 ],
                 "secondary": false,
@@ -947,13 +1325,13 @@
             "why_short": "Plusieurs s\u00e9ances dans le m\u00eame sens p\u00e8sent plus qu'une s\u00e9ance isol\u00e9e."
           },
           {
-            "available_at": "2026-09-19T21:00:00+00:00",
+            "available_at": "2026-09-19T23:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
-            "delta_label": "delta -48 M$",
+            "delta_label": "delta -73 M$",
             "delta_pct": null,
-            "display_value": "48 % acheteurs",
+            "display_value": "47 % acheteurs",
             "emoji": "\ud83e\ude99",
             "endpoint": "klines 1 h / taker-volume 1 h / publicTrade",
             "fetched_at": null,
@@ -966,27 +1344,27 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T21:00:00+00:00",
+            "published_at": "2026-09-19T23:00:00+00:00",
             "quality": 100,
-            "raw_value": "achats agressifs 605 M$ \u00b7 ventes agressives 653 M$",
+            "raw_value": "achats agressifs 588 M$ \u00b7 ventes agressives 660 M$",
             "source": "Binance, OKX",
             "source_tier": "EXCHANGE",
             "state": "UNFAVORABLE",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "%",
-            "value": 48.080597532169584,
+            "value": 47.09281320596321,
             "why": "Chaque transaction a un acheteur et un vendeur. On mesure qui prend l'initiative : l'acheteur qui accepte le prix demand\u00e9 ou le vendeur qui accepte le prix offert.",
             "why_short": "Chaque transaction a un acheteur et un vendeur."
           }
         ],
-        "newest": "2026-09-19T20:00:00+00:00",
+        "newest": "2026-09-19T22:00:00+00:00",
         "oldest": "2026-09-18T00:00:00+00:00",
         "reasons": [
-          "\ud83e\ude99 Achats agressifs 48 % sur 24 h (2 plateformes) : les vendeurs prennent plus souvent l'initiative.",
+          "\ud83e\ude99 Achats agressifs 47 % sur 24 h (2 plateformes) : les vendeurs prennent plus souvent l'initiative.",
           "\ud83d\udcb8 ETF BTC : +433 M$ sur 1 s\u00e9ance (entr\u00e9es)."
         ],
-        "score": -11.9,
+        "score": -24.7,
         "state": "SLIGHTLY_NEGATIVE",
         "state_label": "Plut\u00f4t d\u00e9favorable",
         "status": "AVAILABLE",
@@ -1034,7 +1412,7 @@
               "stablecoin.supply.total"
             ],
             "sentence": "\ud83d\udca7 Stablecoins -0,1 % sur 7 j : du cash crypto quitte les plateformes.",
-            "signal": -0.283,
+            "signal": -0.185,
             "turn_condition": "Un recul durable de l'offre de stablecoins.",
             "weight": 1.0
           }
@@ -1090,7 +1468,7 @@
                     "detail": "-0,1 % sur 7 j",
                     "label": "Offre de stablecoins",
                     "metric": "stablecoin.supply.total",
-                    "tone": "RED",
+                    "tone": "YELLOW",
                     "value": "312 Md$"
                   }
                 ],
@@ -1128,7 +1506,7 @@
             "display_value": "6\u202f747 Md$",
             "emoji": "\ud83c\udfe6",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.172477+00:00",
+            "fetched_at": "2026-09-19T23:32:47.019432+00:00",
             "freshness": "AVAILABLE",
             "importance": "MEDIUM",
             "key": "liquidity.fed_total_assets",
@@ -1161,7 +1539,7 @@
             "display_value": "973 Md$",
             "emoji": "\ud83c\udfe6",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.038598+00:00",
+            "fetched_at": "2026-09-19T23:32:47.989682+00:00",
             "freshness": "AVAILABLE",
             "importance": "MEDIUM",
             "key": "liquidity.tga",
@@ -1194,7 +1572,7 @@
             "display_value": "1 Md$",
             "emoji": "\ud83c\udfe6",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.039252+00:00",
+            "fetched_at": "2026-09-19T23:32:47.442627+00:00",
             "freshness": "AVAILABLE",
             "importance": "MEDIUM",
             "key": "liquidity.rrp",
@@ -1218,16 +1596,16 @@
             "why_short": "Des liquidit\u00e9s gar\u00e9es \u00e0 la Fed."
           },
           {
-            "available_at": "2026-09-19T21:33:14.996674+00:00",
+            "available_at": "2026-09-19T23:32:26.890792+00:00",
             "confidence": 80,
             "currency": "USD",
-            "delta": -0.2722131028053809,
+            "delta": -0.17550086404412468,
             "delta_label": "-0,1 % sur 7 j",
-            "delta_pct": -0.08729511108072924,
+            "delta_pct": -0.05628078613265408,
             "display_value": "312 Md$",
             "emoji": "\ud83d\udca7",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:14.996682+00:00",
+            "fetched_at": "2026-09-19T23:32:26.890801+00:00",
             "freshness": "AVAILABLE",
             "importance": "MEDIUM",
             "key": "stablecoin.supply.total",
@@ -1237,28 +1615,28 @@
             "previous_value": 311.83086823,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T21:33:14.996674+00:00",
+            "published_at": "2026-09-19T23:32:26.890792+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "DeFiLlama Stablecoins",
             "source_tier": "AGGREGATOR",
-            "state": "UNFAVORABLE",
+            "state": "NEUTRAL",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T21:33:14.996674+00:00",
+            "timestamp": "2026-09-19T23:32:26.890792+00:00",
             "unit": "Md$",
-            "value": 311.55865512719464,
+            "value": 311.6553673659559,
             "why": "Le \u00ab cash \u00bb disponible sur les plateformes crypto. Une offre qui grossit signale des capitaux pr\u00eats \u00e0 \u00eatre investis.",
             "why_short": "Le \u00ab cash \u00bb disponible sur les plateformes crypto."
           }
         ],
-        "newest": "2026-09-19T21:33:14.996674+00:00",
+        "newest": "2026-09-19T23:32:26.890792+00:00",
         "oldest": "2026-09-16T00:00:00+00:00",
         "reasons": [
           "\ud83c\udfe6 Compte du Tr\u00e9sor +155 Md$ sur 7 j : il retire des liquidit\u00e9s au syst\u00e8me.",
-          "\ud83d\udca7 Stablecoins -0,1 % sur 7 j : du cash crypto quitte les plateformes.",
-          "\ud83c\udfe6 Bilan de la Fed +6 Md$ sur la semaine : il injecte des liquidit\u00e9s."
+          "\ud83c\udfe6 Bilan de la Fed +6 Md$ sur la semaine : il injecte des liquidit\u00e9s.",
+          "\ud83d\udca7 Stablecoins -0,1 % sur 7 j : du cash crypto quitte les plateformes."
         ],
-        "score": -24.9,
+        "score": -21.9,
         "state": "SLIGHTLY_NEGATIVE",
         "state_label": "Plut\u00f4t d\u00e9favorable",
         "status": "AVAILABLE",
@@ -1343,7 +1721,7 @@
           "central_banks": [
             {
               "available": true,
-              "days_to_next": 38.85166122765047,
+              "days_to_next": 38.76520226348379,
               "expectation": null,
               "expectation_label": "Anticipation de march\u00e9 indisponible",
               "flag": "\ud83c\uddfa\ud83c\uddf8",
@@ -1363,7 +1741,7 @@
             },
             {
               "available": true,
-              "days_to_next": 39.653744560983796,
+              "days_to_next": 39.56728559681713,
               "expectation": null,
               "expectation_label": "Anticipation de march\u00e9 indisponible",
               "flag": "\ud83c\uddea\ud83c\uddfa",
@@ -1383,7 +1761,7 @@
             },
             {
               "available": true,
-              "days_to_next": 40.22666122765047,
+              "days_to_next": 40.14020226348379,
               "expectation": null,
               "expectation_label": "Anticipation de march\u00e9 indisponible",
               "flag": "\ud83c\uddef\ud83c\uddf5",
@@ -1424,7 +1802,7 @@
             ],
             "next_bank": {
               "available": true,
-              "days_to_next": 38.85166122765047,
+              "days_to_next": 38.76520226348379,
               "expectation": null,
               "expectation_label": "Anticipation de march\u00e9 indisponible",
               "flag": "\ud83c\uddfa\ud83c\uddf8",
@@ -1628,7 +2006,7 @@
                     "detail": "-0,1 % sur 7 j",
                     "label": "Offre de stablecoins",
                     "metric": "stablecoin.supply.total",
-                    "tone": "RED",
+                    "tone": "YELLOW",
                     "value": "312 Md$"
                   }
                 ],
@@ -1667,7 +2045,7 @@
             "display_value": "2,68 %",
             "emoji": "\ud83c\udfdb\ufe0f",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.033229+00:00",
+            "fetched_at": "2026-09-19T23:32:53.220790+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIGH",
             "key": "macro.real10y",
@@ -1700,7 +2078,7 @@
             "display_value": "5,01 %",
             "emoji": "\ud83c\udfdb\ufe0f",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.005660+00:00",
+            "fetched_at": "2026-09-19T23:32:53.209108+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIGH",
             "key": "macro.us10y",
@@ -1733,7 +2111,7 @@
             "display_value": "4,76 %",
             "emoji": "\ud83c\udfdb\ufe0f",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.005634+00:00",
+            "fetched_at": "2026-09-19T23:32:53.208952+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIGH",
             "key": "macro.us2y",
@@ -1766,7 +2144,7 @@
             "display_value": "+0,25 pt",
             "emoji": "\ud83c\udfdb\ufe0f",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.034500+00:00",
+            "fetched_at": "2026-09-19T23:32:53.222316+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIDDEN",
             "key": "macro.yield_curve_10y2y",
@@ -1799,7 +2177,7 @@
             "display_value": "3,88 %",
             "emoji": "\ud83c\uddfa\ud83c\uddf8",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.039901+00:00",
+            "fetched_at": "2026-09-19T23:32:53.178074+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIDDEN",
             "key": "macro.fed_funds_rate",
@@ -1832,7 +2210,7 @@
             "display_value": "100,22",
             "emoji": "\ud83d\udcb5",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.188488+00:00",
+            "fetched_at": "2026-09-19T23:32:47.035038+00:00",
             "freshness": "AVAILABLE",
             "importance": "LOW",
             "key": "macro.dxy",
@@ -1865,7 +2243,7 @@
             "display_value": "14,81",
             "emoji": "\ud83d\udcc9",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.189072+00:00",
+            "fetched_at": "2026-09-19T23:32:47.035562+00:00",
             "freshness": "AVAILABLE",
             "importance": "LOW",
             "key": "macro.vix",
@@ -1898,7 +2276,7 @@
             "display_value": "26\u202f523",
             "emoji": "\ud83d\udcc8",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.187651+00:00",
+            "fetched_at": "2026-09-19T23:32:47.034286+00:00",
             "freshness": "AVAILABLE",
             "importance": "LOW",
             "key": "macro.nasdaq",
@@ -1931,7 +2309,7 @@
             "display_value": "7\u202f650",
             "emoji": "\ud83d\udcc8",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.187236+00:00",
+            "fetched_at": "2026-09-19T23:32:47.033905+00:00",
             "freshness": "AVAILABLE",
             "importance": "LOW",
             "key": "macro.sp500",
@@ -1964,7 +2342,7 @@
             "display_value": "100,3 $",
             "emoji": "\ud83d\udee2\ufe0f",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.189501+00:00",
+            "fetched_at": "2026-09-19T23:32:47.035979+00:00",
             "freshness": "AVAILABLE",
             "importance": "LOW",
             "key": "macro.oil_wti",
@@ -1997,7 +2375,7 @@
             "display_value": "+0,3 % m/m \u00b7 +2,4 % sur un an",
             "emoji": "\ud83d\udcc8",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.036511+00:00",
+            "fetched_at": "2026-09-19T23:32:46.884943+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIGH",
             "key": "macro.core_cpi",
@@ -2030,7 +2408,7 @@
             "display_value": "+0,4 % m/m \u00b7 +3,4 % sur un an",
             "emoji": "\ud83d\udcc8",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.036189+00:00",
+            "fetched_at": "2026-09-19T23:32:46.884631+00:00",
             "freshness": "AVAILABLE",
             "importance": "HIGH",
             "key": "macro.cpi",
@@ -2063,7 +2441,7 @@
             "display_value": "4,10 %",
             "emoji": "\ud83d\udc77",
             "endpoint": "",
-            "fetched_at": "2026-09-19T21:33:15.036814+00:00",
+            "fetched_at": "2026-09-19T23:32:46.885228+00:00",
             "freshness": "AVAILABLE",
             "importance": "MEDIUM",
             "key": "macro.unemployment",
@@ -2432,9 +2810,9 @@
             "metrics": [
               "technical.moving_averages"
             ],
-            "sentence": "\u303d\ufe0f Prix en dessous de sa EMA20 (81\u202f180), EMA20 au-dessus de la EMA50.",
-            "signal": 0.25,
-            "turn_condition": "Une cl\u00f4ture sous la EMA20 (81\u202f180).",
+            "sentence": "\u303d\ufe0f Prix au-dessus de sa EMA20 (81\u202f181), EMA20 au-dessus de la EMA50.",
+            "signal": 0.7,
+            "turn_condition": "Une cl\u00f4ture sous la EMA20 (81\u202f181).",
             "weight": 1.0
           },
           {
@@ -2443,8 +2821,8 @@
             "metrics": [
               "technical.rsi"
             ],
-            "sentence": "\ud83d\udccf RSI 55.",
-            "signal": 0.181,
+            "sentence": "\ud83d\udccf RSI 57.",
+            "signal": 0.245,
             "turn_condition": "",
             "weight": 0.5
           },
@@ -2460,22 +2838,22 @@
             "weight": 0.8
           }
         ],
-        "confidence": 93,
+        "confidence": 92,
         "contradictions": [],
         "data_quality": 100,
         "emoji": "\ud83d\udcca",
         "extra": {
-          "bollinger_percentile": 19.6,
+          "bollinger_percentile": 21.6,
           "changes": {
-            "1": 6.200609000535362,
-            "7": 5.088500330848422,
-            "30": 17.048497586853607
+            "1": 6.339347744697177,
+            "7": 5.225786234375351,
+            "30": 17.20140783580655
           },
           "fast": 20,
-          "fast_ma": 81180.23728084621,
+          "fast_ma": 81181.0837605113,
           "levels_timeframe": "4h",
           "ma_kind": "EMA",
-          "price": 81155.33,
+          "price": 81261.35,
           "quote": "USDT",
           "resistance": 81478.87,
           "resistance_detail": {
@@ -2489,9 +2867,9 @@
             "timeframe": "4h",
             "touches": 2
           },
-          "rsi": 55.302310613454246,
+          "rsi": 57.32426199170001,
           "slow": 50,
-          "slow_ma": 80065.86867666367,
+          "slow_ma": 80151.72956262699,
           "structure": "TREND_UP",
           "structure_label": "Tendance haussi\u00e8re",
           "support": 80559.99,
@@ -2507,7 +2885,7 @@
             "touches": 2
           },
           "timeframe": "1h",
-          "trend_signal": 0.25,
+          "trend_signal": 0.7,
           "view": {
             "changes": [
               "\ud83d\udcc8 Une cl\u00f4ture au-dessus de 81\u202f479 $ ouvrirait la voie.",
@@ -2517,14 +2895,14 @@
             "data_issues": [],
             "display_name": "Technique",
             "home": {
-              "key_info": "RSI 55 \u00b7 r\u00e9sistance proche",
+              "key_info": "RSI 57 \u00b7 r\u00e9sistance proche",
               "status": "Haussi\u00e8re",
               "status_emoji": "\ud83d\udcc8",
               "tone": "ORANGE"
             },
             "lecture": [
               "\ud83d\udcc8 Tendance haussi\u00e8re : sommets et creux ascendants.",
-              "\ud83e\uddf1 Prochaine r\u00e9sistance \u00e0 81\u202f479 $, \u00e0 0,4 % du prix."
+              "\ud83e\uddf1 Prochaine r\u00e9sistance \u00e0 81\u202f479 $, \u00e0 0,3 % du prix."
             ],
             "near_resistance": true,
             "resistance": 81478.87,
@@ -2561,7 +2939,7 @@
                     "value": "81\u202f479 $"
                   },
                   {
-                    "detail": "RSI 55",
+                    "detail": "RSI 57",
                     "label": "\ud83d\udd25 Timing",
                     "metric": "technical.rsi",
                     "tone": "ORANGE",
@@ -2583,28 +2961,28 @@
                     "label": "Prix (paire USDT)",
                     "metric": null,
                     "tone": "WHITE",
-                    "value": "81\u202f155 $"
+                    "value": "81\u202f261 $"
                   },
                   {
                     "detail": "",
                     "label": "EMA20",
                     "metric": null,
                     "tone": "WHITE",
-                    "value": "81\u202f180 $"
+                    "value": "81\u202f181 $"
                   },
                   {
                     "detail": "",
                     "label": "EMA50",
                     "metric": null,
                     "tone": "WHITE",
-                    "value": "80\u202f066 $"
+                    "value": "80\u202f152 $"
                   },
                   {
                     "detail": "",
                     "label": "RSI 14",
                     "metric": "technical.rsi",
                     "tone": "WHITE",
-                    "value": "55"
+                    "value": "57"
                   },
                   {
                     "detail": "",
@@ -2618,21 +2996,21 @@
                     "label": "Volatilit\u00e9 r\u00e9alis\u00e9e",
                     "metric": "technical.realized_vol",
                     "tone": "WHITE",
-                    "value": "19 % annualis\u00e9e"
+                    "value": "17 % annualis\u00e9e"
                   },
                   {
                     "detail": "",
                     "label": "Largeur de Bollinger",
                     "metric": "technical.bollinger_bandwidth",
                     "tone": "WHITE",
-                    "value": "normale (20e centile)"
+                    "value": "normale (22e centile)"
                   },
                   {
                     "detail": "",
                     "label": "Performance",
                     "metric": null,
                     "tone": "WHITE",
-                    "value": "24 h +6,2 % \u00b7 7 j +5,1 % \u00b7 30 j +17,0 %"
+                    "value": "24 h +6,3 % \u00b7 7 j +5,2 % \u00b7 30 j +17,2 %"
                   }
                 ],
                 "secondary": true,
@@ -2665,19 +3043,19 @@
           "technical.structure"
         ],
         "invalidation_conditions": [
-          "Une cl\u00f4ture sous le support (80\u202f560 $).",
-          "Une cl\u00f4ture sous la EMA20 (81\u202f180)."
+          "Une cl\u00f4ture sous la EMA20 (81\u202f181).",
+          "Une cl\u00f4ture sous le support (80\u202f560 $)."
         ],
         "label": "Technique & structure",
         "metrics": [
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "+6,2 %",
+            "display_value": "+6,3 %",
             "emoji": "\ud83d\udcc8",
             "endpoint": "",
             "fetched_at": null,
@@ -2690,27 +3068,27 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "UNKNOWN",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 6.200609000535362,
+            "value": 6.339347744697177,
             "why": "La variation du prix sur la p\u00e9riode.",
             "why_short": "La variation du prix sur la p\u00e9riode."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "+5,1 %",
+            "display_value": "+5,2 %",
             "emoji": "\ud83d\udcc8",
             "endpoint": "",
             "fetched_at": null,
@@ -2723,27 +3101,27 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "UNKNOWN",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 5.088500330848422,
+            "value": 5.225786234375351,
             "why": "La variation du prix sur la p\u00e9riode.",
             "why_short": "La variation du prix sur la p\u00e9riode."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "+17,0 %",
+            "display_value": "+17,2 %",
             "emoji": "\ud83d\udcc8",
             "endpoint": "",
             "fetched_at": null,
@@ -2756,27 +3134,27 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "UNKNOWN",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 17.048497586853607,
+            "value": 17.20140783580655,
             "why": "La variation du prix sur la p\u00e9riode.",
             "why_short": "La variation du prix sur la p\u00e9riode."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
-            "delta_label": "EMA20 81\u202f180 \u00b7 EMA50 80\u202f066",
+            "delta_label": "EMA20 81\u202f181 \u00b7 EMA50 80\u202f152",
             "delta_pct": null,
-            "display_value": "EMA20 81\u202f180",
+            "display_value": "EMA20 81\u202f181",
             "emoji": "\u303d\ufe0f",
             "endpoint": "",
             "fetched_at": null,
@@ -2789,27 +3167,27 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "FAVORABLE",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 1114.3686041825422,
+            "value": 1029.3541978843132,
             "why": "L'alignement du prix et des moyennes mobiles r\u00e9sume la tendance de fond.",
             "why_short": "L'alignement du prix et des moyennes mobiles r\u00e9sume la tendance de fond."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "55",
+            "display_value": "57",
             "emoji": "\ud83d\udccf",
             "endpoint": "",
             "fetched_at": null,
@@ -2822,21 +3200,21 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "CONTEXT",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 55.302310613454246,
+            "value": 57.32426199170001,
             "why": "Au-dessus de 70 le mouvement est \u00e9tir\u00e9, sous 30 il est survendu ; en tendance, un RSI \u00e9lev\u00e9 est aussi un signe de force.",
             "why_short": "Au-dessus de 70 le mouvement est \u00e9tir\u00e9, sous 30 il est survendu ; en tendance, un RSI \u00e9lev\u00e9 est aussi un signe de force."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
@@ -2855,27 +3233,27 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "UNKNOWN",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 0.39860652636897737,
+            "value": 0.39607650586588217,
             "why": "L'amplitude moyenne d'une bougie : elle dimensionne les stops et les objectifs.",
             "why_short": "L'amplitude moyenne d'une bougie : elle dimensionne les stops et les objectifs."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "19 % annualis\u00e9e",
+            "display_value": "17 % annualis\u00e9e",
             "emoji": "\ud83c\udf2a\ufe0f",
             "endpoint": "",
             "fetched_at": null,
@@ -2888,27 +3266,27 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "UNKNOWN",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 18.671674484357602,
+            "value": 16.637551256766077,
             "why": "L'agitation effective du prix r\u00e9cemment.",
             "why_short": "L'agitation effective du prix r\u00e9cemment."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
             "delta_label": "",
             "delta_pct": null,
-            "display_value": "normale (20e centile)",
+            "display_value": "normale (22e centile)",
             "emoji": "\ud83d\udcca",
             "endpoint": "",
             "fetched_at": null,
@@ -2921,21 +3299,21 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "CONTEXT",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
-            "value": 1.0051256060532443,
-            "why": "Bandes de Bollinger au 20e centile : amplitude normale.",
-            "why_short": "Bandes de Bollinger au 20e centile : amplitude normale."
+            "value": 1.031458784225892,
+            "why": "Bandes de Bollinger au 22e centile : amplitude normale.",
+            "why_short": "Bandes de Bollinger au 22e centile : amplitude normale."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": null,
             "delta": null,
@@ -2954,21 +3332,21 @@
             "previous_value": null,
             "priority": 2,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "FAVORABLE",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "",
             "value": 0.6,
             "why": "La suite des sommets et des creux confirm\u00e9s : elle dit si la tendance tient.",
             "why_short": "La suite des sommets et des creux confirm\u00e9s : elle dit si la tendance tient."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": "USD",
             "delta": null,
@@ -2987,21 +3365,21 @@
             "previous_value": null,
             "priority": 1,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "CONTEXT",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "$",
             "value": 80559.99,
             "why": "Le niveau le plus proche sous le prix o\u00f9 le march\u00e9 a d\u00e9j\u00e0 rebondi.",
             "why_short": "Le niveau le plus proche sous le prix o\u00f9 le march\u00e9 a d\u00e9j\u00e0 rebondi."
           },
           {
-            "available_at": "2026-09-19T20:00:00+00:00",
+            "available_at": "2026-09-19T22:00:00+00:00",
             "confidence": 85,
             "currency": "USD",
             "delta": null,
@@ -3020,28 +3398,28 @@
             "previous_value": null,
             "priority": 1,
             "publication_estimated": false,
-            "published_at": "2026-09-19T20:00:00+00:00",
+            "published_at": "2026-09-19T22:00:00+00:00",
             "quality": 100,
             "raw_value": "",
             "source": "Binance (bougies)",
             "source_tier": "EXCHANGE",
             "state": "CAUTION",
             "status": "AVAILABLE",
-            "timestamp": "2026-09-19T20:00:00+00:00",
+            "timestamp": "2026-09-19T22:00:00+00:00",
             "unit": "$",
             "value": 81478.87,
             "why": "Le prochain niveau au-dessus du prix o\u00f9 le march\u00e9 a d\u00e9j\u00e0 recul\u00e9.",
             "why_short": "Le prochain niveau au-dessus du prix o\u00f9 le march\u00e9 a d\u00e9j\u00e0 recul\u00e9."
           }
         ],
-        "newest": "2026-09-19T20:00:00+00:00",
-        "oldest": "2026-09-19T20:00:00+00:00",
+        "newest": "2026-09-19T22:00:00+00:00",
+        "oldest": "2026-09-19T22:00:00+00:00",
         "reasons": [
+          "\u303d\ufe0f Prix au-dessus de sa EMA20 (81\u202f181), EMA20 au-dessus de la EMA50.",
           "\ud83e\uddf1 Tendance haussi\u00e8re ; support 80\u202f560 $, r\u00e9sistance 81\u202f479 $.",
-          "\u303d\ufe0f Prix en dessous de sa EMA20 (81\u202f180), EMA20 au-dessus de la EMA50.",
-          "\ud83d\udccf RSI 55."
+          "\ud83d\udccf RSI 57."
         ],
-        "score": 35.7,
+        "score": 56.6,
         "state": "POSITIVE",
         "state_label": "Favorable",
         "status": "AVAILABLE",
@@ -3072,7 +3450,7 @@
       },
       {
         "action_if_blocked": "WAIT",
-        "detail": "Cycle : post-ath / r\u00e9cup\u00e9ration.",
+        "detail": "Cycle : r\u00e9cup\u00e9ration.",
         "label": "R\u00e9gime de march\u00e9",
         "name": "MARKET_REGIME",
         "status": "PASS"
@@ -3086,7 +3464,7 @@
       },
       {
         "action_if_blocked": "WAIT",
-        "detail": "Pas de cassure structurelle : un indicateur tendu ne suffit pas pour vendre.",
+        "detail": "R\u00e9sistance proche (81\u202f479 $, \u00e0 0,3 %) : l'entr\u00e9e attend sa cassure.",
         "label": "Structure & point d'entr\u00e9e",
         "name": "TECHNICAL_SETUP",
         "status": "BLOCK"
@@ -3107,14 +3485,14 @@
       },
       {
         "action_if_blocked": "WAIT",
-        "detail": "Le comptant ne contredit pas la direction.",
+        "detail": "Les vendeurs prennent l'initiative au comptant : l'achat n'est pas confirm\u00e9.",
         "label": "Confirmation au comptant",
         "name": "SPOT_CONFIRMATION",
-        "status": "PASS"
+        "status": "BLOCK"
       },
       {
         "action_if_blocked": "WAIT",
-        "detail": "Conditions non r\u00e9unies : score -1 (seuil \u00b130).",
+        "detail": "Conditions non r\u00e9unies : score +2 (seuil \u00b130), confiance 66 % (minimum 70 %), 1 famille concordante sur 3 requises.",
         "label": "D\u00e9cision",
         "name": "FINAL",
         "status": "BLOCK"
@@ -3123,13 +3501,22 @@
     "headline": "Aucun des signaux test\u00e9s n'a montr\u00e9 d'avantage mesurable sur l'historique (tests statistiques corrig\u00e9s) : la lecture n'est pas encore exploitable.",
     "home_factors": [
       {
-        "contribution": 11.04,
+        "contribution": 17.52,
         "emoji": "\ud83d\udcca",
         "family": "technical",
         "label": "Structure de prix",
         "status": "Favorable",
         "tone": "GREEN",
-        "value": "Tendance haussi\u00e8re"
+        "value": "EMA20 81\u202f181"
+      },
+      {
+        "contribution": -6.37,
+        "emoji": "\ud83e\ude99",
+        "family": "flows",
+        "label": "Pression spot",
+        "status": "Plut\u00f4t d\u00e9favorable",
+        "tone": "ORANGE",
+        "value": "47 % acheteurs"
       },
       {
         "contribution": -4.3,
@@ -3138,7 +3525,7 @@
         "label": "D\u00e9riv\u00e9s",
         "status": "Plut\u00f4t d\u00e9favorable",
         "tone": "ORANGE",
-        "value": "Funding 0,0088 %"
+        "value": "Funding 0,0100 %"
       },
       {
         "contribution": -4.09,
@@ -3148,29 +3535,20 @@
         "status": "D\u00e9favorable",
         "tone": "RED",
         "value": "2,68 %"
-      },
-      {
-        "contribution": -3.06,
-        "emoji": "\ud83e\ude99",
-        "family": "flows",
-        "label": "Pression spot",
-        "status": "Plut\u00f4t d\u00e9favorable",
-        "tone": "ORANGE",
-        "value": "48 % acheteurs"
       }
     ],
     "horizon": "24h",
-    "newest_data": "2026-09-19T21:33:14.996674+00:00",
+    "newest_data": "2026-09-19T23:32:26.890792+00:00",
     "oldest_critical_data": "2026-09-18T00:00:00+00:00",
     "reasons": [
-      "\ud83e\uddf1 Tendance haussi\u00e8re ; support 80\u202f560 $, r\u00e9sistance 81\u202f479 $.",
-      "\ud83d\udcb0 Funding au 88e percentile de l'ann\u00e9e : les acheteurs \u00e0 levier paient plus que d'habitude, le march\u00e9 penche d'un c\u00f4t\u00e9.",
+      "\u303d\ufe0f Prix au-dessus de sa EMA20 (81\u202f181), EMA20 au-dessus de la EMA50.",
+      "\ud83e\ude99 Achats agressifs 47 % sur 24 h (2 plateformes) : les vendeurs prennent plus souvent l'initiative.",
+      "\ud83d\udcb0 Funding au 96e percentile de l'ann\u00e9e : les acheteurs \u00e0 levier paient plus que d'habitude, le march\u00e9 penche d'un c\u00f4t\u00e9.",
       "\ud83c\udfdb\ufe0f Taux r\u00e9el 10 ans \u00e0 2,68 % (+7 pb sur 24 h) : le co\u00fbt d'opportunit\u00e9 de d\u00e9tenir une crypto augmente.",
-      "\ud83e\ude99 Achats agressifs 48 % sur 24 h (2 plateformes) : les vendeurs prennent plus souvent l'initiative.",
       "\ud83c\udfe6 Compte du Tr\u00e9sor +155 Md$ sur 7 j : il retire des liquidit\u00e9s au syst\u00e8me.",
-      "\ud83d\udd04 Cycle Bitcoin : post-ath / r\u00e9cup\u00e9ration. Bitcoin reste 36 % sous son sommet de cycle malgr\u00e9 un rebond de 40 % depuis son plus bas."
+      "\ud83d\udd04 Cycle Bitcoin : r\u00e9cup\u00e9ration (am\u00e9lioration). Le prix remonte de 40 % depuis son dernier creux majeur."
     ],
-    "score": -0.8,
+    "score": 2.3,
     "subtitle": "Lecture encore incertaine",
     "summary": {
       "confidence_label": "Confiance moyenne",
@@ -3192,7 +3570,7 @@
         {
           "emoji": "\ud83d\udcca",
           "family": "technical",
-          "key_info": "RSI 55 \u00b7 r\u00e9sistance proche",
+          "key_info": "RSI 57 \u00b7 r\u00e9sistance proche",
           "name": "Technique",
           "status": "Haussi\u00e8re",
           "status_emoji": "\ud83d\udcc8",
@@ -3201,7 +3579,7 @@
         {
           "emoji": "\ud83d\udcc8",
           "family": "derivatives",
-          "key_info": "Funding \u00e9lev\u00e9 \u00b7 OI -0,9 %",
+          "key_info": "Funding \u00e9lev\u00e9 \u00b7 OI -0,4 %",
           "name": "D\u00e9riv\u00e9s",
           "status": "Levier calme",
           "status_emoji": "\ud83d\udfe2",
@@ -3210,7 +3588,7 @@
         {
           "emoji": "\ud83e\ude99",
           "family": "flows",
-          "key_info": "Achats agressifs 48 % \u00b7 delta -48 M$",
+          "key_info": "Achats agressifs 47 % \u00b7 delta -73 M$",
           "name": "Flux spot",
           "status": "Vendeurs l\u00e9g\u00e8rement dominants",
           "status_emoji": "\ud83d\udd34",
@@ -3228,10 +3606,10 @@
         {
           "emoji": "\ud83d\udd04",
           "family": "cycle",
-          "key_info": "882 j depuis le halving \u00b7 -36 % sous l'ATH",
+          "key_info": "880 j depuis le halving \u00b7 -36 % sous l'ATH",
           "name": "Cycle Bitcoin",
-          "status": "Post-ATH / r\u00e9cup\u00e9ration",
-          "status_emoji": "\ud83d\udd04",
+          "status": "R\u00e9cup\u00e9ration \u2197\ufe0f",
+          "status_emoji": "\ud83d\udd35",
           "tone": "WHITE"
         }
       ],
@@ -3243,7 +3621,7 @@
           "tone": "ORANGE"
         },
         {
-          "detail": "52 % des volumes au comptant sont des ventes agressives.",
+          "detail": "53 % des volumes au comptant sont des ventes agressives.",
           "emoji": "\ud83e\ude99",
           "title": "Vendeurs \u00e0 l'initiative",
           "tone": "RED"
@@ -3279,11 +3657,11 @@
     },
     "to_buy": [
       "Un signal dont l'avantage se confirme sur l'historique.",
-      "Un repli du taux r\u00e9el 10 ans sous 2,68 %.",
-      "Des achats agressifs qui redeviennent majoritaires."
+      "Des achats agressifs qui redeviennent majoritaires.",
+      "Un repli du taux r\u00e9el 10 ans sous 2,68 %."
     ],
     "to_worsen": [
-      "Une cl\u00f4ture sous le support (80\u202f560 $)."
+      "Une cl\u00f4ture sous la EMA20 (81\u202f181)."
     ],
     "weights": {
       "cycle": 0.021,
@@ -3294,8 +3672,8 @@
       "technical": 0.309
     }
   },
-  "analysis_id": "an_68d206f477a6d007",
-  "as_of": "2026-09-19T21:33:36.469931+00:00",
+  "analysis_id": "an_7ec3c42f58f582df",
+  "as_of": "2026-09-19T23:38:06.524435+00:00",
   "asset": "BTC",
   "causal_graph": {
     "chains": [
@@ -4062,7 +4440,7 @@
           "BTC_MSBT_20260916",
           "BTC_MSBT_20260917",
           "BTC_MSBT_20260918",
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0
       },
@@ -4075,7 +4453,7 @@
         "direction": "NEUTRAL",
         "root_factor": "family:macro_liquidity",
         "source_ids": [
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0
       },
@@ -4088,7 +4466,7 @@
         "direction": "BULLISH",
         "root_factor": "family:positioning_derivatives",
         "source_ids": [
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0
       },
@@ -4101,7 +4479,7 @@
         "direction": "BULLISH",
         "root_factor": "family:technical_volatility",
         "source_ids": [
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0
       }
@@ -4115,9 +4493,9 @@
         "confidence": 0.65,
         "direction": "NEUTRAL",
         "id": "family:macro_liquidity",
-        "observed_at": "2026-09-19T21:33:36.469931Z",
+        "observed_at": "2026-09-19T23:38:06.524435Z",
         "source_ids": [
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0,
         "type": "macro_liquidity"
@@ -4885,7 +5263,7 @@
           "BTC_MSBT_20260916",
           "BTC_MSBT_20260917",
           "BTC_MSBT_20260918",
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0,
         "type": "flows_whales"
@@ -4897,9 +5275,9 @@
         "confidence": 0.9,
         "direction": "BULLISH",
         "id": "family:positioning_derivatives",
-        "observed_at": "2026-09-19T21:33:36.469931Z",
+        "observed_at": "2026-09-19T23:38:06.524435Z",
         "source_ids": [
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0,
         "type": "positioning_derivatives"
@@ -4911,9 +5289,9 @@
         "confidence": 0.25,
         "direction": "BULLISH",
         "id": "family:technical_volatility",
-        "observed_at": "2026-09-19T21:33:36.469931Z",
+        "observed_at": "2026-09-19T23:38:06.524435Z",
         "source_ids": [
-          "an_68d206f477a6d007"
+          "an_7ec3c42f58f582df"
         ],
         "strength": 1.0,
         "type": "technical_volatility"
@@ -5081,7 +5459,7 @@
           "critical": true,
           "freshness": "LIVE",
           "input": "ohlcv_h1",
-          "observed_at": "2026-09-19T21:00:00+00:00",
+          "observed_at": "2026-09-19T23:00:00+00:00",
           "reason": null,
           "source": "candle store",
           "usable": true,
@@ -5101,9 +5479,9 @@
         "price": {
           "available": true,
           "critical": true,
-          "freshness": "LIVE",
+          "freshness": "RECENT",
           "input": "price",
-          "observed_at": "2026-09-19T21:33:30.559696+00:00",
+          "observed_at": "2026-09-19T23:33:55.964120+00:00",
           "reason": null,
           "source": "ticker spot persist\u00e9",
           "usable": true,
@@ -5268,7 +5646,7 @@
     "reasons": [],
     "status": "NOT_TRIGGERED"
   },
-  "expected_movement": "NORMAL",
+  "expected_movement": "HIGH",
   "families": {
     "available_count": 4,
     "coverage": "4/5 disponibles",
@@ -5299,7 +5677,7 @@
         "key": "flows",
         "label": "Flux ETF",
         "missing_requirements": [
-          "S\u00e9ance ETF plus r\u00e9cente: la derni\u00e8re publication date de 45 h."
+          "S\u00e9ance ETF plus r\u00e9cente: la derni\u00e8re publication date de 47 h."
         ],
         "provider": "farside",
         "rationale": "20 s\u00e9ances: +1 762.1 M$; 5 derni\u00e8res s\u00e9ances: +6.1 M$",
@@ -5402,22 +5780,22 @@
       {
         "availability": "AVAILABLE",
         "causal_chain": [
-          "Largeur des bandes dans sa zone habituelle.",
-          "Aucune compression marqu\u00e9e.",
+          "Largeur des bandes de Bollinger dans le bas de son historique.",
+          "Le march\u00e9 se comprime.",
           "Une phase de faible volatilit\u00e9 pr\u00e9c\u00e8de parfois un mouvement de forte amplitude, dont le sens n'est pas d\u00e9termin\u00e9 par la compression."
         ],
-        "confidence": 0.3,
-        "confidence_band": "LOW",
+        "confidence": 0.6,
+        "confidence_band": "MEDIUM",
         "direction": "UNKNOWN",
         "evidence_ids": [],
         "freshness": "LIVE",
-        "impact": "LOW",
+        "impact": "HIGH",
         "impact_on_direction": "NONE",
         "key": "volatility",
         "label": "Volatilit\u00e9",
         "missing_requirements": [],
         "provider": "S\u00e9ries de bougies internes",
-        "rationale": "Pas de compression marqu\u00e9e.",
+        "rationale": "Les bandes de Bollinger sont resserr\u00e9es: un mouvement important est possible, sans indication de sens.",
         "source_url": null,
         "trend": "UNKNOWN",
         "value": ""
@@ -5551,7 +5929,7 @@
     ],
     "items": {
       "catalysts_regulation": {
-        "as_of": "2026-09-19T21:33:36.469931+00:00",
+        "as_of": "2026-09-19T23:38:06.524435+00:00",
         "available": false,
         "confidence": 0.0,
         "directional_bias": null,
@@ -6344,7 +6722,7 @@
           {
             "as_of": "2026-09-19T00:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "Binance klines, taker buy base volume / volume total",
             "tier": "MEASURED"
           }
@@ -6354,7 +6732,7 @@
         "unavailable_reason": null
       },
       "macro_liquidity": {
-        "as_of": "2026-09-19T21:33:36.469931+00:00",
+        "as_of": "2026-09-19T23:38:06.524435+00:00",
         "available": true,
         "confidence": 0.65,
         "directional_bias": "NEUTRAL",
@@ -6365,9 +6743,9 @@
         "reasons": [],
         "sources": [
           {
-            "as_of": "2026-09-19T21:33:36.469931+00:00",
+            "as_of": "2026-09-19T23:38:06.524435+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "MacroAnalyzer",
             "tier": "DERIVED"
           }
@@ -6377,7 +6755,7 @@
         "unavailable_reason": null
       },
       "positioning_derivatives": {
-        "as_of": "2026-09-19T21:33:36.469931+00:00",
+        "as_of": "2026-09-19T23:38:06.524435+00:00",
         "available": true,
         "confidence": 0.9,
         "directional_bias": "BULLISH",
@@ -6393,21 +6771,21 @@
           {
             "as_of": "2026-09-19T20:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
             "tier": "MEASURED"
           },
           {
             "as_of": "2026-09-19T16:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "funding.rate Binance, percentile glissant par actif",
             "tier": "MEASURED"
           },
           {
             "as_of": "2026-09-19T00:00:00+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "ImpliedVolatilityEngine (Deribit)",
             "tier": "DERIVED"
           }
@@ -6417,11 +6795,11 @@
         "unavailable_reason": null
       },
       "technical_volatility": {
-        "as_of": "2026-09-19T21:33:36.469931+00:00",
+        "as_of": "2026-09-19T23:38:06.524435+00:00",
         "available": true,
         "confidence": 0.25,
         "directional_bias": "BULLISH",
-        "expected_movement": "NORMAL",
+        "expected_movement": "HIGH",
         "family": "technical_volatility",
         "freshness": "LIVE",
         "label": "Technique & volatilit\u00e9",
@@ -6430,29 +6808,29 @@
         ],
         "sources": [
           {
-            "as_of": "2026-09-19T21:33:36.469931+00:00",
+            "as_of": "2026-09-19T23:38:06.524435+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "MarketStructureEngine",
             "tier": "DERIVED"
           },
           {
-            "as_of": "2026-09-19T21:33:36.469931+00:00",
+            "as_of": "2026-09-19T23:38:06.524435+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "VolatilityRegimeEngine",
             "tier": "DERIVED"
           },
           {
-            "as_of": "2026-09-19T21:33:36.469931+00:00",
+            "as_of": "2026-09-19T23:38:06.524435+00:00",
             "evidence_ids": [],
-            "reference": "an_68d206f477a6d007",
+            "reference": "an_7ec3c42f58f582df",
             "source": "ExpectedVolatilityEngine",
             "tier": "DERIVED"
           }
         ],
         "status": "AVAILABLE",
-        "summary": "1 \u00e9chelle(s) de temps orient\u00e9e(s) \u00e0 la hausse sur 24 heures; volatilit\u00e9 faible. Pas de compression des bandes de Bollinger.",
+        "summary": "1 \u00e9chelle(s) de temps orient\u00e9e(s) \u00e0 la hausse sur 24 heures; volatilit\u00e9 faible. Les bandes de Bollinger sont resserr\u00e9es: un mouvement de forte amplitude est possible, sans indication de sens.",
         "unavailable_reason": null
       }
     },
@@ -6465,7 +6843,46 @@
     "action": "WAIT",
     "amplifiers": [],
     "asset": "BTC",
-    "confirmations": [],
+    "confirmations": [
+      {
+        "attention": "LOW",
+        "cluster": "price_structure",
+        "counted_in": null,
+        "counted_weight": 0.1785,
+        "direction": "UNKNOWN",
+        "effective_importance": 0.1785,
+        "emoji": "\ud83d\udcca",
+        "expectation": null,
+        "id": "factor:volatility",
+        "invalidation": "Un changement net et durable de cette mesure.",
+        "key": "volatility",
+        "kind": "FACTOR",
+        "provider": "S\u00e9ries de bougies internes",
+        "released": false,
+        "role": "CONFIRMATION",
+        "scheduled_at": null,
+        "source": "Historique des prix",
+        "source_url": null,
+        "status": "Direction inconnue",
+        "tier": 4,
+        "tier_name": "CONFIRMATION",
+        "title": "Volatilit\u00e9",
+        "tone": "WHITE",
+        "value": "",
+        "weights": {
+          "asset_relevance": 1.0,
+          "confidence": 0.6,
+          "freshness": 1.0,
+          "horizon": 1.0,
+          "magnitude": 0.85,
+          "proximity": 1.0,
+          "structural": 0.35,
+          "surprise": 1.0
+        },
+        "what": "Les bandes de Bollinger sont resserr\u00e9es: un mouvement important est possible, sans indication de sens.",
+        "why": "Une phase de faible volatilit\u00e9 pr\u00e9c\u00e8de parfois un mouvement de forte amplitude, dont le sens n'est pas d\u00e9termin\u00e9 par la compression."
+      }
+    ],
     "consequences": [
       {
         "attention": "MODERATE",
@@ -6515,7 +6932,7 @@
         "emoji": "\ud83d\udcb8",
         "expectation": null,
         "id": "factor:flows",
-        "invalidation": "S\u00e9ance ETF plus r\u00e9cente: la derni\u00e8re publication date de 45 h.",
+        "invalidation": "S\u00e9ance ETF plus r\u00e9cente: la derni\u00e8re publication date de 47 h.",
         "key": "flows",
         "kind": "FACTOR",
         "provider": "farside",
@@ -6546,15 +6963,15 @@
       {
         "attention": "NONE",
         "cluster": "price_structure",
-        "counted_in": "factor:technical",
-        "counted_weight": 0.0092,
-        "direction": "UNKNOWN",
-        "effective_importance": 0.0367,
-        "emoji": "\ud83d\udcca",
+        "counted_in": "factor:volatility",
+        "counted_weight": 0.0131,
+        "direction": "POSITIVE",
+        "effective_importance": 0.0525,
+        "emoji": "\ud83d\udcc8",
         "expectation": null,
-        "id": "factor:volatility",
-        "invalidation": "Un changement net et durable de cette mesure.",
-        "key": "volatility",
+        "id": "factor:technical",
+        "invalidation": "La perte du dernier creux de la structure haussi\u00e8re.",
+        "key": "technical",
         "kind": "FACTOR",
         "provider": "S\u00e9ries de bougies internes",
         "released": false,
@@ -6562,24 +6979,24 @@
         "scheduled_at": null,
         "source": "Historique des prix",
         "source_url": null,
-        "status": "Direction inconnue",
+        "status": "Tendance haussi\u00e8re",
         "tier": 4,
         "tier_name": "CONFIRMATION",
-        "title": "Volatilit\u00e9",
-        "tone": "WHITE",
+        "title": "Technique",
+        "tone": "GREEN",
         "value": "",
         "weights": {
           "asset_relevance": 1.0,
-          "confidence": 0.3,
+          "confidence": 0.25,
           "freshness": 1.0,
           "horizon": 1.0,
-          "magnitude": 0.35,
+          "magnitude": 0.6,
           "proximity": 1.0,
           "structural": 0.35,
           "surprise": 1.0
         },
-        "what": "Pas de compression marqu\u00e9e.",
-        "why": "Une phase de faible volatilit\u00e9 pr\u00e9c\u00e8de parfois un mouvement de forte amplitude, dont le sens n'est pas d\u00e9termin\u00e9 par la compression."
+        "what": "La structure technique est haussi\u00e8re.",
+        "why": "Elle confirme le mouvement sans en \u00eatre la cause."
       },
       {
         "attention": "NONE",
@@ -6737,44 +7154,6 @@
       },
       {
         "attention": "NONE",
-        "cluster": "price_structure",
-        "counted_in": null,
-        "counted_weight": 0.0525,
-        "direction": "POSITIVE",
-        "effective_importance": 0.0525,
-        "emoji": "\ud83d\udcc8",
-        "expectation": null,
-        "id": "factor:technical",
-        "invalidation": "La perte du dernier creux de la structure haussi\u00e8re.",
-        "key": "technical",
-        "kind": "FACTOR",
-        "provider": "S\u00e9ries de bougies internes",
-        "released": false,
-        "role": "CONTEXT",
-        "scheduled_at": null,
-        "source": "Historique des prix",
-        "source_url": null,
-        "status": "Tendance haussi\u00e8re",
-        "tier": 4,
-        "tier_name": "CONFIRMATION",
-        "title": "Technique",
-        "tone": "GREEN",
-        "value": "",
-        "weights": {
-          "asset_relevance": 1.0,
-          "confidence": 0.25,
-          "freshness": 1.0,
-          "horizon": 1.0,
-          "magnitude": 0.6,
-          "proximity": 1.0,
-          "structural": 0.35,
-          "surprise": 1.0
-        },
-        "what": "La structure technique est haussi\u00e8re.",
-        "why": "Elle confirme le mouvement sans en \u00eatre la cause."
-      },
-      {
-        "attention": "NONE",
         "cluster": "whales",
         "counted_in": null,
         "counted_weight": 0.0,
@@ -6860,6 +7239,7 @@
     "explanation": [
       "\ud83e\ude99 Les acheteurs dominent au comptant, ce que confirment les entr\u00e9es sur les ETF : la demande imm\u00e9diate est r\u00e9elle.",
       "\ud83d\udcb5 En sens inverse, les taux am\u00e9ricains restent \u00e9lev\u00e9s (10 ans 5,00 %) : ils rendent les actifs risqu\u00e9s moins attractifs.",
+      "\ud83d\udcca Les bandes de Bollinger sont resserr\u00e9es: un mouvement important est possible, sans indication de sens : une phase de faible volatilit\u00e9 pr\u00e9c\u00e8de parfois un mouvement de forte amplitude, dont le sens n'est pas d\u00e9termin\u00e9 par la compression.",
       "\u26aa\ufe0f Cr\u00e9dit, Baleines : donn\u00e9e indisponible, la lecture est moins compl\u00e8te.",
       "\u23f3 Aucun de ces signaux n'a encore montr\u00e9 d'avantage mesurable sur l'historique : pas d'entr\u00e9e tant qu'un avantage ne se confirme pas."
     ],
@@ -6940,6 +7320,44 @@
         },
         "what": "Les taux am\u00e9ricains restent \u00e9lev\u00e9s (10 ans 5,00 %).",
         "why": "Ils rendent les actifs risqu\u00e9s moins attractifs."
+      },
+      {
+        "attention": "LOW",
+        "cluster": "price_structure",
+        "counted_in": null,
+        "counted_weight": 0.1785,
+        "direction": "UNKNOWN",
+        "effective_importance": 0.1785,
+        "emoji": "\ud83d\udcca",
+        "expectation": null,
+        "id": "factor:volatility",
+        "invalidation": "Un changement net et durable de cette mesure.",
+        "key": "volatility",
+        "kind": "FACTOR",
+        "provider": "S\u00e9ries de bougies internes",
+        "released": false,
+        "role": "CONFIRMATION",
+        "scheduled_at": null,
+        "source": "Historique des prix",
+        "source_url": null,
+        "status": "Direction inconnue",
+        "tier": 4,
+        "tier_name": "CONFIRMATION",
+        "title": "Volatilit\u00e9",
+        "tone": "WHITE",
+        "value": "",
+        "weights": {
+          "asset_relevance": 1.0,
+          "confidence": 0.6,
+          "freshness": 1.0,
+          "horizon": 1.0,
+          "magnitude": 0.85,
+          "proximity": 1.0,
+          "structural": 0.35,
+          "surprise": 1.0
+        },
+        "what": "Les bandes de Bollinger sont resserr\u00e9es: un mouvement important est possible, sans indication de sens.",
+        "why": "Une phase de faible volatilit\u00e9 pr\u00e9c\u00e8de parfois un mouvement de forte amplitude, dont le sens n'est pas d\u00e9termin\u00e9 par la compression."
       }
     ],
     "horizon": "24h",
@@ -7067,7 +7485,7 @@
               "critical": true,
               "freshness": "LIVE",
               "input": "ohlcv_h1",
-              "observed_at": "2026-09-19T21:00:00+00:00",
+              "observed_at": "2026-09-19T23:00:00+00:00",
               "reason": null,
               "source": "candle store",
               "usable": true,
@@ -7087,9 +7505,9 @@
             "price": {
               "available": true,
               "critical": true,
-              "freshness": "LIVE",
+              "freshness": "RECENT",
               "input": "price",
-              "observed_at": "2026-09-19T21:33:30.559696+00:00",
+              "observed_at": "2026-09-19T23:33:55.964120+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -7245,7 +7663,7 @@
         "reasons": [],
         "status": "NOT_TRIGGERED"
       },
-      "expected_movement": "NORMAL"
+      "expected_movement": "HIGH"
     },
     "30d": {
       "data_quality": {
@@ -7298,7 +7716,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "liquidity",
-              "observed_at": "2026-09-19T21:33:14.996674+00:00",
+              "observed_at": "2026-09-19T23:32:46.827571+00:00",
               "reason": null,
               "source": "DefiLlama stablecoins",
               "usable": true,
@@ -7353,7 +7771,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "onchain",
-              "observed_at": "2026-09-19T21:33:22.217649+00:00",
+              "observed_at": "2026-09-19T23:32:54.129565+00:00",
               "reason": null,
               "source": "fournisseurs on-chain",
               "usable": true,
@@ -7362,9 +7780,9 @@
             "price": {
               "available": true,
               "critical": true,
-              "freshness": "LIVE",
+              "freshness": "RECENT",
               "input": "price",
-              "observed_at": "2026-09-19T21:33:30.559696+00:00",
+              "observed_at": "2026-09-19T23:33:55.964120+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -7531,7 +7949,7 @@
         ],
         "level": "HIGH",
         "reasons": [
-          "Personal Income and Outlays, August 2026: \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 10,6 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9."
+          "Personal Income and Outlays, August 2026: \u00e9v\u00e9nement critique \u00e0 forte amplitude dans 10,5 j, \u00e0 l'int\u00e9rieur de l'horizon de d\u00e9cision; issue non r\u00e9solue et non valoris\u00e9e par le march\u00e9."
         ],
         "status": "TRIGGERED"
       },
@@ -7599,7 +8017,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "liquidity",
-              "observed_at": "2026-09-19T21:33:14.996674+00:00",
+              "observed_at": "2026-09-19T23:32:46.827571+00:00",
               "reason": null,
               "source": "DefiLlama stablecoins",
               "usable": true,
@@ -7654,7 +8072,7 @@
               "critical": false,
               "freshness": "LIVE",
               "input": "onchain",
-              "observed_at": "2026-09-19T21:33:22.217649+00:00",
+              "observed_at": "2026-09-19T23:32:54.129565+00:00",
               "reason": null,
               "source": "fournisseurs on-chain",
               "usable": true,
@@ -7674,9 +8092,9 @@
             "price": {
               "available": true,
               "critical": true,
-              "freshness": "LIVE",
+              "freshness": "RECENT",
               "input": "price",
-              "observed_at": "2026-09-19T21:33:30.559696+00:00",
+              "observed_at": "2026-09-19T23:33:55.964120+00:00",
               "reason": null,
               "source": "ticker spot persist\u00e9",
               "usable": true,
@@ -7872,12 +8290,12 @@
   },
   "market_expectations": [],
   "next_major_event": null,
-  "price_at_analysis": 81287.09,
+  "price_at_analysis": 81246.0,
   "provenance": [
     {
-      "as_of": "2026-09-19T21:33:36.469931+00:00",
+      "as_of": "2026-09-19T23:38:06.524435+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "MacroAnalyzer",
       "tier": "DERIVED"
     },
@@ -8647,49 +9065,49 @@
     {
       "as_of": "2026-09-19T00:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "Binance klines, taker buy base volume / volume total",
       "tier": "MEASURED"
     },
     {
       "as_of": "2026-09-19T20:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "open interest multi-exchange et r\u00e9partition des comptes Binance",
       "tier": "MEASURED"
     },
     {
       "as_of": "2026-09-19T16:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "funding.rate Binance, percentile glissant par actif",
       "tier": "MEASURED"
     },
     {
       "as_of": "2026-09-19T00:00:00+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "ImpliedVolatilityEngine (Deribit)",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-19T21:33:36.469931+00:00",
+      "as_of": "2026-09-19T23:38:06.524435+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "MarketStructureEngine",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-19T21:33:36.469931+00:00",
+      "as_of": "2026-09-19T23:38:06.524435+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "VolatilityRegimeEngine",
       "tier": "DERIVED"
     },
     {
-      "as_of": "2026-09-19T21:33:36.469931+00:00",
+      "as_of": "2026-09-19T23:38:06.524435+00:00",
       "evidence_ids": [],
-      "reference": "an_68d206f477a6d007",
+      "reference": "an_7ec3c42f58f582df",
       "source": "ExpectedVolatilityEngine",
       "tier": "DERIVED"
     }
@@ -9461,7 +9879,7 @@
       "title": "Flux institutionnels & baleines"
     },
     {
-      "date_time": "2026-09-19T21:33:36.469931+00:00",
+      "date_time": "2026-09-19T23:38:06.524435+00:00",
       "evidence_ids": [],
       "explanation": "US 10Y yield 5.01%; 10Y-2Y spread +0.25pp",
       "icon": "signal",
@@ -9471,7 +9889,7 @@
       "title": "Macro & liquidit\u00e9"
     },
     {
-      "date_time": "2026-09-19T21:33:36.469931+00:00",
+      "date_time": "2026-09-19T23:38:06.524435+00:00",
       "evidence_ids": [],
       "explanation": "Le prix monte avec l'open interest : de nouveaux longs entrent.; Le co\u00fbt du levier reste proche de sa normale.",
       "icon": "signal",
@@ -9481,17 +9899,17 @@
       "title": "Positionnement & d\u00e9riv\u00e9s"
     },
     {
-      "date_time": "2026-09-19T21:33:36.469931+00:00",
+      "date_time": "2026-09-19T23:38:06.524435+00:00",
       "evidence_ids": [],
-      "explanation": "1 \u00e9chelle(s) de temps orient\u00e9e(s) \u00e0 la hausse sur 24 heures; volatilit\u00e9 faible. Pas de compression des bandes de Bollinger.",
+      "explanation": "1 \u00e9chelle(s) de temps orient\u00e9e(s) \u00e0 la hausse sur 24 heures; volatilit\u00e9 faible. Les bandes de Bollinger sont resserr\u00e9es: un mouvement de forte amplitude est possible, sans indication de sens.",
       "icon": "signal",
-      "impact": "NORMAL",
+      "impact": "HIGH",
       "source": "MarketStructureEngine",
       "source_url": null,
       "title": "Technique & volatilit\u00e9"
     }
   ],
-  "run_id": "run_20260919T213101Z_light",
+  "run_id": "run_20260919T233804Z",
   "scenarios": [
     {
       "confidence": 0.675,
@@ -9499,7 +9917,7 @@
       "event_chain": [
         "Aucun catalyseur futur sourc\u00e9 dans cet horizon."
       ],
-      "expected_movement": "NORMAL",
+      "expected_movement": "HIGH",
       "id": "base_case",
       "invalidation_conditions": [
         "Un catalyseur prioritaire change de sens ou d'amplitude."
@@ -9515,7 +9933,7 @@
         "Catalyseurs sourc\u00e9s r\u00e9solus favorablement",
         "Confirmation par les flux"
       ],
-      "expected_movement": "NORMAL",
+      "expected_movement": "HIGH",
       "id": "bullish_case",
       "invalidation_conditions": [
         "Flux institutionnels se retournent durablement \u00e0 la baisse."
@@ -9531,7 +9949,7 @@
         "Catalyseurs sourc\u00e9s r\u00e9solus d\u00e9favorablement",
         "Pression confirm\u00e9e par les flux"
       ],
-      "expected_movement": "NORMAL",
+      "expected_movement": "HIGH",
       "id": "bearish_case",
       "invalidation_conditions": [
         "Le risque \u00e9v\u00e9nementiel se dissipe et les flux redeviennent positifs."
@@ -9682,7 +10100,7 @@
       }
     ],
     "data_status": "PARTIAL_DATA",
-    "generated_at": "2026-09-19T21:33:36.469931+00:00",
+    "generated_at": "2026-09-19T23:38:06.524435+00:00",
     "headline": "Contexte porteur, sans exc\u00e8s apparent",
     "invalidation_conditions": [
       {

@@ -1129,6 +1129,37 @@ def cmd_backfill_official(args) -> int:
     return 0
 
 
+def cmd_cycle_snapshot(args) -> int:
+    """Archive this month's cycle reading, if it has none yet."""
+
+    from .engines.cycle_snapshots import ensure_snapshot, load_daily_and_halvings
+
+    init_db()
+    daily, halvings, _ = load_daily_and_halvings()
+    stored = ensure_snapshot(daily, halvings)
+    if stored is None:
+        print("Snapshot du mois déjà archivé : rien à écrire.")
+        return 0
+    print(f"{stored['month_label']} : {stored['phase_emoji']} {stored['phase_label']} "
+          f"({stored['direction']})")
+    print(f"  {stored['notes']}")
+    return 0
+
+
+async def cmd_backfill_btc_history(args) -> int:
+    """Daily BTC bars from 2011, so the cycle page can show every cycle."""
+
+    from .history.btc_long_history import backfill_btc_daily
+    from .providers.http import get_http
+
+    init_db()
+    result = await backfill_btc_daily()
+    print(f"{result['new_rows']} nouvelles bougies · {result['rows']} au total "
+          f"depuis {str(result['earliest'])[:10]}")
+    await get_http().close()
+    return 0
+
+
 def cmd_stream_bybit(args) -> int:
     """Long-running: Bybit spot trades and liquidations into hourly buckets."""
 
@@ -1364,6 +1395,12 @@ def main() -> int:
 
     p = sub.add_parser("stream-bybit", help="flux Bybit en direct (transactions spot, liquidations)")
     p.set_defaults(func=cmd_stream_bybit)
+
+    p = sub.add_parser("cycle-snapshot", help="archive mensuelle de la lecture du cycle")
+    p.set_defaults(func=cmd_cycle_snapshot)
+
+    p = sub.add_parser("backfill-btc-history", help="bougies BTC journalières depuis 2011")
+    p.set_defaults(func=cmd_backfill_btc_history, is_async=True)
 
     p = sub.add_parser(
         "light-refresh",

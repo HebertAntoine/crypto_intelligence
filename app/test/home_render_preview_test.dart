@@ -124,6 +124,18 @@ void main() {
         find.byKey(const ValueKey('shot')),
         matchesGoldenFile('$_out/family-derivatives-$asset.png'),
       );
+      await tester.tap(find.byKey(const ValueKey('family-detail-back')));
+      await tester.pumpAndSettle();
+      // The cycle opens its own page: phase, chart, history.
+      final cycle = find.byKey(const ValueKey('family-cycle'));
+      await tester.scrollUntilVisible(cycle, 300,
+          scrollable: find.byType(Scrollable).last);
+      await tester.tap(cycle);
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byKey(const ValueKey('shot')),
+        matchesGoldenFile('$_out/cycle-$asset.png'),
+      );
     });
   }
 }

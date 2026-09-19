@@ -1875,79 +1875,77 @@ CYCLE_SIGNAL_CAP = 0.4
 
 
 def _btc_cycle(view: PointInTimeView):
-    from .bitcoin_cycle import read_cycle
+    """The cycle regime, computed once per data cache and reused."""
 
+    from .cycle_regime import BitcoinCycleRegimeEngine
+
+    cached = getattr(view.cache, "_cycle_regime", None)
+    if cached is not None:
+        return cached
     halvings = [
         datetime.fromtimestamp(p.value, tz=view.as_of.tzinfo)
         for p in view.points("btc.halving.block_epoch")
     ]
-    estimate = view.latest("btc.halving.next_epoch_estimate")
-    next_halving = datetime.fromtimestamp(estimate.value, tz=view.as_of.tzinfo) if estimate else None
-    return read_cycle(view.candles("BTC", Timeframe.D1), halvings=halvings,
-                      next_halving=next_halving, as_of=view.as_of)
+    regime = BitcoinCycleRegimeEngine().read(
+        view.candles("BTC", Timeframe.D1), halvings, as_of=view.as_of
+    )
+    view.cache._cycle_regime = regime
+    return regime
 
 
 def cycle_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) -> FamilyScore:
-    cycle = _btc_cycle(view)
+    from .cycle_regime import CYCLE_SIGNAL_CAP, PHASE_LEAN
+
+    regime = _btc_cycle(view)
     metrics: list[MetricReading] = []
     components: list[Component] = []
-    if cycle is None:
+    if regime is None:
         return FamilyScore(
             family=CYCLE, horizon=horizon.value, status=DataStatus.INSUFFICIENT_DATA,
             unavailable_reason="Historique journalier de BTC insuffisant pour situer le cycle.",
             headline="Cycle indéterminé.",
         )
-    daily = view.candles("BTC", Timeframe.D1)
-    stamp = daily.index[-1].to_pydatetime() if len(daily) else view.as_of
-    if stamp.tzinfo is None:
-        stamp = stamp.replace(tzinfo=view.as_of.tzinfo)
+    dims = regime.dimensions
+    payload = regime.to_dict()
+    stamp = regime.data_cutoff
 
     def add(key: str, label: str, emoji: str, value: float | None, display: str, why: str,
-            source: str = "Binance (bougies journalières)", tier: str = "EXCHANGE") -> MetricReading:
+            source: str = "Bougies journalières", tier: str = "EXCHANGE") -> MetricReading:
         reading = MetricReading(
             key=key, label=label, emoji=emoji,
             status=DataStatus.AVAILABLE if value is not None else DataStatus.UNAVAILABLE,
             value=value, display_value=display if value is not None else "—",
             timestamp=stamp, available_at=stamp, source=source, source_tier=tier,
-            quality=100, confidence=85, state="CONTEXT", why=why,
+            quality=100, confidence=regime.confidence, state="CONTEXT", why=why,
         )
         metrics.append(reading)
         return reading
 
     name = "Cycle Bitcoin" if asset is Asset.BTC else "Régime Bitcoin"
-    add("cycle.phase", name, "🔄", PHASE_ORDER.index(cycle.phase.value), cycle.label,
-        "La phase décrit où se situe Bitcoin par rapport à son record, à sa tendance "
-        "longue et au dernier halving. C'est du contexte, jamais une prévision.")
-    add("cycle.drawdown", "Écart au record (ATH)", "📉", cycle.drawdown_pct,
-        f"{fr_number(cycle.drawdown_pct, 0, signed=True)} %",
-        f"Record de {fr_number(cycle.ath, 0)} $ le {cycle.ath_date:%d/%m/%Y}.")
-    if cycle.days_since_halving is not None:
-        add("cycle.days_since_halving", "Jours depuis le halving", "⛏️", float(cycle.days_since_halving),
-            f"{cycle.days_since_halving} jours",
-            "Le halving divise par deux l'émission de nouveaux bitcoins tous les 210 000 blocs.",
-            source="mempool.space (horodatage du bloc)", tier="OFFICIAL")
-    if cycle.next_halving_estimate is not None and asset is Asset.BTC:
-        reading = add("cycle.next_halving", "Prochain halving (estimation)", "⏳",
-                      cycle.next_halving_estimate.timestamp(),
-                      f"vers {_MONTHS_FR[cycle.next_halving_estimate.month - 1]} "
-                      f"{cycle.next_halving_estimate.year}",
-                      "Estimé à partir du rythme réel des 2 016 derniers blocs.",
-                      source="mempool.space (rythme des blocs)", tier="OFFICIAL")
-        reading.note = "Estimation : la date exacte dépend du rythme de production des blocs."
-    if cycle.sma200 is not None:
-        add("cycle.sma200", "Moyenne 200 jours (BTC)", "〽️", cycle.sma200,
-            f"{fr_number(cycle.sma200, 0)} $",
-            "La tendance longue : un prix au-dessus d'une moyenne qui monte est un régime sain.")
+    add("cycle.phase", name, "🔄", float(regime.confidence), f"{regime.emoji} {regime.label}",
+        "La phase vient de plusieurs mesures du marché - écart au record, structure long "
+        "terme, momentum, volatilité. Jamais du seul nombre de jours depuis le halving.")
+    add("cycle.direction", "Direction du régime", payload["direction_emoji"],
+        regime.health_change, payload["direction_label"],
+        "L'évolution de la santé du régime sur un mois : la phase peut tenir alors que "
+        "la situation s'améliore ou se dégrade.")
+    add("cycle.days_in_phase", "Phase actuelle depuis", "📅", float(regime.days_in_phase),
+        f"{regime.days_in_phase} jours",
+        "Une phase ne change qu'une fois confirmée sur plusieurs clôtures.")
+    add("cycle.drawdown", "Distance de l'ATH", "🏆", dims.drawdown_pct,
+        f"{fr_number(dims.drawdown_pct, 0, signed=True)} %",
+        f"Record de {fr_number(dims.ath, 0)} $ le {dims.ath_date:%d/%m/%Y}.")
+    if dims.days_since_halving is not None:
+        add("cycle.days_since_halving", "Depuis le halving", "⚡", float(dims.days_since_halving),
+            f"{dims.days_since_halving} jours",
+            "Le halving est un repère historique, pas une règle prédictive.",
+            source="Horodatage du bloc", tier="OFFICIAL")
 
-    trend = 0.0
-    if cycle.sma200 is not None and cycle.sma200_slope_pct is not None:
-        above = cycle.price > cycle.sma200
-        rising = cycle.sma200_slope_pct > 0
-        trend = 0.1 if above and rising else -0.1 if not above and not rising else 0.0
-    lean = max(-CYCLE_SIGNAL_CAP, min(CYCLE_SIGNAL_CAP, cycle.lean + trend))
+    lean = max(-CYCLE_SIGNAL_CAP, min(CYCLE_SIGNAL_CAP, PHASE_LEAN[regime.phase]))
     components.append(Component(
         "btc_cycle", name, 1.0 if asset is Asset.BTC else 0.6, lean,
-        f"🔄 {name} : {cycle.label.lower()}. {cycle.sentence}",
+        f"🔄 {name} : {regime.label.lower()} ({payload['direction_label'].lower()}). "
+        + (regime.evidence[0] if regime.evidence else ""),
         metrics=["cycle.phase"],
     ))
 
@@ -1964,31 +1962,32 @@ def cycle_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) 
             signal = _squash(change, _RELATIVE_SCALE[horizon]) * 0.5
             reading = add(f"cycle.relative_{asset.value.lower()}_btc", f"{asset.value}/BTC",
                           "⚖️", change, f"{fr_number(change, 1, signed=True)} %",
-                          f"La performance de {asset.value} face à BTC sur la période.")
-            reading.state = "FAVORABLE" if signal > 0.15 else "UNFAVORABLE" if signal < -0.15 else "NEUTRAL"
-            relative = {"change_pct": change, "window": _window_label(window)}
+                          f"{asset.value} n'a pas de halving : seuls le régime de BTC et la "
+                          "force relative donnent du contexte.")
+            reading.state = (
+                "FAVORABLE" if signal > 0.15 else "UNFAVORABLE" if signal < -0.15 else "NEUTRAL"
+            )
+            relative = {
+                "change_pct": change, "window": _window_label(window),
+                "label": (f"{asset.value} surperforme BTC" if change > 0
+                          else f"{asset.value} sous-performe BTC"),
+            }
             components.append(Component(
                 "relative_strength", f"{asset.value} face à BTC", 0.4, signal,
-                f"⚖️ {asset.value} {'surperforme' if change > 0 else 'sous-performe'} BTC "
-                f"({fr_number(change, 1, signed=True)} % sur {_window_label(window)}).",
+                f"⚖️ {relative['label']} ({fr_number(change, 1, signed=True)} % sur "
+                f"{_window_label(window)}).",
                 metrics=[reading.key],
             ))
 
+    headline = regime.evidence[0] if regime.evidence else regime.label
     result = finish_family(
         CYCLE, horizon, components, metrics,
-        headline_positive=cycle.sentence,
-        headline_negative=cycle.sentence,
-        headline_neutral=cycle.sentence,
+        headline_positive=headline, headline_negative=headline, headline_neutral=headline,
     )
-    result.extra.update({"cycle": cycle.to_dict(), "relative": relative, "is_context": True,
-                         "asset": asset.value})
+    result.extra.update({
+        "cycle": payload, "relative": relative, "is_context": True, "asset": asset.value,
+    })
     return result
-
-
-PHASE_ORDER = [
-    "DEEP_DRAWDOWN", "POST_ATH_DRAWDOWN", "RECOVERY", "MATURE_RANGE",
-    "EARLY_POST_HALVING", "EXPANSION", "PRICE_DISCOVERY", "UNKNOWN",
-]
 
 
 FAMILY_BUILDERS = {

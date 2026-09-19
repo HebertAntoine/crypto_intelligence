@@ -8,6 +8,7 @@ import '../api/future_models.dart';
 import '../api/models.dart';
 import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
+import 'cycle_page.dart';
 import '../widgets/color_emoji.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
@@ -347,6 +348,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   _AnalysisFactorsCard(
                     analysis: decision.analysis!,
                     asset: _asset,
+                    client: widget.client,
                     onSeeAnalysis: () => _openFullAnalysis(decision, bundle),
                   ),
                 ] else if (decision.hierarchy != null) ...[
@@ -1693,22 +1695,28 @@ extension on _AnalysisExplanationCard {
 class _AnalysisFactorsCard extends StatelessWidget {
   final FutureAnalysisRead analysis;
   final String asset;
+  final ApiClient client;
   final VoidCallback onSeeAnalysis;
 
   const _AnalysisFactorsCard({
     required this.analysis,
     required this.asset,
+    required this.client,
     required this.onSeeAnalysis,
   });
 
   void _open(BuildContext context, AnalysisFamilyRead family) =>
       Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => FamilyDetailPage(
-            family: family,
-            asset: asset,
-            horizon: analysis.horizon,
-          ),
+          // The cycle has a page of its own: a phase, a chart and the
+          // history of the analysis, not a list of measures.
+          builder: (_) => family.family == 'cycle'
+              ? CyclePage(client: client, asset: asset)
+              : FamilyDetailPage(
+                  family: family,
+                  asset: asset,
+                  horizon: analysis.horizon,
+                ),
         ),
       );
 

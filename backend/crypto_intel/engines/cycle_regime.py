@@ -42,6 +42,8 @@ CONFIRMATION_DAYS = 15
 #: Window used to say whether the regime improves or degrades.
 DIRECTION_WINDOW_DAYS = 30
 DIRECTION_EPSILON = 0.06
+#: However the cycle reads, the decision family never leans harder than this.
+CYCLE_SIGNAL_CAP = 0.4
 
 
 class Phase(StrEnum):
@@ -69,7 +71,7 @@ PHASE_FR = {
 }
 PHASE_EMOJI = {
     Phase.ACCUMULATION: "🔵",
-    Phase.RECOVERY: "🟢",
+    Phase.RECOVERY: "🔵",
     Phase.EXPANSION: "🟢",
     Phase.PRICE_DISCOVERY: "🔥",
     Phase.TRANSITION: "🟠",
@@ -81,7 +83,7 @@ PHASE_EMOJI = {
 #: One colour per concept, the same everywhere in the application.
 PHASE_TONE = {
     Phase.ACCUMULATION: "BLUE",
-    Phase.RECOVERY: "GREEN",
+    Phase.RECOVERY: "BLUE",
     Phase.EXPANSION: "GREEN",
     Phase.PRICE_DISCOVERY: "FIRE",
     Phase.TRANSITION: "ORANGE",
@@ -333,7 +335,10 @@ def _dimensions_from_row(row: Any, stamp: datetime, daily_index: Any) -> Dimensi
         rebound_from_low_pct=(
             None if pd.isna(row.rebound_from_low_pct) else float(row.rebound_from_low_pct)
         ),
-        days_since_halving=None if row.days_since_halving is None else int(row.days_since_halving),
+        days_since_halving=(
+            None if row.days_since_halving is None or pd.isna(row.days_since_halving)
+            else int(row.days_since_halving)
+        ),
     )
 
 
