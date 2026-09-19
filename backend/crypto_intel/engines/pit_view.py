@@ -117,24 +117,28 @@ class DataCache:
         try:
             if asset is None:
                 rows = con.execute(
-                    "SELECT timestamp, value_num, source, meta FROM observations "
+                    "SELECT timestamp, value_num, source, meta, fetched_at FROM observations "
                     "WHERE metric = ? AND value_num IS NOT NULL",
                     (metric,),
                 ).fetchall()
             else:
                 rows = con.execute(
-                    "SELECT timestamp, value_num, source, meta FROM observations "
+                    "SELECT timestamp, value_num, source, meta, fetched_at FROM observations "
                     "WHERE metric = ? AND asset = ? AND value_num IS NOT NULL",
                     (metric, asset),
                 ).fetchall()
         finally:
             con.close()
         out: list[Point] = []
-        for stamp, value, source, meta_raw in rows:
+        for stamp, value, source, meta_raw, fetched in rows:
             # Fixtures are never evidence, whatever table they sit in.
             if not is_production_label(source):
                 continue
-            meta = (json.loads(meta_raw) if meta_raw else None) or {}
+            meta = dict((json.loads(meta_raw) if meta_raw else None) or {})
+            if fetched:
+                # When this system collected it - distinct from the period the
+                # value describes and from when it was published.
+                meta["fetched_at"] = _utc(fetched).isoformat()
             ts = _utc(stamp)
             available = _utc(meta["available_at"]) if meta.get("available_at") else ts
             out.append(Point(ts, available, float(value), str(source), meta))

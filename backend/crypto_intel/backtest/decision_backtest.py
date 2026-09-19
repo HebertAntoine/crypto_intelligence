@@ -174,7 +174,7 @@ def _event_checks(events: list[Any], asset: Asset, horizon: DecisionHorizon, at:
 
     from ..engines.decision_gates import event_candidates
 
-    return ExternalChecks(event_candidates=event_candidates(events, asset, horizon, at))
+    return ExternalChecks(event_candidates=event_candidates(events, asset, horizon, at), as_of=at)
 
 
 def run(

@@ -156,6 +156,8 @@ class ExternalChecks:
     missing_critical_inputs: list[str] = field(default_factory=list)
     #: The consistency validator's findings (NO_MEASURABLE_EDGE, ...).
     consistency_codes: list[str] = field(default_factory=list)
+    #: The moment of the reading, for recency-based display priorities.
+    as_of: datetime | None = None
 
 
 @dataclass(slots=True)
@@ -201,6 +203,8 @@ class HorizonDecision:
     to_worsen: list[str]
     home_factors: list[HomeFactor]
     thresholds: dict[str, Any]
+    #: Trend / entry quality / risk, three reasons, per-family home lines.
+    summary: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -229,6 +233,7 @@ class HorizonDecision:
             "to_worsen": self.to_worsen,
             "home_factors": [f.to_dict() for f in self.home_factors],
             "thresholds": self.thresholds,
+            "summary": self.summary,
             "disclaimer": (
                 "Signal analytique interne à l'application, jamais un ordre "
                 "d'exécution."
@@ -477,6 +482,12 @@ def decide(
         },
     )
     _explain(decision, external, blocking)
+    from .decision_presentation import summarize
+
+    top_event = (external.event_candidates or [None])[0]
+    decision.summary = summarize(
+        decision, as_of=external.as_of or decision.newest_data, top_event=top_event
+    )
     return decision
 
 

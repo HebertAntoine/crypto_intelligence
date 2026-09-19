@@ -144,7 +144,8 @@ void main() {
               .widgetList<Text>(
                   find.descendant(of: row, matching: find.byType(Text)))
               .map((widget) => widget.data ?? '')
-              .where((text) => text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪)')));
+              // A tone dot, or the trend's own arrow for the technical family.
+              .where((text) => text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪|📈|📉|➡️) ')));
           expect(statuses.length, 1, reason: 'facteur $index');
         }
       });
@@ -204,6 +205,9 @@ void main() {
     // position at all.
     final explained = [
       'avantage mesurable',
+      'avantage statistique',
+      'point d’entrée',
+      "point d'entrée",
       'différée',
       'tirent en sens opposé',
       'Aucun facteur ne domine',
@@ -257,10 +261,14 @@ void _mockupRules() {
         final decision = await _shippedClient().futureDecision(asset);
         final analysis = decision.analysis!;
 
-        // The screen lays the engine's explanation out; it writes none.
-        expect(find.textContaining(analysis.headline), findsOneWidget);
-        for (final line in analysis.reasons.take(4)) {
-          expect(find.text(line), findsOneWidget, reason: line);
+        // The screen lays the engine's reasons out, three at most; it writes
+        // none, and the statistical validation is never one of them.
+        final reasons = analysis.summary.reasons;
+        expect(reasons.length, inInclusiveRange(1, 3));
+        expect(find.text(analysis.summary.sentence), findsOneWidget);
+        for (final reason in reasons) {
+          expect(find.text(reason.title), findsWidgets, reason: reason.title);
+          expect(reason.title.contains('avantage'), isFalse);
         }
       });
 
@@ -333,9 +341,9 @@ void _iphoneRendering() {
       await _open(tester, 'BTC');
       final decision = await _shippedClient().futureDecision('BTC');
 
-      for (final factor in decision.analysis!.homeFactors) {
-        if (factor.value.isEmpty) continue;
-        expect(find.text(factor.value), findsOneWidget, reason: factor.label);
+      for (final family in decision.analysis!.summary.homeFamilies) {
+        if (family.keyInfo.isEmpty) continue;
+        expect(find.text(family.keyInfo), findsOneWidget, reason: family.name);
       }
     });
   });

@@ -933,12 +933,23 @@ class _DecisionCard extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: _DecisionMetric(
-                            emoji: '⚠️',
-                            label: 'Risque',
-                            value: _riskLabelShort(decision.eventRisk),
-                            tone: _impactColor(decision.eventRisk),
-                          ),
+                          child: Builder(builder: (context) {
+                            // Risk is how badly it could go wrong - leverage,
+                            // implied volatility, events - never the trend.
+                            final risk = decision.analysis?.summary.risk;
+                            final known = risk != null && !risk.isEmpty;
+                            return _DecisionMetric(
+                              key: const ValueKey('decision-risk'),
+                              emoji: '⚠️',
+                              label: 'Risque',
+                              value: known
+                                  ? risk.label
+                                  : _riskLabelShort(decision.eventRisk),
+                              tone: known
+                                  ? _toneColor(risk.tone)
+                                  : _impactColor(decision.eventRisk),
+                            );
+                          }),
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -961,6 +972,22 @@ class _DecisionCard extends StatelessWidget {
                             // It is the hierarchy's reading, so the tile can
                             // never disagree with the reasoning beneath it.
                             final analysis = decision.analysis;
+                            final trend = analysis?.summary.trend;
+                            if (trend != null && !trend.isEmpty) {
+                              // The direction only. Whether now is a good
+                              // entry is a separate question, answered below.
+                              return _DecisionMetric(
+                                key: const ValueKey('decision-signals'),
+                                emoji: trend.emoji.isEmpty ? '📊' : trend.emoji,
+                                label: 'Tendance',
+                                value: trend.label,
+                                tone: switch (trend.label) {
+                                  'Haussière' => _badgeGood,
+                                  'Baissière' => _badgeBad,
+                                  _ => _badgeWatch,
+                                },
+                              );
+                            }
                             final reading = analysis != null
                                 ? (analysis.blockingGate == 'CONTRADICTION'
                                     ? 'MIXED'
@@ -1156,6 +1183,9 @@ class _WhyDecisionCard extends StatelessWidget {
 /// The hero names the one thing that matters most, not a generic mood.
 String _heroSentence(FutureDecisionRead decision, _FutureBundle bundle) {
   final analysis = decision.analysis;
+  if (analysis != null && analysis.summary.sentence.isNotEmpty) {
+    return analysis.summary.sentence;
+  }
   if (analysis != null && analysis.subtitle.isNotEmpty) {
     return '${analysis.subtitle}.';
   }
@@ -1312,6 +1342,12 @@ class _StatusRow extends StatelessWidget {
   /// One figure, when the reading has one: "4,95 %", "95,4 $".
   final String value;
 
+  /// Replaces the tone dot when the state has its own emoji (📈 for a trend).
+  final String statusEmoji;
+
+  /// One short key figure under the state ("RSI 77 · résistance proche").
+  final String detail;
+
   const _StatusRow({
     super.key,
     required this.emoji,
@@ -1320,6 +1356,8 @@ class _StatusRow extends StatelessWidget {
     required this.tone,
     this.onTap,
     this.value = '',
+    this.statusEmoji = '',
+    this.detail = '',
   });
 
   @override
@@ -1356,7 +1394,7 @@ class _StatusRow extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '${_toneEmoji(tone)} $status',
+                      '${statusEmoji.isEmpty ? _toneEmoji(tone) : statusEmoji} $status',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1365,6 +1403,16 @@ class _StatusRow extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (detail.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        detail,
+                        key: const ValueKey('factor-detail'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: mobileMuted, fontSize: 12),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1488,6 +1536,8 @@ class _AnalysisExplanationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final summary = analysis.summary;
+    if (!summary.isEmpty) return _summaryCard(summary);
     final lead = switch (analysis.action) {
       'BUY' => '✅',
       'SELL' => '❌',
@@ -1534,6 +1584,111 @@ class _AnalysisExplanationCard extends StatelessWidget {
   }
 }
 
+extension on _AnalysisExplanationCard {
+  /// At most three reasons, chosen by weight in the decision. The statistical
+  /// validation is a separate line, never the first reason to wait.
+  Widget _summaryCard(AnalysisSummaryRead summary) {
+    final entry = summary.entryQuality;
+    return GlassPanel(
+      key: const ValueKey('decision-explanation'),
+      borderColor: const Color(0xFF2B669B),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionTitle(
+            emoji: '🔎',
+            text: switch (analysis.action) {
+              'BUY' => 'Pourquoi acheter ?',
+              'SELL' => 'Pourquoi vendre ?',
+              'INSUFFICIENT_DATA' => 'Pourquoi pas de recommandation ?',
+              _ => 'Pourquoi attendre ?',
+            },
+          ),
+          if (!entry.isEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${entry.emoji} Point d’entrée : ${entry.label.toLowerCase()}',
+              key: const ValueKey('entry-quality'),
+              style: TextStyle(
+                color: _toneColor(entry.tone),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+          const SizedBox(height: 6),
+          for (var i = 0; i < summary.reasons.length; i++)
+            Padding(
+              key: ValueKey('home-reason-${i + 1}'),
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 30,
+                    child: Text(
+                      summary.reasons[i].emoji,
+                      style: const TextStyle(fontSize: 19),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          summary.reasons[i].title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (summary.reasons[i].detail.isNotEmpty)
+                          Text(
+                            summary.reasons[i].detail,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: mobileMuted,
+                              fontSize: 12.5,
+                              height: 1.3,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (summary.hasValidationWarning) ...[
+            const SizedBox(height: 6),
+            const Divider(height: 1, color: Color(0xFF1D3853)),
+            const SizedBox(height: 9),
+            Text(
+              '🧪 Validation — ${summary.validationMessage}',
+              key: const ValueKey('home-validation'),
+              style: const TextStyle(
+                color: Color(0xFFB7C6DC),
+                fontSize: 12.5,
+                height: 1.35,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            [summary.confidenceLabel, ...summary.dataIssues.take(1)]
+                .where((s) => s.isNotEmpty)
+                .join(' · '),
+            key: const ValueKey('home-data-trust'),
+            style: const TextStyle(color: mobileMuted, fontSize: 11.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The families that move the decision now, chosen by their contribution.
 class _AnalysisFactorsCard extends StatelessWidget {
   final FutureAnalysisRead analysis;
@@ -1546,8 +1701,53 @@ class _AnalysisFactorsCard extends StatelessWidget {
     required this.onSeeAnalysis,
   });
 
+  void _open(BuildContext context, AnalysisFamilyRead family) =>
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => FamilyDetailPage(
+            family: family,
+            asset: asset,
+            horizon: analysis.horizon,
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
+    final homeFamilies = analysis.summary.homeFamilies;
+    if (homeFamilies.isNotEmpty) {
+      final byKey = {for (final f in analysis.families) f.family: f};
+      return GlassPanel(
+        key: const ValueKey('main-factors'),
+        borderColor: const Color(0xFF245E90),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _SectionTitle(emoji: '🧭', text: 'Les familles d’indicateurs'),
+            const SizedBox(height: 4),
+            for (var index = 0; index < homeFamilies.length; index++) ...[
+              if (index > 0) const Divider(height: 1, color: Color(0xFF1D3853)),
+              _StatusRow(
+                key: ValueKey(homeFamilies[index].family == 'onchain'
+                    ? 'whale-status'
+                    : 'main-factor-${index + 1}'),
+                emoji: homeFamilies[index].emoji,
+                title: homeFamilies[index].name,
+                status: homeFamilies[index].status,
+                statusEmoji: homeFamilies[index].statusEmoji,
+                tone: homeFamilies[index].tone,
+                detail: homeFamilies[index].keyInfo,
+                onTap: byKey[homeFamilies[index].family] == null
+                    ? null
+                    : () => _open(context, byKey[homeFamilies[index].family]!),
+              ),
+            ],
+            const SizedBox(height: 6),
+            _seeAllButton(),
+          ],
+        ),
+      );
+    }
     final factors = analysis.homeFactors;
     final families = {for (final f in analysis.families) f.family: f};
     final onchain = families['onchain'];
@@ -1593,31 +1793,33 @@ class _AnalysisFactorsCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 6),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              key: const ValueKey('see-full-analysis'),
-              onPressed: onSeeAnalysis,
-              style: TextButton.styleFrom(foregroundColor: mobileBlue),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      'Voir l’analyse complète',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, size: 20),
-                ],
-              ),
-            ),
-          ),
+          _seeAllButton(),
         ],
       ),
     );
   }
+
+  Widget _seeAllButton() => Align(
+        alignment: Alignment.centerRight,
+        child: TextButton(
+          key: const ValueKey('see-full-analysis'),
+          onPressed: onSeeAnalysis,
+          style: TextButton.styleFrom(foregroundColor: mobileBlue),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  'Voir l’analyse complète',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, size: 20),
+            ],
+          ),
+        ),
+      );
 }
 
 /// What the largest holders are doing, or a plain statement that it is not

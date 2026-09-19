@@ -998,6 +998,7 @@ class FutureDecisionEngine:
                         getattr(data_quality, "critical_missing_inputs", []) or []
                     ),
                     consistency_codes=codes,
+                    as_of=now,
                 ),
             )
             action = DecisionAction(gated.action.value)

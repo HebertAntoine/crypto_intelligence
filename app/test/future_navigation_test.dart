@@ -103,8 +103,8 @@ void main() {
       expect(
         find.byWidgetPredicate((widget) =>
             widget is Text &&
-            const {'Plutôt favorable', 'Plutôt défavorable', 'Mitigée',
-                    'Neutre', 'Insuffisante'}
+            const {'Haussière', 'Baissière', 'Neutre', 'Plutôt favorable',
+                    'Plutôt défavorable', 'Mitigée', 'Insuffisante'}
                 .contains(widget.data)),
         findsWidgets,
       );

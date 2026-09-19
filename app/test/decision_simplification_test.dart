@@ -82,8 +82,9 @@ void main() {
     expect(
       find.byWidgetPredicate((widget) =>
           widget is Text &&
-          const {'Plutôt favorable', 'Plutôt défavorable', 'Mitigée', 'Neutre',
-                  'Insuffisante'}
+          // The trend tile names a direction only; entry and risk are apart.
+          const {'Haussière', 'Baissière', 'Neutre', 'Plutôt favorable',
+                  'Plutôt défavorable', 'Mitigée', 'Insuffisante'}
               .contains(widget.data)),
       findsWidgets,
     );
@@ -100,10 +101,19 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    // Every measure: value, change, state, date, source, and why it matters.
-    expect(find.byType(MetricTile), findsWidgets);
-    expect(find.textContaining('Pourquoi ça compte'), findsWidgets);
-    expect(find.textContaining('Mise à jour'), findsWidgets);
+    // Grouped sections of compact rows, a short reading, what would change it.
+    expect(find.byKey(const ValueKey('section-Tendance & structure')), findsOneWidget);
+    expect(find.byType(MetricTile), findsNothing);
+
+    // A row opens its measure in full: value, the three dates, why it matters.
+    final rsi = find.byKey(const ValueKey('row-technical.rsi'));
+    await tester.scrollUntilVisible(rsi, 200, scrollable: find.byType(Scrollable).last);
+    await tester.tap(rsi);
+    await tester.pumpAndSettle();
+    expect(find.byType(MetricTile), findsOneWidget);
+    expect(find.textContaining('Pourquoi ça compte'), findsOneWidget);
+    expect(find.textContaining('Données :'), findsOneWidget);
+    expect(find.textContaining('Mise à jour'), findsNothing);
   });
 
   testWidgets('an unavailable family is declared, never shown as neutral',
@@ -121,7 +131,8 @@ void main() {
     // On-chain has no connected source: it says so, with its reason.
     final card = find.byKey(const ValueKey('family-onchain'));
     await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).last);
-    expect(find.descendant(of: card, matching: find.text('Indisponible')), findsOneWidget);
+    expect(find.descendant(of: card, matching: find.textContaining('Données insuffisantes')),
+        findsOneWidget);
     expect(find.descendant(of: card, matching: find.text('Neutre')), findsNothing);
   });
 
@@ -135,7 +146,8 @@ void main() {
       final status = tester
           .widgetList<Text>(find.descendant(of: row, matching: find.byType(Text)))
           .map((widget) => widget.data ?? '')
-          .where((text) => text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪)')))
+          // A tone dot, or the trend's own arrow for the technical family.
+          .where((text) => text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪|📈|📉|➡️) ')))
           .toList();
       expect(status.length, 1, reason: 'facteur $index');
       for (final amplitude in const ['CRITIQUE', 'IMPACT ÉLEVÉ', 'EXTREME']) {
@@ -198,6 +210,9 @@ void main() {
       400,
       scrollable: find.byType(Scrollable).last,
     );
+    // Clear the bottom navigation bar before tapping.
+    await tester.drag(find.byType(Scrollable).last, const Offset(0, -300));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('technical-details')));
     await tester.pumpAndSettle();
     expect(find.text('Détails complets'), findsOneWidget);
@@ -292,14 +307,15 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    // The screen renders what the engine ranked by contribution, in order.
+    // The five families, in the engine's order, one line each.
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
-    final ranked = decision.analysis!.homeFactors;
-    expect(ranked, isNotEmpty);
-    for (var index = 0; index < ranked.length; index++) {
+    final families = decision.analysis!.summary.homeFamilies;
+    expect(families.map((f) => f.name).toList(),
+        ['Technique', 'Dérivés', 'Macro', 'ETF & spot', 'Baleines & on-chain']);
+    for (var index = 0; index < families.length - 1; index++) {
       final row = find.byKey(ValueKey('main-factor-${index + 1}'));
       expect(
-        find.descendant(of: row, matching: find.text(ranked[index].label)),
+        find.descendant(of: row, matching: find.text(families[index].name)),
         findsOneWidget,
       );
     }
@@ -407,8 +423,8 @@ void main() {
 
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
     final analysis = decision.analysis!;
-    // The home says which gate holds the decision...
-    expect(find.textContaining(analysis.headline), findsOneWidget);
+    // The home says what the market is doing and why the entry waits...
+    expect(find.text(analysis.summary.sentence), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('see-full-analysis')),
       300,

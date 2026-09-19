@@ -112,9 +112,22 @@ class MetricReading:
     delta: float | None = None
     delta_pct: float | None = None
     delta_label: str = ""
-    state: str = "UNKNOWN"  # FAVORABLE | UNFAVORABLE | NEUTRAL | UNKNOWN
+    #: FAVORABLE | UNFAVORABLE | NEUTRAL | CAUTION | CONTEXT | UNKNOWN.
+    #: CAUTION is not "unfavourable": an overbought RSI inside an uptrend says
+    #: the move is stretched, not that the trend is wrong.
+    state: str = "UNKNOWN"
     why: str = ""
     note: str = ""
+    #: 1 = can change the decision now, 2 = confirmation / context,
+    #: 3 = technical detail. Recomputed each time: a fresh surprise climbs.
+    priority: int = 2
+    #: What the value describes ("août 2026", "18/09") - never shown as the
+    #: date it was updated.
+    period_label: str = ""
+    fetched_at: datetime | None = None
+    #: The release time is an estimate (publication lag), not the calendar.
+    publication_estimated: bool = False
+    raw_value: str = ""
 
     @property
     def usable(self) -> bool:
@@ -141,8 +154,28 @@ class MetricReading:
             "delta_label": self.delta_label,
             "state": self.state,
             "why": self.why,
+            "why_short": _first_sentence(self.why),
             "note": self.note,
+            "priority": self.priority,
+            "period_label": self.period_label,
+            "published_at": self.available_at.isoformat() if self.available_at else None,
+            "publication_estimated": self.publication_estimated,
+            "fetched_at": self.fetched_at.isoformat() if self.fetched_at else None,
+            "raw_value": self.raw_value,
         }
+
+
+def _first_sentence(text: str) -> str:
+    """The one line a card shows; the full explanation stays one tap away."""
+
+    if not text:
+        return ""
+    cut = text.find(". ")
+    return text if cut < 0 else text[: cut + 1]
+
+
+_MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
+              "août", "septembre", "octobre", "novembre", "décembre"]
 
 
 def unavailable(key: str, label: str, emoji: str, reason: str, why: str = "") -> MetricReading:
@@ -204,9 +237,19 @@ def read_metric(
         confidence=90 if tier == "OFFICIAL" else 80,
         why=why,
     )
+    fetched = (latest.meta or {}).get("fetched_at")
+    if fetched:
+        reading.fetched_at = datetime.fromisoformat(fetched)
+    monthly = max_age >= timedelta(days=30)
+    reading.period_label = (
+        f"{_MONTHS_FR[latest.timestamp.month - 1]} {latest.timestamp.year}"
+        if monthly else f"{latest.timestamp:%d/%m}"
+    )
+    # Official monthly releases carry a lag-based publication time.
+    reading.publication_estimated = monthly and tier == "OFFICIAL"
     if status is DataStatus.STALE:
         reading.note = (
-            f"Dernière valeur du {latest.timestamp:%d/%m} : trop ancienne pour être "
+            f"Dernière valeur ({reading.period_label}) : trop ancienne pour être "
             "utilisée comme valeur actuelle."
         )
     if tier not in PROVENANCE.may_drive:
@@ -466,6 +509,32 @@ def _mark(reading: MetricReading, signal: float | None) -> None:
     )
 
 
+def _inflation_display(view: PointInTimeView, reading: MetricReading) -> None:
+    """An index level (337,77) means nothing to a reader; its changes do.
+
+    Shows the monthly and yearly changes; the raw index stays in the details.
+    No consensus is shown: no source for it is connected, and none is invented.
+    """
+
+    if not reading.usable or reading.value is None or reading.timestamp is None:
+        return
+    previous = view.value_before(reading.key, reading.timestamp - timedelta(days=20))
+    monthly = (
+        (reading.value / previous.value - 1) * 100 if previous and previous.value else None
+    )
+    yearly = reading.delta_pct
+    parts = []
+    if monthly is not None:
+        parts.append(f"{fr_number(monthly, 1, signed=True)} % m/m")
+    if yearly is not None:
+        parts.append(f"{fr_number(yearly, 1, signed=True)} % sur un an")
+    if parts:
+        reading.raw_value = f"indice {fr_number(reading.value, 2)}"
+        reading.display_value = " · ".join(parts)
+        reading.delta_label = ""
+        reading.unit = "%"
+
+
 # ---------------------------------------------------------------------------
 # A. Macro & central banks
 # ---------------------------------------------------------------------------
@@ -494,6 +563,10 @@ def macro_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) 
     oil = read("macro.oil_wti", decimals=1)
     cpi = read_metric(view, "macro.core_cpi", window=timedelta(days=365))
     metrics.append(cpi)
+    headline_cpi = read_metric(view, "macro.cpi", window=timedelta(days=365))
+    metrics.append(headline_cpi)
+    for reading in (cpi, headline_cpi):
+        _inflation_display(view, reading)
     unemployment = read("macro.unemployment", delta_kind="abs")
 
     # Real yields: the cost of holding a non-yielding asset.
@@ -585,7 +658,6 @@ def macro_family(view: PointInTimeView, asset: Asset, horizon: DecisionHorizon) 
             acceleration = annualised - yearly
             signal = -_squash(acceleration, 1.0)
             _mark(cpi, signal)
-            cpi.display_value = f"{fr_number(yearly, 1)} % sur un an"
             cpi.delta_label = f"{fr_number(annualised, 1)} % annualisé sur 3 mois"
             components.append(Component(
                 "core_inflation", "Inflation sous-jacente", 0.6 if horizon is DecisionHorizon.D30 else 0.3,
@@ -1378,6 +1450,20 @@ def technical_family(view: PointInTimeView, asset: Asset, horizon: DecisionHoriz
         headline_neutral="Structure sans direction nette.",
     )
     result.extra.update({
+        # Levels come from the exchange's USDT pair, not from the EUR price in
+        # the header: they are labelled in dollars, never shown as euros.
+        "quote": "USDT",
+        "price": last,
+        "fast_ma": f_last,
+        "slow_ma": s_last,
+        "ma_kind": ma_kind,
+        "fast": fast,
+        "slow": slow,
+        "trend_signal": trend_signal,
+        "changes": {
+            days: next((m.value for m in metrics if m.key == f"price.change_{days}d"), None)
+            for days in (1, 7, 30)
+        },
         "structure": structure,
         "structure_label": STRUCTURE_FR[structure],
         "support": levels.get("support"),

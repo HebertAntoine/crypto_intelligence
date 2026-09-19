@@ -796,6 +796,21 @@ class AnalysisMetricRead {
   final String why;
   final String note;
 
+  /// One sentence of [why], for the card; the full text opens on tap.
+  final String whyShort;
+
+  /// 1 = important now, 2 = confirmation, 3 = detail. Recomputed each run.
+  final int priority;
+
+  /// The period measured ("août 2026"), distinct from the publication date.
+  final String periodLabel;
+  final DateTime? publishedAt;
+  final bool publicationEstimated;
+  final DateTime? fetchedAt;
+
+  /// The raw figure behind a derived one ("indice 337,76"), details only.
+  final String rawValue;
+
   const AnalysisMetricRead({
     required this.key,
     required this.label,
@@ -809,6 +824,13 @@ class AnalysisMetricRead {
     required this.why,
     required this.note,
     this.timestamp,
+    this.whyShort = '',
+    this.priority = 2,
+    this.periodLabel = '',
+    this.publishedAt,
+    this.publicationEstimated = false,
+    this.fetchedAt,
+    this.rawValue = '',
   });
 
   bool get usable => status == 'AVAILABLE';
@@ -827,7 +849,245 @@ class AnalysisMetricRead {
         state: json['state']?.toString() ?? 'UNKNOWN',
         why: json['why']?.toString() ?? '',
         note: json['note']?.toString() ?? '',
+        whyShort: json['why_short']?.toString() ?? '',
+        priority: (_number(json['priority']) ?? 2).round(),
+        periodLabel: json['period_label']?.toString() ?? '',
+        publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '')?.toLocal(),
+        publicationEstimated: json['publication_estimated'] == true,
+        fetchedAt: DateTime.tryParse(json['fetched_at']?.toString() ?? '')?.toLocal(),
+        rawValue: json['raw_value']?.toString() ?? '',
       );
+}
+
+/// One compact line inside a family section.
+class AnalysisRowRead {
+  final String label;
+  final String value;
+  final String tone;
+  final String? metric;
+
+  /// The change, on a second smaller line ("+8 pb sur 7 j").
+  final String detail;
+
+  const AnalysisRowRead({
+    required this.label,
+    required this.value,
+    required this.tone,
+    this.metric,
+    this.detail = '',
+  });
+
+  factory AnalysisRowRead.fromJson(Map<String, dynamic> json) => AnalysisRowRead(
+        label: json['label']?.toString() ?? '',
+        value: json['value']?.toString() ?? '—',
+        tone: json['tone']?.toString() ?? 'WHITE',
+        metric: json['metric']?.toString(),
+        detail: json['detail']?.toString() ?? '',
+      );
+}
+
+/// A grouped section of a family page ("Tendance & structure", "Momentum").
+class AnalysisSectionRead {
+  final String emoji;
+  final String title;
+  final String verdict;
+  final String tone;
+  final String sentence;
+  final String why;
+  final List<AnalysisRowRead> rows;
+  final bool secondary;
+
+  const AnalysisSectionRead({
+    required this.emoji,
+    required this.title,
+    required this.verdict,
+    required this.tone,
+    required this.sentence,
+    required this.why,
+    required this.rows,
+    required this.secondary,
+  });
+
+  factory AnalysisSectionRead.fromJson(Map<String, dynamic> json) => AnalysisSectionRead(
+        emoji: json['emoji']?.toString() ?? '',
+        title: json['title']?.toString() ?? '',
+        verdict: json['verdict']?.toString() ?? '',
+        tone: json['tone']?.toString() ?? 'WHITE',
+        sentence: json['sentence']?.toString() ?? '',
+        why: json['why']?.toString() ?? '',
+        rows: (json['rows'] as List? ?? const [])
+            .whereType<Map>()
+            .map((r) => AnalysisRowRead.fromJson(Map<String, dynamic>.from(r)))
+            .toList(),
+        secondary: json['secondary'] == true,
+      );
+}
+
+/// How a family is laid out: sections, a short reading, what would change it.
+class AnalysisFamilyViewRead {
+  final List<AnalysisSectionRead> sections;
+  final List<String> lecture;
+  final List<String> changes;
+  final String confidenceLabel;
+  final List<String> dataIssues;
+
+  /// The one-line state shown on the home and the family card.
+  final AnalysisHomeFamilyRead? home;
+
+  const AnalysisFamilyViewRead({
+    this.sections = const [],
+    this.lecture = const [],
+    this.changes = const [],
+    this.confidenceLabel = '',
+    this.dataIssues = const [],
+    this.home,
+  });
+
+  bool get isEmpty => sections.isEmpty;
+
+  factory AnalysisFamilyViewRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisFamilyViewRead(
+        sections: (json['sections'] as List? ?? const [])
+            .whereType<Map>()
+            .map((s) => AnalysisSectionRead.fromJson(Map<String, dynamic>.from(s)))
+            .toList(),
+        lecture: _strings(json['lecture']),
+        changes: _strings(json['changes']),
+        confidenceLabel: json['confidence_label']?.toString() ?? '',
+        dataIssues: _strings(json['data_issues']),
+        home: json['home'] is Map
+            ? AnalysisHomeFamilyRead.fromJson(
+                Map<String, dynamic>.from(json['home'] as Map))
+            : null,
+      );
+}
+
+/// A labelled state with its colour emoji ("🟠 Modéré").
+class AnalysisBadgeRead {
+  final String emoji;
+  final String label;
+  final String tone;
+
+  const AnalysisBadgeRead({this.emoji = '', this.label = '', this.tone = 'WHITE'});
+
+  bool get isEmpty => label.isEmpty;
+
+  factory AnalysisBadgeRead.fromJson(Object? raw) {
+    final json = _map(raw);
+    return AnalysisBadgeRead(
+      emoji: json['emoji']?.toString() ?? '',
+      label: json['label']?.toString() ?? '',
+      tone: json['tone']?.toString() ?? 'WHITE',
+    );
+  }
+}
+
+/// One home reason: emoji, short title, one line.
+class AnalysisReasonRead {
+  final String emoji;
+  final String title;
+  final String detail;
+  final String tone;
+
+  const AnalysisReasonRead({
+    required this.emoji,
+    required this.title,
+    required this.detail,
+    required this.tone,
+  });
+
+  factory AnalysisReasonRead.fromJson(Map<String, dynamic> json) => AnalysisReasonRead(
+        emoji: json['emoji']?.toString() ?? '•',
+        title: json['title']?.toString() ?? '',
+        detail: json['detail']?.toString() ?? '',
+        tone: json['tone']?.toString() ?? 'WHITE',
+      );
+}
+
+/// One family on the home: name, state, a single key figure.
+class AnalysisHomeFamilyRead {
+  final String family;
+  final String emoji;
+  final String name;
+  final String status;
+  final String statusEmoji;
+  final String tone;
+  final String keyInfo;
+
+  const AnalysisHomeFamilyRead({
+    required this.family,
+    required this.emoji,
+    required this.name,
+    required this.status,
+    required this.statusEmoji,
+    required this.tone,
+    required this.keyInfo,
+  });
+
+  factory AnalysisHomeFamilyRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisHomeFamilyRead(
+        family: json['family']?.toString() ?? '',
+        emoji: json['emoji']?.toString() ?? '📊',
+        name: json['name']?.toString() ?? '',
+        status: json['status']?.toString() ?? '',
+        statusEmoji: json['status_emoji']?.toString() ?? '',
+        tone: json['tone']?.toString() ?? 'WHITE',
+        keyInfo: json['key_info']?.toString() ?? '',
+      );
+}
+
+/// Trend, entry quality and risk kept apart; validation shown on its own.
+class AnalysisSummaryRead {
+  final String sentence;
+  final AnalysisBadgeRead trend;
+  final AnalysisBadgeRead entryQuality;
+  final AnalysisBadgeRead risk;
+  final List<AnalysisReasonRead> reasons;
+  final List<AnalysisHomeFamilyRead> homeFamilies;
+  final String validationStatus;
+  final String validationMessage;
+  final String confidenceLabel;
+  final List<String> dataIssues;
+
+  const AnalysisSummaryRead({
+    this.sentence = '',
+    this.trend = const AnalysisBadgeRead(),
+    this.entryQuality = const AnalysisBadgeRead(),
+    this.risk = const AnalysisBadgeRead(),
+    this.reasons = const [],
+    this.homeFamilies = const [],
+    this.validationStatus = '',
+    this.validationMessage = '',
+    this.confidenceLabel = '',
+    this.dataIssues = const [],
+  });
+
+  bool get isEmpty => sentence.isEmpty && reasons.isEmpty && homeFamilies.isEmpty;
+  bool get hasValidationWarning => validationStatus == 'NO_EDGE';
+
+  factory AnalysisSummaryRead.fromJson(Object? raw) {
+    final json = _map(raw);
+    final validation = _map(json['validation']);
+    return AnalysisSummaryRead(
+      sentence: json['sentence']?.toString() ?? '',
+      trend: AnalysisBadgeRead.fromJson(json['trend']),
+      entryQuality: AnalysisBadgeRead.fromJson(json['entry_quality']),
+      risk: AnalysisBadgeRead.fromJson(json['risk']),
+      reasons: (json['reasons'] as List? ?? const [])
+          .whereType<Map>()
+          .map((r) => AnalysisReasonRead.fromJson(Map<String, dynamic>.from(r)))
+          .take(3)
+          .toList(),
+      homeFamilies: (json['home_families'] as List? ?? const [])
+          .whereType<Map>()
+          .map((f) => AnalysisHomeFamilyRead.fromJson(Map<String, dynamic>.from(f)))
+          .toList(),
+      validationStatus: validation['status']?.toString() ?? '',
+      validationMessage: validation['message']?.toString() ?? '',
+      confidenceLabel: json['confidence_label']?.toString() ?? '',
+      dataIssues: _strings(json['data_issues']),
+    );
+  }
 }
 
 class AnalysisFamilyRead {
@@ -871,6 +1131,19 @@ class AnalysisFamilyRead {
 
   bool get usable =>
       (status == 'AVAILABLE' || status == 'PARTIAL') && score != null;
+
+  /// The grouped layout computed by the backend; empty on older snapshots.
+  AnalysisFamilyViewRead get view => extra['view'] is Map
+      ? AnalysisFamilyViewRead.fromJson(Map<String, dynamic>.from(extra['view'] as Map))
+      : const AnalysisFamilyViewRead();
+
+  AnalysisMetricRead? metric(String? key) {
+    if (key == null) return null;
+    for (final m in metrics) {
+      if (m.key == key) return m;
+    }
+    return null;
+  }
 
   /// The two or three figures the card shows, most important first.
   List<AnalysisMetricRead> get keyMetrics {
@@ -980,6 +1253,7 @@ class FutureAnalysisRead {
   final String? blockingGate;
   final List<AnalysisHomeFactorRead> homeFactors;
   final List<AnalysisFamilyRead> families;
+  final AnalysisSummaryRead summary;
 
   const FutureAnalysisRead({
     required this.horizon,
@@ -998,6 +1272,7 @@ class FutureAnalysisRead {
     this.score,
     this.newestData,
     this.blockingGate,
+    this.summary = const AnalysisSummaryRead(),
   });
 
   static const familyOrder = [
@@ -1039,6 +1314,7 @@ class FutureAnalysisRead {
             AnalysisFamilyRead.fromJson(
                 Map<String, dynamic>.from(familyMap[key] as Map)),
       ],
+      summary: AnalysisSummaryRead.fromJson(json['summary']),
     );
   }
 }
