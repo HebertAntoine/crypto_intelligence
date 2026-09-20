@@ -17,6 +17,7 @@ from .official_regulation import (
     OfficialRegulatoryFeedProvider,
     SenateCalendarProvider,
 )
+from .protocol_proposals import EthereumEipProvider, SolanaSimdProvider
 
 __all__ = [
     "BeaCalendarProvider",
@@ -26,6 +27,7 @@ __all__ = [
     "CmeFedWatchProvider",
     "CongressBillActionProvider",
     "EcbCalendarProvider",
+    "EthereumEipProvider",
     "EthereumProtocolProvider",
     "FederalReserveCalendarProvider",
     "GeopoliticalFeedProvider",
@@ -33,5 +35,6 @@ __all__ = [
     "OfficialRegulatoryFeedProvider",
     "SenateCalendarProvider",
     "SolanaProtocolProvider",
+    "SolanaSimdProvider",
     "TreasuryAuctionProvider",
 ]

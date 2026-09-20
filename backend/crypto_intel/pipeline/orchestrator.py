@@ -227,6 +227,8 @@ class Pipeline:
             "regulation": self._fetch("regulation.feed"),
             "rwa": self._fetch("defi.rwa"),
             "global": self._fetch("market.global"),
+            "breadth": self._fetch("market.breadth"),
+            "coinshares": self._fetch("flows.institutional_weekly"),
         }
         keys = list(tasks)
         results = await asyncio.gather(*(tasks[k] for k in keys), return_exceptions=True)

@@ -25,12 +25,17 @@ OFFICIAL_REGULATORY_CAPABILITIES = (
     "events.regulation.house",
     "events.regulation.senate",
     "events.regulation.congress",
+    # Dépôts EDGAR : le document, pas l'article qui en parle.
+    "events.regulation.sec_filings",
 )
 MARKET_EXPECTATION_CAPABILITIES = ("events.expectations.fed",)
 GEOPOLITICAL_CAPABILITIES = ("events.geopolitical",)
 OFFICIAL_PROTOCOL_CAPABILITIES = (
     "events.protocol.ethereum",
     "events.protocol.solana",
+    # Propositions lues dans les dépôts qui les hébergent.
+    "events.protocol.solana_simd",
+    "events.protocol.ethereum_eip",
 )
 ALL_EVENT_CAPABILITIES = (
     OFFICIAL_MACRO_CAPABILITIES

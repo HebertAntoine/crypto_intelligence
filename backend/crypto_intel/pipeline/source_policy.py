@@ -235,6 +235,43 @@ POLICIES: dict[str, SourceRefreshPolicy] = {
         "ouvrés) : cinq jours couvrent un week-end prolongé et la publication "
         "hebdomadaire du H.4.1.",
     ),
+    "market_breadth": SourceRefreshPolicy(
+        source_id="market_breadth",
+        family="flows",
+        refresh_interval=_m(60),
+        max_age=_m(12 * 60),
+        criticality=Criticality.IMPORTANT,
+        metric_prefix="breadth.",
+        note="Participation du marché : une lecture de marché, sans valeur si "
+        "elle date de la veille.",
+    ),
+    "coinshares_weekly": SourceRefreshPolicy(
+        source_id="coinshares_weekly",
+        family="flows",
+        refresh_interval=_m(12 * 60),
+        max_age=_m(14 * 24 * 60),
+        criticality=Criticality.OPTIONAL,
+        metric_prefix="flows.coinshares.",
+        note="Rapport hebdomadaire : au-delà de deux cadences, la lecture est "
+        "périmée par construction.",
+    ),
+    "protocol_proposals": SourceRefreshPolicy(
+        source_id="protocol_proposals",
+        family="events",
+        refresh_interval=_m(12 * 60),
+        max_age=_m(7 * 24 * 60),
+        criticality=Criticality.OPTIONAL,
+        note="SIMD et EIP : événements de long terme, dont seul le changement "
+        "d'étape compte.",
+    ),
+    "sec_filings": SourceRefreshPolicy(
+        source_id="sec_filings",
+        family="events",
+        refresh_interval=_m(6 * 60),
+        max_age=_m(3 * 24 * 60),
+        criticality=Criticality.IMPORTANT,
+        note="Dépôts EDGAR : l'événement persiste, mais son étape peut changer.",
+    ),
     "event_calendars": SourceRefreshPolicy(
         source_id="event_calendars",
         family="events",

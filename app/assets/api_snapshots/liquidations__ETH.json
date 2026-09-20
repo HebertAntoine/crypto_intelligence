@@ -1,13 +1,26 @@
 {
-  "assessed_at": "2026-09-19T23:54:12.855949Z",
+  "assessed_at": "2026-09-20T19:14:33.443753Z",
   "asset": "ETH",
-  "cascade_risk": "LOW",
-  "conditions_note": "Cascade CONDITIONS are LOW. This describes how fragile positioning looks, not a liquidation forecast, and gives no directional information: a cascade can resolve either way. Actual liquidation volumes are UNAVAILABLE and are not estimated.",
+  "cascade_risk": "ELEVATED",
+  "conditions_note": "Cascade CONDITIONS are ELEVATED (crowding ELEVATED, leverage built up during volatility compression, open interest at the 87th percentile). This describes how fragile positioning looks, not a liquidation forecast, and gives no directional information: a cascade can resolve either way. Actual liquidation volumes are UNAVAILABLE and are not estimated.",
   "data_state": "UNAVAILABLE_NO_CONNECTOR",
   "liquidations_24h_usd": null,
   "long_liquidations_usd": null,
   "reason": "UNAVAILABLE - provider not configured (COINGLASS_API_KEY missing)",
-  "risk_factors": [],
-  "run_id": "run_20260919T235224Z",
+  "risk_factors": [
+    {
+      "factor": "crowding ELEVATED",
+      "weight": 25
+    },
+    {
+      "factor": "leverage built up during volatility compression",
+      "weight": 20
+    },
+    {
+      "factor": "open interest at the 87th percentile",
+      "weight": 15
+    }
+  ],
+  "run_id": "run_20260920T191228Z",
   "short_liquidations_usd": null
 }

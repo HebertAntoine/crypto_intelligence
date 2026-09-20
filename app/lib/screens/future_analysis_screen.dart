@@ -4,11 +4,13 @@ library;
 import 'package:flutter/material.dart';
 
 import '../api/client.dart';
+import '../api/market_intel_models.dart';
 import '../api/future_models.dart';
 import '../api/models.dart';
 import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
 import 'cycle_page.dart';
+import 'market_intel_pages.dart';
 import '../widgets/color_emoji.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
@@ -71,6 +73,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
       safe(widget.client.today(_asset)),
       safe(widget.client.multiTimeframeRead(_asset)),
       safe(widget.client.impliedVolatility(_asset)),
+      safe(widget.client.marketState(_asset)),
     ]);
     return _FutureBundle(
       decision: responses[0] as FutureDecisionRead,
@@ -78,6 +81,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
       market: responses[2] as TodayRead?,
       timeframes: responses[3] as MultiTimeframeRead?,
       impliedVolatility: responses[4] as ImpliedVolatilityRead?,
+      marketState: responses[5] as MarketStateRead?,
     );
   }
 
@@ -344,6 +348,15 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                     decision: decision,
                     analysis: decision.analysis!,
                   ),
+                  const SizedBox(height: 14),
+                  if (bundle.marketState != null) ...[
+                    const SizedBox(height: 14),
+                    _WhyMarketCard(
+                      state: bundle.marketState!,
+                      asset: _asset,
+                      client: widget.client,
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   _AnalysisFactorsCard(
                     analysis: decision.analysis!,
@@ -1689,6 +1702,99 @@ extension on _AnalysisExplanationCard {
       ),
     );
   }
+}
+
+/// "Why is the market moving?" - one line per family, each opening its page.
+/// The verdict above is untouched: this explains, it does not decide.
+class _WhyMarketCard extends StatelessWidget {
+  final MarketStateRead state;
+  final String asset;
+  final ApiClient client;
+
+  const _WhyMarketCard({
+    required this.state,
+    required this.asset,
+    required this.client,
+  });
+
+  void _open(BuildContext context, String route) {
+    final page = switch (route) {
+      'institutions' => InstitutionsPage(client: client, asset: asset),
+      'catalysts' => CatalystsPage(client: client, asset: asset),
+      'market' => MarketPage(client: client, asset: asset),
+      _ => null,
+    };
+    if (page == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
+  }
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        key: const ValueKey('why-market'),
+        borderColor: const Color(0xFF245E90),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionTitle(
+              emoji: state.question.characters.first,
+              text: state.question.replaceFirst(RegExp(r'^\S+\s*'), ''),
+            ),
+            const SizedBox(height: 6),
+            for (final line in state.lines)
+              InkWell(
+                key: ValueKey('why-line-${line.family}'),
+                onTap: line.route.isEmpty ? null : () => _open(context, line.route),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 28,
+                        child: Text(line.emoji, style: const TextStyle(fontSize: 18)),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              line.title,
+                              style: TextStyle(
+                                color: _toneColor(line.tone),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              line.detail,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  color: mobileMuted, fontSize: 12.5, height: 1.3),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (line.route.isNotEmpty)
+                        const Icon(Icons.chevron_right_rounded,
+                            size: 18, color: Color(0xFF55749B)),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 4),
+            const Divider(height: 1, color: Color(0xFF1D3853)),
+            const SizedBox(height: 9),
+            Text(
+              state.conclusion,
+              key: const ValueKey('why-market-conclusion'),
+              style: const TextStyle(
+                  color: Color(0xFFD5E1F2), fontSize: 12.5, height: 1.35),
+            ),
+          ],
+        ),
+      );
 }
 
 /// The families that move the decision now, chosen by their contribution.
@@ -3739,6 +3845,7 @@ class _FutureBundle {
   final TodayRead? market;
   final MultiTimeframeRead? timeframes;
   final ImpliedVolatilityRead? impliedVolatility;
+  final MarketStateRead? marketState;
 
   const _FutureBundle({
     required this.decision,
@@ -3746,6 +3853,7 @@ class _FutureBundle {
     required this.market,
     required this.timeframes,
     required this.impliedVolatility,
+    this.marketState,
   });
 }
 

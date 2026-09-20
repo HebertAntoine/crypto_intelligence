@@ -18,6 +18,7 @@ from .api.routes_lot3 import router as lot3_router
 from .api.routes_lot4 import router as lot4_router
 from .api.routes_lot5 import router as lot5_router
 from .api.routes_lot6b import router as lot6b_router
+from .api.routes_market_intel import router as market_intel_router
 from .db.session import init_db
 from .knowledge.store import ensure_fts
 from .logging_setup import get_logger, setup_logging
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(analysis_router, prefix="/api")
     app.include_router(future_router, prefix="/api")
     app.include_router(cycle_router, prefix="/api")
+    app.include_router(market_intel_router, prefix="/api")
 
     @app.exception_handler(Exception)
     async def unhandled(request, exc: Exception):

@@ -364,12 +364,25 @@ def horizons_are_independent(payloads: dict[str, dict[str, Any]]) -> tuple[bool,
 
     Copying one reading across 24 h, 7 d and 30 d would satisfy every per-factor
     rule while telling the reader the same thing three times.
+
+    The signature covers what is actually published: the decision summary
+    (verdict, entry quality, risk, reasons) when the six-family analysis is
+    present, plus the factor list. Reading the factor list alone made the
+    invariant depend on which secondary indicator happened to differentiate the
+    horizons that day - a market-driven coincidence, not a guarantee.
     """
 
     signatures: dict[str, str] = {}
     for horizon, payload in payloads.items():
         factors = (payload.get("families") or {}).get("factors") or []
-        signatures[horizon] = "|".join(
+        summary = ((payload.get("analysis") or {}).get("summary") or {})
+        published = "|".join([
+            str(summary.get("sentence", "")),
+            str((summary.get("entry_quality") or {}).get("label", "")),
+            str((summary.get("risk") or {}).get("label", "")),
+            ",".join(str(reason.get("title")) for reason in summary.get("reasons") or []),
+        ])
+        signatures[horizon] = published + "||" + "|".join(
             f"{item.get('key')}:{item.get('direction')}:{item.get('impact')}:"
             f"{item.get('rationale')}"
             for item in factors

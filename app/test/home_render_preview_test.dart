@@ -71,6 +71,24 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('horizon-7d')).last);
       await tester.pumpAndSettle();
+      // The market-explanation card and one of its pages.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('why-market')),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await expectLater(
+        find.byKey(const ValueKey('shot')),
+        matchesGoldenFile('$_out/why-market-$asset.png'),
+      );
+      await tester.tap(find.byKey(const ValueKey('why-line-participation')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byKey(const ValueKey('shot')),
+        matchesGoldenFile('$_out/market-page-$asset.png'),
+      );
+      await tester.tap(find.byKey(const ValueKey('intel-back')));
+      await tester.pumpAndSettle();
       // Let the background image decode.
       await tester.runAsync(() => Future<void>.delayed(
             const Duration(milliseconds: 300),

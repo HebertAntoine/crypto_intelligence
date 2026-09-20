@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 
 import '../config.dart';
 import 'cycle_models.dart';
+import 'market_intel_models.dart';
 import 'future_models.dart';
 import 'models.dart';
 
@@ -238,6 +239,20 @@ class ApiClient {
       FutureDecisionRead.fromJson(
         await _get('/future/$asset', {'horizon': horizon})
             as Map<String, dynamic>,
+      );
+
+  Future<MarketStateRead> marketState(String asset) async =>
+      MarketStateRead.fromJson(
+        await _get('/market/state', {'asset': asset}) as Map<String, dynamic>,
+      );
+
+  Future<InstitutionsRead> institutions(String asset) async =>
+      InstitutionsRead.fromJson(
+        await _get('/institutions/$asset') as Map<String, dynamic>,
+      );
+
+  Future<CatalystsRead> catalysts(String asset) async => CatalystsRead.fromJson(
+        await _get('/catalysts/$asset') as Map<String, dynamic>,
       );
 
   Future<CycleRead> cycle(String asset) async => CycleRead.fromJson(

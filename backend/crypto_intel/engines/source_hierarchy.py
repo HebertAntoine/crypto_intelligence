@@ -13,6 +13,7 @@ influence anything.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import IntEnum, StrEnum
@@ -207,3 +208,99 @@ class SocialDiscoveryLayer:
             verified_url=primary_url,
             status="DISCOVERY_ONLY",
         )
+
+
+# ---------------------------------------------------------------------------
+# Media items: a lead until the document behind them is found
+# ---------------------------------------------------------------------------
+
+#: What a media item must match in a primary document to be considered the
+#: same occurrence: a proposal number, a filing form, or a named entity.
+_REFERENCE = re.compile(r"\b(SIMD[- ]?\d{3,4}|EIP[- ]?\d{3,4}|19b-4|S-1|424B\d?)\b", re.I)
+
+
+def _keys(text: str) -> set[str]:
+    return {match.group(0).upper().replace(" ", "-") for match in _REFERENCE.finditer(text or "")}
+
+
+@dataclass(slots=True)
+class MediaLead:
+    """A press item, and the primary document it points at - when there is one.
+
+    The rule the product asks for: an article reporting an official decision
+    and the decision itself are one event, not two confirmations. When the
+    primary document is found, the article becomes a reference on it; when it
+    is not, the article stays a lead to verify and influences nothing.
+    """
+
+    title: str
+    source: str
+    url: str | None
+    published_at: datetime | None
+    matched_event_id: str | None = None
+    matched_source: str | None = None
+    status: str = "TO_VERIFY"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "title": self.title,
+            "source": self.source,
+            "source_type": "SECONDARY_MEDIA",
+            "url": self.url,
+            "published_at": self.published_at.isoformat() if self.published_at else None,
+            "matched_event_id": self.matched_event_id,
+            "matched_source": self.matched_source,
+            "status": self.status,
+            "usage": (
+                "Un média détecte un sujet ; la source primaire fait foi. Sans document "
+                "officiel retrouvé, cet élément n'alimente aucune décision."
+            ),
+        }
+
+
+def resolve_media_lead(item: dict[str, Any], primary_events: list[Any]) -> MediaLead:
+    """Attach a press item to the primary document describing the same thing."""
+
+    title = str(item.get("title") or "")
+    text = f"{title} {item.get('summary') or ''}"
+    keys = _keys(text)
+    lowered = text.lower()
+    lead = MediaLead(
+        title=title,
+        source=str(item.get("source") or "média"),
+        url=item.get("url"),
+        published_at=item.get("published_at"),
+    )
+    for event in primary_events:
+        haystack = f"{event.title} {(event.metadata or {}).get('subject', '')}"
+        if keys and keys & _keys(haystack):
+            lead.matched_event_id = event.canonical_event_id
+            lead.matched_source = event.source
+            lead.status = "MATCHED_PRIMARY"
+            return lead
+        issuer = str((event.metadata or {}).get("issuer") or "")
+        if issuer and len(issuer) > 4 and issuer.split()[0].lower() in lowered:
+            lead.matched_event_id = event.canonical_event_id
+            lead.matched_source = event.source
+            lead.status = "MATCHED_PRIMARY"
+            return lead
+    return lead
+
+
+def corroborate(event: Any, lead: MediaLead) -> Any:
+    """Add the media item as one more reference on the primary event.
+
+    The event keeps its own tier and identity: coverage adds confidence in the
+    reporting, never a second event and never a higher tier.
+    """
+
+    from ..future_events.models import EventSourceReference, FutureEventSourceTier
+
+    references = list(event.source_references)
+    if any(reference.url == lead.url for reference in references if lead.url):
+        return event
+    references.append(EventSourceReference(
+        source=lead.source, url=lead.url, tier=FutureEventSourceTier.C,
+        published_at=lead.published_at,
+    ))
+    return event.model_copy(update={"source_references": references})

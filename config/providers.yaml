@@ -6,6 +6,7 @@ capabilities:
   market.ticker:       [binance_spot, coinbase_spot, kraken_spot]
   market.marketcap:    [coingecko]
   market.global:       [coingecko]
+  market.breadth:      [coingecko_breadth]   # participation du marché, calcul interne
 
   derivatives.funding: [binance_futures]
   derivatives.oi:      [binance_futures]
@@ -16,6 +17,8 @@ capabilities:
   # Prefer a current source. Manual CSV remains a last-resort production
   # import and refuses example/fixture/mock/sample/test filenames.
   etf.flows:           [farside, coinglass_etf, sosovalue, etf_csv]
+  # Vision mondiale des produits d'investissement, complémentaire de Farside.
+  flows.institutional_weekly: [coinshares_flows]
 
   onchain.btc:         [blockchain_info, blockchair_btc]
   onchain.eth:         [blockchair_eth, etherscan]
@@ -40,6 +43,9 @@ capabilities:
   macro.indices:       [yahoo_finance, stooq]
   # Each official calendar has its own capability so one successful source
   # cannot mask another source's outage.
+  # Propositions protocolaires, lues dans les dépôts officiels.
+  events.protocol.solana_simd:   [solana_simd]
+  events.protocol.ethereum_eip:  [ethereum_eip]
   events.macro.fed:      [fed_calendar]
   events.macro.ecb:      [ecb_calendar]
   events.macro.boj:      [boj_calendar]
@@ -47,6 +53,7 @@ capabilities:
   events.macro.bea:      [bea_calendar]
   events.macro.treasury: [treasury_auctions]
   events.regulation.feeds:  [official_regulatory_feeds]
+  events.regulation.sec_filings: [sec_edgar]   # dépôts EDGAR, contact déclaré requis
   events.regulation.cftc:   [cftc_calendar]
   events.regulation.house:  [house_financial_services_calendar]
   events.regulation.senate: [senate_committees_calendar]

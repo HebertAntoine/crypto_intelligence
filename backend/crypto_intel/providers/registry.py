@@ -152,6 +152,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     from .derivatives.binance_futures import BinanceFuturesProvider
     from .derivatives.coinglass import CoinglassProvider
     from .etf.coinglass_etf import CoinglassETFProvider, SoSoValueProvider
+    from .etf.coinshares import CoinSharesFlowsProvider
     from .etf.csv_import import ETFCSVProvider
     from .etf.farside import FarsideProvider
     from .events import (
@@ -183,6 +184,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     from .macro.stooq import StooqProvider
     from .macro.yahoo import YahooFinanceProvider
     from .market.binance import BinanceSpotProvider
+    from .market.breadth import MarketBreadthProvider
     from .market.coinbase import CoinbaseSpotProvider
     from .market.coingecko import CoinGeckoProvider
     from .market.kraken import KrakenSpotProvider
@@ -191,6 +193,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     from .onchain.blockchair import BlockchairBTCProvider, BlockchairETHProvider
     from .onchain.btc_chain import BitcoinChainProvider
     from .onchain.solana_rpc import SolanaRPCProvider
+    from .regulation.sec_edgar import SecEdgarFilingsProvider
     from .stablecoins.defillama_stables import DefiLlamaStablecoinsProvider
     from .volatility.deribit import DeribitVolatilityProvider
     from .whales.optional_whales import (
@@ -206,10 +209,12 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         CoinbaseSpotProvider,
         KrakenSpotProvider,
         CoinGeckoProvider,
+        MarketBreadthProvider,
         BinanceFuturesProvider,
         CoinglassProvider,
         ETFCSVProvider,
         FarsideProvider,
+        CoinSharesFlowsProvider,
         CoinglassETFProvider,
         SoSoValueProvider,
         BlockchainInfoProvider,
@@ -236,6 +241,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         BeaCalendarProvider,
         TreasuryAuctionProvider,
         OfficialRegulatoryFeedProvider,
+        SecEdgarFilingsProvider,
         CftcCalendarProvider,
         HouseCalendarProvider,
         CongressBillActionProvider,

@@ -1,53 +1,47 @@
 {
-  "analysis_id": "an_ae781f1da3e20d03",
-  "analysis_time": "2026-09-19T23:52:26.973536+00:00",
+  "analysis_id": "an_0bc91746702f0b99",
+  "analysis_time": "2026-09-20T19:13:32.535006+00:00",
   "asset": "BTC",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
-      "contribution": 30.0,
-      "detail": "Structure 1d haussi\u00e8re (HH HH HL HL)",
+      "contribution": -25.0,
+      "detail": "En 4h, le prix est proche du haut de son range (qualit\u00e9 de zone 67/100)",
       "is_measured_edge": false,
-      "name": "higher timeframe structure",
+      "name": "structural location",
       "source": "structure"
     },
     {
       "contribution": 8.0,
-      "detail": "Funding dans sa normale, au 57e centile de son historique",
+      "detail": "Funding dans sa normale, au 59e centile de son historique",
       "is_measured_edge": false,
       "name": "funding normalised",
       "source": "derivatives"
     },
     {
       "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 13.4e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 11.7e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
-    },
-    {
-      "contribution": -5.0,
-      "detail": "En 4h, le prix est au-dessus de son range (qualit\u00e9 de zone 58/100)",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
     }
   ],
   "from_analysis": true,
-  "invalidation": "Une cl\u00f4ture 4h de retour sous 79250.00 signifierait que la cassure a \u00e9chou\u00e9 et que le prix a r\u00e9int\u00e9gr\u00e9 le range.",
+  "invalidation": "Une cl\u00f4ture 4h au-dessus de 82320.37 casserait la zone haute du range et invaliderait cette lecture.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
-  "missing": [],
-  "price_at_analysis": 81279.67,
-  "run_id": "run_20260919T235224Z",
-  "score": 10.2,
-  "state": "FAVORABLE",
-  "statement": "BTC 4h configuration is FAVORABLE (+10). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "missing": [
+    "structure 1d ind\u00e9termin\u00e9e (\u00e9tat inconnu)"
+  ],
+  "price_at_analysis": 81218.01,
+  "run_id": "run_20260920T191228Z",
+  "score": -3.0,
+  "state": "NEUTRAL",
+  "statement": "BTC 4h configuration is NEUTRAL (-3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: structure 1d ind\u00e9termin\u00e9e (\u00e9tat inconnu).",
   "timeframe": "4h",
   "why_now": [
-    "Structure 1d haussi\u00e8re (HH HH HL HL)",
-    "Funding dans sa normale, au 57e centile de son historique",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 13.4e centile : les mouvements sont petits, dans les deux sens",
-    "En 4h, le prix est au-dessus de son range (qualit\u00e9 de zone 58/100)"
+    "En 4h, le prix est proche du haut de son range (qualit\u00e9 de zone 67/100)",
+    "Funding dans sa normale, au 59e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 11.7e centile : les mouvements sont petits, dans les deux sens"
   ]
 }
