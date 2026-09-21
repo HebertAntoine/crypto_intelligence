@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Build privée de l'application, avec l'onglet 🎬 Lexa, servie par le backend
-# local sur http://127.0.0.1:8100/app/.
+# local sur http://127.0.0.1:8100/app/ et, pour tes appareils Tailscale
+# uniquement, sur https://<machine>.<tailnet>.ts.net:8443/app/.
+#
+# Elle parle au serveur qui l'a servie (même origine) : aucune adresse n'est
+# figée dans la build.
 #
 # Elle n'est jamais déployée : app/build/ est ignoré par Git, et la build
 # publique (Vercel) est faite sans LEXA_ENABLED.
@@ -11,6 +15,5 @@ FLUTTER="${FLUTTER:-$HOME/flutter/bin/flutter}"
   --base-href /app/ \
   --output build/web-local \
   --dart-define=LEXA_ENABLED=true \
-  --dart-define=API_BASE_URL=http://127.0.0.1:8100 \
   --dart-define=STATIC_API_FALLBACK=false
 echo "Build privée prête : http://127.0.0.1:8100/app/"

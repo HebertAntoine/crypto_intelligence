@@ -10,6 +10,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import '../config.dart';
@@ -35,9 +36,11 @@ class LexaClient {
   LexaClient({http.Client? client, String? baseUrl})
       : _http = client ?? http.Client(),
         baseUrl = baseUrl ??
-            (AppConfig.apiBaseUrl.isEmpty
-                ? lexaDefaultBaseUrl
-                : AppConfig.apiBaseUrl);
+            (AppConfig.apiBaseUrl.isNotEmpty
+                ? AppConfig.apiBaseUrl
+                // Served by the backend itself (PC or private Tailscale
+                // address): talk to the origin the page came from.
+                : (kIsWeb ? Uri.base.origin : lexaDefaultBaseUrl));
 
   Uri _uri(String path) =>
       Uri.parse('${baseUrl.replaceAll(RegExp(r'/+$'), '')}/api/lexa$path');
