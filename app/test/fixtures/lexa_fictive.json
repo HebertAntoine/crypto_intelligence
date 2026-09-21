@@ -1,0 +1,810 @@
+{
+ "plan_wait_close": {
+  "analysis_id": 1,
+  "asset": "XRP",
+  "version": 1,
+  "versions": [
+   {
+    "analysis_id": 1,
+    "version": 1,
+    "published_at": "2026-09-18T08:00:00+00:00",
+    "current": true
+   }
+  ],
+  "lifecycle": "WATCHING",
+  "lifecycle_fr": "Sous surveillance",
+  "lifecycle_reason": "",
+  "now": {
+   "status": "WAIT_CLOSE",
+   "emoji": "🟠",
+   "label": "ATTENDRE CLÔTURE",
+   "tone": "ORANGE",
+   "verdict": "ATTENDRE",
+   "reason": "Confirmation 2,444175 $ : Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation. Clôture dans 9 h 00 (21 septembre — 02:00 heure de Paris).",
+   "action_pending": true,
+   "gates": []
+  },
+  "price": {
+   "value": 2.4514,
+   "source": "Binance spot, paire XRPUSDT — clôtures à heure fixe UTC",
+   "at_video": 2.346,
+   "move_since_video_pct": 4.49
+  },
+  "next_actions": [
+   {
+    "direction": "↓",
+    "emoji": "🟢",
+    "value": 2.15696,
+    "label": "Achat principal",
+    "detail": "60,00 € prévus",
+    "distance_pct": -12.01
+   },
+   {
+    "direction": "↑",
+    "emoji": "⏳",
+    "value": 2.444175,
+    "label": "Clôture journalière > 2,444175 $",
+    "detail": "Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation.",
+    "distance_pct": -0.29
+   }
+  ],
+  "levels": [
+   {
+    "id": 1,
+    "kind": "BUY_ZONE",
+    "type": "BUY",
+    "emoji": "🟢",
+    "label": "Achat principal",
+    "value": 2.15696,
+    "original_value": 2.15696,
+    "corrected_value": null,
+    "corrected_at": null,
+    "basis": "EXPLICIT",
+    "basis_fr": "🎬 Dit par Lexa",
+    "to_verify": false,
+    "lexa_allocation_pct": null,
+    "timestamp_s": 1122,
+    "source_text": "si XRP revient vers 2,15696",
+    "distance_pct": -12.01,
+    "distance_fr": "↓ 12,0 % avant la zone d'achat",
+    "first_touched_at": null,
+    "last_touched_at": null,
+    "reached_now": false,
+    "state": {
+     "emoji": "⏳",
+     "label": "Pas encore atteint",
+     "code": "WAITING"
+    },
+    "conditions": [],
+    "user_plan": {
+     "amount_eur": 60.0,
+     "origin": "USER_PLAN",
+     "note": "Montant décidé par toi"
+    },
+    "filled": false
+   },
+   {
+    "id": 2,
+    "kind": "REINFORCEMENT",
+    "type": "STRONG_BUY",
+    "emoji": "🟢",
+    "label": "Achat renforcé",
+    "value": 2.06397,
+    "original_value": 2.06397,
+    "corrected_value": null,
+    "corrected_at": null,
+    "basis": "EXPLICIT",
+    "basis_fr": "🎬 Dit par Lexa",
+    "to_verify": false,
+    "lexa_allocation_pct": null,
+    "timestamp_s": 1157,
+    "source_text": "",
+    "distance_pct": -15.8,
+    "distance_fr": "↓ 15,8 % avant l'achat renforcé",
+    "first_touched_at": null,
+    "last_touched_at": null,
+    "reached_now": false,
+    "state": {
+     "emoji": "⏳",
+     "label": "Pas encore atteint",
+     "code": "WAITING"
+    },
+    "conditions": [],
+    "user_plan": {
+     "amount_eur": 40.0,
+     "origin": "USER_PLAN",
+     "note": "Montant décidé par toi"
+    },
+    "filled": false
+   },
+   {
+    "id": 3,
+    "kind": "CONFIRMATION",
+    "type": "CONFIRMATION",
+    "emoji": "🚀",
+    "label": "Confirmation",
+    "value": 2.444175,
+    "original_value": 2.444175,
+    "corrected_value": null,
+    "corrected_at": null,
+    "basis": "EXPLICIT",
+    "basis_fr": "🎬 Dit par Lexa",
+    "to_verify": false,
+    "lexa_allocation_pct": null,
+    "timestamp_s": null,
+    "source_text": "",
+    "distance_pct": -0.29,
+    "distance_fr": null,
+    "first_touched_at": "2026-09-20T12:00:00+00:00",
+    "last_touched_at": "2026-09-20T14:00:00+00:00",
+    "reached_now": true,
+    "state": {
+     "emoji": "⏳",
+     "label": "Attente clôture",
+     "code": "TOUCHED_NOT_CLOSED"
+    },
+    "conditions": [
+     {
+      "type": "CLOSE",
+      "timeframe": "1D",
+      "timeframe_fr": "journalière",
+      "operator": "ABOVE",
+      "required_closes": 1,
+      "confirmation_window": null,
+      "description": "Attendre une clôture journalière au-dessus",
+      "basis": "EXPLICIT",
+      "rule": "Une clôture journalière au-dessus du niveau",
+      "evaluable": true,
+      "evaluation": {
+       "status": "TOUCHED_NOT_CLOSED",
+       "emoji": "⏳",
+       "label": "Attente clôture",
+       "closes_beyond": 0,
+       "first_touch_at": "2026-09-20T00:00:00+00:00",
+       "closed_beyond_at": null,
+       "confirmed_at": null,
+       "failed_at": null,
+       "next_close_at": "2026-09-21T00:00:00+00:00",
+       "next_close_paris": "21 septembre — 02:00 heure de Paris",
+       "countdown": "9 h 00",
+       "message": "Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation.",
+       "history": []
+      }
+     }
+    ],
+    "user_plan": null,
+    "filled": false
+   },
+   {
+    "id": 4,
+    "kind": "TARGET",
+    "type": "TAKE_PROFIT",
+    "emoji": "🔴",
+    "label": "TP1",
+    "value": 2.60763,
+    "original_value": 2.60763,
+    "corrected_value": null,
+    "corrected_at": null,
+    "basis": "EXPLICIT",
+    "basis_fr": "🎬 Dit par Lexa",
+    "to_verify": false,
+    "lexa_allocation_pct": 25.0,
+    "timestamp_s": null,
+    "source_text": "",
+    "distance_pct": 6.37,
+    "distance_fr": "↑ 6,4 % avant l'objectif",
+    "first_touched_at": null,
+    "last_touched_at": null,
+    "reached_now": false,
+    "state": {
+     "emoji": "⏳",
+     "label": "Pas encore atteint",
+     "code": "WAITING"
+    },
+    "conditions": [],
+    "user_plan": {
+     "pct": 25.0,
+     "origin": "LEXA"
+    },
+    "filled": false
+   },
+   {
+    "id": 5,
+    "kind": "TARGET",
+    "type": "TAKE_PROFIT",
+    "emoji": "🔴",
+    "label": "TP2",
+    "value": 2.72748,
+    "original_value": 2.72748,
+    "corrected_value": null,
+    "corrected_at": null,
+    "basis": "EXPLICIT",
+    "basis_fr": "🎬 Dit par Lexa",
+    "to_verify": false,
+    "lexa_allocation_pct": 25.0,
+    "timestamp_s": null,
+    "source_text": "",
+    "distance_pct": 11.26,
+    "distance_fr": "↑ 11,3 % avant l'objectif",
+    "first_touched_at": null,
+    "last_touched_at": null,
+    "reached_now": false,
+    "state": {
+     "emoji": "⏳",
+     "label": "Pas encore atteint",
+     "code": "WAITING"
+    },
+    "conditions": [],
+    "user_plan": {
+     "pct": 25.0,
+     "origin": "LEXA"
+    },
+    "filled": false
+   },
+   {
+    "id": 6,
+    "kind": "TARGET",
+    "type": "TAKE_PROFIT",
+    "emoji": "🔴",
+    "label": "TP3",
+    "value": 2.89272,
+    "original_value": 2.89272,
+    "corrected_value": null,
+    "corrected_at": null,
+    "basis": "EXPLICIT",
+    "basis_fr": "🎬 Dit par Lexa",
+    "to_verify": false,
+    "lexa_allocation_pct": 25.0,
+    "timestamp_s": null,
+    "source_text": "",
+    "distance_pct": 18.0,
+    "distance_fr": "↑ 18,0 % avant l'objectif",
+    "first_touched_at": null,
+    "last_touched_at": null,
+    "reached_now": false,
+    "state": {
+     "emoji": "⏳",
+     "label": "Pas encore atteint",
+     "code": "WAITING"
+    },
+    "conditions": [],
+    "user_plan": {
+     "pct": 25.0,
+     "origin": "LEXA"
+    },
+    "filled": false
+   },
+   {
+    "id": 7,
+    "kind": "TARGET",
+    "type": "TAKE_PROFIT",
+    "emoji": "🔴",
+    "label": "TP4",
+    "value": 3.00084,
+    "original_value": 3.00084,
+    "corrected_value": null,
+    "corrected_at": null,
+    "basis": "EXPLICIT",
+    "basis_fr": "🎬 Dit par Lexa",
+    "to_verify": false,
+    "lexa_allocation_pct": 25.0,
+    "timestamp_s": null,
+    "source_text": "",
+    "distance_pct": 22.41,
+    "distance_fr": "↑ 22,4 % avant l'objectif",
+    "first_touched_at": null,
+    "last_touched_at": null,
+    "reached_now": false,
+    "state": {
+     "emoji": "⏳",
+     "label": "Pas encore atteint",
+     "code": "WAITING"
+    },
+    "conditions": [],
+    "user_plan": {
+     "pct": 25.0,
+     "origin": "LEXA"
+    },
+    "filled": false
+   }
+  ],
+  "rules": [
+   {
+    "if": "XRP ≤ 2,15696 $ ET scénario toujours valide ET invalidation non déclenchée",
+    "then": "achat principal atteint — 60,00 € prévus",
+    "triggered_at": null,
+    "state": "⏳ Pas encore"
+   },
+   {
+    "if": "XRP ≤ 2,06397 $ ET scénario toujours valide ET invalidation non déclenchée",
+    "then": "achat renforcé atteint — 40,00 € prévus",
+    "triggered_at": null,
+    "state": "⏳ Pas encore"
+   },
+   {
+    "if": "Une clôture journalière au-dessus du niveau (2,444175 $)",
+    "then": "confirmation validée → scénario haussier activé",
+    "triggered_at": null,
+    "state": "⏳ Pas encore"
+   },
+   {
+    "if": "XRP ≥ 2,60763 $",
+    "then": "TP1 atteint — prise de bénéfice prévue (25 %)",
+    "triggered_at": null,
+    "state": "⏳ Pas encore"
+   },
+   {
+    "if": "XRP ≥ 2,72748 $",
+    "then": "TP2 atteint — prise de bénéfice prévue (25 %)",
+    "triggered_at": null,
+    "state": "⏳ Pas encore"
+   },
+   {
+    "if": "XRP ≥ 2,89272 $",
+    "then": "TP3 atteint — prise de bénéfice prévue (25 %)",
+    "triggered_at": null,
+    "state": "⏳ Pas encore"
+   },
+   {
+    "if": "XRP ≥ 3,00084 $",
+    "then": "TP4 atteint — prise de bénéfice prévue (25 %)",
+    "triggered_at": null,
+    "state": "⏳ Pas encore"
+   }
+  ],
+  "why": [
+   {
+    "emoji": "🟠",
+    "title": "ATTENDRE CLÔTURE",
+    "text": "Confirmation 2,444175 $ : Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation. Clôture dans 9 h 00 (21 septembre — 02:00 heure de Paris)."
+   },
+   {
+    "emoji": "🧱",
+    "title": "Confirmation 2,444175 $",
+    "text": "Attente clôture"
+   },
+   {
+    "emoji": "🕯️",
+    "title": "Clôture",
+    "text": "Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation."
+   },
+   {
+    "emoji": "💰",
+    "title": "Achat",
+    "text": "Zones prévues : 2,15696 $ / 2,06397 $"
+   },
+   {
+    "emoji": "🎯",
+    "title": "Si cassure validée",
+    "text": "Objectifs : 2,60763 $ / 2,72748 $ / 2,89272 $ / 3,00084 $"
+   },
+   {
+    "emoji": "🔬",
+    "title": "Nos données",
+    "text": "L'application n'analyse pas XRP : aucune validation par nos données."
+   }
+  ],
+  "lexa": {
+   "stance": "WAIT",
+   "summary": "",
+   "market_context": "",
+   "quotes": [
+    {
+     "text": "si XRP revient vers 2,15696",
+     "timestamp_s": 1122,
+     "level": 2.15696,
+     "label": "Achat principal",
+     "basis": "EXPLICIT"
+    }
+   ],
+   "video": {
+    "id": 1,
+    "title": "Analyse XRP",
+    "url": "",
+    "published_at": "2026-09-18T08:00:00+00:00",
+    "timestamp_start_s": null,
+    "timestamp_end_s": null
+   },
+   "analysis_added_at": "2026-09-21T15:14:29.193907+00:00",
+   "source": "Lexa",
+   "source_type": "MANUAL_NOTES"
+  },
+  "app_interpretation": {
+   "status": "ATTENDRE CLÔTURE",
+   "text": "Confirmation 2,444175 $ : Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation. Clôture dans 9 h 00 (21 septembre — 02:00 heure de Paris).",
+   "details": [],
+   "action_pending": true,
+   "note": "Lecture de l'application à partir des prix — pas une citation de Lexa."
+  },
+  "validation": {
+   "available": false,
+   "level": "INSUFFICIENT",
+   "emoji": "⚪",
+   "label": "Données insuffisantes",
+   "explanation": "L'application n'analyse pas XRP : aucune validation par nos données.",
+   "families": [],
+   "ours": null
+  },
+  "budget": {
+   "budget_eur": 100.0,
+   "planned_eur": 100.0,
+   "deployed_eur": 0,
+   "available_eur": 100.0,
+   "realised_eur": 0,
+   "quantity": 0,
+   "average_price": null,
+   "position_value_eur": null,
+   "eurusd": 1.1,
+   "entries": [
+    {
+     "level_id": 1,
+     "label": "Achat principal",
+     "value": 2.15696,
+     "amount_eur": 60.0,
+     "origin": "USER_PLAN",
+     "note": "Montant décidé par toi"
+    },
+    {
+     "level_id": 2,
+     "label": "Achat renforcé",
+     "value": 2.06397,
+     "amount_eur": 40.0,
+     "origin": "USER_PLAN",
+     "note": "Montant décidé par toi"
+    }
+   ],
+   "exits": [
+    {
+     "level_id": 4,
+     "label": "TP1",
+     "value": 2.60763,
+     "pct": 25.0,
+     "origin": "LEXA"
+    },
+    {
+     "level_id": 5,
+     "label": "TP2",
+     "value": 2.72748,
+     "pct": 25.0,
+     "origin": "LEXA"
+    },
+    {
+     "level_id": 6,
+     "label": "TP3",
+     "value": 2.89272,
+     "pct": 25.0,
+     "origin": "LEXA"
+    },
+    {
+     "level_id": 7,
+     "label": "TP4",
+     "value": 3.00084,
+     "pct": 25.0,
+     "origin": "LEXA"
+    }
+   ],
+   "fills": [],
+   "rule": "Le budget et les montants sont les tiens. Lexa donne des niveaux ; elle ne décide pas du montant. Aucun ordre n'est jamais passé par l'application."
+  },
+  "dates": {
+   "published_at": "2026-09-18T08:00:00+00:00",
+   "analysis_added_at": "2026-09-21T15:14:29.193907+00:00",
+   "review_at": "2026-09-25T08:00:00+00:00",
+   "expires_at": "2026-10-09T08:00:00+00:00",
+   "review_due": false
+  },
+  "timeline": [
+   {
+    "at": "2026-09-18T08:00:00+00:00",
+    "emoji": "🎬",
+    "text": "Vidéo publiée"
+   },
+   {
+    "at": "2026-09-21T15:14:29.193907+00:00",
+    "emoji": "📝",
+    "text": "Analyse ajoutée"
+   },
+   {
+    "at": "2026-09-20T15:00:00+00:00",
+    "emoji": "🟠",
+    "text": "Maintenant — ATTENDRE CLÔTURE",
+    "now": true
+   }
+  ],
+  "calendar": [
+   {
+    "at": "2026-09-18T08:00:00+00:00",
+    "kind": "VIDEO",
+    "emoji": "🎬",
+    "title": "Vidéo publiée",
+    "category": "INFO"
+   },
+   {
+    "at": "2026-09-21T15:14:29.193907+00:00",
+    "kind": "ANALYSIS",
+    "emoji": "📝",
+    "title": "Analyse ajoutée",
+    "category": "INFO"
+   },
+   {
+    "at": "2026-09-25T08:00:00+00:00",
+    "kind": "REVIEW",
+    "emoji": "📅",
+    "title": "Réévaluation du scénario",
+    "category": "INFO"
+   },
+   {
+    "at": "2026-10-09T08:00:00+00:00",
+    "kind": "EXPIRY",
+    "emoji": "⌛",
+    "title": "Fin de validité du scénario",
+    "category": "INFO"
+   },
+   {
+    "at": "2026-09-21T00:00:00+00:00",
+    "kind": "CLOSE_DUE",
+    "emoji": "🕯️",
+    "title": "Attendre clôture journalière",
+    "level": 2.444175,
+    "detail": "21 septembre — 02:00 heure de Paris",
+    "category": "CLOSE"
+   }
+  ],
+  "revision": null,
+  "no_order": "Aide à la décision uniquement : aucun ordre n'est jamais passé."
+ },
+ "overview": {
+  "follow": [
+   {
+    "asset": "BTC",
+    "analysis_id": 2,
+    "at": "2026-09-20T15:00:00+00:00",
+    "bucket": "TODAY",
+    "emoji": "🟠",
+    "status": "BETWEEN_LEVELS",
+    "label": "ENTRE DEUX NIVEAUX",
+    "verdict": "ATTENDRE",
+    "headline": "Le prix (64 250 $) est entre la zone d'achat (60 000 $) et la résistance (70 000 $). Ce n'est pas la zone d'entrée prévue dans le scénario analysé.",
+    "key_level": "Achat : 60 000 $",
+    "countdown": null,
+    "category": "INFO",
+    "lifecycle": "ACTIVE"
+   },
+   {
+    "asset": "XRP",
+    "analysis_id": 1,
+    "at": "2026-09-21T00:00:00+00:00",
+    "bucket": "TOMORROW",
+    "emoji": "🟠",
+    "status": "WAIT_CLOSE",
+    "label": "ATTENDRE CLÔTURE",
+    "verdict": "ATTENDRE",
+    "headline": "Confirmation 2,444175 $ : Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation. Clôture dans 9 h 00 (21 septembre — 02:00 heure de Paris).",
+    "key_level": "Niveau surveillé : 2,444175 $",
+    "countdown": "21 septembre — 02:00 heure de Paris",
+    "category": "CLOSE",
+    "lifecycle": "WATCHING"
+   }
+  ],
+  "plans": [
+   {
+    "asset": "BTC",
+    "analysis_id": 2,
+    "version": 1,
+    "now": {
+     "status": "BETWEEN_LEVELS",
+     "emoji": "🟠",
+     "label": "ENTRE DEUX NIVEAUX",
+     "tone": "ORANGE",
+     "verdict": "ATTENDRE",
+     "reason": "Le prix (64 250 $) est entre la zone d'achat (60 000 $) et la résistance (70 000 $). Ce n'est pas la zone d'entrée prévue dans le scénario analysé.",
+     "action_pending": false,
+     "gates": []
+    },
+    "price": 64250,
+    "buy": [
+     60000.0
+    ],
+    "confirmation": [],
+    "targets": [],
+    "invalidation": [],
+    "waiting_close": null,
+    "updated_at": "2026-09-21T15:14:29.210228+00:00",
+    "lifecycle": "ACTIVE",
+    "lifecycle_fr": "Active",
+    "revision": null,
+    "concordance": {
+     "emoji": "🟢",
+     "label": "Forte",
+     "level": "STRONG"
+    }
+   },
+   {
+    "asset": "XRP",
+    "analysis_id": 1,
+    "version": 1,
+    "now": {
+     "status": "WAIT_CLOSE",
+     "emoji": "🟠",
+     "label": "ATTENDRE CLÔTURE",
+     "tone": "ORANGE",
+     "verdict": "ATTENDRE",
+     "reason": "Confirmation 2,444175 $ : Le prix est actuellement au-dessus du niveau, mais la bougie journalière n'est pas encore clôturée : ce n'est pas une confirmation. Clôture dans 9 h 00 (21 septembre — 02:00 heure de Paris).",
+     "action_pending": true,
+     "gates": []
+    },
+    "price": 2.4514,
+    "buy": [
+     2.15696,
+     2.06397
+    ],
+    "confirmation": [
+     2.444175
+    ],
+    "targets": [
+     2.60763
+    ],
+    "invalidation": [],
+    "waiting_close": "Une clôture journalière au-dessus du niveau",
+    "updated_at": "2026-09-21T15:14:29.193907+00:00",
+    "lifecycle": "WATCHING",
+    "lifecycle_fr": "Sous surveillance",
+    "revision": null,
+    "concordance": {
+     "emoji": "⚪",
+     "label": "Données insuffisantes",
+     "level": "INSUFFICIENT"
+    }
+   }
+  ],
+  "assets": [
+   "BTC",
+   "XRP"
+  ],
+  "buckets": [
+   {
+    "key": "TODAY",
+    "label": "AUJOURD'HUI"
+   },
+   {
+    "key": "TOMORROW",
+    "label": "DEMAIN"
+   },
+   {
+    "key": "THIS_WEEK",
+    "label": "CETTE SEMAINE"
+   },
+   {
+    "key": "LATER",
+    "label": "PLUS TARD"
+   },
+   {
+    "key": "PAST",
+    "label": "PASSÉ"
+   }
+  ],
+  "unread_notifications": 0,
+  "as_of": "2026-09-20T15:00:00+00:00",
+  "rule": "Lexa est une source externe : ces plans ne modifient jamais ACHETER / ATTENDRE / VENDRE du moteur principal."
+ },
+ "calendar": {
+  "items": [
+   {
+    "at": "2026-09-18T08:00:00+00:00",
+    "kind": "VIDEO",
+    "emoji": "🎬",
+    "title": "Vidéo publiée",
+    "category": "INFO",
+    "asset": "BTC",
+    "analysis_id": 2,
+    "bucket": "PAST"
+   },
+   {
+    "at": "2026-09-18T08:00:00+00:00",
+    "kind": "VIDEO",
+    "emoji": "🎬",
+    "title": "Vidéo publiée",
+    "category": "INFO",
+    "asset": "XRP",
+    "analysis_id": 1,
+    "bucket": "PAST"
+   },
+   {
+    "at": "2026-09-21T00:00:00+00:00",
+    "kind": "CLOSE_DUE",
+    "emoji": "🕯️",
+    "title": "Attendre clôture journalière",
+    "level": 2.444175,
+    "detail": "21 septembre — 02:00 heure de Paris",
+    "category": "CLOSE",
+    "asset": "XRP",
+    "analysis_id": 1,
+    "bucket": "TOMORROW"
+   },
+   {
+    "at": "2026-09-21T15:14:29.193907+00:00",
+    "kind": "ANALYSIS",
+    "emoji": "📝",
+    "title": "Analyse ajoutée",
+    "category": "INFO",
+    "asset": "XRP",
+    "analysis_id": 1,
+    "bucket": "TOMORROW"
+   },
+   {
+    "at": "2026-09-21T15:14:29.210228+00:00",
+    "kind": "ANALYSIS",
+    "emoji": "📝",
+    "title": "Analyse ajoutée",
+    "category": "INFO",
+    "asset": "BTC",
+    "analysis_id": 2,
+    "bucket": "TOMORROW"
+   },
+   {
+    "at": "2026-09-25T08:00:00+00:00",
+    "kind": "REVIEW",
+    "emoji": "📅",
+    "title": "Réévaluation du scénario",
+    "category": "INFO",
+    "asset": "BTC",
+    "analysis_id": 2,
+    "bucket": "THIS_WEEK"
+   },
+   {
+    "at": "2026-09-25T08:00:00+00:00",
+    "kind": "REVIEW",
+    "emoji": "📅",
+    "title": "Réévaluation du scénario",
+    "category": "INFO",
+    "asset": "XRP",
+    "analysis_id": 1,
+    "bucket": "THIS_WEEK"
+   },
+   {
+    "at": "2026-10-09T08:00:00+00:00",
+    "kind": "EXPIRY",
+    "emoji": "⌛",
+    "title": "Fin de validité du scénario",
+    "category": "INFO",
+    "asset": "BTC",
+    "analysis_id": 2,
+    "bucket": "LATER"
+   },
+   {
+    "at": "2026-10-09T08:00:00+00:00",
+    "kind": "EXPIRY",
+    "emoji": "⌛",
+    "title": "Fin de validité du scénario",
+    "category": "INFO",
+    "asset": "XRP",
+    "analysis_id": 1,
+    "bucket": "LATER"
+   }
+  ],
+  "buckets": [
+   {
+    "key": "TODAY",
+    "label": "AUJOURD'HUI"
+   },
+   {
+    "key": "TOMORROW",
+    "label": "DEMAIN"
+   },
+   {
+    "key": "THIS_WEEK",
+    "label": "CETTE SEMAINE"
+   },
+   {
+    "key": "LATER",
+    "label": "PLUS TARD"
+   },
+   {
+    "key": "PAST",
+    "label": "PASSÉ"
+   }
+  ],
+  "timezone": "Europe/Paris",
+  "as_of": "2026-09-20T15:00:00+00:00"
+ }
+}

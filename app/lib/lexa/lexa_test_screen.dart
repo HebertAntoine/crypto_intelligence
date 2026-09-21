@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 import 'lexa_client.dart';
+import 'lexa_ui.dart';
 
 const _muted = Color(0xFFB7C6DF);
 const _panel = Color(0xFF0E1A28);
@@ -125,6 +126,53 @@ class _LexaTestScreenState extends State<LexaTestScreen> {
     tick();
   }
 
+  /// After checking the reports: the verified content becomes Lexa plans.
+  Widget _importButton() {
+    final status = (_run!['status'] as Map?) ?? const {};
+    if (status['state'] != 'DONE') return const SizedBox.shrink();
+    if (status['imported_video_id'] != null) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Text('✅ Importé dans les plans Lexa.',
+            style: TextStyle(color: _muted)),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: OutlinedButton(
+        key: const ValueKey('lexa-import'),
+        onPressed: () async {
+          final ok = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Importer ce test ?'),
+              content: const Text(
+                  'Seules les valeurs retrouvées dans la transcription sont '
+                  'importées, avec leur passage. Confirme que tu as vérifié le '
+                  'rapport et la validation.'),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Annuler')),
+                FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('J\'ai vérifié — importer')),
+              ],
+            ),
+          );
+          if (ok != true) return;
+          try {
+            await widget.client.importTestRun('${status['run_id']}');
+            _follow('${status['run_id']}');
+          } on LexaException catch (e) {
+            setState(() => _error = e.message);
+          }
+        },
+        child: lexaLabel('✅ Importer ce test dans les plans Lexa'),
+      ),
+    );
+  }
+
   InputDecoration _dec(String label, {String? hint}) =>
       InputDecoration(labelText: label, hintText: hint, isDense: true);
 
@@ -134,7 +182,7 @@ class _LexaTestScreenState extends State<LexaTestScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
-        title: const Text('🧪 Tester une vidéo'),
+        title: lexaLabel('🧪 Tester une vidéo'),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -180,6 +228,7 @@ class _LexaTestScreenState extends State<LexaTestScreen> {
               ),
               const SizedBox(height: 16),
               if (_run != null) LexaTestRunView(run: _run!),
+              if (_run != null) _importButton(),
               const SizedBox(height: 16),
               _previous(),
             ],

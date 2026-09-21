@@ -1,154 +1,168 @@
+// The 🎬 Lexa tab. Plans come from test/fixtures/lexa_fictive.json, produced
+// by the real backend on a scripted market with FICTIONAL levels: no Lexa
+// content is committed to this public repository.
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crypto_intelligence_app/lexa/lexa_client.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_home.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_models.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_plan_page.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_screen.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_test_screen.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
-Map<String, dynamic> _level(int id, String kind, double value,
-        {double? pct,
-        double? eur,
-        String? ts,
-        String state = 'WAITING',
-        bool toVerify = false,
-        double? corrected}) =>
-    {
-      'id': id,
-      'kind': kind,
-      'emoji': kind == 'TARGET' ? '🎯' : '🟢',
-      'kind_label': kind == 'TARGET' ? 'Objectif' : 'Zone d\'achat Lexa',
-      'value': corrected ?? value,
-      'original_value': value,
-      'corrected_value': corrected,
-      'corrected_at': corrected == null ? null : '2026-09-21T10:00:00+00:00',
-      'allocation_pct': pct,
-      'allocation_eur': eur,
-      'timestamp': ts,
-      'source_text': 'la zone d\'achat se situe vers 1,26',
-      'condition': 'UNKNOWN',
-      'condition_label': 'Condition non précisée',
-      'to_verify': toVerify,
-      'state': {
-        'state': state,
-        'emoji': state == 'TOUCHED' ? '🟢' : '⏳',
-        'label': state == 'TOUCHED' ? 'Touché' : 'Non atteint',
-        'first_touched_at': state == 'TOUCHED' ? '2026-09-21T11:00:00' : null,
-        'note': '',
-      },
-    };
+final Map<String, dynamic> fixtures =
+    jsonDecode(File('test/fixtures/lexa_fictive.json').readAsStringSync())
+        as Map<String, dynamic>;
 
-Map<String, dynamic> _report({double? performance = 4.21}) => {
-      'analysis_id': 7,
-      'asset': 'XRP',
-      'video': {
-        'id': 3,
-        'title': 'Analyse XRP du 21 septembre',
-        'published_at': '2026-09-21T08:00:00+00:00',
-        'source_ref': '',
-        'source': 'Lexa Moon',
-      },
-      'published_at': '2026-09-21T08:00:00+00:00',
-      'processed_at': '2026-09-21T09:00:00',
-      'price_at_video': 1.38,
-      'stance': 'WAIT',
-      'stance_emoji': '🟠',
-      'stance_label': 'Attente',
-      'summary': '',
-      'capital_eur': 100,
-      'current_price': 1.41,
-      'levels': [
-        _level(1, 'BUY_ZONE', 1.2688,
-            pct: 60, eur: 60, ts: '18:42', state: 'TOUCHED', corrected: 1.268),
-        _level(2, 'REINFORCEMENT', 1.2141, pct: 40, eur: 40, toVerify: true),
-        _level(3, 'TARGET', 1.5339, pct: 25),
-      ],
-      'simulation': {
-        'capital_eur': 100,
-        'fills': [
-          {'level_id': 1}
-        ],
-        'exits': [],
-        'executed_eur': 60,
-        'remaining_eur': 40,
-        'quantity_held': 47.3,
-        'average_price': 1.268,
-        'realised_eur': 0,
-        'current_price': 1.41,
-        'current_value_eur': 106.7,
-        'performance_pct': performance,
-        'targets_hit': [],
-        'invalidation_reached': false,
-        'assumptions': [],
-        'disclaimer':
-            'Simulation du scénario extrait de la vidéo, pas une recommandation.',
-      },
-      'origin': 'LEXA',
-      'note': 'Ce que dit Lexa - distinct de ce que montrent les données.',
-    };
+Map<String, dynamic> _copy(String key) =>
+    jsonDecode(jsonEncode(fixtures[key])) as Map<String, dynamic>;
 
-Widget _host(Widget child) => MaterialApp(
-      home: Scaffold(body: SingleChildScrollView(child: child)),
+http.Response _json(Object body) => http.Response(jsonEncode(body), 200,
+    headers: {'content-type': 'application/json; charset=utf-8'});
+
+LexaClient _backend(Map<String, Object> routes) => LexaClient(
+      baseUrl: 'http://127.0.0.1:8100',
+      client: MockClient((request) async {
+        final path = request.url.path.replaceFirst('/api/lexa', '');
+        final body = routes[path];
+        return body == null ? http.Response('{}', 404) : _json(body);
+      }),
     );
+
+void _tall(WidgetTester tester) {
+  tester.view.physicalSize = const Size(900, 5200);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
+}
 
 void main() {
   test('the public build never contains the Lexa tab', () {
     expect(lexaEnabled, isFalse);
   });
 
-  test('French numbers and prices', () {
-    expect(parseFrNumber('1,2688'), 1.2688);
+  test('French numbers and prices keep every decimal said', () {
+    expect(parseFrNumber('2,15696'), 2.15696);
     expect(parseFrNumber('70 000 \$'), 70000);
     expect(parseFrNumber('abc'), isNull);
-    expect(fmtPrice(1.2688), '1,2688 \$');
+    expect(fmtPrice(2.444175), '2,444175 \$');
     expect(fmtPrice(70250), '70 250 \$');
     expect(fmtPrice(null), '—');
   });
 
-  test('offset-less backend dates are read as UTC', () {
-    final report = LexaReport.fromJson(_report());
-    expect(report.processedAt!.toUtc(), DateTime.utc(2026, 9, 21, 9));
+  test('a video link jumps to the passage when the platform allows it', () {
+    expect(videoAt('https://www.youtube.com/watch?v=abc', 1122).toString(),
+        'https://www.youtube.com/watch?v=abc&t=1122s');
+    expect(videoAt('https://exemple.fr/v/1', 1122).toString(),
+        'https://exemple.fr/v/1');
+    expect(videoAt('', 10), isNull);
+    expect(fmtTimestamp(1122), '18:42');
   });
 
-  testWidgets('a report says it is Lexa, with states, timestamps and doubts',
+  testWidgets('the plan answers « que faire maintenant ? » first',
       (tester) async {
-    await tester.pumpWidget(_host(LexaReportView(
-      report: LexaReport.fromJson(_report()),
-      onCorrect: (_) {},
-    )));
-    expect(find.text('Ce que dit Lexa'), findsOneWidget);
-    expect(find.text('🎬 Voir à 18:42'), findsOneWidget);
-    expect(find.text('🟢 Touché'), findsOneWidget);
-    expect(find.textContaining('À vérifier'), findsOneWidget);
-    expect(find.textContaining('valeur d\'origine 1,2688 \$'), findsOneWidget);
-    expect(find.text('+4,21 %'), findsOneWidget);
-    expect(find.textContaining('pas une recommandation'), findsOneWidget);
-    expect(find.text('✏️ Modifier'), findsNWidgets(3));
+    _tall(tester);
+    final plan = _copy('plan_wait_close');
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(body: LexaPlanView(plan: plan, onWhy: () {}))));
+    await tester.pumpAndSettle();
+    expect(find.text('ATTENDRE CLÔTURE'), findsWidgets);
+    expect(find.byKey(const ValueKey('lexa-verdict')), findsOneWidget);
+    expect(find.text('ATTENDRE'), findsWidgets);
+    expect(find.textContaining('pas une confirmation'), findsWidgets);
+    expect(find.textContaining('heure de Paris'), findsWidgets);
+    expect(find.text('Action en attente'), findsOneWidget);
+    // A touch is never shown as a validated confirmation.
+    expect(find.textContaining('Confirmé'), findsNothing);
+    // Sections in the brief's order.
+    final order = [
+      'Prochaine action',
+      'Plan',
+      'Mon budget',
+      'Dates',
+      'Ce que dit Lexa',
+      'Interprétation de l\'application',
+      'Validation par nos données',
+      'Historique du plan',
+    ];
+    final ys = [
+      for (final t in order) tester.getTopLeft(find.text(t).first).dy
+    ];
+    expect(ys, [...ys]..sort());
   });
 
-  testWidgets('no fill is said as such, never as 0 %', (tester) async {
-    await tester.pumpWidget(_host(LexaReportView(
-        report: LexaReport.fromJson(_report(performance: null)))));
-    expect(find.text('Aucun achat exécuté'), findsOneWidget);
-    expect(find.text('0,00 %'), findsNothing);
+  testWidgets('our amounts are ours, Lexa\'s words are hers', (tester) async {
+    _tall(tester);
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(body: LexaPlanView(plan: _copy('plan_wait_close')))));
+    await tester.pumpAndSettle();
+    expect(find.text('Montant décidé par toi'), findsNWidgets(2));
+    expect(find.text('60,00 €'), findsWidgets);
+    expect(find.textContaining('🎬 18:42'), findsWidgets);
+    expect(find.textContaining('(dit par Lexa)'), findsWidgets); // TP shares
+    expect(find.textContaining('Données insuffisantes'), findsWidgets);
+    expect(find.textContaining('aucun ordre'), findsWidgets);
   });
 
-  testWidgets('the comparison keeps both readings apart', (tester) async {
-    await tester.pumpWidget(_host(LexaComparisonCard(data: {
-      'lexa': _report(),
-      'ours': null,
-      'ours_note':
-          'L\'application n\'analyse pas XRP : aucune comparaison possible.',
-      'rule':
-          'Les deux lectures restent indépendantes : aucune ne corrige l\'autre.',
-    })));
-    expect(find.text('🎬 Ce que dit Lexa'), findsOneWidget);
-    expect(find.text('📊 Ce que montrent nos données'), findsOneWidget);
-    expect(find.textContaining('n\'analyse pas XRP'), findsOneWidget);
-    expect(find.textContaining('indépendantes'), findsOneWidget);
+  testWidgets('« Pourquoi ? » lists the reasons and the IF / THEN rules',
+      (tester) async {
+    _tall(tester);
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(body: LexaWhyView(plan: _copy('plan_wait_close')))));
+    expect(find.text('Pourquoi attendre ?'), findsOneWidget);
+    expect(find.textContaining('SI '), findsWidgets);
+    expect(find.textContaining('ALORS '), findsWidgets);
+    expect(find.text('Clôture'), findsWidgets);
+  });
+
+  testWidgets('the Lexa page follows plans by date, then shows each plan',
+      (tester) async {
+    _tall(tester);
+    final client = _backend({
+      '/overview': _copy('overview'),
+      '/calendar': _copy('calendar'),
+      '/plans-history': {'analyses': []},
+    });
+    await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: LexaHomeScreen(client: client))));
+    await tester.pumpAndSettle();
+    expect(find.text('Plans & analyses'), findsOneWidget);
+    expect(find.text('À suivre'), findsOneWidget);
+    expect(find.text("AUJOURD'HUI"), findsOneWidget);
+    expect(find.text('DEMAIN'), findsOneWidget);
+    expect(find.byKey(const ValueKey('lexa-follow-XRP')), findsOneWidget);
+    expect(find.text('Niveau surveillé : 2,444175 \$'), findsOneWidget);
+    expect(find.byKey(const ValueKey('lexa-card-BTC')), findsOneWidget);
+    expect(find.text('ENTRE DEUX NIVEAUX'), findsWidgets);
+
+    // Filters: one crypto at a time, including those outside BTC/ETH/SOL.
+    await tester.tap(find.text('XRP').first);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('lexa-card-BTC')), findsNothing);
+    expect(find.byKey(const ValueKey('lexa-card-XRP')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('lexa-view-CALENDAR')));
+    await tester.pumpAndSettle();
+    expect(find.text('Attendre clôture journalière'), findsOneWidget);
+    expect(find.text('Réévaluation du scénario'), findsWidgets);
+  });
+
+  testWidgets('with no analysis the page explains how to add one',
+      (tester) async {
+    _tall(tester);
+    final client = _backend({
+      '/overview': {'follow': [], 'plans': [], 'unread_notifications': 0},
+    });
+    await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: LexaHomeScreen(client: client))));
+    await tester.pumpAndSettle();
+    expect(find.text('Aucune analyse Lexa'), findsOneWidget);
+    expect(find.text('Saisir une vidéo'), findsOneWidget);
   });
 
   test('the client surfaces the backend refusal in French', () async {
@@ -160,7 +174,7 @@ void main() {
           403)),
     );
     expect(
-      () => client.videos(),
+      () => client.overview(),
       throwsA(isA<LexaException>()
           .having((e) => e.message, 'message', contains('cette machine'))),
     );
@@ -175,14 +189,13 @@ void main() {
         return http.Response(jsonEncode({'videos': []}), 200);
       }),
     );
-    await client.videos();
-    expect(called.toString(), 'http://127.0.0.1:8100/api/lexa/videos');
+    await client.plan(7);
+    expect(called.toString(), 'http://127.0.0.1:8100/api/lexa/analyses/7/plan');
   });
 
-  testWidgets('the entry form sends exactly what was typed', (tester) async {
-    tester.view.physicalSize = const Size(900, 3000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
+  testWidgets('the entry form sends what was typed, conditions included',
+      (tester) async {
+    _tall(tester);
     Map<String, dynamic>? sent;
     final client = LexaClient(
       baseUrl: 'http://127.0.0.1:8100',
@@ -202,32 +215,42 @@ void main() {
     expect(sent, isNull);
 
     await tester.enterText(
-        find.widgetWithText(TextField, 'Titre de la vidéo'), 'Analyse XRP');
+        find.widgetWithText(TextField, 'Titre de la vidéo'), 'Analyse test');
     await tester.enterText(find.widgetWithText(TextField, 'Crypto'), 'xrp');
     await tester.enterText(
-        find.widgetWithText(TextField, 'Prix dans la vidéo (\$)'), '1,38');
+        find.widgetWithText(TextField, 'Prix dans la vidéo (\$)'), '2,346');
     await tester.enterText(
-        find.widgetWithText(TextField, 'Prix (\$)'), '1,2688');
-    await tester.enterText(
-        find.widgetWithText(TextField, '% du capital'), '60');
+        find.widgetWithText(TextField, 'Prix (\$)'), '2,15696');
     await tester.enterText(find.widgetWithText(TextField, 'Minutage'), '18:42');
+    await tester.tap(find.text('+ 🚀 Confirmation'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Prix (\$)').last, '2,444175');
+    await tester.tap(find.text('Non précisée dans la vidéo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Clôture journalière').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Enregistrer la vidéo'));
     await tester.pumpAndSettle();
 
     expect(sent, isNotNull);
-    expect(sent!['title'], 'Analyse XRP');
     expect(sent!['published_at'],
         DateTime(2026, 9, 21, 10).toUtc().toIso8601String());
     final asset = (sent!['assets'] as List).single as Map;
     expect(asset['asset'], 'XRP');
-    expect(asset['price_at_video'], 1.38);
-    final level = (asset['levels'] as List).single as Map;
-    expect(level['kind'], 'BUY_ZONE');
-    expect(level['value'], 1.2688);
-    expect(level['allocation_pct'], 60);
-    expect(level['timestamp'], '18:42');
-    expect(level['condition'], 'UNKNOWN');
-    expect(level['confidence'], 'HIGH');
+    expect(asset['price_at_video'], 2.346);
+    expect(asset['review_at'],
+        DateTime(2026, 9, 28, 10).toUtc().toIso8601String());
+    final levels = (asset['levels'] as List).cast<Map>();
+    expect(levels.first['kind'], 'BUY_ZONE');
+    expect(
+        levels.first['allocation_pct'], isNull); // nothing said, nothing sent
+    expect(levels.first['basis'], 'EXPLICIT');
+    expect(levels.first['conditions'], isEmpty);
+    final cond = (levels.last['conditions'] as List).single as Map;
+    expect(cond['timeframe'], '1D');
+    expect(cond['operator'], 'ABOVE');
+    expect(cond['required_closes'], 1);
   });
 
   testWidgets('a test run shows its report, validation, transcript and JSON',

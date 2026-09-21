@@ -40,12 +40,12 @@ def _hourly(prices: list[float], start: datetime = T0) -> pd.DataFrame:
 
 
 XRP_LEVELS = [
-    SimLevel(1, "BUY_ZONE", 1.2688, 60),
-    SimLevel(2, "REINFORCEMENT", 1.2141, 40),
-    SimLevel(3, "TARGET", 1.5339, 25),
-    SimLevel(4, "TARGET", 1.6044, 25),
-    SimLevel(5, "TARGET", 1.7016, 25),
-    SimLevel(6, "TARGET", 1.7652, 25),
+    SimLevel(1, "BUY_ZONE", 2.15696, 60),
+    SimLevel(2, "REINFORCEMENT", 2.06397, 40),
+    SimLevel(3, "TARGET", 2.60763, 25),
+    SimLevel(4, "TARGET", 2.72748, 25),
+    SimLevel(5, "TARGET", 2.89272, 25),
+    SimLevel(6, "TARGET", 3.00084, 25),
 ]
 
 
@@ -71,19 +71,19 @@ def test_a_missing_allocation_is_an_announced_assumption():
 
 def test_the_xrp_scenario_is_simulated_on_the_prices_after_the_video():
     # 1,38 -> down through both entries -> up through the first two targets.
-    path = [1.38, 1.30, 1.26, 1.21, 1.25, 1.40, 1.55, 1.61, 1.58]
+    path = [2.346, 2.21, 2.142, 2.057, 2.125, 2.38, 2.635, 2.737, 2.686]
     result = simulate(XRP_LEVELS, _hourly(path), capital_eur=100, published_at=T0)
     assert result.executed_eur == pytest.approx(100)
     assert [f.level_id for f in result.fills] == [1, 2]
     assert result.targets_hit == [3, 4]
-    assert result.average_price == pytest.approx(100 / (60 / 1.2688 + 40 / 1.2141))
+    assert result.average_price == pytest.approx(100 / (60 / 2.15696 + 40 / 2.06397))
     assert result.performance_pct is not None and result.performance_pct > 0
     assert "pas une recommandation" in result.to_dict()["disclaimer"]
 
 
 def test_nothing_is_bought_before_the_video_or_above_the_zone():
     before = T0 - timedelta(hours=5)
-    path = [1.20, 1.20, 1.20, 1.20, 1.20, 1.40, 1.42, 1.45]  # cheap only before the video
+    path = [2.04, 2.04, 2.04, 2.04, 2.04, 2.38, 2.414, 2.465]  # cheap only before the video
     result = simulate(XRP_LEVELS, _hourly(path, before), capital_eur=100, published_at=T0)
     assert result.fills == []
     assert result.remaining_eur == pytest.approx(100)
@@ -102,30 +102,30 @@ def test_an_invalidation_is_flagged_but_nothing_is_sold_without_a_rule():
 
 
 def test_a_touch_without_a_stated_condition_is_never_a_confirmation():
-    state = track("CONFIRMATION", 1.43775, "UNKNOWN", _hourly([1.38, 1.44, 1.45, 1.46]), T0)
+    state = track("CONFIRMATION", 2.444175, "UNKNOWN", _hourly([2.346, 2.448, 2.465, 2.482]), T0)
     assert state.state == "TOUCHED"
     assert "Aucune condition" in state.note
 
 
 def test_a_confirmation_needs_the_stated_close():
-    # Wick above 1.43775 on the hourly, but no 4-hour close above it.
-    wick = _hourly([1.40, 1.40, 1.40, 1.40, 1.41, 1.42, 1.41, 1.40])
-    wick.iloc[2, wick.columns.get_loc("high")] = 1.45
-    assert track("CONFIRMATION", 1.43775, "CLOSE_4H_ABOVE", wick, T0).state != "CONFIRMED"
+    # Wick above 2.444175 on the hourly, but no 4-hour close above it.
+    wick = _hourly([2.38, 2.38, 2.38, 2.38, 2.397, 2.414, 2.397, 2.38])
+    wick.iloc[2, wick.columns.get_loc("high")] = 2.465
+    assert track("CONFIRMATION", 2.444175, "CLOSE_4H_ABOVE", wick, T0).state != "CONFIRMED"
 
-    held = _hourly([1.40, 1.44, 1.45, 1.46, 1.47, 1.47, 1.48, 1.48])
-    state = track("CONFIRMATION", 1.43775, "CLOSE_4H_ABOVE", held, T0)
+    held = _hourly([2.38, 2.448, 2.465, 2.482, 2.499, 2.499, 2.516, 2.516])
+    state = track("CONFIRMATION", 2.444175, "CLOSE_4H_ABOVE", held, T0)
     assert state.state == "CONFIRMED"
     assert state.confirmed_at is not None
 
 
 def test_a_confirmation_tested_then_lost_says_so():
-    state = track("CONFIRMATION", 1.43775, "UNKNOWN", _hourly([1.38, 1.45, 1.40, 1.36]), T0)
+    state = track("CONFIRMATION", 2.444175, "UNKNOWN", _hourly([2.346, 2.465, 2.38, 2.312]), T0)
     assert state.state == "TESTED_LOST"
 
 
 def test_levels_without_prices_are_not_watched():
-    assert track("BUY_ZONE", 1.2688, "UNKNOWN", None, T0).state == "NOT_WATCHED"
+    assert track("BUY_ZONE", 2.15696, "UNKNOWN", None, T0).state == "NOT_WATCHED"
 
 
 def test_first_and_last_touches_are_kept():
@@ -140,7 +140,7 @@ def _video(title: str, when: datetime, buy: float) -> int:
     from crypto_intel.lexa.repository import AssetInput, LevelInput, create_video
 
     return create_video(title=title, published_at=when, assets=[AssetInput(
-        asset="XRP", price_at_video=1.38, stance="WAIT",
+        asset="XRP", price_at_video=2.346, stance="WAIT",
         levels=[LevelInput(kind="BUY_ZONE", value=buy, allocation_pct=60, timestamp="18:42",
                            source_text="la zone d'achat se situe vers 1,26")],
     )])
@@ -150,10 +150,10 @@ def test_two_videos_are_two_scenarios_and_the_first_is_untouched(monkeypatch):
     from crypto_intel.lexa import repository
 
     monkeypatch.setattr(repository, "_price_frame", lambda *_: None)
-    _video("Analyse du 18/09", T0 - timedelta(days=3), 1.2500)
-    _video("Analyse du 21/09", T0, 1.2688)
+    _video("Analyse du 18/09", T0 - timedelta(days=3), 2.125)
+    _video("Analyse du 21/09", T0, 2.15696)
     history = repository.asset_history("XRP")
-    assert [a["levels"][0]["value"] for a in history] == [1.2688, 1.2500]
+    assert [a["levels"][0]["value"] for a in history] == [2.15696, 2.125]
     assert history[0]["levels"][0]["timestamp"] == "18:42"
     assert history[0]["origin"] == "LEXA"
 
@@ -162,13 +162,13 @@ def test_a_correction_keeps_the_original_value(monkeypatch):
     from crypto_intel.lexa import repository
 
     monkeypatch.setattr(repository, "_price_frame", lambda *_: None)
-    _video("Analyse", T0, 1.2688)
+    _video("Analyse", T0, 2.15696)
     analysis_id = repository.list_by_date()[0]["assets"][0]["analysis_id"]
     level_id = repository.asset_report(analysis_id)["levels"][0]["id"]
-    repository.correct_level(level_id, 1.2680)
+    repository.correct_level(level_id, 2.1556)
     level = repository.asset_report(analysis_id)["levels"][0]
-    assert level["value"] == 1.2680
-    assert level["original_value"] == 1.2688
+    assert level["value"] == 2.1556
+    assert level["original_value"] == 2.15696
     assert level["corrected_at"] is not None
 
 
@@ -176,12 +176,12 @@ def test_the_capital_setting_changes_allocations_not_levels(monkeypatch):
     from crypto_intel.lexa import repository
 
     monkeypatch.setattr(repository, "_price_frame", lambda *_: None)
-    _video("Analyse", T0, 1.2688)
+    _video("Analyse", T0, 2.15696)
     analysis_id = repository.list_by_date()[0]["assets"][0]["analysis_id"]
     repository.set_capital(200)
     level = repository.asset_report(analysis_id)["levels"][0]
     assert level["allocation_eur"] == pytest.approx(120)
-    assert level["value"] == 1.2688
+    assert level["value"] == 2.15696
 
 
 def test_bad_inputs_are_refused_not_guessed():
@@ -189,10 +189,10 @@ def test_bad_inputs_are_refused_not_guessed():
 
     with pytest.raises(LexaInputError):
         create_video(title="x", published_at=T0, assets=[AssetInput(
-            asset="XRP", levels=[LevelInput(kind="BUY_ZONE", value=1.2, timestamp="18h42")])])
+            asset="XRP", levels=[LevelInput(kind="BUY_ZONE", value=2.04, timestamp="18h42")])])
     with pytest.raises(LexaInputError):
         create_video(title="x", published_at=T0, assets=[AssetInput(
-            asset="XRP", levels=[LevelInput(kind="BUY_ZONE", value=1.2, condition="SOON")])])
+            asset="XRP", levels=[LevelInput(kind="BUY_ZONE", value=2.04, condition="SOON")])])
 
 
 # --- privacy ----------------------------------------------------------------
@@ -233,9 +233,9 @@ def test_stored_videos_are_tracked_on_utc_candles(monkeypatch):
     # SQLite returns naive datetimes; the candles are tz-aware UTC.
     from crypto_intel.lexa import repository
 
-    prices = [1.38, 1.30, 1.26, 1.21, 1.25, 1.40]
+    prices = [2.346, 2.21, 2.142, 2.057, 2.125, 2.38]
     monkeypatch.setattr(repository, "_price_frame", lambda *_: _hourly(prices))
-    _video("Analyse", T0, 1.2688)
+    _video("Analyse", T0, 2.15696)
     analysis_id = repository.list_by_date()[0]["assets"][0]["analysis_id"]
     report = repository.asset_report(analysis_id)
     assert report["published_at"].endswith("+00:00")

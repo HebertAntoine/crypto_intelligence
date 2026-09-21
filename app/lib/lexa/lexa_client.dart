@@ -54,6 +54,7 @@ class LexaClient {
       response = await switch (method) {
         'POST' => _http.post(uri, headers: headers, body: jsonEncode(body)),
         'PUT' => _http.put(uri, headers: headers, body: jsonEncode(body)),
+        'DELETE' => _http.delete(uri),
         _ => _http.get(uri),
       }
           .timeout(const Duration(seconds: 60));
@@ -111,6 +112,44 @@ class LexaClient {
       _send('GET', '/test-runs/$id');
 
   Future<Map<String, dynamic>> testRuns() => _send('GET', '/test-runs');
+
+  // --- the Lexa tab ---------------------------------------------------------
+
+  Future<Map<String, dynamic>> overview() => _send('GET', '/overview');
+
+  Future<Map<String, dynamic>> planForAsset(String asset) =>
+      _send('GET', '/plans/${asset.toUpperCase()}');
+
+  Future<Map<String, dynamic>> plan(int analysisId) =>
+      _send('GET', '/analyses/$analysisId/plan');
+
+  Future<Map<String, dynamic>> calendar() => _send('GET', '/calendar');
+
+  Future<Map<String, dynamic>> plansHistory() => _send('GET', '/plans-history');
+
+  Future<Map<String, dynamic>> notifications() =>
+      _send('GET', '/notifications');
+
+  Future<void> markNotificationsRead() =>
+      _send('POST', '/notifications/read', {});
+
+  Future<Map<String, dynamic>> putUserPlan(
+          int analysisId, double? budget, List<Map<String, dynamic>> items) =>
+      _send('PUT', '/analyses/$analysisId/user-plan',
+          {'budget_eur': budget, 'items': items});
+
+  Future<Map<String, dynamic>> addFill(
+          int analysisId, Map<String, dynamic> fill) =>
+      _send('POST', '/analyses/$analysisId/fills', fill);
+
+  Future<void> deleteFill(int fillId) => _send('DELETE', '/fills/$fillId');
+
+  Future<Map<String, dynamic>> setPlanStatus(
+          int analysisId, Map<String, dynamic> body) =>
+      _send('POST', '/analyses/$analysisId/status', body);
+
+  Future<Map<String, dynamic>> importTestRun(String runId) =>
+      _send('POST', '/test-runs/$runId/import', {});
 
   void close() => _http.close();
 }

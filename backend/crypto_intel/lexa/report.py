@@ -50,7 +50,7 @@ TRACKABLE = {("CLOSE_ABOVE", "1H"): "CLOSE_1H_ABOVE", ("CLOSE_ABOVE", "4H"): "CL
 def price(value: float | None) -> str:
     if value is None:
         return "—"
-    # Every decimal that was said, none added: 1,43775 stays 1,43775.
+    # Every decimal that was said, none added: 2,444175 stays 2,444175.
     text = f"{value:,.8f}".rstrip("0").rstrip(".")
     text = text.replace(",", "\u202f").replace(".", ",")
     return f"{text} $"

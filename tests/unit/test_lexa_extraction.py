@@ -89,7 +89,7 @@ def test_transcript_formats():
 
 
 def test_french_numbers():
-    assert numbers_in("1,2688 puis 1.2141, 68 000 $ ou 70k") == [1.2688, 1.2141, 68000, 70000]
+    assert numbers_in("2,4531 puis 2.3087, 68 000 $ ou 70k") == [2.4531, 2.3087, 68000, 70000]
 
 
 def test_market_dominance_is_not_a_bitcoin_analysis():
@@ -161,8 +161,10 @@ def test_a_crypto_named_in_passing_gets_no_sheet():
 
 
 def test_the_prompt_gives_nothing_away():
-    reference = [1.2688, 1.2141, 1.43775, 1.5339, 1.6044, 1.7016, 1.7652]
-    assert extraction.reference_leak(reference) == []
+    # The only figures in the prompt are small integers (word counts, TP
+    # numbers, percentages of an example): no price the model could copy.
+    assert all(n == int(n) and n <= 100 for n in extraction.numbers_in(extraction.SYSTEM_PROMPT))
+    assert extraction.reference_leak([0.4870, 0.5390, 62000.0, 2.4531]) == []
 
 
 # --- plan and reports ----------------------------------------------------------------
@@ -188,7 +190,7 @@ def test_a_stated_split_is_lexa_s():
 
 
 def test_prices_keep_every_decimal_said():
-    assert price(1.43775) == "1,43775 $"
+    assert price(2.444175) == "2,444175 $"
     assert price(64250) == "64 250 $"
 
 

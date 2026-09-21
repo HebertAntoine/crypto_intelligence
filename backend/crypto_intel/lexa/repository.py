@@ -16,11 +16,21 @@ from sqlalchemy import select
 
 from .levels import CONDITIONS, track
 from .simulation import SimLevel, simulate
-from .store import LexaAnalysisRow, LexaLevelRow, LexaSettingRow, LexaVideoRow, lexa_session
+from .store import (
+    LexaActionRow,
+    LexaAnalysisRow,
+    LexaConditionRow,
+    LexaFillRow,
+    LexaLevelRow,
+    LexaSettingRow,
+    LexaVideoRow,
+    lexa_session,
+)
 
 LEVEL_KINDS = {
     "CURRENT_PRICE", "SUPPORT", "RESISTANCE", "BUY_ZONE", "REINFORCEMENT", "CONFIRMATION",
     "INVALIDATION", "TARGET", "TAKE_PROFIT", "MACRO", "TECHNICAL", "WARNING", "OTHER",
+    "BREAKOUT",
 }
 KIND_FR = {
     "CURRENT_PRICE": ("💲", "Prix observé"),
@@ -29,6 +39,7 @@ KIND_FR = {
     "BUY_ZONE": ("🟢", "Zone d'achat Lexa"),
     "REINFORCEMENT": ("🟢", "Renforcement Lexa"),
     "CONFIRMATION": ("🚀", "Confirmation"),
+    "BREAKOUT": ("🚀", "Cassure"),
     "INVALIDATION": ("❌", "Invalidation"),
     "TARGET": ("🎯", "Objectif"),
     "TAKE_PROFIT": ("🎯", "Prise de profit"),
@@ -75,16 +86,36 @@ def format_timestamp(seconds: int | None) -> str | None:
     return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes:02d}:{secs:02d}"
 
 
+CONDITION_TYPES = {"CLOSE", "TOUCH", "HOLD", "RETEST", "VOLUME", "OTHER"}
+TIMEFRAMES = {"1H", "4H", "1D", "1W"}
+
+
+@dataclass(slots=True)
+class ConditionInput:
+    """How the video says the level counts. Only what was said."""
+
+    condition_type: str = "CLOSE"
+    timeframe: str | None = None
+    operator: str = "ABOVE"
+    required_closes: int = 1
+    confirmation_window: int | None = None
+    description: str = ""
+    basis: str = "EXPLICIT"
+
+
 @dataclass(slots=True)
 class LevelInput:
     kind: str
     value: float
+    #: Only a share Lexa herself stated. Our own amounts go to the user plan.
     allocation_pct: float | None = None
     timestamp: str | int | None = None
     source_text: str = ""
     condition: str = "UNKNOWN"
     confidence: str = "HIGH"
     label: str = ""
+    basis: str = "EXPLICIT"
+    conditions: list[ConditionInput] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -94,6 +125,21 @@ class AssetInput:
     stance: str = "UNSPECIFIED"
     summary: str = ""
     levels: list[LevelInput] = field(default_factory=list)
+    market_context: str = ""
+    review_at: datetime | None = None
+    expires_at: datetime | None = None
+    timestamp_start: str | int | None = None
+    timestamp_end: str | int | None = None
+    source_type: str = "MANUAL_NOTES"
+
+
+def _legacy_condition(level: LevelInput) -> list[ConditionInput]:
+    """« CLOSE_4H_ABOVE » from older entries, as a condition row."""
+
+    if level.conditions or level.condition in ("", "UNKNOWN"):
+        return list(level.conditions)
+    _, tf, side = level.condition.split("_")
+    return [ConditionInput(condition_type="CLOSE", timeframe=tf, operator=side)]
 
 
 def _validate_level(level: LevelInput) -> None:
@@ -107,10 +153,25 @@ def _validate_level(level: LevelInput) -> None:
         raise LexaInputError("Une allocation est un pourcentage entre 0 et 100.")
     if level.confidence not in {"HIGH", "MEDIUM", "LOW"}:
         raise LexaInputError("Confiance attendue : HIGH, MEDIUM ou LOW.")
+    if level.basis not in {"EXPLICIT", "INFERRED"}:
+        raise LexaInputError("Origine attendue : EXPLICIT (dit) ou INFERRED (déduit).")
+    for cond in level.conditions:
+        if cond.condition_type not in CONDITION_TYPES:
+            raise LexaInputError(f"Type de condition inconnu : {cond.condition_type}.")
+        if cond.timeframe is not None and cond.timeframe not in TIMEFRAMES:
+            raise LexaInputError(f"Unité de temps inconnue : {cond.timeframe}.")
+        if cond.operator not in {"ABOVE", "BELOW"}:
+            raise LexaInputError("Sens attendu : ABOVE ou BELOW.")
+        if cond.required_closes < 1 or (cond.confirmation_window or 0) < 0:
+            raise LexaInputError("Nombre de clôtures ou fenêtre de confirmation invalide.")
+        if cond.condition_type == "CLOSE" and cond.timeframe is None:
+            raise LexaInputError("Une condition de clôture a besoin d'une unité de temps "
+                                 "(1H, 4H, 1D, 1W). Si la vidéo ne la donne pas, ne mets pas de condition.")
 
 
 def create_video(*, title: str, published_at: datetime, assets: list[AssetInput],
-                 duration_s: int | None = None, source_ref: str = "") -> int:
+                 duration_s: int | None = None, source_ref: str = "", video_url: str = "",
+                 source_kind: str = "MANUAL_NOTES") -> int:
     """Store one video and its per-asset scenarios. Never updates an existing one."""
 
     if not title.strip():
@@ -124,10 +185,12 @@ def create_video(*, title: str, published_at: datetime, assets: list[AssetInput]
             raise LexaInputError(f"Position inconnue : {asset.stance}.")
     if published_at.tzinfo is None:
         published_at = published_at.replace(tzinfo=UTC)
+    created: list[int] = []
     with lexa_session() as session:
         video = LexaVideoRow(title=title.strip(), published_at=published_at,
                              duration_s=duration_s, source_ref=source_ref,
-                             source_kind="MANUAL_NOTES", status="ANALYSED")
+                             video_url=video_url.strip(),
+                             source_kind=source_kind, status="ANALYSED")
         session.add(video)
         session.flush()
         for asset in assets:
@@ -135,18 +198,43 @@ def create_video(*, title: str, published_at: datetime, assets: list[AssetInput]
                 video_id=video.id, asset=asset.asset.upper().strip(),
                 published_at=published_at, price_at_video=asset.price_at_video,
                 stance=asset.stance, summary=asset.summary.strip(),
+                market_context=asset.market_context.strip(),
+                source_type=asset.source_type,
+                review_at=_aware(asset.review_at), expires_at=_aware(asset.expires_at),
+                timestamp_start_s=parse_timestamp(asset.timestamp_start),
+                timestamp_end_s=parse_timestamp(asset.timestamp_end),
             )
             session.add(analysis)
             session.flush()
+            created.append(analysis.id)
             for level in asset.levels:
-                session.add(LexaLevelRow(
+                row = LexaLevelRow(
                     analysis_id=analysis.id, kind=level.kind, original_value=float(level.value),
                     allocation_pct=level.allocation_pct,
                     timestamp_s=parse_timestamp(level.timestamp),
                     source_text=level.source_text.strip(), condition=level.condition,
-                    confidence=level.confidence, label=level.label.strip(),
-                ))
-        return video.id
+                    confidence=level.confidence, label=level.label.strip(), basis=level.basis,
+                )
+                session.add(row)
+                session.flush()
+                for cond in _legacy_condition(level):
+                    session.add(LexaConditionRow(
+                        level_id=row.id, condition_type=cond.condition_type,
+                        timeframe=cond.timeframe, operator=cond.operator,
+                        required_closes=cond.required_closes,
+                        confirmation_window=cond.confirmation_window,
+                        description=cond.description.strip(), basis=cond.basis))
+        video_id = video.id
+    from .service import record_supersession
+
+    record_supersession(created)
+    return video_id
+
+
+def _aware(moment: datetime | None) -> datetime | None:
+    if moment is None:
+        return None
+    return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment
 
 
 def correct_level(level_id: int, corrected_value: float) -> dict[str, Any]:
@@ -336,3 +424,103 @@ def asset_history(asset: str, limit: int = 30) -> list[dict[str, Any]]:
             .order_by(LexaAnalysisRow.published_at.desc()).limit(limit)
         ).scalars().all()
     return [asset_report(row.id) for row in rows]
+
+
+# --- USER_PLAN, fills, status: what WE decide and do --------------------------------
+
+PLAN_ACTIONS = {"BUY", "BUY_PARTIAL", "HOLD", "TAKE_PROFIT", "SELL", "WAIT", "WAIT_CLOSE", "WATCH"}
+
+
+def set_user_plan(analysis_id: int, items: list[dict[str, Any]]) -> None:
+    """Replace our own amounts for this analysis. Never touches Lexa's values."""
+
+    with lexa_session() as session:
+        if session.get(LexaAnalysisRow, analysis_id) is None:
+            raise LexaInputError("Analyse introuvable.")
+        levels = {row.id: row for row in session.execute(select(LexaLevelRow).where(
+            LexaLevelRow.analysis_id == analysis_id)).scalars()}
+        for item in items:
+            level_id = item.get("level_id")
+            if level_id not in levels:
+                raise LexaInputError("Niveau inconnu pour cette analyse.")
+            amount_type = item.get("amount_type", "NONE")
+            amount = item.get("amount")
+            if amount_type not in ("EURO", "PERCENT", "NONE"):
+                raise LexaInputError("Type de montant attendu : EURO, PERCENT ou NONE.")
+            if amount is not None and (amount < 0 or (amount_type == "PERCENT" and amount > 100)):
+                raise LexaInputError("Montant invalide.")
+        for row in session.execute(select(LexaActionRow).where(
+                LexaActionRow.analysis_id == analysis_id,
+                LexaActionRow.origin == "USER_PLAN")).scalars():
+            session.delete(row)
+        for item in items:
+            level = levels[item["level_id"]]
+            action = item.get("action") or ("TAKE_PROFIT" if level.kind in ("TARGET", "TAKE_PROFIT")
+                                            else "BUY")
+            if action not in PLAN_ACTIONS:
+                raise LexaInputError(f"Action inconnue : {action}.")
+            session.add(LexaActionRow(analysis_id=analysis_id, level_id=level.id, action=action,
+                                      amount_type=item.get("amount_type", "NONE"),
+                                      amount=item.get("amount"), origin="USER_PLAN"))
+
+
+def add_fill(analysis_id: int, *, side: str, price_usd: float, amount_eur: float | None = None,
+             quantity: float | None = None, eurusd: float | None = None,
+             level_id: int | None = None, executed_at: datetime | None = None,
+             note: str = "") -> int:
+    """Record a purchase or a sale the member made. The app never places one."""
+
+    if side not in ("BUY", "SELL"):
+        raise LexaInputError("Sens attendu : BUY ou SELL.")
+    if price_usd is None or price_usd <= 0:
+        raise LexaInputError("Le prix d'exécution doit être positif.")
+    if quantity is None:
+        if amount_eur is None or amount_eur <= 0 or not eurusd:
+            raise LexaInputError("Indique la quantité, ou le montant en euros (taux €/$ requis).")
+        quantity = amount_eur * eurusd / price_usd
+    if quantity <= 0:
+        raise LexaInputError("La quantité doit être positive.")
+    with lexa_session() as session:
+        if session.get(LexaAnalysisRow, analysis_id) is None:
+            raise LexaInputError("Analyse introuvable.")
+        row = LexaFillRow(analysis_id=analysis_id, level_id=level_id, side=side,
+                          price_usd=price_usd, quantity=quantity, amount_eur=amount_eur,
+                          eurusd=eurusd, executed_at=_aware(executed_at) or datetime.now(UTC),
+                          note=note)
+        session.add(row)
+        session.flush()
+        return row.id
+
+
+def delete_fill(fill_id: int) -> None:
+    with lexa_session() as session:
+        row = session.get(LexaFillRow, fill_id)
+        if row is None:
+            raise LexaInputError("Exécution introuvable.")
+        session.delete(row)
+
+
+def set_status(analysis_id: int, status: str | None, reason: str = "") -> None:
+    """The member closes a plan: INVALIDATED or COMPLETED. None reopens it."""
+
+    if status not in (None, "INVALIDATED", "COMPLETED"):
+        raise LexaInputError("Statut attendu : INVALIDATED, COMPLETED ou vide.")
+    with lexa_session() as session:
+        row = session.get(LexaAnalysisRow, analysis_id)
+        if row is None:
+            raise LexaInputError("Analyse introuvable.")
+        row.status_override, row.status_reason = status, reason.strip()
+        row.status_changed_at = datetime.now(UTC)
+
+
+def set_dates(analysis_id: int, review_at: datetime | None, expires_at: datetime | None) -> None:
+    """Re-evaluated by the member: move the review and the expiry."""
+
+    with lexa_session() as session:
+        row = session.get(LexaAnalysisRow, analysis_id)
+        if row is None:
+            raise LexaInputError("Analyse introuvable.")
+        if review_at is not None:
+            row.review_at = _aware(review_at)
+        if expires_at is not None:
+            row.expires_at = _aware(expires_at)

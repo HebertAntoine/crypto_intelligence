@@ -92,14 +92,14 @@ def render(segments: list[Segment]) -> str:
 # --- numbers -----------------------------------------------------------------
 
 # Thousands are grouped with spaces in French ("68 000"); "," or "." is the
-# decimal mark ("1,2688" / "1.2688").
+# decimal mark ("2,4531" / "2.4531").
 _NUMBER = re.compile(
     r"(?<![\w.,])(\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+)(?:[,.](\d+))?(?:\s*(k|K)\b)?"
 )
 
 
 def numbers_in(text: str) -> list[float]:
-    """Every figure written in a passage: 1,2688 / 1.2688 / 68 000 / 68k."""
+    """Every figure written in a passage: 2,4531 / 2.4531 / 68 000 / 68k."""
 
     found: list[float] = []
     for m in _NUMBER.finditer(text):

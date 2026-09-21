@@ -10,7 +10,10 @@ Each run is written to `data/lexa/tests/<run_id>/` (ignored by Git):
     validation.md     the validation report, with the manual comparison to fill
     status.json       RUNNING / DONE / FAILED
 
-Nothing is written to the Lexa database: the member validates first.
+Nothing is written to the Lexa database until the member has checked the
+reports and imports the run (`import_run`): only VERIFIED values go in, with
+their passage, their basis (EXPLICIT / INFERRED) and only the allocations
+Lexa actually stated.
 """
 
 from __future__ import annotations
@@ -139,3 +142,75 @@ def list_runs() -> list[dict[str, Any]]:
         if (path / "status.json").exists():
             runs.append(json.loads((path / "status.json").read_text()))
     return runs
+
+
+_CLOSE_KINDS = {"CLOSE_ABOVE": "ABOVE", "CLOSE_BELOW": "BELOW"}
+_OTHER_KINDS = {"BREAKOUT": "OTHER", "RETEST": "RETEST", "VOLUME": "VOLUME",
+                "HOLD_ABOVE": "HOLD", "HOLD_BELOW": "HOLD", "OTHER": "OTHER"}
+_TF = {"1H": "1H", "4H": "4H", "1D": "1D", "1W": "1W"}
+
+
+def import_run(run_id: str) -> int:
+    """Store a checked run as a video with one analysis per crypto."""
+
+    from .repository import AssetInput, ConditionInput, LevelInput, LexaInputError, create_video
+
+    run = get(run_id)
+    if run is None:
+        raise ValueError("Test introuvable.")
+    status = run["status"]
+    if status.get("state") != "DONE":
+        raise ValueError("Seul un test terminé peut être importé.")
+    if status.get("imported_video_id"):
+        raise ValueError("Ce test a déjà été importé.")
+    if not status.get("published_at"):
+        raise ValueError("Indique la date de publication de la vidéo avant d'importer : "
+                         "sans elle, les niveaux ne peuvent pas être suivis.")
+    extraction = run.get("extraction") or {}
+    assets = []
+    for a in extraction.get("assets") or []:
+        levels = []
+        for lv in a.get("levels") or []:
+            evidence = lv.get("evidence") or {}
+            if not evidence.get("verified"):
+                continue
+            cond = lv.get("condition") or {}
+            conditions = []
+            if cond.get("kind") in _CLOSE_KINDS and cond.get("timeframe") in _TF:
+                conditions.append(ConditionInput("CLOSE", cond["timeframe"],
+                                                 _CLOSE_KINDS[cond["kind"]],
+                                                 description=cond.get("text") or "",
+                                                 basis=lv.get("basis") if lv.get("basis") in
+                                                 ("EXPLICIT", "INFERRED") else "INFERRED"))
+            elif cond.get("kind") in _OTHER_KINDS:
+                conditions.append(ConditionInput(_OTHER_KINDS[cond["kind"]], _TF.get(cond.get("timeframe")),
+                                                 "BELOW" if cond["kind"].endswith("BELOW") else "ABOVE",
+                                                 description=cond.get("text") or cond["kind"].lower()))
+            basis = lv.get("basis") if lv.get("basis") in ("EXPLICIT", "INFERRED") else "INFERRED"
+            levels.append(LevelInput(
+                kind=lv["kind"], value=float(lv["value"]),
+                allocation_pct=lv.get("allocation_pct") if lv.get("allocation_basis") == "EXPLICIT" else None,
+                timestamp=evidence.get("timestamp_s"), source_text=evidence.get("quote") or "",
+                confidence="HIGH" if basis == "EXPLICIT" else "MEDIUM", basis=basis,
+                label=lv.get("role") or "", conditions=conditions))
+        if not levels:
+            continue
+        context = " ".join((c.get("evidence") or {}).get("quote", "") for c in a.get("situation") or [])
+        stamps = [lv.timestamp for lv in levels if lv.timestamp is not None]
+        assets.append(AssetInput(
+            asset=a["symbol"], price_at_video=a.get("price_at_video"),
+            stance=a.get("stance") if a.get("stance_basis") in ("EXPLICIT", "INFERRED") else "UNSPECIFIED",
+            market_context=context.strip(), levels=levels, source_type="TRANSCRIPT_TEST",
+            timestamp_start=min(stamps) if stamps else None,
+            timestamp_end=max(stamps) if stamps else None))
+    if not assets:
+        raise ValueError("Aucun niveau vérifié dans ce test : rien à importer.")
+    try:
+        video_id = create_video(
+            title=status.get("title") or "Vidéo Lexa", published_at=_parse_date(status["published_at"]),
+            assets=assets, source_kind="TRANSCRIPT")
+    except LexaInputError as exc:
+        raise ValueError(str(exc)) from exc
+    _status(runs_dir() / run_id, imported_video_id=video_id,
+            imported_at=datetime.now(UTC).isoformat())
+    return video_id

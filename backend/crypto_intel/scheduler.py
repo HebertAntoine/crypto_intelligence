@@ -371,6 +371,17 @@ async def job_purge() -> None:
         _record("purge", False, str(exc))
 
 
+async def job_lexa_watch() -> None:
+    """Follow the member's Lexa plans: statuses, closes, notifications (local only)."""
+    try:
+        from .lexa.notifier import evaluate_all
+
+        sent = await asyncio.to_thread(evaluate_all)
+        _record("lexa_watch", True, f"{len(sent)} notification(s)")
+    except Exception as exc:
+        _record("lexa_watch", False, str(exc)[:200])
+
+
 def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
     """Start every periodic job.
 
@@ -393,6 +404,7 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
         ("etf_sync", job_etf_sync, 240),
         ("future_events_sync", job_future_events_sync, 360),
         ("evaluate", job_evaluate, 60),
+        ("lexa_watch", job_lexa_watch, 5),
         ("purge", job_purge, 1440),
     ]
 
@@ -407,7 +419,7 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
                   "etf_sync": 4, "future_events_sync": 5,
                   "analysis": 6, "decision_track": 7,
                   "pattern_experiments": 9,
-                  "evaluate": 11, "purge": 20}[job_id]
+                  "evaluate": 11, "lexa_watch": 8, "purge": 20}[job_id]
         scheduler.add_job(
             func,
             IntervalTrigger(minutes=minutes),

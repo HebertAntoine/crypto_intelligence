@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'api/client.dart';
 import 'config.dart';
 import 'lexa/lexa_client.dart';
-import 'lexa/lexa_screen.dart';
+import 'lexa/lexa_home.dart';
 import 'live_prices/live_price_service.dart';
 import 'screens/chart_screen.dart';
 import 'screens/future_analysis_screen.dart';
@@ -85,6 +85,14 @@ class _HomeShellState extends State<HomeShell> {
     _screens = [_screenFor(0), null, null, null, if (lexaEnabled) null];
   }
 
+  /// BTC · ETH · SOL · (LEXA) · Graphique — Lexa only in the private build.
+  String _pageAt(int index) {
+    const pages = ['BTC', 'ETH', 'SOL'];
+    if (index < 3) return pages[index];
+    if (lexaEnabled && index == 3) return 'LEXA';
+    return 'CHART';
+  }
+
   Widget _assetPage(String asset) => Navigator(
         key: ValueKey('${asset.toLowerCase()}-navigator'),
         onGenerateRoute: (_) => MaterialPageRoute<void>(
@@ -99,11 +107,12 @@ class _HomeShellState extends State<HomeShell> {
         ),
       );
 
-  Widget _screenFor(int index) => switch (index) {
-        0 => _assetPage('BTC'),
-        1 => _assetPage('ETH'),
-        2 => _assetPage('SOL'),
-        4 => LexaHomeScreen(key: const ValueKey('lexa-page'), client: _lexa!),
+  Widget _screenFor(int index) => switch (_pageAt(index)) {
+        'BTC' => _assetPage('BTC'),
+        'ETH' => _assetPage('ETH'),
+        'SOL' => _assetPage('SOL'),
+        'LEXA' =>
+          LexaHomeScreen(key: const ValueKey('lexa-page'), client: _lexa!),
         _ => ChartScreen(
             key: const ValueKey('chart-page'),
             client: widget.client,
@@ -141,11 +150,11 @@ class _HomeShellState extends State<HomeShell> {
           const MobileNavDestination(asset: 'BTC', label: 'BTC'),
           const MobileNavDestination(asset: 'ETH', label: 'ETH'),
           const MobileNavDestination(asset: 'SOL', label: 'SOL'),
-          const MobileNavDestination(
-              icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
           if (lexaEnabled)
             const MobileNavDestination(
                 icon: Icons.movie_outlined, label: 'Lexa'),
+          const MobileNavDestination(
+              icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
         ],
       ),
     );
