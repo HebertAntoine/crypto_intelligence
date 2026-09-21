@@ -59,7 +59,7 @@ class LexaRecorder {
       'audio/mp4',
       'audio/webm',
       'audio/ogg'
-    ].firstWhere(web.MediaRecorder.isTypeSupported, orElse: () => '');
+    ].firstWhere((m) => web.MediaRecorder.isTypeSupported(m), orElse: () => '');
     _sink = onChunk;
     _running = true;
     await _keepAwake();
