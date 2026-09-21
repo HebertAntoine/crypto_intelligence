@@ -49,7 +49,7 @@ docker compose exec app crypto-intel research-structural
 - **Mount a volume on `/app/data`**, or every rebuild starts from an empty
   database.
 - **Set `CORS_ORIGINS` to the Vercel URL** once the app is deployed, e.g.
-  `CORS_ORIGINS=https://crypto-intelligence.vercel.app`. Any other origin
+  `CORS_ORIGINS=https://crypto-intelligence-lake-nine.vercel.app` (l’adresse réelle de l’app). Any other origin
   receives no CORS header and is refused by the browser.
 
 ---
