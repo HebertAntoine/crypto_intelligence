@@ -66,14 +66,10 @@ Le contenu vient d'un abonnement personnel. Il ne doit jamais quitter la machine
 
 ## 5. Utilisation
 
-```bash
-# Backend local (écoute sur 127.0.0.1 seulement)
-PYTHONPATH=backend .venv/bin/python -m uvicorn crypto_intel.main:app --host 127.0.0.1 --port 8100
+L'app privée est servie par le backend local : **http://127.0.0.1:8100/app/**
 
-# Application avec l'onglet Lexa
-cd app && ~/flutter/bin/flutter run -d chrome \
-  --dart-define=LEXA_ENABLED=true --dart-define=API_BASE_URL=http://127.0.0.1:8100
-```
+- Le backend tourne en service utilisateur `crypto-intel` (`deploy/crypto-intel.service`), n'écoute que sur 127.0.0.1 et survit au redémarrage.
+- La build privée est dans `app/build/web-local` (ignorée par Git). Après une modification de l'app, on la reconstruit avec `scripts/build_local_app.sh`.
 
 Dans l'onglet 🎬 Lexa, ➕ ajoute une vidéo : titre, date, puis pour chaque crypto le prix dans la vidéo, la position et les niveaux (type, prix, % du capital ou % vendu, minutage `18:42`, condition, phrase de la vidéo). ⚙️ règle le capital.
 

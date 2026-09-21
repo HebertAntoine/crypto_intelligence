@@ -98,8 +98,26 @@ def create_app() -> FastAPI:
             content={"error": type(exc).__name__, "detail": str(exc)[:500]},
         )
 
+    _mount_private_app(app)
     _mount_frontend(app)
     return app
+
+
+def _mount_private_app(app: FastAPI) -> None:
+    """Serve the private Flutter build (with the Lexa tab) under /app/.
+
+    `scripts/build_local_app.sh` builds it into `app/build/web-local`, which Git
+    ignores. It is served only by this process, which listens on 127.0.0.1, and
+    it holds no Lexa data: the page reads it from the loopback-only routes.
+    Mounted before the React catch-all so /app/ reaches it.
+    """
+    from pathlib import Path
+
+    build = Path(__file__).resolve().parents[2] / "app" / "build" / "web-local"
+    if not (build / "index.html").exists():
+        return
+    app.mount("/app", StaticFiles(directory=build, html=True), name="private-app")
+    log.info("private_app_mounted", path=str(build))
 
 
 def _mount_frontend(app: FastAPI) -> None:
