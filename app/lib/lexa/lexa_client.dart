@@ -18,6 +18,11 @@ import '../config.dart';
 /// Compiled out of every build that does not ask for it.
 const bool lexaEnabled = bool.fromEnvironment('LEXA_ENABLED');
 
+/// Where the member's plans live when the app is served from elsewhere (the
+/// public site): the PC, reachable only inside their private Tailscale
+/// network. The public build carries this address, never any Lexa content.
+const String lexaBaseUrl = String.fromEnvironment('LEXA_BASE_URL');
+
 /// The backend on this machine. Lexa routes answer loopback clients only.
 const String lexaDefaultBaseUrl = 'http://127.0.0.1:8100';
 
@@ -36,7 +41,9 @@ class LexaClient {
   LexaClient({http.Client? client, String? baseUrl})
       : _http = client ?? http.Client(),
         baseUrl = baseUrl ??
-            (AppConfig.apiBaseUrl.isNotEmpty
+            (lexaBaseUrl.isNotEmpty
+                ? lexaBaseUrl
+                : AppConfig.apiBaseUrl.isNotEmpty
                 ? AppConfig.apiBaseUrl
                 // Served by the backend itself (PC or private Tailscale
                 // address): talk to the origin the page came from.
@@ -65,7 +72,8 @@ class LexaClient {
       throw const LexaException('Le backend local ne répond pas.');
     } catch (_) {
       throw const LexaException(
-          'Backend local injoignable. Lance-le sur 127.0.0.1 pour voir les analyses Lexa.');
+          'Tes plans Lexa sont sur ton PC : active Tailscale sur cet appareil '
+          '(et vérifie que le PC est allumé), puis tire vers le bas pour recharger.');
     }
     final decoded = response.body.isEmpty
         ? <String, dynamic>{}

@@ -33,8 +33,14 @@ if [ -z "${API_BASE_URL:-}" ]; then
   echo "API_BASE_URL is not set. Building with bundled static API snapshots." >&2
 fi
 
+# 🎬 Lexa: the tab ships, the content does not. Plans are read from the
+# member's PC, only reachable inside their private Tailscale network.
+LEXA_BASE_URL="${LEXA_BASE_URL:-https://debian-server.tail484b42.ts.net:8443}"
+
 flutter build web --release \
   --dart-define=API_BASE_URL="${API_BASE_URL:-}" \
+  --dart-define=LEXA_ENABLED=true \
+  --dart-define=LEXA_BASE_URL="$LEXA_BASE_URL" \
   --pwa-strategy=none
 
 echo "Built to build/web"

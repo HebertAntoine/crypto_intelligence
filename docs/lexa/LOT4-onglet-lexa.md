@@ -212,7 +212,13 @@ S'y ajoutent : la fenêtre de confirmation, les heures de clôture été/hiver, 
 
 **Valeurs fictives uniquement.** Le dépôt est public : aucun niveau Lexa n'y est versé. Les anciens tests contenant des niveaux d'une analyse ont été convertis en valeurs fictives (×1,7, pour garder les mêmes écarts relatifs). Ils restent visibles dans l'historique Git des commits 9180163 et 4185573 ; réécrire l'historique d'un dépôt public est une décision à prendre à part.
 
-## 13. Reste à faire
+## 13. Sur l'iPhone (site habituel)
+
+- Le site public (Vercel) affiche l'onglet 🎬 LEXA, mais il ne contient aucune donnée Lexa. Il lit tes plans sur ton PC, à l'adresse Tailscale privée `https://debian-server.tail484b42.ts.net:8443`, qu'on peut changer avec `LEXA_BASE_URL` dans Vercel.
+- Hors de Tailscale, l'onglet affiche seulement « active Tailscale ». Le backend n'accepte les requêtes (en-têtes CORS) que de ce site et du poste local.
+- Côté PC, une commande à lancer une fois, avec mot de passe administrateur : `sudo tailscale serve --bg --https=8443 http://127.0.0.1:8100`. Pour annuler : `sudo tailscale serve --https=8443 off`.
+
+## 14. Reste à faire
 
 - Une vraie transcription Lexa pour le test de validation (LOT 3). Rien n'est automatisé avant ta validation.
 - Notifications push hors de l'app : il suffit d'ajouter un sink ; aujourd'hui, elles s'affichent dans l'app.

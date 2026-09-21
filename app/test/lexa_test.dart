@@ -42,7 +42,7 @@ void _tall(WidgetTester tester) {
 }
 
 void main() {
-  test('the public build never contains the Lexa tab', () {
+  test('without LEXA_ENABLED the Lexa tab is compiled out', () {
     expect(lexaEnabled, isFalse);
   });
 
