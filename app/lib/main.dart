@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 
 import 'api/client.dart';
 import 'config.dart';
+import 'lexa/lexa_client.dart';
+import 'lexa/lexa_screen.dart';
 import 'live_prices/live_price_service.dart';
 import 'screens/chart_screen.dart';
 import 'screens/future_analysis_screen.dart';
@@ -71,6 +73,8 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   late final List<Widget?> _screens;
+  // Only in a build made with LEXA_ENABLED=true, never the public one.
+  final LexaClient? _lexa = lexaEnabled ? LexaClient() : null;
 
   @override
   void initState() {
@@ -78,7 +82,7 @@ class _HomeShellState extends State<HomeShell> {
     // Only load the first asset at startup. The other analytical pages are
     // created on first visit, then kept alive by the IndexedStack so their
     // selected horizon and scroll position do not disappear between tabs.
-    _screens = [_screenFor(0), null, null, null];
+    _screens = [_screenFor(0), null, null, null, if (lexaEnabled) null];
   }
 
   Widget _assetPage(String asset) => Navigator(
@@ -99,11 +103,18 @@ class _HomeShellState extends State<HomeShell> {
         0 => _assetPage('BTC'),
         1 => _assetPage('ETH'),
         2 => _assetPage('SOL'),
+        4 => LexaHomeScreen(key: const ValueKey('lexa-page'), client: _lexa!),
         _ => ChartScreen(
             key: const ValueKey('chart-page'),
             client: widget.client,
           ),
       };
+
+  @override
+  void dispose() {
+    _lexa?.close();
+    super.dispose();
+  }
 
   void _selectPage(int value) {
     if (value == _index) return;
@@ -126,12 +137,15 @@ class _HomeShellState extends State<HomeShell> {
       bottomNavigationBar: MobileBottomNav(
         selectedIndex: _index,
         onSelected: _selectPage,
-        destinations: const [
-          MobileNavDestination(asset: 'BTC', label: 'BTC'),
-          MobileNavDestination(asset: 'ETH', label: 'ETH'),
-          MobileNavDestination(asset: 'SOL', label: 'SOL'),
-          MobileNavDestination(
+        destinations: [
+          const MobileNavDestination(asset: 'BTC', label: 'BTC'),
+          const MobileNavDestination(asset: 'ETH', label: 'ETH'),
+          const MobileNavDestination(asset: 'SOL', label: 'SOL'),
+          const MobileNavDestination(
               icon: Icons.candlestick_chart_outlined, label: 'Graphique'),
+          if (lexaEnabled)
+            const MobileNavDestination(
+                icon: Icons.movie_outlined, label: 'Lexa'),
         ],
       ),
     );

@@ -13,6 +13,7 @@ from .api.routes import router
 from .api.routes_analysis import router as analysis_router
 from .api.routes_cycle import router as cycle_router
 from .api.routes_future import router as future_router
+from .api.routes_lexa import router as lexa_router
 from .api.routes_lot2 import router as lot2_router
 from .api.routes_lot3 import router as lot3_router
 from .api.routes_lot4 import router as lot4_router
@@ -84,6 +85,8 @@ def create_app() -> FastAPI:
     app.include_router(future_router, prefix="/api")
     app.include_router(cycle_router, prefix="/api")
     app.include_router(market_intel_router, prefix="/api")
+    # Local only - never exported, never served to another machine.
+    app.include_router(lexa_router, prefix="/api")
 
     @app.exception_handler(Exception)
     async def unhandled(request, exc: Exception):

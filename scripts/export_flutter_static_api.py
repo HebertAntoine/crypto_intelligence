@@ -114,6 +114,19 @@ def _endpoints() -> list[tuple[str, dict[str, str] | None]]:
     return endpoints
 
 
+#: Personal-subscription content: never part of a public export.
+FORBIDDEN_PREFIXES = ("/lexa",)
+
+
+def assert_exportable(endpoints: list[tuple[str, dict[str, str] | None]]) -> None:
+    leaked = [path for path, _ in endpoints if path.startswith(FORBIDDEN_PREFIXES)]
+    if leaked:
+        raise RuntimeError(
+            "Refus d'exporter des routes Lexa (contenu d'abonnement personnel) : "
+            + ", ".join(leaked)
+        )
+
+
 def _fetch_json(base_url: str, path: str, query: dict[str, str] | None) -> object:
     url = f"{base_url.rstrip('/')}/api{path}"
     if query:
@@ -401,6 +414,7 @@ def main() -> None:
     fetch = _in_process_fetcher() if args.in_process else _fetch_json
 
     endpoints = _endpoints()
+    assert_exportable(endpoints)
     if args.only_today:
         endpoints = [item for item in endpoints if item[0].startswith("/today/")]
     elif args.only_future:
