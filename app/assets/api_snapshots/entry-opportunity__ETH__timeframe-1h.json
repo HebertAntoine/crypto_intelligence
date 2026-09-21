@@ -5,14 +5,14 @@
   "factors": [
     {
       "contribution": 8.0,
-      "detail": "Funding dans sa normale, au 41e centile de son historique",
+      "detail": "Funding dans sa normale, au 54e centile de son historique",
       "is_measured_edge": false,
       "name": "funding normalised",
       "source": "derivatives"
     },
     {
       "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 11.9e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.2e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
@@ -23,29 +23,23 @@
       "is_measured_edge": false,
       "name": "higher timeframe structure",
       "source": "structure"
-    },
-    {
-      "contribution": 0.0,
-      "detail": "En 1h, le prix est au milieu de son range (qualit\u00e9 de zone 61/100)",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
     }
   ],
   "from_analysis": false,
-  "invalidation": "Une cl\u00f4ture 1h hors de 2561.49-2669.86 invaliderait cette lecture du range.",
+  "invalidation": "no validated range, so no objective structural invalidation can be stated",
   "measured_edge_note": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict f",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
-  "missing": [],
-  "run_id": "run_20260920T191228Z",
-  "score": 4.0,
+  "missing": [
+    "aucun range valid\u00e9 sur l'unit\u00e9 1h"
+  ],
+  "run_id": "run_20260921T151601Z_light",
+  "score": 5.3,
   "state": "NEUTRAL",
-  "statement": "ETH 1h configuration is NEUTRAL (+4). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "statement": "ETH 1h configuration is NEUTRAL (+5). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: aucun range valid\u00e9 sur l'unit\u00e9 1h.",
   "timeframe": "1h",
   "why_now": [
-    "Funding dans sa normale, au 41e centile de son historique",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 11.9e centile : les mouvements sont petits, dans les deux sens",
-    "Structure 1d en range (LH HH HL HL)",
-    "En 1h, le prix est au milieu de son range (qualit\u00e9 de zone 61/100)"
+    "Funding dans sa normale, au 54e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.2e centile : les mouvements sont petits, dans les deux sens",
+    "Structure 1d en range (LH HH HL HL)"
   ]
 }
