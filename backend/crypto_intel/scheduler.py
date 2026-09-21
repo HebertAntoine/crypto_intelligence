@@ -126,6 +126,28 @@ async def job_analysis() -> None:
         _record("analysis", not errors, "; ".join(errors) or f"{created_total} new snapshots")
 
 
+def _future_readings(snapshot: Any) -> dict[str, Any]:
+    """The verdict and its first reason, per horizon, as the page shows them."""
+    from .api.routes_future import _decision
+    from .future_events.models import DecisionHorizon
+
+    out: dict[str, Any] = {}
+    for horizon in DecisionHorizon:
+        try:
+            summary = ((_decision(snapshot, horizon).to_dict().get("analysis") or {})
+                       .get("summary") or {})
+            reading = summary.get("reading") or {}
+            waiting = reading.get("waiting_for") or []
+            out[horizon.value] = {
+                "action": (reading.get("verdict") or {}).get("action"),
+                "reason": reading.get("headline", ""),
+                "waiting": waiting[0]["text"] if waiting else "",
+            }
+        except Exception as exc:
+            log.warning("future_reading_failed", horizon=horizon.value, error=str(exc))
+    return out
+
+
 async def job_decision_track() -> None:
     """Record what the decision engine concludes, so "last change" is a fact.
 
@@ -142,7 +164,8 @@ async def job_decision_track() -> None:
     errors: list[str] = []
     for asset in _Asset.tradables():
         try:
-            record_decision(context_for(asset))
+            snapshot = context_for(asset)
+            record_decision(snapshot, _future_readings(snapshot))
             recorded += 1
         except Exception as exc:
             log.warning("decision_track_failed", asset=asset.value, error=str(exc))

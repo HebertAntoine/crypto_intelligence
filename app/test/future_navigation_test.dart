@@ -93,7 +93,9 @@ void main() {
       expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
       // Six families at most; whales disappear when they carry nothing.
     expect(find.byKey(const ValueKey('main-factor-7')), findsNothing);
-      expect(find.byKey(const ValueKey('decision-explanation')), findsOneWidget);
+      // What we wait for, then why: the reading replaces the old explanation.
+      expect(find.byKey(const ValueKey('reading-waiting')), findsOneWidget);
+      expect(find.byKey(const ValueKey('reading-why')), findsOneWidget);
 
       // The hero carries risk, horizon and the balance of signals. Confidence
       // and expected amplitude are engine vocabulary and moved down with the

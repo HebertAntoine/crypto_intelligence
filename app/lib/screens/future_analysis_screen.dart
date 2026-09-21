@@ -14,6 +14,7 @@ import 'market_intel_pages.dart';
 import '../widgets/color_emoji.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
+import '../widgets/reading_widgets.dart';
 import 'full_analysis_page.dart';
 
 class FutureAnalysisScreen extends StatefulWidget {
@@ -341,13 +342,29 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                 ),
                 const SizedBox(height: 14),
                 if (decision.analysis != null) ...[
-                  // The gated six-family decision: why, with figures, then
-                  // the factors that actually move it - one tap from the full
-                  // analysis.
-                  _AnalysisExplanationCard(
-                    decision: decision,
-                    analysis: decision.analysis!,
-                  ),
+                  // Decision -> what we wait for -> why -> what would change
+                  // it, translated by the backend's interpretation layer. The
+                  // older explanation card remains for payloads without it.
+                  if (!decision.analysis!.summary.reading.isEmpty) ...[
+                    WaitingForCard(reading: decision.analysis!.summary.reading),
+                    const SizedBox(height: 14),
+                    WhyCard(
+                      reading: decision.analysis!.summary.reading,
+                      onSeeAll: () => _openFullAnalysis(decision, bundle),
+                    ),
+                    const SizedBox(height: 14),
+                    ChangeMindCard(reading: decision.analysis!.summary.reading),
+                    const SizedBox(height: 14),
+                    ReadingTrustLine(
+                      reading: decision.analysis!.summary.reading,
+                      history: decision.decisionHistory,
+                      updated: freshnessLabel(decision.analysis!.newestData),
+                    ),
+                  ] else
+                    _AnalysisExplanationCard(
+                      decision: decision,
+                      analysis: decision.analysis!,
+                    ),
                   const SizedBox(height: 14),
                   if (bundle.marketState != null) ...[
                     const SizedBox(height: 14),
@@ -1198,6 +1215,9 @@ class _WhyDecisionCard extends StatelessWidget {
 /// The hero names the one thing that matters most, not a generic mood.
 String _heroSentence(FutureDecisionRead decision, _FutureBundle bundle) {
   final analysis = decision.analysis;
+  if (analysis != null && !analysis.summary.reading.isEmpty) {
+    return analysis.summary.reading.headline;
+  }
   if (analysis != null && analysis.summary.sentence.isNotEmpty) {
     return analysis.summary.sentence;
   }
@@ -1822,6 +1842,8 @@ class _AnalysisFactorsCard extends StatelessWidget {
                   family: family,
                   asset: asset,
                   horizon: analysis.horizon,
+                  essentials:
+                      analysis.summary.reading.families[family.family] ?? const [],
                 ),
         ),
       );
@@ -1841,20 +1863,9 @@ class _AnalysisFactorsCard extends StatelessWidget {
             const SizedBox(height: 4),
             for (var index = 0; index < homeFamilies.length; index++) ...[
               if (index > 0) const Divider(height: 1, color: Color(0xFF1D3853)),
-              _StatusRow(
-                key: ValueKey(homeFamilies[index].family == 'onchain'
-                    ? 'whale-status'
-                    : 'main-factor-${index + 1}'),
-                emoji: homeFamilies[index].emoji,
-                title: homeFamilies[index].name,
-                status: homeFamilies[index].status,
-                statusEmoji: homeFamilies[index].statusEmoji,
-                tone: homeFamilies[index].tone,
-                detail: homeFamilies[index].keyInfo,
-                onTap: byKey[homeFamilies[index].family] == null
-                    ? null
-                    : () => _open(context, byKey[homeFamilies[index].family]!),
-              ),
+              // The family's lead finding in plain words, then what it means;
+              // the raw figures stay on the family page.
+              _familyRow(context, homeFamilies[index], index, byKey),
             ],
             const SizedBox(height: 6),
             _seeAllButton(),
@@ -1891,6 +1902,9 @@ class _AnalysisFactorsCard extends StatelessWidget {
                             family: families[factors[index].family]!,
                             asset: asset,
                             horizon: analysis.horizon,
+                            essentials: analysis.summary.reading
+                                    .families[factors[index].family] ??
+                                const [],
                           ),
                         ),
                       ),
@@ -5144,4 +5158,37 @@ String _countdown(int? seconds) {
   if (seconds == null) return 'non planifié';
   final hours = seconds < 0 ? 0 : seconds ~/ 3600;
   return hours < 48 ? 'dans $hours h' : 'dans ${hours ~/ 24} j';
+}
+
+
+extension on _AnalysisFactorsCard {
+  Widget _familyRow(BuildContext context, AnalysisHomeFamilyRead family,
+      int index, Map<String, AnalysisFamilyRead> byKey) {
+    final lead = (analysis.summary.reading.families[family.family] ??
+            const <ReadingCard>[])
+        .firstOrNull;
+    return _StatusRow(
+      key: ValueKey(
+          family.family == 'onchain' ? 'whale-status' : 'main-factor-${index + 1}'),
+      emoji: family.emoji,
+      title: family.name,
+      status: lead?.title ?? family.status,
+      statusEmoji: lead == null
+          ? family.statusEmoji
+          : switch (lead.tone) {
+              'GREEN' => '🟢',
+              'RED' => '🔴',
+              'ORANGE' => '🟠',
+              'YELLOW' => '🟡',
+              _ => '⚪',
+            },
+      tone: lead?.tone ?? family.tone,
+      detail: lead == null
+          ? family.keyInfo
+          : (lead.soWhat.isEmpty ? lead.what : lead.soWhat),
+      onTap: byKey[family.family] == null
+          ? null
+          : () => _open(context, byKey[family.family]!),
+    );
+  }
 }

@@ -1,287 +1,387 @@
 {
-  "alerts": [
-    "EVENT_RESULT_MISSING: 4 \u00e9v\u00e9nement(s) pass\u00e9s sans r\u00e9sultat"
-  ],
-  "assets": {
-    "BTC": {
-      "data_status": "PARTIAL_DATA",
-      "families_available": "4/5",
-      "generated_at": "2026-09-21T15:17:03.558199+00:00",
-      "missing_families": [
-        "Cr\u00e9dit",
-        "Mouvements de baleines"
-      ],
-      "verdict": "WAIT"
+  "llm": {
+    "enabled": false,
+    "is_mock": false,
+    "model": null,
+    "provider": "none",
+    "reason": "LLM_PROVIDER is 'none' or the API key is missing. The system runs fully without an LLM: all scores, indicators and data remain available; only the narrative synthesis is disabled."
+  },
+  "mock_mode": false,
+  "providers": [
+    {
+      "configured": true,
+      "provider": "binance_spot",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
     },
-    "ETH": {
-      "data_status": "PARTIAL_DATA",
-      "families_available": "4/5",
-      "generated_at": "2026-09-21T15:19:37.637802+00:00",
-      "missing_families": [
-        "Cr\u00e9dit",
-        "Mouvements de baleines"
-      ],
-      "verdict": "WAIT"
+    {
+      "configured": true,
+      "provider": "coinbase_spot",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
     },
-    "SOL": {
-      "data_status": "PARTIAL_DATA",
-      "families_available": "4/5",
-      "generated_at": "2026-09-21T15:21:40.220002+00:00",
-      "missing_families": [
-        "Cr\u00e9dit",
-        "Volatilit\u00e9 implicite",
-        "Mouvements de baleines"
-      ],
-      "verdict": "WAIT"
+    {
+      "configured": true,
+      "provider": "kraken_spot",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "coingecko",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "coingecko_breadth",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "binance_futures",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": false,
+      "provider": "coinglass",
+      "reason": "UNAVAILABLE - provider not configured (COINGLASS_API_KEY missing)",
+      "requires_key": "COINGLASS_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": true,
+      "provider": "etf_csv",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "farside",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "coinshares_flows",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": false,
+      "provider": "coinglass_etf",
+      "reason": "UNAVAILABLE - provider not configured (COINGLASS_API_KEY missing)",
+      "requires_key": "COINGLASS_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": false,
+      "provider": "sosovalue",
+      "reason": "UNAVAILABLE - provider not configured (SOSOVALUE_API_KEY missing)",
+      "requires_key": "SOSOVALUE_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": true,
+      "provider": "blockchain_info",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "blockchair_btc",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "blockchair_eth",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "solana_rpc",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "defillama",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "defillama_rwa",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "defillama_stables",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": false,
+      "provider": "fred",
+      "reason": "UNAVAILABLE - provider not configured (FRED_API_KEY missing)",
+      "requires_key": "FRED_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": true,
+      "provider": "us_treasury_yields",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "us_treasury_tga",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "nyfed_markets",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "fed_h41",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "bls",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "central_bank_rates",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "mempool_space_chain",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "yahoo_finance",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "stooq",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "fed_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "ecb_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "boj_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "bls_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "bea_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "treasury_auctions",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "official_regulatory_feeds",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "sec_edgar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "cftc_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "house_financial_services_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": false,
+      "provider": "congress_bill_actions",
+      "reason": "UNAVAILABLE - provider not configured (CONGRESS_API_KEY missing)",
+      "requires_key": "CONGRESS_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": true,
+      "provider": "senate_committees_calendar",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": false,
+      "provider": "cme_fedwatch",
+      "reason": "UNAVAILABLE - licensed CME_FEDWATCH_API_URL/API_KEY not configured",
+      "requires_key": "CME_FEDWATCH_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": true,
+      "provider": "geopolitical_feeds",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "ethereum_protocol",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "solana_protocol",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "rss_news",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": true,
+      "provider": "rss_regulation",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
+    },
+    {
+      "configured": false,
+      "provider": "glassnode",
+      "reason": "UNAVAILABLE - provider not configured (GLASSNODE_API_KEY missing)",
+      "requires_key": "GLASSNODE_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": false,
+      "provider": "cryptoquant",
+      "reason": "UNAVAILABLE - provider not configured (CRYPTOQUANT_API_KEY missing)",
+      "requires_key": "CRYPTOQUANT_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": false,
+      "provider": "nansen",
+      "reason": "UNAVAILABLE - provider not configured (NANSEN_API_KEY missing)",
+      "requires_key": "NANSEN_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": false,
+      "provider": "arkham",
+      "reason": "UNAVAILABLE - provider not configured (ARKHAM_API_KEY missing)",
+      "requires_key": "ARKHAM_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": false,
+      "provider": "whale_alert",
+      "reason": "UNAVAILABLE - provider not configured (WHALE_ALERT_API_KEY missing)",
+      "requires_key": "WHALE_ALERT_API_KEY",
+      "status": "UNAVAILABLE"
+    },
+    {
+      "configured": true,
+      "provider": "deribit_volatility",
+      "reason": "",
+      "requires_key": null,
+      "status": "OK"
     }
-  },
-  "checked_at": "2026-09-21T17:11:55.131984+00:00",
-  "generated_at": "2026-09-21T15:22:40.519311+00:00",
-  "last_refresh": "20260921T170336Z",
-  "last_refresh_status": null,
-  "news_radar": {
-    "awaiting_result": 4,
-    "by_attention": {
-      "CRITICAL": 2,
-      "HIGH": 4,
-      "LOW": 42,
-      "MODERATE": 2,
-      "NONE": 168
-    },
-    "clusters": 153,
-    "expired": 162,
-    "on_home": 8,
-    "tracked": 218,
-    "unconfirmed": 1
-  },
-  "next_runs": {
-    "full": null,
-    "light": "1790010932616717"
-  },
-  "notes": [
-    "BTC: familles indisponibles \u2014 Cr\u00e9dit, Mouvements de baleines",
-    "ETH: familles indisponibles \u2014 Cr\u00e9dit, Mouvements de baleines",
-    "SOL: familles indisponibles \u2014 Cr\u00e9dit, Volatilit\u00e9 implicite, Mouvements de baleines"
   ],
-  "run_id": "run_20260921T151601Z_light",
-  "snapshot_age_hours": 1.82,
-  "sources": [
-    {
-      "age_min": 10.9,
-      "criticality": "CRITICAL",
-      "enabled": true,
-      "family": "technical",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 30.0,
-      "note": "Cadence reprise du job 'market'. Un prix de plus de 30 min ne d\u00e9crit plus la s\u00e9ance en cours.",
-      "refresh_interval_min": 5.0,
-      "source_id": "market_price"
-    },
-    {
-      "age_min": 10.9,
-      "criticality": "CRITICAL",
-      "enabled": true,
-      "family": "technical",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 90.0,
-      "note": "La plus petite bougie suivie est de 15 min: interroger plus souvent ne produirait aucune barre nouvelle.",
-      "refresh_interval_min": 15.0,
-      "source_id": "ohlcv"
-    },
-    {
-      "age_min": 10.9,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "derivatives",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 60.0,
-      "note": "L'int\u00e9r\u00eat ouvert bouge en continu; l'heure du job existant laissait une lecture vieillir sans raison.",
-      "refresh_interval_min": 15.0,
-      "source_id": "derivatives_oi"
-    },
-    {
-      "age_min": 10.9,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "derivatives",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 60.0,
-      "note": "Le funding se r\u00e8gle toutes les 8 h mais s'anticipe en continu; 60 min couvre un cycle manqu\u00e9 sans p\u00e9rimer une lecture utile.",
-      "refresh_interval_min": 15.0,
-      "source_id": "derivatives_funding"
-    },
-    {
-      "age_min": 10.9,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "spot",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 30.0,
-      "note": "Mesure de flux au comptant: sa valeur est imm\u00e9diate.",
-      "refresh_interval_min": 5.0,
-      "source_id": "spot_pressure"
-    },
-    {
-      "age_min": 25.9,
-      "criticality": "OPTIONAL",
-      "enabled": true,
-      "family": "derivatives",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 180.0,
-      "note": "DVOL est un indice de s\u00e9ance; il ne se recalcule pas en continu.",
-      "refresh_interval_min": 30.0,
-      "source_id": "implied_volatility"
-    },
-    {
-      "age_min": 5351.9,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "flows",
-      "freshness": "STALE",
-      "health": "HEALTHY",
-      "max_age_min": 1800.0,
-      "note": "Farside publie une fois par s\u00e9ance, en soir\u00e9e. Deux heures suffisent \u00e0 l'attraper; au-del\u00e0 de 30 h une s\u00e9ance a \u00e9t\u00e9 manqu\u00e9e.",
-      "refresh_interval_min": 120.0,
-      "source_id": "etf_flows"
-    },
-    {
-      "age_min": 4.0,
-      "criticality": "OPTIONAL",
-      "enabled": true,
-      "family": "flows",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 1440.0,
-      "note": "Les encours bougent lentement et se lisent \u00e0 l'\u00e9chelle du jour.",
-      "refresh_interval_min": 240.0,
-      "source_id": "stablecoins"
-    },
-    {
-      "age_min": 221.9,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "macro",
-      "freshness": "FRESH",
-      "health": "HEALTHY",
-      "max_age_min": 1560.0,
-      "note": "S\u00e9ries quotidiennes (taux, p\u00e9trole). 26 h laissent passer un week-end sans d\u00e9clarer p\u00e9rim\u00e9 ce qui ne l'est pas.",
-      "refresh_interval_min": 120.0,
-      "source_id": "macro_series"
-    },
-    {
-      "age_min": null,
-      "criticality": "IMPORTANT",
-      "enabled": false,
-      "family": "macro",
-      "freshness": "UNAVAILABLE",
-      "health": "NOT_CONFIGURED",
-      "max_age_min": 1800.0,
-      "note": "ICE BofA via FRED: d\u00e9sactiv\u00e9e tant qu'aucune cl\u00e9 n'est configur\u00e9e, plut\u00f4t que d'\u00e9chouer deux fois par jour.",
-      "refresh_interval_min": 240.0,
-      "source_id": "macro_credit"
-    },
-    {
-      "age_min": 5351.9,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "liquidity",
-      "freshness": "AGING",
-      "health": "HEALTHY",
-      "max_age_min": 7200.0,
-      "note": "Bilan de la Fed (hebdomadaire), TGA et RRP (quotidiens, jours ouvr\u00e9s) : cinq jours couvrent un week-end prolong\u00e9 et la publication hebdomadaire du H.4.1.",
-      "refresh_interval_min": 720.0,
-      "source_id": "liquidity_official"
-    },
-    {
-      "age_min": null,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "flows",
-      "freshness": "UNAVAILABLE",
-      "health": "HEALTHY",
-      "max_age_min": 720.0,
-      "note": "Participation du march\u00e9 : une lecture de march\u00e9, sans valeur si elle date de la veille.",
-      "refresh_interval_min": 60.0,
-      "source_id": "market_breadth"
-    },
-    {
-      "age_min": null,
-      "criticality": "OPTIONAL",
-      "enabled": true,
-      "family": "flows",
-      "freshness": "UNAVAILABLE",
-      "health": "HEALTHY",
-      "max_age_min": 20160.0,
-      "note": "Rapport hebdomadaire : au-del\u00e0 de deux cadences, la lecture est p\u00e9rim\u00e9e par construction.",
-      "refresh_interval_min": 720.0,
-      "source_id": "coinshares_weekly"
-    },
-    {
-      "age_min": null,
-      "criticality": "OPTIONAL",
-      "enabled": true,
-      "family": "events",
-      "freshness": "UNAVAILABLE",
-      "health": "HEALTHY",
-      "max_age_min": 10080.0,
-      "note": "SIMD et EIP : \u00e9v\u00e9nements de long terme, dont seul le changement d'\u00e9tape compte.",
-      "refresh_interval_min": 720.0,
-      "source_id": "protocol_proposals"
-    },
-    {
-      "age_min": null,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "events",
-      "freshness": "UNAVAILABLE",
-      "health": "HEALTHY",
-      "max_age_min": 4320.0,
-      "note": "D\u00e9p\u00f4ts EDGAR : l'\u00e9v\u00e9nement persiste, mais son \u00e9tape peut changer.",
-      "refresh_interval_min": 360.0,
-      "source_id": "sec_filings"
-    },
-    {
-      "age_min": null,
-      "criticality": "IMPORTANT",
-      "enabled": true,
-      "family": "events",
-      "freshness": "UNAVAILABLE",
-      "health": "HEALTHY",
-      "max_age_min": 1440.0,
-      "note": "Les calendriers officiels changent rarement, mais la fen\u00eatre autour d'un \u00e9v\u00e9nement impose une v\u00e9rification rapproch\u00e9e.",
-      "refresh_interval_min": 360.0,
-      "source_id": "event_calendars"
-    },
-    {
-      "age_min": null,
-      "criticality": "OPTIONAL",
-      "enabled": true,
-      "family": "events",
-      "freshness": "UNAVAILABLE",
-      "health": "HEALTHY",
-      "max_age_min": 2880.0,
-      "note": "\u00c9tapes l\u00e9gislatives: lentes, sauf vote imminent.",
-      "refresh_interval_min": 360.0,
-      "source_id": "regulation"
-    },
-    {
-      "age_min": null,
-      "criticality": "OPTIONAL",
-      "enabled": true,
-      "family": "spot",
-      "freshness": "UNAVAILABLE",
-      "health": "HEALTHY",
-      "max_age_min": 360.0,
-      "note": "Transferts attribu\u00e9s: utiles en tendance, pas \u00e0 la minute.",
-      "refresh_interval_min": 60.0,
-      "source_id": "whales"
-    }
-  ],
-  "status": "DEGRADED"
+  "run_id": "run_20260921T214235Z",
+  "status": "ok",
+  "time": "2026-09-21T21:42:36.458067+00:00",
+  "version": "0.1.0"
 }

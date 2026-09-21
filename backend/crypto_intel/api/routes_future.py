@@ -86,6 +86,12 @@ def future_decision(
     result["horizons"] = snapshot.future_horizons
     result["analysis_id"] = snapshot.analysis_id
     result["price_at_analysis"] = snapshot.price_at_analysis
+    try:
+        from ..history.decisions import decision_streak
+
+        result["decision_history"] = decision_streak(asset, selected_horizon.value)
+    except Exception:  # a missing history never blocks the decision
+        result["decision_history"] = None
     return result
 
 

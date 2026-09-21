@@ -101,13 +101,20 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    // Grouped sections of compact rows, a short reading, what would change it.
+    // « En bref » first (translated cards), then the grouped sections of
+    // compact rows, a short reading, what would change it.
+    expect(find.byKey(const ValueKey('family-essentials')), findsOneWidget);
+    await tester.scrollUntilVisible(
+        find.byKey(const ValueKey("section-L'essentiel")), 200,
+        scrollable: find.byType(Scrollable).last);
     expect(find.byKey(const ValueKey("section-L'essentiel")), findsOneWidget);
     expect(find.byType(MetricTile), findsNothing);
 
     // A row opens its measure in full: value, the three dates, why it matters.
     final rsi = find.byKey(const ValueKey('row-technical.rsi'));
     await tester.scrollUntilVisible(rsi, 200, scrollable: find.byType(Scrollable).last);
+    await tester.ensureVisible(rsi);
+    await tester.pumpAndSettle();
     await tester.tap(rsi);
     await tester.pumpAndSettle();
     expect(find.byType(MetricTile), findsOneWidget);
@@ -424,7 +431,7 @@ void main() {
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
     final analysis = decision.analysis!;
     // The home says what the market is doing and why the entry waits...
-    expect(find.text(analysis.summary.sentence), findsOneWidget);
+    expect(find.text(analysis.summary.reading.headline), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('see-full-analysis')),
       300,

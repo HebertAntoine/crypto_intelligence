@@ -87,6 +87,8 @@ class EventCandidate:
     hours: float
     score: float
     reasons: str
+    #: When it happens - so the page can say « mardi 20:00 », never guess it.
+    at: datetime | None = None
 
 
 def event_candidates(
@@ -143,6 +145,7 @@ def event_candidates(
                 f"importance {imp:.2f} × proximité {proximity:.2f} × amplitude {mag:.2f} × "
                 f"incertitude {uncertainty:.2f} × exposition {exp_:.2f}"
             ),
+            at=when,
         ))
     return sorted(out, key=lambda c: c.score, reverse=True)
 

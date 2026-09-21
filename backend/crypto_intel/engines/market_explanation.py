@@ -108,8 +108,17 @@ def explain_market(
             "INSUFFICIENT_DATA": "WHITE",
         }[state]
         detail = (demand.sentences or ["Flux non mesurés."])[0]
+        title = {
+            "STRONG_INFLOW": "Les institutionnels achètent fortement",
+            "INFLOW": "Les institutionnels achètent",
+            "NEUTRAL": "Les flux institutionnels sont stables",
+            "OUTFLOW": "Les institutionnels vendent",
+            "STRONG_OUTFLOW": "Les institutionnels vendent fortement",
+            "DIVERGENCE": "Les flux institutionnels se contredisent",
+            "INSUFFICIENT_DATA": "Flux institutionnels non mesurés",
+        }[state]
         explanation.lines.append(ExplanationLine(
-            "💰", "institutions", f"Institutions — {demand.label.lower()}", detail, tone,
+            "💰", "institutions", title, detail, tone,
             route="institutions",
         ))
 
@@ -121,7 +130,7 @@ def explain_market(
             "MIXED": "YELLOW", "RISK_OFF": "RED", "INSUFFICIENT_DATA": "WHITE",
         }[breadth.regime.value]
         explanation.lines.append(ExplanationLine(
-            "🪙", "participation", f"Participation — {breadth.label.lower()}",
+            "🪙", "participation", breadth.label,
             (breadth.sentences or [""])[0], tone, route="market",
         ))
 
@@ -144,14 +153,25 @@ def explain_market(
             detail += f" Marché : {reaction.label.lower()}."
         explanation.lines.append(ExplanationLine(
             {"BTC": "🟠", "ETH": "💎", "SOL": "🟣"}.get(asset.value, "🪙"),
-            "catalysts", f"{asset.value} — catalyseur propre", detail, tone, route="catalysts",
+            "catalysts",
+            f"Actualité propre à {({'BTC': 'Bitcoin', 'ETH': 'Ether', 'SOL': 'Solana'}).get(asset.value, asset.value)}",
+            detail, tone, route="catalysts",
         ))
+
+    # Macro and leverage in the same plain words as the decision page.
+    from .interpretation import derivatives_cards, macro_cards
 
     macro = families.get("macro")
     if macro is not None and getattr(macro, "usable", False):
+        lead = next(iter(macro_cards(macro, {}, getattr(view, "as_of", None))), None)
         tone = "RED" if (macro.score or 0) < -20 else "GREEN" if (macro.score or 0) > 20 else "ORANGE"
+        if lead is not None and lead["tone"] in {"GREEN", "RED", "ORANGE"}:
+            tone = lead["tone"]  # the colour of the sentence shown, not of the family average
         explanation.lines.append(ExplanationLine(
-            "🏦", "macro", "Macro", macro.headline or "Conditions financières suivies.",
+            lead["emoji"] if lead else "🏦", "macro",
+            lead["title"] if lead else "Macro",
+            (f"{lead['so_what']}" if lead and lead["so_what"] else
+             macro.headline or "Conditions financières suivies."),
             tone, route="macro",
         ))
     derivatives = families.get("derivatives")
@@ -159,9 +179,11 @@ def explain_market(
         crowded = str((derivatives.extra or {}).get("crowding", "")) in {
             "CROWDED_LONGS", "CROWDED_SHORTS"
         }
+        lead = next(iter(derivatives_cards(derivatives, {})), None)
         explanation.lines.append(ExplanationLine(
-            "⚠️", "derivatives", "Dérivés",
-            derivatives.headline or "Levier suivi.",
+            "⚠️" if crowded else "📈", "derivatives",
+            lead["title"] if lead else "Dérivés",
+            lead["so_what"] if lead else (derivatives.headline or "Levier suivi."),
             "RED" if crowded else "GREEN", route="derivatives",
         ))
     technical = families.get("technical")

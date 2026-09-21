@@ -264,10 +264,10 @@ void _mockupRules() {
 
         // The screen lays the engine's reasons out, three at most; it writes
         // none, and the statistical validation is never one of them.
-        final reasons = analysis.summary.reasons;
-        expect(reasons.length, inInclusiveRange(1, 3));
-        expect(find.text(analysis.summary.sentence), findsOneWidget);
-        for (final reason in reasons) {
+        final reading = analysis.summary.reading;
+        expect(reading.why.length, inInclusiveRange(1, 3));
+        expect(find.text(reading.headline), findsOneWidget);
+        for (final reason in reading.why) {
           expect(find.text(reason.title), findsWidgets, reason: reason.title);
           expect(reason.title.contains('avantage'), isFalse);
         }
@@ -338,13 +338,17 @@ void _iphoneRendering() {
       }
     });
 
-    testWidgets('a factor with a measured figure shows it', (tester) async {
+    testWidgets('each family shows its finding in plain words', (tester) async {
       await _open(tester, 'BTC');
       final decision = await _shippedClient().futureDecision('BTC');
+      final reading = decision.analysis!.summary.reading;
 
+      // The raw figure (« RSI 86 ») moved to the family page; the home says
+      // what it means. Every family with a translated card shows it.
       for (final family in decision.analysis!.summary.homeFamilies) {
-        if (family.keyInfo.isEmpty) continue;
-        expect(find.text(family.keyInfo), findsOneWidget, reason: family.name);
+        final lead = reading.families[family.family]?.firstOrNull;
+        if (lead == null) continue;
+        expect(find.textContaining(lead.title), findsWidgets, reason: family.name);
       }
     });
   });

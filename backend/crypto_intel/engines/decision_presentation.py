@@ -631,8 +631,8 @@ _NOTABLE = {
                   "🛢️ Pétrole en forte baisse → pression inflationniste en recul."),
     "equity_fear": ("macro.vix", "😨 Volatilité actions en forte hausse → aversion au risque.",
                     "😌 Volatilité actions en net repli → appétit pour le risque."),
-    "risk_appetite": ("macro.nasdaq", "📉 Nasdaq en forte baisse → aversion au risque.",
-                      "📈 Nasdaq en forte hausse → appétit pour le risque."),
+    "risk_appetite": ("macro.nasdaq", "📈 Nasdaq en forte hausse → appétit pour le risque.",
+                      "📉 Nasdaq en forte baisse → aversion au risque."),
     "nominal_yield": ("macro.us10y", "🏛️ Taux 10 ans en forte hausse.", "🏛️ Taux 10 ans en net repli."),
 }
 #: A component signal (tanh of the move over one normal move) at or beyond
@@ -1249,7 +1249,12 @@ def summarize(decision: Any, *, as_of: Any = None, top_event: Any = None,
         for issue in view.get("data_issues", []):
             issues.append(f"{issue} — {DISPLAY_NAME.get(key, FAMILY_LABEL[key])}")
     confidence = decision.confidence
+    from .interpretation import build_reading
+
+    reading = build_reading(decision, views, top_event=top_event,
+                            as_of=as_of if isinstance(as_of, datetime) else None, asset=asset)
     return {
+        "reading": reading,
         "sentence": sentence,
         "trend": {"emoji": trend["emoji"], "label": trend["label"]},
         "entry_quality": {"emoji": entry[0], "label": entry[1], "tone": entry[2]},

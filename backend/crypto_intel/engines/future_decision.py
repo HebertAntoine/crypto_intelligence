@@ -1010,6 +1010,10 @@ class FutureDecisionEngine:
         from .factor_semantics import FactorAssessment
         from .market_synthesis import MarketSynthesisEngine
 
+        # « À surveiller » lists what is still ahead: an event whose time has
+        # passed belongs to its reaction, not to the list of things to come.
+        ahead = [item for item in event_list
+                 if item.scheduled_at is None or item.scheduled_at >= now]
         synthesis = MarketSynthesisEngine().synthesize(
             [FactorAssessment.from_dict(item) for item in families.normalised_factors],
             next_events=[
@@ -1020,12 +1024,12 @@ class FutureDecisionEngine:
                     ),
                 }
                 for event in sorted(
-                    (item for item in event_list if item.scheduled_at is not None),
+                    (item for item in ahead if item.scheduled_at is not None),
                     key=lambda item: (-item.importance.rank, item.scheduled_at),
                 )[:3]
             ],
             upcoming_events=_with_attention(
-                EventRelevanceEngine().top(event_list, asset, limit=3, now=now),
+                EventRelevanceEngine().top(ahead, asset, limit=3, now=now),
                 event_list,
                 now,
             ),

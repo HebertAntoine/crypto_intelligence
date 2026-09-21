@@ -9,6 +9,7 @@ import '../api/future_models.dart';
 import '../live_prices/live_price_service.dart';
 import '../widgets/live_price_builder.dart';
 import '../widgets/mobile_kit.dart';
+import '../widgets/reading_widgets.dart';
 import 'cycle_page.dart';
 
 const _green = Color(0xFF55DD8B);
@@ -235,6 +236,9 @@ class _FullAnalysisPageState extends State<FullAnalysisPage> {
                                           family: family,
                                           asset: widget.asset,
                                           horizon: _horizon,
+                                          essentials: analysis.summary.reading
+                                                  .families[family.family] ??
+                                              const [],
                                         ),
                                 ),
                               ),
@@ -880,11 +884,15 @@ class FamilyDetailPage extends StatelessWidget {
   final String asset;
   final String horizon;
 
+  /// « En bref »: at most three translated cards, shown before any figure.
+  final List<ReadingCard> essentials;
+
   const FamilyDetailPage({
     super.key,
     required this.family,
     required this.asset,
     required this.horizon,
+    this.essentials = const [],
   });
 
   @override
@@ -931,6 +939,19 @@ class FamilyDetailPage extends StatelessWidget {
                 key: ValueKey('family-detail-${family.family}'),
                 padding: const EdgeInsets.fromLTRB(18, 8, 18, 120),
                 children: [
+                  if (essentials.isNotEmpty) ...[
+                    FamilyEssentials(cards: essentials),
+                    const SizedBox(height: 14),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text('Détails',
+                          style: TextStyle(
+                              color: Color(0xFF9FB3CC),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: .6)),
+                    ),
+                  ],
                   GlassPanel(
                     borderColor: color.withValues(alpha: .6),
                     child: Column(

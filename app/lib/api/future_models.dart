@@ -1,6 +1,10 @@
 /// Typed models for the future-first decision endpoints.
 library;
 
+import 'reading_models.dart';
+
+export 'reading_models.dart';
+
 double? _number(dynamic value) => value is num ? value.toDouble() : null;
 
 class FutureSourceRead {
@@ -452,6 +456,8 @@ class FutureScenarioRead {
 }
 
 class FutureDecisionRead {
+  /// « Attendre depuis 3 jours », recorded - null until readings exist.
+  final DecisionHistoryRead? decisionHistory;
   final String asset;
   final String analysisId;
   final DateTime? asOf;
@@ -499,6 +505,7 @@ class FutureDecisionRead {
   final FutureAnalysisRead? analysis;
 
   const FutureDecisionRead({
+    this.decisionHistory,
     required this.asset,
     required this.analysisId,
     required this.horizon,
@@ -546,6 +553,7 @@ class FutureDecisionRead {
     final eventRisk = json['event_risk'] as Map? ?? const {};
     final next = json['next_major_event'];
     return FutureDecisionRead(
+      decisionHistory: DecisionHistoryRead.fromJson(json['decision_history']),
       asset: json['asset']?.toString() ?? '',
       analysisId: json['analysis_id']?.toString() ?? '',
       asOf: DateTime.tryParse(json['as_of']?.toString() ?? '')?.toLocal(),
@@ -1043,6 +1051,7 @@ class AnalysisHomeFamilyRead {
 
 /// Trend, entry quality and risk kept apart; validation shown on its own.
 class AnalysisSummaryRead {
+  final ReadingRead reading;
   final String sentence;
   final AnalysisBadgeRead trend;
   final AnalysisBadgeRead entryQuality;
@@ -1056,6 +1065,7 @@ class AnalysisSummaryRead {
   final List<String> displayFamilies;
 
   const AnalysisSummaryRead({
+    this.reading = const ReadingRead(),
     this.sentence = '',
     this.trend = const AnalysisBadgeRead(),
     this.entryQuality = const AnalysisBadgeRead(),
@@ -1076,6 +1086,7 @@ class AnalysisSummaryRead {
     final json = _map(raw);
     final validation = _map(json['validation']);
     return AnalysisSummaryRead(
+      reading: ReadingRead.fromJson(json['reading']),
       sentence: json['sentence']?.toString() ?? '',
       trend: AnalysisBadgeRead.fromJson(json['trend']),
       entryQuality: AnalysisBadgeRead.fromJson(json['entry_quality']),

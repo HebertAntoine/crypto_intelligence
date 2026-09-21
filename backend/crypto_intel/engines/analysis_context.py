@@ -1093,6 +1093,16 @@ def build_context(
         horizon.value: build_families(decision_view, asset, horizon)
         for horizon in DecisionHorizon
     }
+    # Every horizon reads its levels on its own candles (daily for 30 days),
+    # but the page speaks of the price now: the finest reading is handed to
+    # the others so a level already cleared is never shown as ahead.
+    finest = decision_families_by_horizon[DecisionHorizon.H24.value].get("technical")
+    current_price = finest.extra.get("price") if finest is not None else None
+    if current_price:
+        for horizon_families in decision_families_by_horizon.values():
+            technical = horizon_families.get("technical")
+            if technical is not None:
+                technical.extra["current_price"] = current_price
     edge_state = str(getattr(edge, "state", "") or "") or None
     future_engine = FutureDecisionEngine()
     future_decision = future_engine.decide(

@@ -900,7 +900,10 @@ def liquidity_family(view: PointInTimeView, asset: Asset, horizon: DecisionHoriz
             + ("offre quasi stable." if abs(signal) < 0.15
                else "du cash crypto supplémentaire arrive sur les plateformes."
                if stables.delta_pct > 0 else "du cash crypto quitte les plateformes."),
-            turn_condition="Un recul durable de l'offre de stablecoins.",
+            # What would turn this reading: a supply that grows would turn a
+            # falling reading, and the reverse - never a fixed sentence.
+            turn_condition=("Un recul durable de l'offre de stablecoins." if stables.delta_pct > 0
+                            else "Une hausse durable de l'offre de stablecoins."),
             metrics=[stables.key],
         ))
 

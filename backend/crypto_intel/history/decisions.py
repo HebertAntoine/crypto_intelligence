@@ -24,8 +24,13 @@ log = get_logger("history.decisions")
 KIND = "decision"
 
 
-def record_decision(snapshot: Any) -> bool:
-    """Write what the system concluded, at the moment it concluded it."""
+def record_decision(snapshot: Any, future: dict[str, Any] | None = None) -> bool:
+    """Write what the system concluded, at the moment it concluded it.
+
+    `future` holds, per horizon, the verdict shown on the page and the one
+    line that explains it - so « ATTENDRE depuis 3 jours » is a record, not a
+    reconstruction.
+    """
     opportunity = snapshot.opportunity
     location_state = str(
         getattr(getattr(snapshot.location, "state", None), "value", "") or ""
@@ -48,6 +53,8 @@ def record_decision(snapshot: Any) -> bool:
         "dominant_factor_text": dominant[0].short_text if dominant else "",
         "guard_rails": list(opportunity.guard_rails_applied),
     }
+    if future:
+        payload["future"] = future
     return save_snapshot(
         KIND, Asset(snapshot.asset), payload,
         price=snapshot.price_at_analysis, when=snapshot.analysis_time,
@@ -109,3 +116,52 @@ def decision_history(
          **(row.get("payload") or {})}
         for row in rows
     ]
+
+
+VERDICT_FR = {"BUY": "Acheter", "WAIT": "Attendre", "SELL": "Vendre",
+              "INSUFFICIENT_DATA": "Données insuffisantes"}
+
+
+def decision_streak(asset: Asset, horizon: str, lookback_days: int = 30,
+                    now: datetime | None = None) -> dict[str, Any] | None:
+    """How long the page's verdict has held, and why it did not change.
+
+    Built only from recorded readings. When the streak reaches the oldest
+    record, it says « depuis au moins »: we do not claim a history we lack.
+    """
+
+    reference = now or datetime.now(UTC)
+    rows = [r for r in load_snapshots(KIND, asset, since=reference - timedelta(days=lookback_days),
+                                      limit=3000)
+            if ((r.get("payload") or {}).get("future") or {}).get(horizon)]
+    if not rows:
+        return None
+    current = rows[0]["payload"]["future"][horizon]
+    streak = [rows[0]]
+    for row in rows[1:]:
+        if row["payload"]["future"][horizon].get("action") != current.get("action"):
+            break
+        streak.append(row)
+    complete = len(streak) < len(rows)
+    since = streak[-1]["captured_at"]
+    steps: list[dict[str, Any]] = []
+    for row in reversed(streak):
+        reading = row["payload"]["future"][horizon]
+        reason = reading.get("reason") or ""
+        if steps and steps[-1]["reason"] == reason:
+            continue
+        steps.append({"at": row["captured_at"].isoformat(),
+                      "label": VERDICT_FR.get(reading.get("action"), reading.get("action")),
+                      "reason": reason})
+    days = (reference - since).total_seconds() / 86400
+    span = (f"{int(days)} jour{'s' if int(days) > 1 else ''}" if days >= 1
+            else f"{max(1, int(days * 24))} h")
+    label = VERDICT_FR.get(current.get("action"), current.get("action"))
+    return {
+        "action": current.get("action"),
+        "since": since.isoformat(),
+        "complete": complete,
+        "label": f"{label} depuis {'' if complete else 'au moins '}{span}",
+        "steps": steps[-4:],
+        "readings": len(streak),
+    }
