@@ -3,8 +3,9 @@
 The content comes from a personal subscription whose terms forbid any
 redistribution. So:
 
-  - every route answers only to a loopback client (127.0.0.1 / ::1), even if
-    the server were ever exposed by mistake;
+  - every route answers only to this machine (127.0.0.1 / ::1) or to the
+    member's own devices on their private Tailscale network (100.64.0.0/10),
+    even if the server were ever exposed by mistake;
   - no route is part of the static export (the export script refuses them,
     and a test pins it);
   - a Lexa analysis never feeds BUY / WAIT / SELL. The comparison route puts
@@ -13,6 +14,7 @@ redistribution. So:
 
 from __future__ import annotations
 
+import ipaddress
 from datetime import datetime
 from typing import Any
 
@@ -37,12 +39,21 @@ from ..lexa.repository import (
 router = APIRouter(prefix="/lexa", tags=["lexa (local)"])
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
+#: The member's private Tailscale network. `tailscale serve` (tailnet only,
+#: never Funnel) forwards their devices here with their 100.x address.
+TAILNET = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
 
 
 def _local_only(request: Request) -> None:
     host = request.client.host if request.client else ""
-    if host not in LOOPBACK:
-        raise HTTPException(403, "Lexa n'est accessible que depuis cette machine.")
+    if host in LOOPBACK:
+        return
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is None or not any(address in net for net in TAILNET):
+        raise HTTPException(403, "Lexa n'est accessible que depuis tes appareils (PC ou Tailscale).")
 
 
 class ConditionBody(BaseModel):

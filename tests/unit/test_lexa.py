@@ -207,6 +207,10 @@ def test_lexa_routes_answer_this_machine_only():
     assert local.get("/api/lexa/videos").status_code == 200
     remote = TestClient(app, client=("203.0.113.9", 5000))
     assert remote.get("/api/lexa/videos").status_code == 403
+    lan = TestClient(app, client=("192.168.1.20", 5000))
+    assert lan.get("/api/lexa/videos").status_code == 403
+    tailnet = TestClient(app, client=("100.119.156.72", 5000))  # own device via Tailscale
+    assert tailnet.get("/api/lexa/videos").status_code == 200
 
 
 def test_lexa_routes_are_never_exported():
