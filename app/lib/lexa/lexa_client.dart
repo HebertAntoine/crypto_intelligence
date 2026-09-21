@@ -94,5 +94,23 @@ class LexaClient {
   Future<void> setCapital(double value, {String? asset}) =>
       _send('PUT', '/settings/capital', {'value': value, 'asset': asset});
 
+  Future<String> startTestRun({
+    required String transcript,
+    required String title,
+    String? publishedAt,
+    double capital = 100,
+  }) async =>
+      (await _send('POST', '/test-runs', {
+        'transcript': transcript,
+        'title': title,
+        'published_at': publishedAt,
+        'capital': capital,
+      }))['run_id'] as String;
+
+  Future<Map<String, dynamic>> testRun(String id) =>
+      _send('GET', '/test-runs/$id');
+
+  Future<Map<String, dynamic>> testRuns() => _send('GET', '/test-runs');
+
   void close() => _http.close();
 }

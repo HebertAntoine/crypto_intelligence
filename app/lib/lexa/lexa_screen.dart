@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'lexa_client.dart';
 import 'lexa_models.dart';
+import 'lexa_test_screen.dart';
 
 const _panel = Color(0xFF0E1A28);
 const _border = Color(0xFF245386);
@@ -206,6 +207,11 @@ class _LexaHomeScreenState extends State<LexaHomeScreen> {
         },
       ),
     ], actions: [
+      IconButton(
+        tooltip: 'Tester une vidéo',
+        icon: const Text('🧪', style: TextStyle(fontSize: 20)),
+        onPressed: () => _open(LexaTestScreen(client: widget.client)),
+      ),
       IconButton(
         tooltip: 'Capital simulé',
         icon: const Text('⚙️', style: TextStyle(fontSize: 20)),

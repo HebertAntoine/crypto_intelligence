@@ -19,6 +19,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from ..lexa import test_run
 from ..lexa.repository import (
     AssetInput,
     LevelInput,
@@ -175,3 +176,42 @@ def get_comparison(analysis_id: int, request: Request) -> dict[str, Any]:
         ),
         "rule": "Les deux lectures restent indépendantes : aucune ne corrige l'autre.",
     }
+
+
+class TestRunBody(BaseModel):
+    transcript: str
+    title: str
+    published_at: str | None = None
+    source: str = "Transcription collée par le membre"
+    capital: float = 100.0
+
+
+@router.post("/test-runs")
+def post_test_run(body: TestRunBody, request: Request) -> dict[str, Any]:
+    """One video's transcript through the whole chain. Nothing is imported."""
+
+    _local_only(request)
+    if not body.title.strip():
+        raise HTTPException(422, "Le titre de la vidéo est obligatoire.")
+    try:
+        run_id = test_run.start(body.transcript, title=body.title.strip(),
+                                published_at=body.published_at or None,
+                                source=body.source, capital=body.capital)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {"run_id": run_id}
+
+
+@router.get("/test-runs")
+def get_test_runs(request: Request) -> dict[str, Any]:
+    _local_only(request)
+    return {"runs": test_run.list_runs()}
+
+
+@router.get("/test-runs/{run_id}")
+def get_test_run(run_id: str, request: Request) -> dict[str, Any]:
+    _local_only(request)
+    run = test_run.get(run_id)
+    if run is None:
+        raise HTTPException(404, "Test introuvable.")
+    return run

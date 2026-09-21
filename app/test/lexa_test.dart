@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto_intelligence_app/lexa/lexa_client.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_models.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_screen.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_test_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -227,5 +228,69 @@ void main() {
     expect(level['timestamp'], '18:42');
     expect(level['condition'], 'UNKNOWN');
     expect(level['confidence'], 'HIGH');
+  });
+
+  testWidgets('a test run shows its report, validation, transcript and JSON',
+      (tester) async {
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    var polls = 0;
+    Map<String, dynamic>? posted;
+    final client = LexaClient(
+      baseUrl: 'http://127.0.0.1:8100',
+      client: MockClient((request) async {
+        final path = request.url.path;
+        if (request.method == 'POST') {
+          posted = jsonDecode(request.body) as Map<String, dynamic>;
+          return http.Response(jsonEncode({'run_id': '20260921T120000Z'}), 200);
+        }
+        if (path.endsWith('/test-runs')) {
+          return http.Response(jsonEncode({'runs': []}), 200);
+        }
+        polls++;
+        final done = polls > 1;
+        return http.Response(
+            jsonEncode({
+              'status': {'state': done ? 'DONE' : 'RUNNING'},
+              if (done) ...{
+                'report':
+                    '# 🎬 Test\n## ADA\n| Niveau | Interprétation |\n|---|---|\n'
+                        '| 0,487 \$ | 🟢 Achat principal |\n> **SIMULATION APP** : parts égales',
+                'validation': '## CONCLUSION TECHNIQUE\n🟡 7 niveaux vérifiés',
+                'transcript': '[03:02] Si ADA revient vers 0,4870',
+                'extraction': {'schema_version': 'lexa-extraction/1'},
+              },
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'});
+      }),
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: LexaTestScreen(
+          client: client, pollEvery: const Duration(milliseconds: 10)),
+    ));
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Titre de la vidéo'), 'Vidéo test');
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Transcription horodatée'),
+        '[03:02] Si ADA revient vers 0,4870');
+    await tester.tap(find.text('Lancer le test'));
+    // The spinner never settles while the run is RUNNING: pump until done.
+    for (var i = 0; i < 50 && find.text('Rapport').evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    await tester.pumpAndSettle();
+
+    expect(posted!['title'], 'Vidéo test');
+    expect(posted!['published_at'], isNull);
+    expect(find.text('0,487 \$'), findsOneWidget);
+    expect(find.text('🟢 Achat principal'), findsOneWidget);
+    await tester.tap(find.text('Validation'));
+    await tester.pumpAndSettle();
+    expect(find.text('CONCLUSION TECHNIQUE'), findsOneWidget);
+    await tester.tap(find.text('JSON'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('lexa-extraction/1'), findsOneWidget);
   });
 }

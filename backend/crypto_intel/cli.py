@@ -491,6 +491,26 @@ def cmd_data_health(args) -> int:
     return 0 if payload["healthy"] else 1
 
 
+def cmd_lexa_test(args) -> int:
+    """One Lexa video transcript through the whole chain; prints where the reports are."""
+
+    from .lexa import test_run
+
+    raw = Path(args.file).read_text(encoding="utf-8")
+    run_id = test_run.start(raw, title=args.title, published_at=args.published_at,
+                            source=args.source, capital=args.capital, model=args.model,
+                            background=False)
+    run = test_run.get(run_id) or {}
+    status = run.get("status", {})
+    print(f"Test {run_id} : {status.get('state')}")
+    if status.get("error"):
+        print(status["error"])
+        return 1
+    print(f"Rapports : {test_run.runs_dir() / run_id}")
+    print(run.get("validation", ""))
+    return 0
+
+
 def cmd_serve(args) -> int:
     import uvicorn
 
@@ -1209,6 +1229,15 @@ def main() -> int:
         description="Personal crypto market intelligence. Analysis only - never trades.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("lexa-test", help="Test the Lexa chain on one video transcript")
+    p.add_argument("file", help="Transcription horodatée ([12:31] texte, SRT, VTT, YouTube)")
+    p.add_argument("--title", required=True)
+    p.add_argument("--published-at", dest="published_at")
+    p.add_argument("--source", default="Transcription fournie par le membre")
+    p.add_argument("--capital", type=float, default=100.0)
+    p.add_argument("--model", default="gemma3:12b")
+    p.set_defaults(func=cmd_lexa_test, is_async=False)
 
     p = sub.add_parser("serve", help="Run the API server")
     p.add_argument("--host")
