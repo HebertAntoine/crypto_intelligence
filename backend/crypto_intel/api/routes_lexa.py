@@ -35,7 +35,9 @@ from ..lexa.repository import (
     list_by_date,
     set_capital,
 )
+from ..logging_setup import get_logger
 
+log = get_logger(__name__)
 router = APIRouter(prefix="/lexa", tags=["lexa (local)"])
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
@@ -44,7 +46,22 @@ LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
 TAILNET = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
 
 
+def _origin_allowed(origin: str) -> bool:
+    import re
+
+    from ..settings import get_settings
+
+    settings = get_settings()
+    return origin in settings.cors_list or bool(
+        settings.cors_origin_regex and re.fullmatch(settings.cors_origin_regex, origin))
+
+
 def _local_only(request: Request) -> None:
+    origin = request.headers.get("origin")
+    if origin and not _origin_allowed(origin):
+        # The browser will drop this answer: say which page asked, so the
+        # member's app address can be added to CORS_ORIGINS on purpose.
+        log.warning("lexa_origin_not_allowed", origin=origin)
     host = request.client.host if request.client else ""
     if host in LOOPBACK:
         return
