@@ -238,3 +238,66 @@ def test_test_run_routes_are_local_and_validate_input():
     assert bad.status_code == 422
     assert local.get("/api/lexa/test-runs/../../etc").status_code == 404
     assert local.get("/api/lexa/test-runs").json() == {"runs": []}
+
+
+def test_spoken_timeframes_and_split_numbers_from_speech():
+    import re
+
+    from crypto_intel.lexa.extraction import _TIMEFRAME_WORDS
+    from crypto_intel.lexa.listen import HALLUCINATIONS, normalise_numbers
+
+    assert re.search(_TIMEFRAME_WORDS["4H"], "une clôture 4 heures au-dessus", re.I)
+    assert re.search(_TIMEFRAME_WORDS["1H"], "sur le 1 heure", re.I)
+    assert normalise_numbers("ADA est à 0,5 120 en ce moment") == ("ADA est à 0,5120 en ce moment", True)
+    assert normalise_numbers("le bitcoin à 68 000") == ("le bitcoin à 68 000", False)
+    assert HALLUCINATIONS.search("Sous-titrage Société Radio-Canada")
+
+
+def test_listening_offsets_chunks_and_drops_whisper_inventions(tmp_path):
+    from crypto_intel.lexa.listen import transcribe_file
+
+    audio = tmp_path / "chunk.mp4"
+    audio.write_bytes(b"x")
+    segments, duration = transcribe_file(
+        audio, 30.0,
+        transcribe=lambda p: ([(1.0, " ADA à 0,5 120 "), (9.0, "Sous-titrage Radio-Canada")], 15.0))
+    assert duration == 15.0
+    assert segments == [{"start_s": 31, "text": "ADA à 0,5120", "joined_numbers": True}]
+
+
+def test_a_listening_session_keeps_no_audio_and_reaches_the_reports(monkeypatch):
+    import time
+
+    from crypto_intel.lexa import listen, test_run
+
+    monkeypatch.setattr(listen, "transcribe_file", lambda p, off, transcribe=None: (
+        [{"start_s": int(off), "text": "Si ADA revient vers 0,4870 ça redevient intéressant",
+          "joined_numbers": False}], 15.0))
+    started = {}
+
+    def fake_start(raw, **kw):
+        started["raw"] = raw
+        return "20260921T100000Z"
+
+    monkeypatch.setattr(test_run, "start", fake_start)
+    monkeypatch.setattr(test_run, "get", lambda rid: {"status": {"state": "DONE"}})
+    sid = listen.start(title="Vidéo test", published_at=None)
+    listen.add_chunk(sid, b"a" * 10, "audio/mp4")
+    listen.add_chunk(sid, b"b" * 10, "audio/mp4")
+    listen.finish(sid)
+    for _ in range(100):
+        if listen.status(sid)["state"] not in ("LISTENING", "TRANSCRIBING", "ANALYSING"):
+            break
+        time.sleep(0.05)
+    state = listen.status(sid)
+    assert state["state"] == "TO_VALIDATE"  # no auto-import before a validated test
+    assert "[00:00]" in started["raw"] and "[00:15]" in started["raw"]
+    assert not list(listen.listen_dir().joinpath(sid).glob("chunk-*"))  # audio deleted
+
+
+def test_auto_import_needs_one_validated_test_first():
+    from crypto_intel.lexa import listen
+
+    with pytest.raises(ValueError):
+        listen.set_auto_import(True)
+    assert listen.set_auto_import(False) is False

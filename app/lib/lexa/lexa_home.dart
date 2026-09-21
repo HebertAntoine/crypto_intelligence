@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../widgets/color_emoji.dart';
 import '../widgets/mobile_kit.dart';
 import 'lexa_client.dart';
+import 'lexa_listen_screen.dart';
 import 'lexa_plan_page.dart';
 import 'lexa_screen.dart';
 import 'lexa_test_screen.dart';
@@ -92,6 +93,14 @@ class _LexaHomeScreenState extends State<LexaHomeScreen> {
           builder: (context, snap) {
             final children = <Widget>[
               _header(snap.data),
+              const SizedBox(height: 14),
+              FilledButton(
+                key: const ValueKey('lexa-listen'),
+                onPressed: () => _open(LexaListenScreen(client: widget.client)),
+                style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16)),
+                child: lexaLabel('🎙️ Analyser une vidéo'),
+              ),
               const SizedBox(height: 14),
               _views(),
               const SizedBox(height: 12),

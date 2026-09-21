@@ -3,9 +3,12 @@
 // content is committed to this public repository.
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto_intelligence_app/lexa/lexa_client.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_home.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_listen_screen.dart';
+import 'package:crypto_intelligence_app/lexa/recorder/recorder.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_models.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_plan_page.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_screen.dart';
@@ -316,4 +319,96 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('lexa-extraction/1'), findsOneWidget);
   });
+
+  testWidgets('listening: start, stop, check once, then the plan is created',
+      (tester) async {
+    _tall(tester);
+    final calls = <String>[];
+    var imported = false;
+    var finished = false;
+    final client = LexaClient(
+      baseUrl: 'http://127.0.0.1:8100',
+      client: MockClient((request) async {
+        final path = request.url.path.replaceFirst('/api/lexa', '');
+        calls.add('${request.method} $path');
+        return switch (path) {
+          '/settings/auto-import' => _json({
+              'enabled': imported,
+              'allowed': imported,
+            }),
+          '/listen' => _json({'session_id': '20260921T100000Z'}),
+          '/listen/20260921T100000Z/chunk' => _json({'chunk': 1}),
+          '/listen/20260921T100000Z/finish' => () {
+              finished = true;
+              return _json({'state': 'TRANSCRIBING'});
+            }(),
+          '/listen/20260921T100000Z' => _json({
+              'state': finished ? 'TO_VALIDATE' : 'LISTENING',
+              'segments': 12,
+              'run_id': '20260921T100100Z',
+              'preview': [],
+            }),
+          '/test-runs/20260921T100100Z' => _json({
+              'status': {'state': 'DONE', 'run_id': '20260921T100100Z'},
+              'report': '# 🎬 Vidéo\n## ADA',
+              'validation': '## CONCLUSION',
+              'transcript': '[00:00] ADA',
+              'extraction': {},
+            }),
+          '/test-runs/20260921T100100Z/import' => () {
+              imported = true;
+              return _json({'video_id': 1});
+            }(),
+          _ => http.Response('{}', 404),
+        };
+      }),
+    );
+    final recorder = _FakeRecorder();
+    await tester.pumpWidget(MaterialApp(
+        home: LexaListenScreen(
+            client: client,
+            recorder: recorder,
+            pollEvery: const Duration(milliseconds: 10))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('lexa-listen-start')));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.textContaining('Écoute en cours'), findsOneWidget);
+    expect(calls, contains('POST /listen/20260921T100000Z/chunk'));
+
+    await tester.tap(find.byKey(const ValueKey('lexa-listen-stop')));
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    await tester.pumpAndSettle();
+    expect(find.text('À vérifier une fois'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('lexa-listen-import')));
+    await tester.pumpAndSettle();
+    expect(find.text('Plan créé'), findsOneWidget);
+    expect(calls, contains('PUT /settings/auto-import'));
+    expect(recorder.stopped, isTrue);
+  });
+}
+
+class _FakeRecorder extends LexaRecorder {
+  bool stopped = false;
+  bool _on = false;
+
+  @override
+  bool get supported => true;
+
+  @override
+  bool get running => _on;
+
+  @override
+  Future<void> start(
+      {required bool shareTab, required ChunkSink onChunk}) async {
+    _on = true;
+    await onChunk(Uint8List.fromList([1, 2, 3]), 'audio/mp4');
+  }
+
+  @override
+  Future<void> stop() async {
+    _on = false;
+    stopped = true;
+  }
 }

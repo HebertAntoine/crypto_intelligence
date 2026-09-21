@@ -159,8 +159,8 @@ def call_ollama(system: str, user: str, model: str = DEFAULT_MODEL,
 
 _TIMEFRAME_WORDS = {
     "15M": r"15 ?(min|minutes|m\b)",
-    "1H": r"\b(1 ?h|h1|une heure|horaire)\b",
-    "4H": r"\b(4 ?h|h4|quatre heures)\b",
+    "1H": r"\b(1 ?h(eures?)?|h1|une heure|horaire)\b",
+    "4H": r"\b(4 ?h(eures?)?|h4|quatre heures)\b",
     "1D": r"\b(daily|journali\w+|1 ?d|d1|jour)\b",
     "1W": r"\b(weekly|hebdo\w*|semaine|1 ?w)\b",
     "LONG_TERM": r"(long terme|mensuel|monthly)",

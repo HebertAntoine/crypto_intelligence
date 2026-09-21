@@ -9,6 +9,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
@@ -44,10 +45,10 @@ class LexaClient {
             (lexaBaseUrl.isNotEmpty
                 ? lexaBaseUrl
                 : AppConfig.apiBaseUrl.isNotEmpty
-                ? AppConfig.apiBaseUrl
-                // Served by the backend itself (PC or private Tailscale
-                // address): talk to the origin the page came from.
-                : (kIsWeb ? Uri.base.origin : lexaDefaultBaseUrl));
+                    ? AppConfig.apiBaseUrl
+                    // Served by the backend itself (PC or private Tailscale
+                    // address): talk to the origin the page came from.
+                    : (kIsWeb ? Uri.base.origin : lexaDefaultBaseUrl));
 
   Uri _uri(String path) =>
       Uri.parse('${baseUrl.replaceAll(RegExp(r'/+$'), '')}/api/lexa$path');
@@ -161,6 +162,48 @@ class LexaClient {
 
   Future<Map<String, dynamic>> importTestRun(String runId) =>
       _send('POST', '/test-runs/$runId/import', {});
+
+  // --- 🎙️ listening ------------------------------------------------------------
+
+  Future<String> startListen({String title = '', String? publishedAt}) async =>
+      (await _send('POST', '/listen', {
+        'title': title,
+        'published_at': publishedAt,
+      }))['session_id'] as String;
+
+  /// One complete audio slice, sent as is. Never kept by the server.
+  Future<void> sendChunk(String sid, Uint8List bytes, String mime) async {
+    try {
+      final response = await _http
+          .post(_uri('/listen/$sid/chunk'),
+              headers: {'Content-Type': mime.isEmpty ? 'audio/webm' : mime},
+              body: bytes)
+          .timeout(const Duration(seconds: 60));
+      if (response.statusCode >= 400) {
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+        throw LexaException(decoded is Map && decoded['detail'] is String
+            ? decoded['detail'] as String
+            : 'Erreur ${response.statusCode} du backend.');
+      }
+    } on LexaException {
+      rethrow;
+    } catch (_) {
+      throw const LexaException(
+          'Morceau audio non envoyé : vérifie Tailscale.');
+    }
+  }
+
+  Future<Map<String, dynamic>> finishListen(String sid) =>
+      _send('POST', '/listen/$sid/finish', {});
+
+  Future<Map<String, dynamic>> listenStatus(String sid) =>
+      _send('GET', '/listen/$sid');
+
+  Future<Map<String, dynamic>> autoImport() =>
+      _send('GET', '/settings/auto-import');
+
+  Future<Map<String, dynamic>> setAutoImport(bool enabled) =>
+      _send('PUT', '/settings/auto-import', {'enabled': enabled});
 
   void close() => _http.close();
 }

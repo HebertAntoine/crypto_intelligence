@@ -429,3 +429,76 @@ def post_import_test_run(run_id: str, request: Request) -> dict[str, Any]:
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return {"video_id": video_id, "current": lexa_service.current_ids()}
+
+
+# --- 🎙️ listening to a video ------------------------------------------------------------
+
+from ..lexa import listen as lexa_listen  # noqa: E402
+
+
+class ListenBody(BaseModel):
+    title: str = ""
+    published_at: str | None = None
+    video_url: str = ""
+
+
+@router.post("/listen")
+def post_listen(body: ListenBody, request: Request) -> dict[str, Any]:
+    """Start listening to a video the member is playing (microphone or shared tab)."""
+
+    _local_only(request)
+    title = body.title.strip() or f"Vidéo Lexa du {datetime.now().strftime('%d/%m/%Y')}"
+    sid = lexa_listen.start(title=title, published_at=body.published_at or None,
+                            video_url=body.video_url)
+    return {"session_id": sid, "auto_import": lexa_listen.auto_import_enabled()}
+
+
+@router.post("/listen/{sid}/chunk")
+async def post_listen_chunk(sid: str, request: Request) -> dict[str, Any]:
+    _local_only(request)
+    data = await request.body()
+    try:
+        index = lexa_listen.add_chunk(sid, data, request.headers.get("content-type", ""))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return {"chunk": index}
+
+
+@router.post("/listen/{sid}/finish")
+def post_listen_finish(sid: str, request: Request) -> dict[str, Any]:
+    _local_only(request)
+    try:
+        lexa_listen.finish(sid)
+        return lexa_listen.status(sid)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@router.get("/listen/{sid}")
+def get_listen(sid: str, request: Request) -> dict[str, Any]:
+    _local_only(request)
+    try:
+        return lexa_listen.status(sid)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+class AutoImportBody(BaseModel):
+    enabled: bool
+
+
+@router.get("/settings/auto-import")
+def get_auto_import(request: Request) -> dict[str, Any]:
+    _local_only(request)
+    return {"enabled": lexa_listen.auto_import_enabled(),
+            "allowed": lexa_listen.validated_once()}
+
+
+@router.put("/settings/auto-import")
+def put_auto_import(body: AutoImportBody, request: Request) -> dict[str, Any]:
+    _local_only(request)
+    try:
+        return {"enabled": lexa_listen.set_auto_import(body.enabled),
+                "allowed": lexa_listen.validated_once()}
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc

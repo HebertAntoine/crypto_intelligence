@@ -224,3 +224,21 @@ S'y ajoutent : la fenêtre de confirmation, les heures de clôture été/hiver, 
 - Notifications push hors de l'app : il suffit d'ajouter un sink ; aujourd'hui, elles s'affichent dans l'app.
 - Les événements cités par Lexa elle-même, dates à interpréter : ils sont extraits par le test, mais pas encore placés au calendrier.
 - La comparaison fine de ses niveaux avec nos propres supports et résistances, pour BTC, ETH et SOL.
+
+## 15. 🎙️ Analyser une vidéo tout seul (écoute)
+
+Bouton **🎙️ Analyser une vidéo** en haut de l'onglet Lexa.
+
+1. Tu lances la vidéo normalement, sur la plateforme Lexa.
+2. L'app écoute : par le micro de l'iPhone ou du Mac, ou, sur ordinateur, par le son de l'onglet que tu choisis de partager.
+3. Toutes les ~15 s, un morceau audio complet part vers le PC. Le PC le transcrit localement avec Whisper `large-v3-turbo` sur la carte graphique, puis efface l'audio.
+4. À « Terminer », la chaîne du LOT 3 s'exécute : extraction, vérificateur anti-invention, rapports.
+5. **Première vidéo** : tu vérifies le rapport, puis « C'est juste — créer le plan ». L'import automatique s'active alors.
+6. **Vidéos suivantes** : le plan est créé tout seul. Seules les valeurs retrouvées dans la transcription sont importées, avec leur passage.
+
+Les défauts propres à la parole sont corrigés automatiquement :
+- « 0,5 120 » devient 0,5120, et le passage est signalé à vérifier ;
+- les inventions classiques de Whisper (« Sous-titrage Radio-Canada »…) sont écartées ;
+- « 4 heures » est reconnu comme 4 h.
+
+Aucune connexion au compte Lexa, aucun téléchargement, aucune protection contournée : l'app écoute ce que tu lis. Les CGV de Lexa interdisent de copier ou reproduire leur contenu ; une transcription, même privée, peut être vue comme une reproduction. C'est ton choix, sur ton abonnement, pour un usage strictement personnel. Rien n'est diffusé : l'audio n'est jamais gardé, et le texte reste sur ton PC.
