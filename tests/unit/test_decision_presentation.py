@@ -421,7 +421,7 @@ def test_validation_is_separate_and_never_a_reason():
     assert "%" not in summary["confidence_label"]
 
 
-def test_the_home_lists_six_families_and_hides_silent_whales():
+def test_the_home_lists_the_families_and_declares_whales_without_a_source():
     families = all_families({MACRO: 10, LIQUIDITY: 5, FLOWS: 20, DERIVATIVES: 10, TECHNICAL: 20})
     families[CYCLE] = family(CYCLE, 10, extra={"cycle": {
         "phase": "RECOVERY", "phase_label": "Récupération", "phase_emoji": "🔵",
@@ -431,10 +431,15 @@ def test_the_home_lists_six_families_and_hides_silent_whales():
     }})
     summary = decide(families, DecisionHorizon.D7, ExternalChecks(asset="BTC")).summary
     names = [f["family"] for f in summary["home_families"]]
-    assert names == [TECHNICAL, DERIVATIVES, FLOWS, MACRO, CYCLE]
-    cycle_line = summary["home_families"][-1]
+    assert names == [TECHNICAL, DERIVATIVES, FLOWS, MACRO, CYCLE, ONCHAIN]
+    cycle_line = next(f for f in summary["home_families"] if f["family"] == CYCLE)
     assert cycle_line["key_info"] == "882 j depuis le halving · -35 % sous l'ATH"
     assert cycle_line["status"].startswith("Récupération")
+    # Whales with no connected source are declared, not hidden: hiding them
+    # would read as « measured and quiet ».
+    whales = summary["home_families"][-1]
+    assert whales["status"] == "Source non branchée"
+    assert "Rien n'est déduit" in whales["key_info"]
 
 
 def test_a_sell_needs_a_structural_break():

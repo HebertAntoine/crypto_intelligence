@@ -50,18 +50,84 @@ class _Title extends StatelessWidget {
       ]);
 }
 
+/// « 🧭 Résumé de la situation » : four to six lines that tell what the price
+/// did, what it coincides with, what amplified it, what holds it back, and why
+/// the decision follows. The roles are kept apart: a trigger is not an
+/// amplifier, and a coincidence is never presented as a cause.
+class SituationCard extends StatelessWidget {
+  final SituationRead situation;
+
+  const SituationCard({super.key, required this.situation});
+
+  static const _roleOrder = ['triggers', 'amplifiers', 'brakes', 'context'];
+  static const _roleEmoji = {
+    'triggers': '🔺',
+    'amplifiers': '⚡',
+    'brakes': '🧱',
+    'context': '🗺️',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    if (situation.isEmpty) return const SizedBox.shrink();
+    return GlassPanel(
+      key: const ValueKey('reading-situation'),
+      borderColor: const Color(0xFF2B669B),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _Title('🧭', 'Résumé de la situation'),
+          const SizedBox(height: 8),
+          Text(situation.text,
+              key: const ValueKey('situation-text'),
+              style:
+                  const TextStyle(color: _white, fontSize: 14.5, height: 1.5)),
+          for (final role in _roleOrder)
+            if ((situation.roles[role] ?? const []).isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                ColorEmoji(emoji: _roleEmoji[role]!, size: 14),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(situation.labels[role] ?? role,
+                          style: const TextStyle(
+                              color: _muted,
+                              fontSize: 11.5,
+                              letterSpacing: .4,
+                              fontWeight: FontWeight.w800)),
+                      for (final item in situation.roles[role]!)
+                        Text('• ${item.text}',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                height: 1.35)),
+                    ],
+                  ),
+                ),
+              ]),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
 /// One translated card: what happens, → what it means, 👀 what we watch.
 class ReadingCardTile extends StatelessWidget {
   final ReadingCard card;
   final bool showImportance;
+  final VoidCallback? onTap;
 
   const ReadingCardTile(
-      {super.key, required this.card, this.showImportance = true});
+      {super.key, required this.card, this.showImportance = true, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final color = readingTone(card.tone);
-    return Padding(
+    final body = Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,9 +181,17 @@ class ReadingCardTile extends StatelessWidget {
               ],
             ),
           ),
+          if (onTap != null)
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF4E7CB5)),
         ],
       ),
     );
+    if (onTap == null) return body;
+    return InkWell(
+        key: ValueKey('reason-${card.title}'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: body);
   }
 }
 
@@ -197,7 +271,12 @@ class WhyCard extends StatelessWidget {
           _Title('🔎', title),
           for (var i = 0; i < reading.why.length; i++) ...[
             if (i > 0) const Divider(height: 1, color: _divider),
-            ReadingCardTile(card: reading.why[i]),
+            ReadingCardTile(
+              card: reading.why[i],
+              onTap: reading.why[i].detail == null
+                  ? null
+                  : () => ReasonDetailSheet.open(context, reading.why[i]),
+            ),
           ],
           if (reading.contradiction != null) ...[
             const Divider(height: 1, color: _divider),
@@ -221,7 +300,8 @@ class WhyCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(reading.validationNote!,
                 key: const ValueKey('reading-validation'),
-                style: const TextStyle(color: _muted, fontSize: 12.5, height: 1.4)),
+                style: const TextStyle(
+                    color: _muted, fontSize: 12.5, height: 1.4)),
           ],
           if (onSeeAll != null)
             Align(
@@ -428,10 +508,145 @@ class FamilyEssentials extends StatelessWidget {
           const _Title('🎯', 'En bref'),
           for (var i = 0; i < cards.length; i++) ...[
             if (i > 0) const Divider(height: 1, color: _divider),
-            ReadingCardTile(card: cards[i]),
+            ReadingCardTile(
+              card: cards[i],
+              onTap: cards[i].detail == null
+                  ? null
+                  : () => ReasonDetailSheet.open(context, cards[i]),
+            ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// The detail behind one reason: the figures, why it matters, what we watch,
+/// its impact on the decision, and the sources with their freshness.
+class ReasonDetailSheet extends StatelessWidget {
+  final ReadingCard card;
+  final ScrollController? controller;
+
+  const ReasonDetailSheet({super.key, required this.card, this.controller});
+
+  static Future<void> open(BuildContext context, ReadingCard card) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: const Color(0xFF061525),
+        builder: (context) => DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: .7,
+          maxChildSize: .95,
+          builder: (context, controller) =>
+              ReasonDetailSheet(card: card, controller: controller),
+        ),
+      );
+
+  static const _label = TextStyle(
+      color: _muted,
+      fontSize: 12,
+      letterSpacing: .5,
+      fontWeight: FontWeight.w800);
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = card.detail;
+    return ListView(
+      key: const ValueKey('reason-detail'),
+      controller: controller,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+      children: [
+        Row(children: [
+          ColorEmoji(emoji: card.emoji, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(card.title,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800)),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        Text(
+            detail != null && detail.explanation.isNotEmpty
+                ? detail.explanation
+                : card.what,
+            style:
+                const TextStyle(color: _white, fontSize: 14.5, height: 1.45)),
+        if (detail != null) ...[
+          if (detail.data.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text('Données', style: _label),
+            for (final row in detail.data)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(children: [
+                  Expanded(
+                      child: Text(row.label,
+                          style:
+                              const TextStyle(color: _white, fontSize: 13.5))),
+                  Text(
+                      [row.value, if (row.change.isNotEmpty) row.change]
+                          .join('  '),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700)),
+                  if (row.period.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Text(row.period,
+                          style:
+                              const TextStyle(color: _muted, fontSize: 11.5)),
+                    ),
+                ]),
+              ),
+          ],
+          const SizedBox(height: 16),
+          const Text('Pourquoi cela compte', style: _label),
+          Text(detail.whyItMatters,
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 14, height: 1.45)),
+          if (detail.watch.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text('Ce que nous surveillons', style: _label),
+            Text(detail.watch,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 14, height: 1.45)),
+          ],
+          const SizedBox(height: 14),
+          Row(children: [
+            Expanded(
+              child: Text(
+                  'Impact sur la décision : ${detail.impactEmoji} ${detail.impact}',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700)),
+            ),
+            Text('Horizon : ${detail.horizon}',
+                style: const TextStyle(color: _muted, fontSize: 12.5)),
+          ]),
+          if (detail.sources.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text('Source', style: _label),
+            for (final source in detail.sources)
+              Text(
+                  '${source.name} — ${source.observedFr}'
+                  '${source.freshness.isEmpty ? '' : ' · donnée ${source.freshness}'}'
+                  '${source.stale ? '  ⚠️ non actualisée' : ''}',
+                  style: TextStyle(
+                      color: source.stale ? _orange : _muted,
+                      fontSize: 12.5,
+                      height: 1.4)),
+          ],
+          if (detail.note.isNotEmpty)
+            Text(detail.note,
+                style: const TextStyle(color: _muted, fontSize: 12.5)),
+        ],
+      ],
     );
   }
 }

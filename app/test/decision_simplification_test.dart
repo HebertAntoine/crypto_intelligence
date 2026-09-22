@@ -314,18 +314,35 @@ void main() {
     await _openBtc(tester);
     await _select7d(tester);
 
-    // The five families, in the engine's order, one line each.
+    // The five measured families in the engine's order, then the on-chain one,
+    // which is declared without a source rather than hidden. One line each.
     final decision = await _shippedClient().futureDecision('BTC', horizon: '7d');
     final families = decision.analysis!.summary.homeFamilies;
-    expect(families.map((f) => f.name).toList(),
-        ['Technique', 'Dérivés', 'Flux spot', 'Macro', 'Cycle Bitcoin']);
-    for (var index = 0; index < families.length - 1; index++) {
+    expect(families.map((f) => f.name).toList(), [
+      'Technique',
+      'Dérivés',
+      'Flux spot',
+      'Macro',
+      'Cycle Bitcoin',
+      'Baleines & on-chain',
+    ]);
+    expect(families.last.status, 'Source non branchée');
+    final measured = families.where((f) => f.family != 'onchain').toList();
+    for (var index = 0; index < measured.length; index++) {
       final row = find.byKey(ValueKey('main-factor-${index + 1}'));
       expect(
-        find.descendant(of: row, matching: find.text(families[index].name)),
+        find.descendant(of: row, matching: find.text(measured[index].name)),
         findsOneWidget,
       );
     }
+    // The unmeasured family keeps its own row, declared as such.
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('whale-status')),
+        matching: find.text('Baleines & on-chain'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('generic factor explanations are forbidden', (tester) async {

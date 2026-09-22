@@ -10,6 +10,107 @@ Map<String, dynamic> _m(Object? raw) =>
 List<String> _s(Object? raw) =>
     [for (final x in (raw as List? ?? const [])) x.toString()];
 
+/// What opens when a reason is tapped: values, sources, freshness.
+class ReasonDetail {
+  final String title;
+  final String explanation;
+  final String whyItMatters;
+  final String watch;
+  final String impact;
+  final String impactEmoji;
+  final String horizon;
+  final List<({String label, String value, String period, String change})> data;
+  final List<({String name, String observedFr, String freshness, bool stale})> sources;
+  final String note;
+
+  const ReasonDetail({
+    this.title = '',
+    this.explanation = '',
+    this.whyItMatters = '',
+    this.watch = '',
+    this.impact = '',
+    this.impactEmoji = '',
+    this.horizon = '',
+    this.data = const [],
+    this.sources = const [],
+    this.note = '',
+  });
+
+  static ReasonDetail? fromJson(Object? raw) {
+    final j = _m(raw);
+    if (j.isEmpty) return null;
+    return ReasonDetail(
+      title: j['title']?.toString() ?? '',
+      explanation: j['explanation']?.toString() ?? '',
+      whyItMatters: j['why_it_matters']?.toString() ?? '',
+      watch: j['watch']?.toString() ?? '',
+      impact: j['impact']?.toString() ?? '',
+      impactEmoji: j['impact_emoji']?.toString() ?? '',
+      horizon: j['horizon']?.toString() ?? '',
+      data: [
+        for (final d in (j['data'] as List? ?? const []))
+          (
+            label: _m(d)['label']?.toString() ?? '',
+            value: _m(d)['value']?.toString() ?? '',
+            period: _m(d)['period']?.toString() ?? '',
+            change: _m(d)['change']?.toString() ?? '',
+          )
+      ],
+      sources: [
+        for (final s in (j['sources'] as List? ?? const []))
+          (
+            name: _m(s)['name']?.toString() ?? '',
+            observedFr: _m(s)['observed_fr']?.toString() ?? '',
+            freshness: _m(s)['freshness']?.toString() ?? '',
+            stale: _m(s)['stale'] == true,
+          )
+      ],
+      note: j['note']?.toString() ?? '',
+    );
+  }
+}
+
+/// « 🧭 Résumé de la situation » and the role each factor plays.
+class SituationRead {
+  final String text;
+  final List<String> sentences;
+  final bool dominantCause;
+  final Map<String, List<({String emoji, String text})>> roles;
+  final Map<String, String> labels;
+
+  const SituationRead({
+    this.text = '',
+    this.sentences = const [],
+    this.dominantCause = false,
+    this.roles = const {},
+    this.labels = const {},
+  });
+
+  bool get isEmpty => text.isEmpty;
+
+  factory SituationRead.fromJson(Object? raw) {
+    final j = _m(raw);
+    return SituationRead(
+      text: j['text']?.toString() ?? '',
+      sentences: _s(j['sentences']),
+      dominantCause: j['dominant_cause'] == true,
+      roles: {
+        for (final e in _m(j['roles']).entries)
+          e.key: [
+            for (final r in (e.value as List? ?? const []))
+              (
+                emoji: _m(r)['emoji']?.toString() ?? '',
+                text: _m(r)['text']?.toString() ?? ''
+              )
+          ]
+      },
+      labels: {
+        for (final e in _m(j['labels']).entries) e.key: e.value.toString()
+      },
+    );
+  }
+}
+
 class ReadingCard {
   final String emoji;
   final String title;
@@ -21,6 +122,7 @@ class ReadingCard {
   final String importanceLabel;
   final String family;
   final String value;
+  final ReasonDetail? detail;
 
   const ReadingCard({
     this.emoji = '',
@@ -33,6 +135,7 @@ class ReadingCard {
     this.importanceLabel = '',
     this.family = '',
     this.value = '',
+    this.detail,
   });
 
   factory ReadingCard.fromJson(Object? raw) {
@@ -48,6 +151,7 @@ class ReadingCard {
       importanceLabel: j['importance_label']?.toString() ?? '',
       family: j['family']?.toString() ?? '',
       value: j['value']?.toString() ?? '',
+      detail: ReasonDetail.fromJson(j['detail']),
     );
   }
 }
@@ -102,6 +206,7 @@ class ReadingRead {
   final Map<String, List<ReadingCard>> families;
   final ReadingBadge data;
   final ReadingBadge market;
+  final SituationRead situation;
 
   const ReadingRead({
     this.action = '',
@@ -121,6 +226,7 @@ class ReadingRead {
     this.families = const {},
     this.data = const ReadingBadge(),
     this.market = const ReadingBadge(),
+    this.situation = const SituationRead(),
   });
 
   bool get isEmpty => headline.isEmpty;
@@ -160,6 +266,7 @@ class ReadingRead {
       },
       data: ReadingBadge.fromJson(j['data']),
       market: ReadingBadge.fromJson(j['market']),
+      situation: SituationRead.fromJson(j['situation']),
     );
   }
 }

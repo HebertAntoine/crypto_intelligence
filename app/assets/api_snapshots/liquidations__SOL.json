@@ -1,18 +1,22 @@
 {
-  "assessed_at": "2026-09-21T21:46:38.530926Z",
+  "assessed_at": "2026-09-22T18:41:59.290307Z",
   "asset": "SOL",
-  "cascade_risk": "LOW",
-  "conditions_note": "Cascade CONDITIONS are LOW (open interest at the 88th percentile). This describes how fragile positioning looks, not a liquidation forecast, and gives no directional information: a cascade can resolve either way. Actual liquidation volumes are UNAVAILABLE and are not estimated.",
+  "cascade_risk": "MODERATE",
+  "conditions_note": "Cascade CONDITIONS are MODERATE (leverage built up during volatility compression, open interest at the 92th percentile). This describes how fragile positioning looks, not a liquidation forecast, and gives no directional information: a cascade can resolve either way. Actual liquidation volumes are UNAVAILABLE and are not estimated.",
   "data_state": "UNAVAILABLE_NO_CONNECTOR",
   "liquidations_24h_usd": null,
   "long_liquidations_usd": null,
   "reason": "UNAVAILABLE - provider not configured (COINGLASS_API_KEY missing)",
   "risk_factors": [
     {
-      "factor": "open interest at the 88th percentile",
+      "factor": "leverage built up during volatility compression",
+      "weight": 20
+    },
+    {
+      "factor": "open interest at the 92th percentile",
       "weight": 15
     }
   ],
-  "run_id": "run_20260921T214235Z",
+  "run_id": "run_20260922T183848Z",
   "short_liquidations_usd": null
 }

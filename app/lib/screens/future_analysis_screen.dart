@@ -345,13 +345,19 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   // Decision -> what we wait for -> why -> what would change
                   // it, translated by the backend's interpretation layer. The
                   // older explanation card remains for payloads without it.
+                  // The order the brief sets: what is happening, why, what
+                  // we wait for, what would change it, then the families and
+                  // the calendar. Everything else lives one tap away.
                   if (!decision.analysis!.summary.reading.isEmpty) ...[
-                    WaitingForCard(reading: decision.analysis!.summary.reading),
+                    SituationCard(
+                        situation: decision.analysis!.summary.reading.situation),
                     const SizedBox(height: 14),
                     WhyCard(
                       reading: decision.analysis!.summary.reading,
                       onSeeAll: () => _openFullAnalysis(decision, bundle),
                     ),
+                    const SizedBox(height: 14),
+                    WaitingForCard(reading: decision.analysis!.summary.reading),
                     const SizedBox(height: 14),
                     ChangeMindCard(reading: decision.analysis!.summary.reading),
                     const SizedBox(height: 14),
@@ -365,15 +371,6 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                       decision: decision,
                       analysis: decision.analysis!,
                     ),
-                  const SizedBox(height: 14),
-                  if (bundle.marketState != null) ...[
-                    const SizedBox(height: 14),
-                    _WhyMarketCard(
-                      state: bundle.marketState!,
-                      asset: _asset,
-                      client: widget.client,
-                    ),
-                  ],
                   const SizedBox(height: 14),
                   _AnalysisFactorsCard(
                     analysis: decision.analysis!,
@@ -424,6 +421,16 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                           .map((item) => item.title.split(' — ').first)
                           .toSet(),
                 ),
+                // Advanced reading, after the calendar: the drivers of the
+                // move, each opening its own page.
+                if (decision.analysis != null && bundle.marketState != null) ...[
+                  const SizedBox(height: 14),
+                  _WhyMarketCard(
+                    state: bundle.marketState!,
+                    asset: _asset,
+                    client: widget.client,
+                  ),
+                ],
               ],
             );
           },
@@ -4738,19 +4745,21 @@ const _monthsShort = [
 /// One line under an upcoming date: what kind of attention it deserves.
 /// Never a direction - a date on a calendar does not have one yet.
 String _eventSubtitle(FutureEventRead event) {
-  final type = '${event.eventType} ${event.title}'.toUpperCase();
-  if (RegExp(r'FOMC|ECB|BOJ|RATE_DECISION|POLICY_DECISION|MONETARY')
-      .hasMatch(type)) {
-    return 'Direction encore inconnue';
-  }
-  if (RegExp(r'VOTE|BILL|HEARING|MARKUP|SEC_|CFTC|REGUL|SENATE|HOUSE')
-      .hasMatch(type)) {
-    return 'Étape importante à surveiller';
-  }
-  return switch (event.importance.toUpperCase()) {
-    'CRITICAL' || 'HIGH' => 'Impact potentiel élevé',
-    _ => 'Impact potentiel modéré',
+  // Two separate statements: how closely to watch, and which way it points.
+  // A date deserving full attention can still point nowhere yet.
+  final attention = switch (event.importance.toUpperCase()) {
+    'CRITICAL' => 'Attention critique',
+    'HIGH' => 'Attention élevée',
+    'MEDIUM' || 'MODERATE' => 'Attention modérée',
+    _ => 'Attention faible',
   };
+  final direction = switch (event.direction.toUpperCase()) {
+    'POSITIVE' => 'sens plutôt favorable',
+    'NEGATIVE' => 'sens plutôt défavorable',
+    'MIXED' => 'sens partagé',
+    _ => 'sens inconnu tant que le résultat n\'est pas publié',
+  };
+  return '$attention · $direction';
 }
 
 /// "14:30", or nothing when the source only gives a day.

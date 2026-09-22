@@ -1242,6 +1242,17 @@ def summarize(decision: Any, *, as_of: Any = None, top_event: Any = None,
             "key_info": home.get("key_info", ""),
         })
 
+    # A family with no connected source is still listed: hiding it would let
+    # the reader believe whales were measured and found quiet.
+    if ONCHAIN in families and not families[ONCHAIN].usable and \
+            not any(f["family"] == ONCHAIN for f in home_families):
+        home_families.append({
+            "family": ONCHAIN, "emoji": FAMILY_EMOJI[ONCHAIN],
+            "name": DISPLAY_NAME[ONCHAIN], "status": "Source non branchée",
+            "status_emoji": "⚪", "tone": WHITE,
+            "key_info": "Rien n'est déduit de l'activité des grandes adresses.",
+        })
+
     issues = []
     for key, view in views.items():
         if key in {ONCHAIN, LIQUIDITY}:

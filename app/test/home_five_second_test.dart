@@ -103,9 +103,11 @@ void main() {
         expect(
           find.byWidgetPredicate((widget) =>
               widget is Text &&
-              const {'Pourquoi attendre ?', 'Pourquoi acheter ?',
-                      'Pourquoi vendre ?'}
-                  .contains(widget.data)),
+              const {
+                'Pourquoi attendre ?',
+                'Pourquoi acheter ?',
+                'Pourquoi vendre ?'
+              }.contains(widget.data)),
           findsOneWidget,
         );
 
@@ -128,7 +130,7 @@ void main() {
         // The engine ranks every reading and event. The page shows the few
         // that weigh most; a fifth row means the cap leaked.
         // Six families at most; whales disappear when they carry nothing.
-    expect(find.byKey(const ValueKey('main-factor-7')), findsNothing);
+        expect(find.byKey(const ValueKey('main-factor-7')), findsNothing);
         expect(find.byKey(const ValueKey('main-factor-1')), findsOneWidget);
         // The generic gate wording no longer takes a factor's place.
         expect(find.text('Confirmation encore insuffisante'), findsNothing);
@@ -146,7 +148,8 @@ void main() {
                   find.descendant(of: row, matching: find.byType(Text)))
               .map((widget) => widget.data ?? '')
               // A tone dot, or the trend's own arrow for the technical family.
-              .where((text) => text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪|📈|📉|➡️) ')));
+              .where((text) =>
+                  text.startsWith(RegExp('(🔴|🟠|🟡|🟢|⚪|📈|📉|➡️) ')));
           expect(statuses.length, 1, reason: 'facteur $index');
         }
       });
@@ -165,7 +168,8 @@ void main() {
         expect(rows.evaluate().length, inInclusiveRange(1, 3));
       });
 
-      testWidgets('the watchlist does not repeat a main factor', (tester) async {
+      testWidgets('the watchlist does not repeat a main factor',
+          (tester) async {
         await _open(tester, asset);
         final decision = await _shippedClient().futureDecision(asset);
         final shownIds = {
@@ -219,7 +223,8 @@ void main() {
 
 void _plainLanguage() {
   group('plain French on the home', () {
-    testWidgets('figures are shown clean, never in the engine raw format', (tester) async {
+    testWidgets('figures are shown clean, never in the engine raw format',
+        (tester) async {
       await _open(tester, 'BTC');
 
       // "20 séances: +1 751.7 M$ 5 dernières séances: -623.8 M$" is accurate
@@ -242,7 +247,6 @@ void _plainLanguage() {
   });
 }
 
-
 void _mockupRules() {
   group('validated mockup', () {
     for (final asset in ['BTC', 'ETH', 'SOL']) {
@@ -251,7 +255,8 @@ void _mockupRules() {
         final decision = await _shippedClient().futureDecision(asset);
         if (decision.hierarchy?.reading != 'MIXED') return;
 
-        final tones = decision.hierarchy!.homeFactors.map((d) => d.tone).toSet();
+        final tones =
+            decision.hierarchy!.homeFactors.map((d) => d.tone).toSet();
         expect(tones.contains('GREEN'), isTrue);
         expect(tones.intersection({'RED', 'ORANGE'}), isNotEmpty);
       });
@@ -348,8 +353,73 @@ void _iphoneRendering() {
       for (final family in decision.analysis!.summary.homeFamilies) {
         final lead = reading.families[family.family]?.firstOrNull;
         if (lead == null) continue;
-        expect(find.textContaining(lead.title), findsWidgets, reason: family.name);
+        expect(find.textContaining(lead.title), findsWidgets,
+            reason: family.name);
       }
     });
+  });
+
+  testWidgets('the home tells the situation before listing the reasons',
+      (tester) async {
+    await _open(tester, 'BTC');
+    final reading = (await _shippedClient().futureDecision('BTC'))
+        .analysis!
+        .summary
+        .reading;
+    final situation = reading.situation;
+    expect(situation.isEmpty, isFalse);
+
+    // Four to six sentences that tell the move, not a list of metrics.
+    expect(situation.sentences.length, inInclusiveRange(3, 6));
+    expect(find.text(situation.text), findsOneWidget);
+
+    // A coincidence is never written as a proven cause.
+    expect(situation.text.toLowerCase().contains('parce que'), isFalse);
+
+    // Roles stay apart: what may have triggered, what amplified.
+    for (final role in situation.roles.entries) {
+      for (final item in role.value) {
+        expect(item.text.isNotEmpty, isTrue, reason: role.key);
+      }
+    }
+
+    // The order of the brief: situation, then why, then what we wait for.
+    double top(Key key) => tester.getTopLeft(find.byKey(key)).dy;
+    expect(top(const ValueKey('reading-situation')),
+        lessThan(top(const ValueKey('reading-why'))));
+    expect(top(const ValueKey('reading-why')),
+        lessThan(top(const ValueKey('reading-waiting'))));
+  });
+
+  testWidgets('a reason opens its figures, its sources and their freshness',
+      (tester) async {
+    await _open(tester, 'BTC');
+    final reading = (await _shippedClient().futureDecision('BTC'))
+        .analysis!
+        .summary
+        .reading;
+    final first = reading.why.first;
+    if (first.detail == null) return;
+
+    final tile = find.byKey(ValueKey('reason-${first.title}'));
+    await tester.ensureVisible(tile);
+    await tester.pumpAndSettle();
+    await tester.tap(tile);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('reason-detail')), findsOneWidget);
+    expect(find.text('Pourquoi cela compte'), findsOneWidget);
+    expect(find.textContaining(first.detail!.whyItMatters), findsWidgets);
+    if (first.detail!.sources.isNotEmpty) {
+      await tester.drag(
+          find.byKey(const ValueKey('reason-detail')), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(find.text('Source'), findsOneWidget);
+      expect(
+          find.textContaining(first.detail!.sources.first.name), findsWidgets);
+    }
+    // Impact and horizon are stated, never a probability.
+    expect(find.textContaining('Impact sur la décision'), findsOneWidget);
+    expect(find.textContaining('%de chances'), findsNothing);
   });
 }

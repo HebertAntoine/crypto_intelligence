@@ -33,7 +33,7 @@ from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from .decision_config import CYCLE, DERIVATIVES, FLOWS, MACRO, TECHNICAL
+from .decision_config import CYCLE, DERIVATIVES, FLOWS, MACRO, ONCHAIN, TECHNICAL
 from .factor_semantics import fr_number
 
 PARIS = ZoneInfo("Europe/Paris")
@@ -86,13 +86,14 @@ def day_fr(moment: datetime | None) -> str:
 
 def card(emoji: str, title: str, what: str, so_what: str = "", watch: str = "", *,
          tone: str = WHITE, importance: str = WATCH, family: str = "",
-         value: str = "", clause: str = "") -> dict[str, Any]:
+         value: str = "", clause: str = "", metrics: tuple[str, ...] = ()) -> dict[str, Any]:
     """`clause` is the same fact as a phrase that fits after « mais » in a sentence."""
 
     return {"emoji": emoji, "title": title, "what": what, "so_what": so_what, "watch": watch,
             "clause": clause or (title[:1].lower() + title[1:]),
             "tone": tone, "tone_emoji": TONE_EMOJI.get(tone, "⚪"), "importance": importance,
-            "importance_label": IMPORTANCE_FR[importance], "family": family, "value": value}
+            "importance_label": IMPORTANCE_FR[importance], "family": family, "value": value,
+            "metrics": list(metrics)}
 
 
 def _metric(family: Any, key: str) -> Any:
@@ -152,7 +153,9 @@ def technical_cards(family: Any, view: dict[str, Any], asset: str = "BTC") -> li
                "DOWN": "Les rebonds restent fragiles tant que la structure ne se retourne pas.",
                }.get(key, "Ni les acheteurs ni les vendeurs ne contrôlent le marché.")
     cards.append(card(trend.get("emoji", "➡️"), title, TREND_WORDS.get(structure, ""), so_what,
-                      tone=tone, importance=WATCH, family=TECHNICAL))
+                      tone=tone, importance=WATCH, family=TECHNICAL,
+                      metrics=("technical.structure", "technical.moving_averages",
+                               "price.change_7d")))
 
     resistance, support = levels(extra)
     near = bool(view.get("near_resistance"))
@@ -166,6 +169,7 @@ def technical_cards(family: Any, view: dict[str, Any], asset: str = "BTC") -> li
             "Tant qu'elle n'est pas franchie, la hausse n'est pas confirmée.",
             f"une clôture {tf} au-dessus de {usd(resistance)}.",
             tone=ORANGE, importance=NOW if near else WATCH, family=TECHNICAL, value=usd(resistance),
+            metrics=("technical.structure",),
             clause=f"le prix bute sous la résistance de {usd(resistance)}"))
     if support:
         detail = (extra.get("support_detail") or {}).get("explanation", "")
@@ -178,7 +182,7 @@ def technical_cards(family: Any, view: dict[str, Any], asset: str = "BTC") -> li
             "Une cassure nette sous ce niveau affaiblirait la structure actuelle.",
             f"une clôture {tf} sous {usd(support)} serait un signal de faiblesse.",
             tone=GREEN if not close else ORANGE, importance=NOW if close else WATCH,
-            family=TECHNICAL, value=usd(support)))
+            family=TECHNICAL, value=usd(support), metrics=("technical.support", "technical.structure")))
     if not resistance and not support:
         cards.append(card("🧱", "Pas de niveau fiable",
                           "Le moteur de structure ne trouve pas de support ou de résistance assez "
@@ -198,6 +202,7 @@ def technical_cards(family: Any, view: dict[str, Any], asset: str = "BTC") -> li
             f"un repli vers le support {usd(support)} ou une nouvelle cassure confirmée." if support
             else "un repli ou une cassure confirmée.",
             tone=ORANGE, importance=NOW, family=TECHNICAL, value=f"RSI {fr_number(rsi, 0)}",
+            metrics=("technical.rsi", "price.change_7d", "price.change_1d"),
             clause="le prix a déjà beaucoup monté"))
     return _rank(cards)
 
@@ -251,7 +256,8 @@ def derivatives_cards(family: Any, view: dict[str, Any]) -> list[dict[str, Any]]
                   "CROWDED_SHORTS": "les paris à la baisse sont nombreux",
                   "NEW_SHORTS": "de nouveaux paris à la baisse apparaissent"}.get(crowding, "")
         cards.append(card(emoji, title, what + rank, so_what, watch, tone=tone,
-                          importance=NOW if crowded else WATCH, family=DERIVATIVES, clause=clause))
+                          importance=NOW if crowded else WATCH, family=DERIVATIVES, clause=clause,
+                          metrics=("funding.rate", "oi.value_history")))
     liquidations = extra.get("liquidations") or {}
     day = liquidations.get("24h") or {}
     dominance = liquidations.get("dominance")
@@ -265,7 +271,7 @@ def derivatives_cards(family: Any, view: dict[str, Any]) -> list[dict[str, Any]]
             "Des positions perdantes ont été purgées : le mouvement a été amplifié par le levier."
             if big else "Volume modéré : pas de purge majeure.",
             tone=ORANGE if big else WHITE, importance=NOW if big else SECONDARY, family=DERIVATIVES,
-            value=f"{fr_number(amount / 1e6, 0)} M$"))
+            value=f"{fr_number(amount / 1e6, 0)} M$", metrics=("liquidations",)))
     dvol = extra.get("dvol_percentile")
     if dvol is not None and (dvol >= 80 or dvol <= 20):
         high = dvol >= 80
@@ -276,7 +282,7 @@ def derivatives_cards(family: Any, view: dict[str, Any]) -> list[dict[str, Any]]
             ("Éviter d'interpréter trop vite un mouvement isolé." if high else
              "Un calme prolongé précède souvent un mouvement plus ample, dans un sens ou dans l'autre."),
             tone=ORANGE if high else WHITE, importance=WATCH if high else SECONDARY,
-            family=DERIVATIVES))
+            family=DERIVATIVES, metrics=("dvol.index",)))
     return _rank(cards)
 
 
@@ -313,6 +319,7 @@ def flows_cards(family: Any, view: dict[str, Any], now: datetime | None,
             tone=GREEN if buyers else RED if sellers else YELLOW,
             importance=NOW if sellers else WATCH, family=FLOWS,
             clause="les vendeurs dominent au comptant" if sellers else "",
+            metrics=("spot.pressure",),
             value=f"{fr_number(share * 100, 0)} % acheteurs"))
     etf = _metric(family, "etf.net_flow")
     if etf is not None and etf.usable and etf.value is not None:
@@ -333,7 +340,7 @@ def flows_cards(family: Any, view: dict[str, Any], now: datetime | None,
              "Des institutionnels réduisent leur exposition : pression vendeuse."),
             "plusieurs séances de suite dans un sens ou dans l'autre.",
             tone=GREEN if inflow else RED, importance=NOW if big else WATCH, family=FLOWS,
-            value=etf.display_value))
+            value=etf.display_value, metrics=("etf.net_flow", "etf.streak")))
     return _rank(cards)
 
 
@@ -411,7 +418,7 @@ def macro_cards(family: Any, view: dict[str, Any], now: datetime | None,
         move = reading.delta_label or ""
         moves.append((abs(component.signal) * component.weight, card(
             emoji, title, f"{reading.label} : {reading.display_value}" + (f" ({move})" if move else "") + ".",
-            so_what, spec[3], tone=tone, importance=WATCH, family=MACRO)))
+            so_what, spec[3], tone=tone, importance=WATCH, family=MACRO, metrics=(spec[0],))))
     moves.sort(key=lambda m: m[0], reverse=True)
     if moves:
         moves[0][1]["importance"] = NOW
@@ -453,6 +460,75 @@ def cycle_cards(family: Any, view: dict[str, Any], asset: str) -> list[dict[str,
         "Contexte de long terme : les cycles passés ne permettent pas de dater un sommet ou un creux.",
         tone=WHITE, importance=NOW if cycle.get("elevated_structural_risk") else SECONDARY,
         family=CYCLE)]
+
+
+FRESHNESS_FR = {"LIVE": "en direct", "RECENT": "récente", "STALE": "ancienne",
+                "OLD": "ancienne", "UNAVAILABLE": "indisponible"}
+IMPACT_FR = {GREEN: ("POSITIF", "🟢"), RED: ("NÉGATIF", "🔴"), ORANGE: ("NÉGATIF", "🟠"),
+             YELLOW: ("MIXTE", "🟡"), WHITE: ("INCONNU", "⚪")}
+
+
+def detail_of(card_: dict[str, Any], family: Any, horizon: str,
+              now: datetime | None) -> dict[str, Any]:
+    """What opens when the reader taps a reason: values, sources, freshness.
+
+    Everything here already existed in the family reading; nothing is
+    recomputed, and a measure with no source is not listed.
+    """
+
+    data, sources = [], []
+    for key in card_.get("metrics", []):
+        reading = _metric(family, key)
+        if reading is None or not reading.usable:
+            continue
+        moment = reading.timestamp or reading.available_at
+        data.append({
+            "label": reading.label or key,
+            "value": reading.display_value,
+            "period": reading.period_label or (day_fr(moment) if moment else ""),
+            "change": reading.delta_label or "",
+        })
+        if reading.source:
+            stale = bool(now and moment and now - moment > timedelta(days=2))
+            sources.append({
+                "name": reading.source,
+                "observed_at": moment.isoformat() if moment else None,
+                "observed_fr": day_fr(moment) if moment else "date inconnue",
+                "freshness": FRESHNESS_FR.get(str(reading.status.value if hasattr(reading.status, "value")
+                                                  else reading.status), ""),
+                "stale": stale,
+            })
+    impact, impact_emoji = IMPACT_FR.get(card_["tone"], ("INCONNU", "⚪"))
+    return {
+        "title": card_["title"],
+        "explanation": card_["what"],
+        "why_it_matters": card_["so_what"],
+        "watch": card_["watch"] or "",
+        "impact": impact,
+        "impact_emoji": impact_emoji,
+        "horizon": HORIZON_FR.get(horizon, horizon),
+        "data": data,
+        "sources": sources,
+        "note": ("Aucune source rattachée à cette lecture." if not sources else ""),
+    }
+
+
+def onchain_cards(family: Any) -> list[dict[str, Any]]:
+    """Whales: declared, never guessed.
+
+    No robust source is connected today. Saying « aucun mouvement majeur » would
+    claim a measurement we do not have, so the card says what is missing.
+    """
+
+    if family is None:
+        return []
+    if not family.usable:
+        reason = (getattr(family, "unavailable_reason", "") or "").split(":")[0]
+        return [card("🐋", "Activité des grandes adresses non mesurée",
+                     (reason or "Aucune source on-chain robuste n'est branchée") + ".",
+                     "Rien n'est déduit des mouvements de baleines : ni achat, ni vente.",
+                     tone=WHITE, importance=SECONDARY, family=ONCHAIN)]
+    return []
 
 
 def _rank(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -508,6 +584,7 @@ def build_reading(decision: Any, views: dict[str, dict[str, Any]], *, top_event:
         FLOWS: flows_cards(fams.get(FLOWS), views.get(FLOWS, {}), now, asset),
         MACRO: macro_cards(fams.get(MACRO), views.get(MACRO, {}), now, top_event),
         CYCLE: cycle_cards(fams.get(CYCLE), views.get(CYCLE, {}), asset),
+        ONCHAIN: onchain_cards(fams.get(ONCHAIN)),
     }
 
     # 1. Why - the cards that weigh now, across families (at most three).
@@ -636,7 +713,7 @@ def build_reading(decision: Any, views: dict[str, dict[str, Any]], *, top_event:
         else:
             headline = f"{trend_text}, sans confirmation suffisante pour agir."
 
-    return {
+    reading: dict[str, Any] = {
         "verdict": {"action": action, "emoji": emoji, "label": label},
         "horizon": HORIZON_FR.get(decision.horizon, decision.horizon),
         "headline": headline,
@@ -651,6 +728,19 @@ def build_reading(decision: Any, views: dict[str, dict[str, Any]], *, top_event:
         "market": market_clarity(decision, trend_key, contradictions),
         "as_of": now.isoformat() if now else None,
     }
+    # Each card carries what opens under it: values, sources, freshness.
+    for family_key, family_cards in per_family.items():
+        for one in family_cards:
+            one["detail"] = detail_of(one, fams.get(family_key), decision.horizon, now)
+    by_title = {c["title"]: c.get("detail") for cards_ in per_family.values() for c in cards_}
+    for one in why:
+        one.setdefault("detail", by_title.get(one["title"]))
+
+    from .situation import build as build_situation
+
+    reading["situation"] = build_situation(decision, views, reading, asset=asset, now=now,
+                                           top_event=top_event)
+    return reading
 
 
 # --- two readings that are never merged -----------------------------------------------------

@@ -24,9 +24,10 @@ def fam(extra=None, metrics=(), components=(), usable=True, freshness="LIVE"):
               usable=usable, freshness=freshness)
 
 
-def metric(key, value, display, label="", delta=None, delta_label="", when=NOW):
+def metric(key, value, display, label="", delta=None, delta_label="", when=NOW, source="Test"):
     return Ns(key=key, value=value, display_value=display, label=label, delta=delta,
-              delta_label=delta_label, timestamp=when, available_at=when, usable=True)
+              delta_label=delta_label, timestamp=when, available_at=when, usable=True,
+              period_label="", source=source, status="AVAILABLE")
 
 
 def decision(families, *, action="WAIT", gates=(), to_buy=(), to_worsen=()):
@@ -83,7 +84,8 @@ def test_a_real_resistance_becomes_the_close_we_wait_for():
 
 
 def test_an_event_is_dated_and_followed_by_the_market_s_reaction():
-    event = Ns(title="🏛️ Décision de la Fed", at=NOW + timedelta(days=1, hours=2), hours=26, score=0.6)
+    event = Ns(title="🏛️ Décision de la Fed", at=NOW + timedelta(days=1, hours=2), hours=26,
+               score=0.6, delay="dans 26 h")
     fams = {"technical": tech(), "macro": fam({"central_banks": []})}
     r = reading(fams, views(), event=event)
     item = next(w for w in r["waiting_for"] if w["kind"] == "EVENT")
