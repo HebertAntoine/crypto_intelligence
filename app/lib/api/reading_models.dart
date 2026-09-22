@@ -70,8 +70,10 @@ class ReasonDetail {
   }
 }
 
-/// « 🧭 Résumé de la situation » and the role each factor plays.
+/// « 🧭 Situation actuelle » : `brief` is what the home shows, four lines at
+/// most; `text` and `roles` are the full narrative, one tap away.
 class SituationRead {
+  final String brief;
   final String text;
   final List<String> sentences;
   final bool dominantCause;
@@ -79,6 +81,7 @@ class SituationRead {
   final Map<String, String> labels;
 
   const SituationRead({
+    this.brief = '',
     this.text = '',
     this.sentences = const [],
     this.dominantCause = false,
@@ -86,11 +89,16 @@ class SituationRead {
     this.labels = const {},
   });
 
-  bool get isEmpty => text.isEmpty;
+  bool get isEmpty => text.isEmpty && brief.isEmpty;
+
+  /// The home never falls back to the long text: it would break the ten
+  /// seconds the summary exists for.
+  String get homeText => brief.isNotEmpty ? brief : text;
 
   factory SituationRead.fromJson(Object? raw) {
     final j = _m(raw);
     return SituationRead(
+      brief: j['brief']?.toString() ?? '',
       text: j['text']?.toString() ?? '',
       sentences: _s(j['sentences']),
       dominantCause: j['dominant_cause'] == true,
@@ -171,6 +179,52 @@ class WaitItem {
   }
 }
 
+/// « 🎯 Conditions à surveiller » : one block instead of two cards that said
+/// the same thing - what would open an opportunity, what would invalidate the
+/// reading, and the one date the engine grades high enough to matter.
+class ConditionsRead {
+  final List<WaitItem> opportunity;
+  final List<WaitItem> invalidation;
+  final ({String emoji, String text, String why, String attention})? event;
+  final Map<String, String> labels;
+
+  const ConditionsRead({
+    this.opportunity = const [],
+    this.invalidation = const [],
+    this.event,
+    this.labels = const {},
+  });
+
+  bool get isEmpty =>
+      opportunity.isEmpty && invalidation.isEmpty && event == null;
+
+  factory ConditionsRead.fromJson(Object? raw) {
+    final j = _m(raw);
+    final event = _m(j['event']);
+    return ConditionsRead(
+      opportunity: [
+        for (final w in (j['opportunity'] as List? ?? const []))
+          WaitItem.fromJson(w)
+      ],
+      invalidation: [
+        for (final w in (j['invalidation'] as List? ?? const []))
+          WaitItem.fromJson(w)
+      ],
+      event: event.isEmpty
+          ? null
+          : (
+              emoji: event['emoji']?.toString() ?? '📅',
+              text: event['text']?.toString() ?? '',
+              why: event['why']?.toString() ?? '',
+              attention: event['attention']?.toString() ?? '',
+            ),
+      labels: {
+        for (final e in _m(j['labels']).entries) e.key: e.value.toString()
+      },
+    );
+  }
+}
+
 class ReadingBadge {
   final String emoji;
   final String label;
@@ -196,6 +250,7 @@ class ReadingRead {
   final String headline;
   final List<ReadingCard> why;
   final List<WaitItem> waitingFor;
+  final ConditionsRead conditions;
   final List<String> bullish;
   final List<String> bearish;
   final String? invalidation;
@@ -216,6 +271,7 @@ class ReadingRead {
     this.headline = '',
     this.why = const [],
     this.waitingFor = const [],
+    this.conditions = const ConditionsRead(),
     this.bullish = const [],
     this.bearish = const [],
     this.invalidation,
@@ -250,6 +306,7 @@ class ReadingRead {
         for (final w in (j['waiting_for'] as List? ?? const []))
           WaitItem.fromJson(w)
       ],
+      conditions: ConditionsRead.fromJson(j['conditions']),
       bullish: _s(change['bullish']),
       bearish: _s(change['bearish']),
       invalidation: j['invalidation']?.toString(),

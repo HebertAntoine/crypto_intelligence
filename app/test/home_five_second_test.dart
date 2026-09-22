@@ -369,9 +369,10 @@ void _iphoneRendering() {
     final situation = reading.situation;
     expect(situation.isEmpty, isFalse);
 
-    // Four to six sentences that tell the move, not a list of metrics.
-    expect(situation.sentences.length, inInclusiveRange(3, 6));
-    expect(find.text(situation.text), findsOneWidget);
+    // The home shows the brief - four lines at most - never the narrative.
+    expect(situation.brief.split(' ').length, lessThanOrEqualTo(80));
+    expect(find.text(situation.brief), findsOneWidget);
+    expect(find.text(situation.text), findsNothing);
 
     // A coincidence is never written as a proven cause.
     expect(situation.text.toLowerCase().contains('parce que'), isFalse);
@@ -383,12 +384,12 @@ void _iphoneRendering() {
       }
     }
 
-    // The order of the brief: situation, then why, then what we wait for.
+    // The order of the brief: situation, then why, then the conditions.
     double top(Key key) => tester.getTopLeft(find.byKey(key)).dy;
     expect(top(const ValueKey('reading-situation')),
         lessThan(top(const ValueKey('reading-why'))));
     expect(top(const ValueKey('reading-why')),
-        lessThan(top(const ValueKey('reading-waiting'))));
+        lessThan(top(const ValueKey('reading-conditions'))));
   });
 
   testWidgets('a reason opens its figures, its sources and their freshness',
@@ -421,5 +422,53 @@ void _iphoneRendering() {
     // Impact and horizon are stated, never a probability.
     expect(find.textContaining('Impact sur la décision'), findsOneWidget);
     expect(find.textContaining('%de chances'), findsNothing);
+  });
+  testWidgets('the home says each thing once, and only once', (tester) async {
+    // The rule this redesign exists for: one piece of information, one place.
+    // The ETF figure used to appear in the summary, in « pourquoi », and again
+    // in « pourquoi le marché monte ? ».
+    await _open(tester, 'BTC');
+    final reading = (await _shippedClient().futureDecision('BTC'))
+        .analysis!
+        .summary
+        .reading;
+
+    final texts = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data ?? '')
+        .where((t) => t.trim().isNotEmpty)
+        .toList();
+
+    // A reason's headline is a heading, not something to echo lower down.
+    for (final card in reading.why) {
+      expect(texts.where((t) => t == card.title).length, lessThanOrEqualTo(1),
+          reason: 'répété : ${card.title}');
+    }
+    // The narrative, the market explanation and the decision history are all
+    // one tap away, so their cards are not on the home at all.
+    expect(find.byKey(const ValueKey('why-market')), findsNothing);
+    expect(find.byKey(const ValueKey('reading-history')), findsNothing);
+    expect(find.byKey(const ValueKey('reading-change')), findsNothing);
+    expect(find.text(reading.situation.text), findsNothing);
+  });
+
+  testWidgets('the whole decision is readable without scrolling far',
+      (tester) async {
+    await _open(tester, 'BTC');
+    // Decision, situation, why and the conditions to watch: the four blocks
+    // the reader needs, in this order, within the first screens.
+    double top(Key key) => tester.getTopLeft(find.byKey(key)).dy;
+    expect(top(const ValueKey('decision-card')),
+        lessThan(top(const ValueKey('reading-situation'))));
+    expect(top(const ValueKey('reading-conditions')),
+        lessThan(top(const ValueKey('main-factors'))));
+    // « Comprendre le mouvement » opens the narrative and its roles.
+    final link = find.byKey(const ValueKey('situation-understand'));
+    await tester.ensureVisible(link);
+    await tester.pumpAndSettle();
+    await tester.tap(link);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('movement-view')), findsOneWidget);
+    expect(find.byKey(const ValueKey('movement-text')), findsOneWidget);
   });
 }

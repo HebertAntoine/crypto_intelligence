@@ -140,3 +140,76 @@ def test_direction_needs_a_real_move():
     assert direction_of(0.4, 1.2) == "FLAT"
     assert direction_of(0.4, 3.0) == "UP"
     assert direction_of(-2.0, 1.0) == "DOWN"
+
+
+# --- the home summary: four lines, and the roles kept apart ---------------------------------
+
+
+def test_the_home_summary_is_four_lines_at_most():
+    """The home has ten seconds. The narrative stays behind « Comprendre le
+    mouvement », and the brief never grows into it."""
+
+    macro = fam(components=[component("oil_shock", 0.8), component("real_yield", 0.6)])
+    flows = fam({"spot": {"share": 0.55}},
+                metrics=[metric("etf.net_flow", 845e6, "+845 M$"),
+                         metric("etf.streak", None, "3 séances d'entrées")])
+    derivatives = fam({"liquidations": {"24h": {"covered_hours": 24, "short_usd": 61e6},
+                                        "dominance": "SHORTS"}})
+    s = summary({"technical": technical(), "macro": macro, "flows": flows,
+                 "derivatives": derivatives})
+
+    brief = s["brief"]
+    assert len(brief.split()) <= 80
+    assert brief.count(".") <= 4
+    assert len(brief) < len(s["text"])
+    assert brief.startswith("Bitcoin progresse")
+    assert "accompagnent le mouvement" in brief
+    assert brief.rstrip().endswith("Nous attendons un repli vers 81 951 $ qui tienne.")
+    # The brief states a coincidence, never a cause.
+    assert "parce que" not in brief.lower() and "grâce" not in brief.lower()
+
+
+def test_real_money_is_a_support_not_a_trigger():
+    """ETF inflows go the same way as the move; that does not make them its
+    cause. They are listed as a support, and the macro driver stays the
+    possible trigger."""
+
+    macro = fam(components=[component("oil_shock", 0.8)])
+    flows = fam(metrics=[metric("etf.net_flow", 845e6, "+845 M$"),
+                         metric("etf.streak", None, "3 séances d'entrées")])
+    s = summary({"technical": technical(), "macro": macro, "flows": flows})
+    roles = s["roles"]
+    assert any("Flux ETF" in item["text"] for item in roles["supports"])
+    assert not any("Flux ETF" in item["text"] for item in roles["triggers"])
+    assert any("pétrole" in item["text"] for item in roles["triggers"])
+    assert s["labels"]["supports"] == "Soutiens"
+
+
+def test_the_brief_says_plainly_when_no_cause_stands_out():
+    s = summary({"technical": technical()})
+    assert "Aucune cause dominante ne ressort des données." in s["brief"]
+    assert len(s["brief"].split()) <= 80
+
+
+def test_the_brief_does_not_name_the_level_the_condition_already_carries():
+    """« la résistance de 87 396 $ tient » under a condition that reads
+    « clôture au-dessus de 87 396 $ » is the same level twice on one screen."""
+
+    reading = {**READING, "waiting_for": [
+        {"text": "Clôture 4 h de BTC au-dessus de 87 396 $", "kind": "LEVEL"}]}
+    s = summary({"technical": technical(resistance=87396.0)},
+                views(near=True, stretched=True), reading=reading)
+    assert s["brief"].count("87 396") == 1
+    assert "étiré à court terme" in s["brief"]          # the other brake stays
+    assert "Résistance 87 396 $" in [i["text"] for i in s["roles"]["brakes"]]
+
+
+def test_a_short_level_is_deduplicated_like_a_long_one():
+    """Solana's levels have three digits; Bitcoin's have five. The rule is the
+    same: the summary does not repeat the level the condition carries."""
+
+    reading = {**READING, "waiting_for": [
+        {"text": "Clôture 4 h de SOL au-dessus de 120 $", "kind": "LEVEL"}]}
+    s = build(decision({"technical": technical(resistance=120.0)}), views(near=True),
+              reading, asset="SOL", now=NOW)
+    assert s["brief"].count("120 $") == 1

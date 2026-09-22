@@ -71,28 +71,30 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('horizon-7d')).last);
       await tester.pumpAndSettle();
-      // The market-explanation card and one of its pages.
+      // « Comprendre le mouvement »: the narrative, the roles, and the market
+      // explanation that used to take a card on the home.
       await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('why-market')),
+        find.byKey(const ValueKey('situation-understand')),
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      await expectLater(
-        find.byKey(const ValueKey('shot')),
-        matchesGoldenFile('$_out/why-market-$asset.png'),
-      );
-      await tester.tap(find.byKey(const ValueKey('why-line-participation')));
+      await tester.tap(find.byKey(const ValueKey('situation-understand')));
       await tester.pumpAndSettle();
       await expectLater(
         find.byKey(const ValueKey('shot')),
-        matchesGoldenFile('$_out/market-page-$asset.png'),
+        matchesGoldenFile('$_out/mouvement-$asset.png'),
       );
-      await tester.tap(find.byKey(const ValueKey('intel-back')));
+      Navigator.of(tester.element(find.byKey(const ValueKey('movement-view'))))
+          .pop();
       await tester.pumpAndSettle();
       // Let the background image decode.
       await tester.runAsync(() => Future<void>.delayed(
             const Duration(milliseconds: 300),
           ));
+      await tester.pumpAndSettle();
+      // Back to the top: the home shot must show what opens the page.
+      await tester.dragUntilVisible(find.byKey(const ValueKey('decision-card')),
+          find.byType(Scrollable).first, const Offset(0, 300));
       await tester.pumpAndSettle();
 
       await expectLater(

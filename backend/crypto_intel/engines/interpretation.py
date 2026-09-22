@@ -29,6 +29,7 @@ Deterministic: no language model writes a verdict, a level or a condition.
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -94,6 +95,12 @@ def card(emoji: str, title: str, what: str, so_what: str = "", watch: str = "", 
             "tone": tone, "tone_emoji": TONE_EMOJI.get(tone, "⚪"), "importance": importance,
             "importance_label": IMPORTANCE_FR[importance], "family": family, "value": value,
             "metrics": list(metrics)}
+
+
+def of_asset(asset: str) -> str:
+    """« de BTC », « d'ETH » - French elides before a vowel."""
+
+    return f"d'{asset}" if asset[:1].upper() in "AEIOU" else f"de {asset}"
 
 
 def _metric(family: Any, key: str) -> Any:
@@ -350,14 +357,14 @@ def flows_cards(family: Any, view: dict[str, Any], now: datetime | None,
 MACRO_MOVES = {
     # key: (metric, (emoji, title, so_what) if the metric rose, same if it fell, watch)
     "dollar": ("macro.dxy",
-               ("💵", "Le dollar se renforce", "Un dollar fort pèse souvent sur les actifs risqués comme Bitcoin."),
+               ("💵", "Le dollar se renforce", "Un dollar fort pèse souvent sur les actifs risqués, crypto comprise."),
                ("💵", "Le dollar recule", "Un dollar plus faible aide souvent les actifs risqués."),
                "un retournement du dollar."),
     "real_yield": ("macro.real10y",
                    ("🏛️", "Les taux réels américains montent",
-                    "Détenir un actif sans rendement comme Bitcoin devient moins attractif."),
+                    "Détenir un actif sans rendement devient moins attractif."),
                    ("🏛️", "Les taux réels américains baissent",
-                    "Le coût de détenir Bitcoin plutôt qu'une obligation diminue."),
+                    "Le coût de détenir un actif sans rendement plutôt qu'une obligation diminue."),
                    "la direction des taux réels 10 ans."),
     "policy_expectations": ("macro.us2y",
                             ("🇺🇸", "Le marché anticipe une Fed plus stricte",
@@ -367,7 +374,8 @@ MACRO_MOVES = {
                             "le taux 2 ans, le plus sensible aux attentes sur la Fed."),
     "risk_appetite": ("macro.nasdaq",
                       ("📈", "Les actions tech montent", "Un environnement qui favorise en général les actifs risqués."),
-                      ("📉", "Les actions tech reculent", "Bitcoin peut suivre si l'aversion au risque augmente."),
+                      ("📉", "Les actions tech reculent",
+                       "La crypto peut suivre si l'aversion au risque augmente."),
                       "la stabilisation ou non du Nasdaq."),
     "equity_fear": ("macro.vix",
                     ("😨", "La nervosité monte sur les actions", "Les investisseurs réduisent le risque, crypto comprise."),
@@ -402,7 +410,7 @@ def macro_cards(family: Any, view: dict[str, Any], now: datetime | None,
             what,
             "C'est l'écart entre la décision et ce qui était attendu qui fait bouger le marché, "
             "pas le sens de la décision.",
-            "la décision, puis la réaction des taux, du dollar, du Nasdaq et de Bitcoin dans les heures suivantes."
+            "la décision, puis la réaction des taux, du dollar, du Nasdaq et de la crypto dans les heures suivantes."
             if soon else "",
             tone=ORANGE if soon else WHITE, importance=NOW if soon else SECONDARY, family=MACRO))
     moves = []
@@ -562,8 +570,108 @@ def plain(text: str) -> str:
     return text.strip()
 
 
+def no_figures(text: str) -> str:
+    """The same clause without its level: « le prix bute sous la résistance ».
+
+    The decision sentence sits right above the summary, which names the level
+    in full. Repeating it in both is the same figure twice on one screen.
+    """
+
+    text = re.sub(r"\s+de\s+[\d\s\u202f.,]+\s*\$", "", text)
+    text = re.sub(r"\s*\(?[\d\s\u202f.,]{3,}\s*\$\)?", "", text)
+    return re.sub(r"\s{2,}", " ", text).strip()
+
+
 def _gate_detail(decision: Any, name: str) -> str:
     return next((g.detail for g in decision.gates if g.name == name), "")
+
+
+#: An upcoming date reaches the home only above this engine score. A scheduled
+#: Treasury auction is not a major event merely because it is scheduled.
+EVENT_ON_HOME = 0.3
+
+
+def _key(text: str) -> str:
+    """Two conditions that name the same level are the same condition.
+
+    « Clôture 4 h de BTC au-dessus de 87 396 $ » and « BTC clôture (4 h)
+    au-dessus de 87 396 $ » are one condition written twice, so the signature
+    is the side and the level, not the wording. Without a level, the
+    normalised sentence is the signature.
+    """
+
+    flat = re.sub(r"[^a-z0-9 ]", " ", unicodedata.normalize("NFKD", text.lower())
+                  .encode("ascii", "ignore").decode())
+    level = re.search(r"(\d[\d ]{2,})\s*\$?", flat)
+    if level is not None:
+        side = ("above" if "au dessus" in flat or "audessus" in flat else
+                "below" if re.search(r"\bsous\b|\bsous de\b", flat) else "at")
+        return f"{side}:{level.group(1).replace(' ', '')}"
+    return re.sub(r"\s+", "", flat)
+
+
+def _no_preamble(text: str) -> str:
+    """« après une clôture 4 h sous X » -> « Clôture 4 h sous X »."""
+
+    text = re.sub(r"^(après|apres)\s+(une|un)\s+", "", text.strip(), flags=re.IGNORECASE)
+    return text[:1].upper() + text[1:]
+
+
+def _conditions(waiting: list[dict[str, Any]], bullish: list[str], bearish: list[str],
+                invalidation: str | None, top_event: Any, now: datetime | None) -> dict[str, Any]:
+    """« 🎯 Conditions à surveiller » - one block: opportunity, invalidation, date.
+
+    What we wait for and what would change the reading were two cards saying
+    the same thing in two voices. They are merged here, deduplicated on the
+    level they name, and the dates are kept for the calendar unless the engine
+    grades one high enough to change the reading.
+    """
+
+    opportunity: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add(target: list[dict[str, Any]], emoji: str, text: str, why: str, limit: int) -> None:
+        text = text.rstrip(".")
+        if len(target) >= limit or _key(text) in seen:
+            return
+        seen.add(_key(text))
+        target.append({"emoji": emoji, "text": text, "why": why})
+
+    for item in waiting:
+        if item["kind"] == "EVENT":  # dates have their own line below
+            continue
+        add(opportunity, item["emoji"], item["text"], item["why"], 3)
+    for item in bullish:
+        add(opportunity, "🟢", item, "", 3)
+
+    invalidations: list[dict[str, Any]] = []
+    if invalidation:
+        # « Cette lecture ... ne serait plus valable après une clôture ... » -
+        # the condition itself is what the reader needs, not the preamble.
+        condition = invalidation.split("valable ", 1)[-1].rstrip(".")
+        add(invalidations, "🔴", _no_preamble(condition), "", 2)
+    for item in bearish:
+        add(invalidations, "🔴", item, "", 2)
+
+    # A date reaches the home only when the engine grades it high enough to
+    # change the reading. A scheduled Treasury auction stays in the calendar.
+    event = None
+    if top_event is not None and getattr(top_event, "at", None) is not None \
+            and top_event.score >= EVENT_ON_HOME:
+        scheduled = next((item for item in waiting if item["kind"] == "EVENT"), None)
+        emoji_, _, name = top_event.title.partition(" ")
+        if not name:
+            emoji_, name = "📅", top_event.title
+        event = {
+            "emoji": scheduled["emoji"] if scheduled else emoji_,
+            "text": scheduled["text"] if scheduled else f"{name} — {when_fr(top_event.at, now)}",
+            "why": "Puis la réaction du marché : l'événement seul n'est pas une confirmation.",
+            "attention": "Attention critique" if top_event.score >= 0.5 else "Attention élevée",
+        }
+
+    return {"opportunity": opportunity, "invalidation": invalidations, "event": event,
+            "labels": {"opportunity": "Opportunité", "invalidation": "Invalidation",
+                       "event": "Événement important"}}
 
 
 def build_reading(decision: Any, views: dict[str, dict[str, Any]], *, top_event: Any = None,
@@ -624,7 +732,7 @@ def build_reading(decision: Any, views: dict[str, dict[str, Any]], *, top_event:
     trend_key = (tech_view.get("trend") or {}).get("key")
     if action in {"WAIT", "SELL"}:
         if resistance and trend_key != "DOWN":
-            wait("🧱", f"Clôture {tf} de {asset} au-dessus de {usd(resistance)}",
+            wait("🧱", f"Clôture {tf} {of_asset(asset)} au-dessus de {usd(resistance)}",
                  "Elle montrerait que les acheteurs reprennent réellement le contrôle.", "LEVEL")
         elif (tech_view.get("timing") or {}).get("stretched") and support:
             wait("🛡️", f"Un repli vers {usd(support)} qui tienne",
@@ -706,12 +814,17 @@ def build_reading(decision: Any, views: dict[str, dict[str, Any]], *, top_event:
     else:
         caution = next((w for w in why if w["family"] and w["tone"] in {RED, ORANGE}), None)
         if caution is not None:
-            headline = f"{trend_text}, mais {caution['clause']} : entrée pas encore confirmée."
+            headline = (f"{trend_text}, mais {no_figures(caution['clause'])} : "
+                        "entrée pas encore confirmée.")
         elif no_edge:
             headline = (f"{trend_text}, mais aucun signal n'a prouvé son avantage : "
                         "le moteur préfère attendre.")
         else:
             headline = f"{trend_text}, sans confirmation suffisante pour agir."
+
+    # 4 bis. One block instead of two: what we wait for and what would change
+    # the reading answer the same question - under which condition do we move.
+    conditions = _conditions(waiting, bullish, bearish, invalidation, top_event, now)
 
     reading: dict[str, Any] = {
         "verdict": {"action": action, "emoji": emoji, "label": label},
@@ -719,6 +832,7 @@ def build_reading(decision: Any, views: dict[str, dict[str, Any]], *, top_event:
         "headline": headline,
         "why": why,
         "waiting_for": waiting,
+        "conditions": conditions,
         "change_mind": {"bullish": bullish[:2], "bearish": bearish[:2]},
         "invalidation": invalidation,
         "validation_note": validation_note,

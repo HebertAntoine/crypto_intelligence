@@ -133,6 +133,33 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
     if (selected != null) _selectHorizon(selected);
   }
 
+  /// « Comprendre le mouvement » : the full narrative, each factor with the
+  /// role it plays, then « Pourquoi le marché monte ? », which used to take a
+  /// whole card on the home while repeating what was already read there.
+  void _openMovement(FutureDecisionRead decision, _FutureBundle bundle) {
+    final state = bundle.marketState;
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        settings: RouteSettings(name: '/${_asset.toLowerCase()}/mouvement'),
+        builder: (_) => _FutureVisualFrame(
+          asset: _asset,
+          child: SafeArea(
+            child: MovementView(
+              situation: decision.analysis!.summary.reading.situation,
+              explanation: state == null
+                  ? null
+                  : _WhyMarketCard(
+                      state: state,
+                      asset: _asset,
+                      client: widget.client,
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// The full analysis page: the gated decision, the six families and their
   /// measures. The older scenario sheet stays one tap further.
   void _openFullAnalysis(FutureDecisionRead decision, _FutureBundle bundle) {
@@ -342,36 +369,38 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                 ),
                 const SizedBox(height: 14),
                 if (decision.analysis != null) ...[
-                  // Decision -> what we wait for -> why -> what would change
-                  // it, translated by the backend's interpretation layer. The
-                  // older explanation card remains for payloads without it.
-                  // The order the brief sets: what is happening, why, what
-                  // we wait for, what would change it, then the families and
-                  // the calendar. Everything else lives one tap away.
+                  // The home is a synthesis, not a report: decision, the
+                  // situation in four lines, three reasons, the conditions to
+                  // watch, the families as one line each. Every detail —
+                  // the narrative, the figures, the history, the calendar —
+                  // is one tap away, and nothing is said twice.
                   if (!decision.analysis!.summary.reading.isEmpty) ...[
-                    SituationCard(
-                        situation: decision.analysis!.summary.reading.situation),
-                    const SizedBox(height: 14),
-                    WhyCard(
-                      reading: decision.analysis!.summary.reading,
-                      onSeeAll: () => _openFullAnalysis(decision, bundle),
-                    ),
-                    const SizedBox(height: 14),
-                    WaitingForCard(reading: decision.analysis!.summary.reading),
-                    const SizedBox(height: 14),
-                    ChangeMindCard(reading: decision.analysis!.summary.reading),
-                    const SizedBox(height: 14),
-                    ReadingTrustLine(
+                    DecisionFooter(
                       reading: decision.analysis!.summary.reading,
                       history: decision.decisionHistory,
                       updated: freshnessLabel(decision.analysis!.newestData),
+                      onHistory: decision.decisionHistory == null
+                          ? null
+                          : () => DecisionHistoryView.open(
+                              context, decision.decisionHistory!),
                     ),
+                    const SizedBox(height: 18),
+                    SituationCard(
+                      situation: decision.analysis!.summary.reading.situation,
+                      onUnderstand: () => _openMovement(decision, bundle),
+                    ),
+                    const SizedBox(height: 18),
+                    WhyCard(reading: decision.analysis!.summary.reading),
+                    const SizedBox(height: 18),
+                    ConditionsCard(
+                        conditions:
+                            decision.analysis!.summary.reading.conditions),
                   ] else
                     _AnalysisExplanationCard(
                       decision: decision,
                       analysis: decision.analysis!,
                     ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 18),
                   _AnalysisFactorsCard(
                     analysis: decision.analysis!,
                     asset: _asset,
@@ -421,16 +450,9 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                           .map((item) => item.title.split(' — ').first)
                           .toSet(),
                 ),
-                // Advanced reading, after the calendar: the drivers of the
-                // move, each opening its own page.
-                if (decision.analysis != null && bundle.marketState != null) ...[
-                  const SizedBox(height: 14),
-                  _WhyMarketCard(
-                    state: bundle.marketState!,
-                    asset: _asset,
-                    client: widget.client,
-                  ),
-                ],
+                // « Pourquoi le marché monte ? » repeated the ETF flows, the
+                // tech equities and the derivatives already read above. It
+                // now lives behind « Comprendre le mouvement ».
               ],
             );
           },
@@ -1387,9 +1409,6 @@ class _StatusRow extends StatelessWidget {
   /// Replaces the tone dot when the state has its own emoji (📈 for a trend).
   final String statusEmoji;
 
-  /// One short key figure under the state ("RSI 77 · résistance proche").
-  final String detail;
-
   const _StatusRow({
     super.key,
     required this.emoji,
@@ -1399,7 +1418,6 @@ class _StatusRow extends StatelessWidget {
     this.onTap,
     this.value = '',
     this.statusEmoji = '',
-    this.detail = '',
   });
 
   @override
@@ -1445,16 +1463,6 @@ class _StatusRow extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (detail.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        detail,
-                        key: const ValueKey('factor-detail'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: mobileMuted, fontSize: 12),
-                      ),
-                    ],
                   ],
                 ),
               ),
@@ -1866,7 +1874,7 @@ class _AnalysisFactorsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _SectionTitle(emoji: '🧭', text: 'Les familles d’indicateurs'),
+            const _SectionTitle(emoji: '🧩', text: 'Lecture du marché'),
             const SizedBox(height: 4),
             for (var index = 0; index < homeFamilies.length; index++) ...[
               if (index > 0) const Divider(height: 1, color: Color(0xFF1D3853)),
@@ -3063,7 +3071,8 @@ class _UpcomingEventsCard extends StatelessWidget {
     final all = ranked(events, skip: alreadyShown, skipIds: skipIds);
     // Chosen by importance so the FOMC is not buried behind bill auctions,
     // then read in date order, which is how a calendar is read.
-    final displayed = all.take(3).toList()
+    // Two dates on the home; the calendar holds the rest.
+    final displayed = all.take(2).toList()
       ..sort((left, right) => left.scheduledAt!.compareTo(right.scheduledAt!));
     if (displayed.isEmpty) return const SizedBox.shrink();
     return GlassPanel(
@@ -5173,9 +5182,15 @@ String _countdown(int? seconds) {
 extension on _AnalysisFactorsCard {
   Widget _familyRow(BuildContext context, AnalysisHomeFamilyRead family,
       int index, Map<String, AnalysisFamilyRead> byKey) {
-    final lead = (analysis.summary.reading.families[family.family] ??
-            const <ReadingCard>[])
-        .firstOrNull;
+    // A card already argued under « Pourquoi ? » is not repeated here: the
+    // family shows its next finding instead, or its own status. « Résistance
+    // importante — 87 396 $ » used to appear twice on the same screen.
+    final argued = {
+      for (final card in analysis.summary.reading.why) card.title,
+    };
+    final cards = analysis.summary.reading.families[family.family] ??
+        const <ReadingCard>[];
+    final lead = cards.where((card) => !argued.contains(card.title)).firstOrNull;
     return _StatusRow(
       key: ValueKey(
           family.family == 'onchain' ? 'whale-status' : 'main-factor-${index + 1}'),
@@ -5192,9 +5207,8 @@ extension on _AnalysisFactorsCard {
               _ => '⚪',
             },
       tone: lead?.tone ?? family.tone,
-      detail: lead == null
-          ? family.keyInfo
-          : (lead.soWhat.isEmpty ? lead.what : lead.soWhat),
+      // One conclusion per family and nothing else: what it rests on is on
+      // the family's own page, which the chevron opens.
       onTap: byKey[family.family] == null
           ? null
           : () => _open(context, byKey[family.family]!),

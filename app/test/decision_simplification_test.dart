@@ -321,7 +321,8 @@ void main() {
     expect(families.map((f) => f.name).toList(), [
       'Technique',
       'Dérivés',
-      'Flux spot',
+      // Named after the data it carries: US spot ETFs and spot buying.
+      'ETF & flux au comptant',
       'Macro',
       'Cycle Bitcoin',
       'Baleines & on-chain',

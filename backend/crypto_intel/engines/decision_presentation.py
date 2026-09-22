@@ -11,7 +11,7 @@ Nothing here changes a score or a decision. It reads them and answers, in order:
     What are central banks doing?       rate, last decision, next meeting
     Where is Bitcoin in its cycle?      a described phase, never a forecast
 
-Six families are shown: Technique, Dérivés, Flux spot, Macro & banques
+Six families are shown: Technique, Dérivés, ETF & flux au comptant, Macro & banques
 centrales, Cycle, Baleines. Liquidity stays in the engine and in Macro's
 advanced data. Each family shows one state, one or two values, one sentence;
 everything else sits in "Données avancées", still one tap away.
@@ -61,7 +61,8 @@ DISPLAY_FAMILIES = (TECHNICAL, DERIVATIVES, FLOWS, MACRO, CYCLE, ONCHAIN)
 DISPLAY_NAME = {
     TECHNICAL: "Technique",
     DERIVATIVES: "Dérivés",
-    FLOWS: "Flux spot",
+    # Named after what it measures: US spot ETF flows and spot market buying.
+    FLOWS: "ETF & flux au comptant",
     MACRO: "Macro & banques centrales",
     CYCLE: "Cycle Bitcoin",
     ONCHAIN: "Baleines & on-chain",

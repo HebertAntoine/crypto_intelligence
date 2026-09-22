@@ -283,3 +283,20 @@ def test_two_endpoints_sharing_a_snapshot_name_are_promoted_once(
 
     assert len(written) == 1
     assert (snapshot_dir / "future__BTC__horizon-7d.json").exists()
+
+
+def test_a_cycle_chart_without_a_past_halving_blocks_publication() -> None:
+    """A transient read failure once shipped a Bitcoin cycle page whose chart
+    had lost every past halving. It still rendered, silently poorer."""
+
+    from pathlib import Path
+
+    degraded = {"run_id": "run_OK", "asset": "BTC",
+                "chart": {"halvings": [{"date": "2028-03-28", "estimated": True}]}}
+    problems = exporter._validate_snapshot(Path("cycle__BTC.json"), degraded, "run_OK")
+    assert any("halving passé" in problem for problem in problems)
+
+    whole = {"run_id": "run_OK", "asset": "BTC",
+             "chart": {"halvings": [{"date": "2024-04-20", "estimated": False},
+                                    {"date": "2028-03-28", "estimated": True}]}}
+    assert exporter._validate_snapshot(Path("cycle__BTC.json"), whole, "run_OK") == []

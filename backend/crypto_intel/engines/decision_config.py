@@ -31,7 +31,7 @@ CONTEXT_FAMILIES = frozenset({CYCLE})
 FAMILY_LABEL = {
     MACRO: "Macro & banques centrales",
     LIQUIDITY: "Liquidité",
-    FLOWS: "Flux spot",
+    FLOWS: "ETF & flux au comptant",
     DERIVATIVES: "Dérivés",
     ONCHAIN: "On-chain & baleines",
     TECHNICAL: "Technique & structure",

@@ -4,13 +4,6 @@
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
-      "contribution": -35.0,
-      "detail": "En 15m, le prix est sur le haut de son range (qualit\u00e9 de zone 74/100)",
-      "is_measured_edge": false,
-      "name": "structural location",
-      "source": "structure"
-    },
-    {
       "contribution": 30.0,
       "detail": "Structure 4h haussi\u00e8re (HH HH HL HL)",
       "is_measured_edge": false,
@@ -30,22 +23,29 @@
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
+    },
+    {
+      "contribution": 0.0,
+      "detail": "En 15m, le prix est au milieu de son range (qualit\u00e9 de zone 60/100)",
+      "is_measured_edge": false,
+      "name": "structural location",
+      "source": "structure"
     }
   ],
   "from_analysis": false,
-  "invalidation": "Une cl\u00f4ture 15m au-dessus de 118.13 casserait la zone haute du range et invaliderait cette lecture.",
+  "invalidation": "Une cl\u00f4ture 15m hors de 115.73-120.07 invaliderait cette lecture du range.",
   "measured_edge_note": "9 candidate relationships were tested for SOL and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [],
-  "run_id": "run_20260922T183848Z",
-  "score": 2.8,
-  "state": "NEUTRAL",
-  "statement": "SOL 15m configuration is NEUTRAL (+3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "run_id": "run_20260922T220934Z",
+  "score": 11.5,
+  "state": "FAVORABLE",
+  "statement": "SOL 15m configuration is FAVORABLE (+12). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "15m",
   "why_now": [
-    "En 15m, le prix est sur le haut de son range (qualit\u00e9 de zone 74/100)",
     "Structure 4h haussi\u00e8re (HH HH HL HL)",
     "Funding dans sa normale, au 51e centile de son historique",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.2e centile : les mouvements sont petits, dans les deux sens"
+    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 4.2e centile : les mouvements sont petits, dans les deux sens",
+    "En 15m, le prix est au milieu de son range (qualit\u00e9 de zone 60/100)"
   ]
 }

@@ -260,6 +260,13 @@ def _validate_snapshot(path: Path, data: dict, run_id: str) -> list[str]:
                     f"{path.name}: événement passé encore listé à surveiller "
                     f"({event.get('title', '')[:40]})"
                 )
+
+    # A transient read failure once published a Bitcoin cycle page whose chart
+    # had lost every past halving - the page still rendered, silently poorer.
+    if path.name == "cycle__BTC.json":
+        halvings = ((data.get("chart") or {}).get("halvings")) or []
+        if not [h for h in halvings if not h.get("estimated")]:
+            problems.append(f"{path.name}: aucun halving passé dans le graphique")
     return problems
 
 

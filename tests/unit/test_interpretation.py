@@ -224,3 +224,53 @@ def test_why_wait_lists_what_holds_the_entry_supports_go_to_the_split():
     r = reading({"technical": tech(rsi=85.0), "derivatives": deriv}, views(stretched=True))
     assert all(w["tone"] in {"RED", "ORANGE"} for w in r["why"])
     assert "Levier en hausse, sans excès" in r["contradictions"]["positives"]
+
+
+# --- 🎯 Conditions à surveiller : one block, nothing said twice ------------------------------
+
+
+def test_what_we_wait_for_and_what_would_change_it_become_one_block():
+    """The home said « clôture au-dessus de X » twice, in two cards, two wordings.
+
+    They answer the same question - under which condition do we move - so they
+    are merged, and two conditions that name the same level are one condition.
+    """
+
+    r = reading({"technical": tech(resistance=74800.0, support=69500.0)},
+                views(trend="UP"), to_buy=["Une clôture au-dessus de 74 800"],
+                to_worsen=["Une clôture sous la EMA20 (69 000)"])
+    conditions = r["conditions"]
+    levels = [item["text"] for item in conditions["opportunity"]]
+    assert sum("74" in text and "800" in text for text in levels) == 1
+    assert len(conditions["invalidation"]) == len(
+        {item["text"] for item in conditions["invalidation"]})
+    # The invalidation is stated as the condition, not as a preamble.
+    assert conditions["invalidation"][0]["text"].startswith("Clôture")
+    assert "ne serait plus valable" not in str(conditions)
+
+
+def test_a_scheduled_auction_is_not_a_major_event_by_itself():
+    """An event reaches the home only when the engine grades it, never because
+    it is merely scheduled. Below the bar it stays in the calendar."""
+
+    small = Ns(title="💵 Adjudications du Trésor US", delay="dans 21 h", hours=21, score=0.22,
+               reasons="", at=NOW + timedelta(hours=21))
+    r = reading({"technical": tech(support=69500.0)}, views(trend="UP"), event=small)
+    assert r["conditions"]["event"] is None
+
+    big = Ns(title="🏛️ Décision de la Fed", delay="dans 26 h", hours=26, score=0.6,
+             reasons="", at=NOW + timedelta(hours=26))
+    r = reading({"technical": tech(support=69500.0)}, views(trend="UP"), event=big)
+    event = r["conditions"]["event"]
+    assert event is not None and "Fed" in event["text"]
+    # Attention is not a direction: the summary never says which way it points.
+    assert event["attention"] == "Attention critique"
+    assert "hausse" not in event["why"] and "baisse" not in event["why"]
+
+
+def test_waiting_conditions_survive_in_the_merged_block():
+    """ATTENDRE still says what is awaited - the rule did not move with the card."""
+
+    r = reading({"technical": tech(resistance=74800.0)}, views(trend="UP"), gates=[NO_EDGE])
+    assert r["verdict"]["label"] == "ATTENDRE"
+    assert r["conditions"]["opportunity"], "ATTENDRE must say what is awaited"
