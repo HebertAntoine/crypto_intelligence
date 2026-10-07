@@ -101,6 +101,23 @@ void main() {
         find.byKey(const ValueKey('shot')),
         matchesGoldenFile('$_out/home-$asset.png'),
       );
+
+      // The macro radar: the five on the home, then the fifteen behind them.
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('macro-see-all')),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await expectLater(
+        find.byKey(const ValueKey('shot')),
+        matchesGoldenFile('$_out/macro-home-$asset.png'),
+      );
+      await tester.tap(find.byKey(const ValueKey('macro-see-all')));
+      await tester.pumpAndSettle();
+      await expectLater(
+        find.byKey(const ValueKey('shot')),
+        matchesGoldenFile('$_out/macro-page-$asset.png'),
+      );
     });
   }
 

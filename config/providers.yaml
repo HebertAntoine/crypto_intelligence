@@ -39,6 +39,9 @@ capabilities:
   liquidity.fed_balance_sheet: [fed_h41]
   macro.inflation:             [bls]
   macro.central_banks:         [central_bank_rates]   # NY Fed, BCE, BoJ - officiels
+  # Primes de risque du crédit, PCE et inscriptions au chômage : export CSV
+  # public de la Fed de Saint-Louis, sans clé (robots.txt l'autorise).
+  macro.credit:                [fred_public_csv]
   onchain.btc_cycle:           [mempool_space_chain]  # halving et rythme des blocs
   macro.indices:       [yahoo_finance, stooq]
   # Each official calendar has its own capability so one successful source

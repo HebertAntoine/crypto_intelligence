@@ -1,64 +1,64 @@
 {
-  "analysis_id": "an_142182e02d309236",
-  "analysis_time": "2026-09-22T22:09:36.708811+00:00",
-  "as_of": "2026-09-22T22:10:05.328111+00:00",
+  "analysis_id": "an_9929a6955e2bfd70",
+  "analysis_time": "2026-10-07T17:55:24.950269+00:00",
+  "as_of": "2026-10-07T17:55:44.967761+00:00",
   "asset": "BTC",
   "crowding": {
     "asset": "BTC",
     "components": {
-      "funding_stretch": 5.2,
-      "oi_percentile": 81.2,
-      "oi_velocity": 63.8
+      "funding_stretch": 81.8,
+      "oi_percentile": 67.3,
+      "oi_velocity": 12.5
     },
     "direction": "UNKNOWN",
-    "funding_percentile": 47.4,
-    "interpretation": "crowding NORMAL (50/100) from funding_stretch, oi_percentile, oi_velocity. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
+    "funding_percentile": 9.1,
+    "interpretation": "crowding NORMAL (54/100) from funding_stretch, oi_percentile, oi_velocity. Shorts are paying longs, which is consistent with short-side crowding. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
     "level": "NORMAL",
     "missing": [],
-    "oi_change_7d_pct": 12.75,
-    "oi_percentile": 81.2,
-    "score": 50.1
+    "oi_change_7d_pct": 2.49,
+    "oi_percentile": 67.3,
+    "score": 53.8
   },
   "funding": {
-    "annualised_pct": 3.05,
+    "annualised_pct": 1.26,
     "asset": "BTC",
-    "band": "NEUTRAL",
-    "history_days": 2352,
-    "note": "funding 0.000028 sits at the 47th percentile of 2352 days of this asset's own history",
-    "percentile": 47.4,
+    "band": "NEGATIVE",
+    "history_days": 2367,
+    "note": "funding 0.000012 sits at the 9th percentile of 2367 days of this asset's own history",
+    "percentile": 9.1,
     "sufficient_history": true,
-    "value": 2.784e-05
+    "value": 1.152e-05
   },
   "leverage_state": {
     "asset": "BTC",
     "confidence": "MEDIUM",
-    "funding_band": "NEUTRAL",
+    "funding_band": "NEGATIVE",
     "inputs_missing": [],
     "inputs_used": [
       "price",
       "funding",
       "open_interest"
     ],
-    "interpretation": "price and open interest both rose: new positions are being opened into the move rather than old ones closing",
-    "oi_change_pct": 12.75,
-    "price_change_pct": 13.89,
-    "state": "NEW_LONGS"
+    "interpretation": "neither price nor open interest moved decisively",
+    "oi_change_pct": 2.49,
+    "price_change_pct": -0.55,
+    "state": "QUIET"
   },
-  "price_at_analysis": 86276.0,
-  "run_id": "run_20260922T220934Z",
+  "price_at_analysis": 83142.03,
+  "run_id": "run_20261007T175447Z",
   "state": {
     "asset": "BTC",
     "confidence": "MEDIUM",
-    "funding_band": "NEUTRAL",
+    "funding_band": "NEGATIVE",
     "inputs_missing": [],
     "inputs_used": [
       "price",
       "funding",
       "open_interest"
     ],
-    "interpretation": "price and open interest both rose: new positions are being opened into the move rather than old ones closing",
-    "oi_change_pct": 12.75,
-    "price_change_pct": 13.89,
-    "state": "NEW_LONGS"
+    "interpretation": "neither price nor open interest moved decisively",
+    "oi_change_pct": 2.49,
+    "price_change_pct": -0.55,
+    "state": "QUIET"
   }
 }

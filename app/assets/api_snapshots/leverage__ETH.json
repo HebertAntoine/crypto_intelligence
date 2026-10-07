@@ -1,64 +1,64 @@
 {
-  "analysis_id": "an_fbcfdafc092a0f91",
-  "analysis_time": "2026-09-22T22:10:33.547264+00:00",
-  "as_of": "2026-09-22T22:11:02.781455+00:00",
+  "analysis_id": "an_8b92cdf129432e4e",
+  "analysis_time": "2026-10-07T17:56:19.193726+00:00",
+  "as_of": "2026-10-07T17:56:56.461718+00:00",
   "asset": "ETH",
   "crowding": {
     "asset": "ETH",
     "components": {
-      "funding_stretch": 5.4,
-      "oi_percentile": 87.8,
-      "oi_velocity": 62.5
+      "funding_stretch": 69.2,
+      "oi_percentile": 84.7,
+      "oi_velocity": 43.6
     },
     "direction": "UNKNOWN",
-    "funding_percentile": 47.3,
-    "interpretation": "crowding NORMAL (52/100) from funding_stretch, oi_percentile, oi_velocity. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
-    "level": "NORMAL",
+    "funding_percentile": 15.4,
+    "interpretation": "crowding ELEVATED (66/100) from funding_stretch, oi_percentile, oi_velocity. Shorts are paying longs, which is consistent with short-side crowding. Direction is reported UNKNOWN: open interest counts contracts, not sides, so the balance of positioning is not observable.",
+    "level": "ELEVATED",
     "missing": [],
-    "oi_change_7d_pct": 12.51,
-    "oi_percentile": 87.8,
-    "score": 51.9
+    "oi_change_7d_pct": 8.71,
+    "oi_percentile": 84.7,
+    "score": 65.8
   },
   "funding": {
-    "annualised_pct": 6.28,
+    "annualised_pct": -3.74,
     "asset": "ETH",
-    "band": "NEUTRAL",
-    "history_days": 2352,
-    "note": "funding 0.000057 sits at the 47th percentile of 2352 days of this asset's own history",
-    "percentile": 47.3,
+    "band": "NEGATIVE",
+    "history_days": 2367,
+    "note": "funding -0.000034 sits at the 15th percentile of 2367 days of this asset's own history",
+    "percentile": 15.4,
     "sufficient_history": true,
-    "value": 5.735e-05
+    "value": -3.411e-05
   },
   "leverage_state": {
     "asset": "ETH",
     "confidence": "MEDIUM",
-    "funding_band": "NEUTRAL",
+    "funding_band": "NEGATIVE",
     "inputs_missing": [],
     "inputs_used": [
       "price",
       "funding",
       "open_interest"
     ],
-    "interpretation": "price and open interest both rose: new positions are being opened into the move rather than old ones closing",
-    "oi_change_pct": 12.51,
-    "price_change_pct": 14.62,
-    "state": "NEW_LONGS"
+    "interpretation": "price fell while open interest rose: new short exposure",
+    "oi_change_pct": 8.71,
+    "price_change_pct": -5.03,
+    "state": "NEW_SHORTS"
   },
-  "price_at_analysis": 2743.0,
-  "run_id": "run_20260922T220934Z",
+  "price_at_analysis": 2546.38,
+  "run_id": "run_20261007T175447Z",
   "state": {
     "asset": "ETH",
     "confidence": "MEDIUM",
-    "funding_band": "NEUTRAL",
+    "funding_band": "NEGATIVE",
     "inputs_missing": [],
     "inputs_used": [
       "price",
       "funding",
       "open_interest"
     ],
-    "interpretation": "price and open interest both rose: new positions are being opened into the move rather than old ones closing",
-    "oi_change_pct": 12.51,
-    "price_change_pct": 14.62,
-    "state": "NEW_LONGS"
+    "interpretation": "price fell while open interest rose: new short exposure",
+    "oi_change_pct": 8.71,
+    "price_change_pct": -5.03,
+    "state": "NEW_SHORTS"
   }
 }

@@ -5,17 +5,24 @@
   "factors": [
     {
       "contribution": 8.0,
-      "detail": "Funding dans sa normale, au 47e centile de son historique",
-      "is_measured_edge": false,
-      "name": "funding normalised",
-      "source": "derivatives"
-    },
-    {
-      "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 14.7e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.2e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
+    },
+    {
+      "contribution": 4.0,
+      "detail": "Funding sous sa m\u00e9diane, au 9e centile",
+      "is_measured_edge": false,
+      "name": "funding leaning",
+      "source": "derivatives"
+    },
+    {
+      "contribution": 0.0,
+      "detail": "Structure 1d en range (HH LH LL HL)",
+      "is_measured_edge": false,
+      "name": "higher timeframe structure",
+      "source": "structure"
     },
     {
       "contribution": 0.0,
@@ -26,20 +33,19 @@
     }
   ],
   "from_analysis": false,
-  "invalidation": "Une cl\u00f4ture 1w hors de 23258.29-126929.02 invaliderait cette lecture du range.",
+  "invalidation": "Une cl\u00f4ture 1w hors de 23325.20-126862.12 invaliderait cette lecture du range.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
-  "missing": [
-    "structure 1d ind\u00e9termin\u00e9e (\u00e9tat inconnu)"
-  ],
-  "run_id": "run_20260922T220934Z",
-  "score": 5.3,
+  "missing": [],
+  "run_id": "run_20261007T175447Z",
+  "score": 3.0,
   "state": "NEUTRAL",
-  "statement": "BTC 1w configuration is NEUTRAL (+5). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: structure 1d ind\u00e9termin\u00e9e (\u00e9tat inconnu).",
+  "statement": "BTC 1w configuration is NEUTRAL (+3). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "1w",
   "why_now": [
-    "Funding dans sa normale, au 47e centile de son historique",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 14.7e centile : les mouvements sont petits, dans les deux sens",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.2e centile : les mouvements sont petits, dans les deux sens",
+    "Funding sous sa m\u00e9diane, au 9e centile",
+    "Structure 1d en range (HH LH LL HL)",
     "En 1w, le prix est au milieu de son range (qualit\u00e9 de zone 62/100)"
   ]
 }

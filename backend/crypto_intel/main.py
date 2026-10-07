@@ -19,6 +19,7 @@ from .api.routes_lot3 import router as lot3_router
 from .api.routes_lot4 import router as lot4_router
 from .api.routes_lot5 import router as lot5_router
 from .api.routes_lot6b import router as lot6b_router
+from .api.routes_macro import router as macro_router
 from .api.routes_market_intel import router as market_intel_router
 from .db.session import init_db
 from .knowledge.store import ensure_fts
@@ -85,6 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(analysis_router, prefix="/api")
     app.include_router(future_router, prefix="/api")
     app.include_router(cycle_router, prefix="/api")
+    app.include_router(macro_router, prefix="/api")
     app.include_router(market_intel_router, prefix="/api")
     # Local only - never exported, never served to another machine.
     app.include_router(lexa_router, prefix="/api")

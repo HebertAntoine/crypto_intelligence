@@ -11,8 +11,10 @@ import '../live_prices/live_price_service.dart';
 import '../theme/app_theme.dart';
 import 'cycle_page.dart';
 import 'market_intel_pages.dart';
+import '../api/macro_models.dart';
 import '../widgets/color_emoji.dart';
 import '../widgets/live_price_builder.dart';
+import '../widgets/macro_widgets.dart';
 import '../widgets/mobile_kit.dart';
 import '../widgets/reading_widgets.dart';
 import 'full_analysis_page.dart';
@@ -75,6 +77,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
       safe(widget.client.multiTimeframeRead(_asset)),
       safe(widget.client.impliedVolatility(_asset)),
       safe(widget.client.marketState(_asset)),
+      safe(widget.client.macroDrivers()),
     ]);
     return _FutureBundle(
       decision: responses[0] as FutureDecisionRead,
@@ -83,6 +86,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
       timeframes: responses[3] as MultiTimeframeRead?,
       impliedVolatility: responses[4] as ImpliedVolatilityRead?,
       marketState: responses[5] as MarketStateRead?,
+      macro: responses[6] as MacroRadarRead?,
     );
   }
 
@@ -400,12 +404,21 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                       decision: decision,
                       analysis: decision.analysis!,
                     ),
+                  // The five macro drivers that explain the current regime.
+                  // The fifteen watched behind them are one tap away.
+                  if (bundle.macro != null && !bundle.macro!.isEmpty) ...[
+                    const SizedBox(height: 18),
+                    MacroDriversCard(
+                        radar: bundle.macro!, client: widget.client),
+                  ],
                   const SizedBox(height: 18),
                   _AnalysisFactorsCard(
                     analysis: decision.analysis!,
                     asset: _asset,
                     client: widget.client,
                     onSeeAnalysis: () => _openFullAnalysis(decision, bundle),
+                    hasMacroRadar:
+                        bundle.macro != null && !bundle.macro!.isEmpty,
                   ),
                 ] else if (decision.hierarchy != null) ...[
                   // Cause -> consequence -> decision, from the engine's own
@@ -1839,11 +1852,15 @@ class _AnalysisFactorsCard extends StatelessWidget {
   final ApiClient client;
   final VoidCallback onSeeAnalysis;
 
+  /// True when the macro radar is on the page, so « Macro » is not read twice.
+  final bool hasMacroRadar;
+
   const _AnalysisFactorsCard({
     required this.analysis,
     required this.asset,
     required this.client,
     required this.onSeeAnalysis,
+    this.hasMacroRadar = false,
   });
 
   void _open(BuildContext context, AnalysisFamilyRead family) =>
@@ -1865,7 +1882,12 @@ class _AnalysisFactorsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final homeFamilies = analysis.summary.homeFamilies;
+    // « Macro » is not listed here when the macro radar is on the page: the
+    // same family would be read twice, once as a line and once as five.
+    final homeFamilies = [
+      for (final family in analysis.summary.homeFamilies)
+        if (!(hasMacroRadar && family.family == 'macro')) family,
+    ];
     if (homeFamilies.isNotEmpty) {
       final byKey = {for (final f in analysis.families) f.family: f};
       return GlassPanel(
@@ -3877,6 +3899,10 @@ class _FutureBundle {
   final ImpliedVolatilityRead? impliedVolatility;
   final MarketStateRead? marketState;
 
+  /// The macro radar is the same for the three assets: the macro environment
+  /// does not change with the ticker.
+  final MacroRadarRead? macro;
+
   const _FutureBundle({
     required this.decision,
     required this.timeline,
@@ -3884,6 +3910,7 @@ class _FutureBundle {
     required this.timeframes,
     required this.impliedVolatility,
     this.marketState,
+    this.macro,
   });
 }
 

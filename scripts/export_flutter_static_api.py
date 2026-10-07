@@ -78,6 +78,8 @@ def _endpoints() -> list[tuple[str, dict[str, str] | None]]:
         ("/hypotheses", None),
         ("/live-experiments", None),
         ("/redundancy", None),
+        # Le radar macro : les 15 moteurs surveillés et les 5 du moment.
+        ("/macro/drivers", None),
         ("/market/ratios", None),
         ("/market/breadth", None),
         ("/market/liquidity", None),

@@ -174,6 +174,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
     )
     from .macro.central_bank_rates import CentralBankRatesProvider
     from .macro.fred import FredProvider
+    from .macro.fred_public import FredPublicCsvProvider
     from .macro.official_us import (
         BlsProvider,
         FedBalanceSheetProvider,
@@ -225,6 +226,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         DefiLlamaRWAProvider,
         DefiLlamaStablecoinsProvider,
         FredProvider,
+        FredPublicCsvProvider,
         TreasuryYieldsProvider,
         TreasuryGeneralAccountProvider,
         NewYorkFedProvider,

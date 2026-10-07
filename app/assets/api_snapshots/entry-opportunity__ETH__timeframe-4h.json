@@ -1,47 +1,53 @@
 {
-  "analysis_id": "an_15e0eb1d2379e953",
-  "analysis_time": "2026-09-22T22:11:27.717391+00:00",
+  "analysis_id": "an_8b92cdf129432e4e",
+  "analysis_time": "2026-10-07T17:56:19.193726+00:00",
   "asset": "ETH",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
-      "contribution": 8.0,
-      "detail": "Funding dans sa normale, au 47e centile de son historique",
+      "contribution": -20.0,
+      "detail": "En 4h, le prix est sous son range (qualit\u00e9 de zone 74/100)",
       "is_measured_edge": false,
-      "name": "funding normalised",
-      "source": "derivatives"
+      "name": "structural location",
+      "source": "structure"
     },
     {
       "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.3e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 6.3e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
       "name": "volatility compressed",
       "source": "volatility"
     },
     {
+      "contribution": 4.0,
+      "detail": "Funding sous sa m\u00e9diane, au 15e centile",
+      "is_measured_edge": false,
+      "name": "funding leaning",
+      "source": "derivatives"
+    },
+    {
       "contribution": 0.0,
-      "detail": "Structure 1d en range (LH HH HL HL)",
+      "detail": "Structure 1d en range (HH LH HL HL)",
       "is_measured_edge": false,
       "name": "higher timeframe structure",
       "source": "structure"
     }
   ],
   "from_analysis": true,
-  "invalidation": "no validated range, so no objective structural invalidation can be stated",
+  "invalidation": "Une cl\u00f4ture 4h de retour au-dessus de 2656.92 signifierait que la cassure par le bas a \u00e9chou\u00e9 et que le prix a r\u00e9int\u00e9gr\u00e9 le range.",
   "measured_edge_note": "15 candidate relationships were tested for ETH and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict f",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
-  "missing": [
-    "aucun range valid\u00e9 sur l'unit\u00e9 4h"
-  ],
-  "price_at_analysis": 2743.0,
-  "run_id": "run_20260922T220934Z",
-  "score": 5.3,
+  "missing": [],
+  "price_at_analysis": 2546.38,
+  "run_id": "run_20261007T175447Z",
+  "score": -2.0,
   "state": "NEUTRAL",
-  "statement": "ETH 4h configuration is NEUTRAL (+5). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence. Not included: aucun range valid\u00e9 sur l'unit\u00e9 4h.",
+  "statement": "ETH 4h configuration is NEUTRAL (-2). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "4h",
   "why_now": [
-    "Funding dans sa normale, au 47e centile de son historique",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.3e centile : les mouvements sont petits, dans les deux sens",
-    "Structure 1d en range (LH HH HL HL)"
+    "En 4h, le prix est sous son range (qualit\u00e9 de zone 74/100)",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e tr\u00e8s faible, au 6.3e centile : les mouvements sont petits, dans les deux sens",
+    "Funding sous sa m\u00e9diane, au 15e centile",
+    "Structure 1d en range (HH LH HL HL)"
   ]
 }

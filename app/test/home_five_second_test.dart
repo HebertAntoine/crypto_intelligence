@@ -349,8 +349,10 @@ void _iphoneRendering() {
       final reading = decision.analysis!.summary.reading;
 
       // The raw figure (« RSI 86 ») moved to the family page; the home says
-      // what it means. Every family with a translated card shows it.
+      // what it means. Every family with a translated card shows it - except
+      // « Macro », which the five macro drivers above carry in full.
       for (final family in decision.analysis!.summary.homeFamilies) {
+        if (family.family == 'macro') continue;
         final lead = reading.families[family.family]?.firstOrNull;
         if (lead == null) continue;
         expect(find.textContaining(lead.title), findsWidgets,

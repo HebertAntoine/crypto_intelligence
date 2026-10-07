@@ -579,6 +579,9 @@ def no_figures(text: str) -> str:
 
     text = re.sub(r"\s+de\s+[\d\s\u202f.,]+\s*\$", "", text)
     text = re.sub(r"\s*\(?[\d\s\u202f.,]{3,}\s*\$\)?", "", text)
+    # « Support important — 83 183 $ » leaves « Support important — »: the
+    # separator introduced the figure that is no longer there.
+    text = re.sub(r"\s*[—–-]\s*$", "", text.strip())
     return re.sub(r"\s{2,}", " ", text).strip()
 
 

@@ -220,6 +220,10 @@ class Pipeline:
             "liquidity_tga": self._fetch("liquidity.tga"),
             "liquidity_rrp": self._fetch("liquidity.rrp"),
             "liquidity_fed_balance_sheet": self._fetch("liquidity.fed_balance_sheet"),
+            # Credit spreads, PCE and jobless claims: nothing else connected
+            # publishes them, and credit is what separates a drawdown from
+            # systemic stress.
+            "macro_credit": self._fetch("macro.credit"),
             "central_banks": self._fetch("macro.central_banks"),
             "btc_chain": self._fetch("onchain.btc_cycle"),
             "macro_indices": self._fetch("macro.indices"),

@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 
 import '../config.dart';
 import 'cycle_models.dart';
+import 'macro_models.dart';
 import 'market_intel_models.dart';
 import 'future_models.dart';
 import 'models.dart';
@@ -257,6 +258,12 @@ class ApiClient {
 
   Future<CycleRead> cycle(String asset) async => CycleRead.fromJson(
         await _get('/cycle/$asset') as Map<String, dynamic>,
+      );
+
+  /// The macro radar: the same payload for the three assets, because the
+  /// macro environment is the same one.
+  Future<MacroRadarRead> macroDrivers() async => MacroRadarRead.fromJson(
+        await _get('/macro/drivers') as Map<String, dynamic>,
       );
 
   Future<FutureTimelineRead> futureTimeline(

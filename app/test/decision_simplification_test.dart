@@ -328,7 +328,11 @@ void main() {
       'Baleines & on-chain',
     ]);
     expect(families.last.status, 'Source non branchée');
-    final measured = families.where((f) => f.family != 'onchain').toList();
+    // « Macro » quitte cette liste quand le radar macro est sur la page : les
+    // cinq moteurs la racontent en détail juste au-dessus.
+    final measured = families
+        .where((f) => f.family != 'onchain' && f.family != 'macro')
+        .toList();
     for (var index = 0; index < measured.length; index++) {
       final row = find.byKey(ValueKey('main-factor-${index + 1}'));
       expect(

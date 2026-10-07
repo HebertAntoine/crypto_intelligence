@@ -20,6 +20,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .core.enums import Asset, Timeframe
@@ -405,6 +406,68 @@ async def job_lexa_watch() -> None:
         _record("lexa_watch", False, str(exc)[:200])
 
 
+#: A macro release that lands between two cycles is re-read immediately rather
+#: than waiting up to three hours: an FOMC decision does not keep office hours.
+URGENT_WORDS = ("fomc", "monetary policy", "cpi", "consumer price", "personal income",
+                "employment situation", "nonfarm", "bce", "ecb", "boj")
+URGENT_WINDOW = timedelta(minutes=90)
+
+
+async def job_macro_cycle() -> None:
+    """The three-hourly macro cycle: read the 15 drivers, rank them, record.
+
+    The cycle recomputes how much each driver matters. It does not pretend the
+    underlying values are new: a monthly CPI keeps the date it was published,
+    and the reading says when the next one is due.
+    """
+
+    try:
+        from .engines.macro_drivers import build
+        from .engines.pit_view import DataCache, PointInTimeView
+        from .history.macro_cycles import previous_cycle, record_cycle
+
+        now = datetime.now(UTC)
+
+        def run() -> dict[str, Any]:
+            view = PointInTimeView(DataCache(), now)
+            previous = previous_cycle(now)
+            radar = build(view, now=now, previous=previous)
+            record_cycle(radar, when=now)
+            return radar
+
+        radar = await asyncio.to_thread(run)
+        top = ", ".join(d["name"] for d in radar.get("top", [])[:3])
+        _record("macro_cycle", True, f"{radar.get('watched', 0)} moteurs · {top}")
+    except Exception as exc:
+        _record("macro_cycle", False, str(exc)[:200])
+
+
+async def job_macro_watch() -> None:
+    """Between two cycles: re-read only when a major release has just landed."""
+
+    try:
+        from .db import repo
+
+        now = datetime.now(UTC)
+        recent = await asyncio.to_thread(
+            repo.list_future_events, start=now - URGENT_WINDOW, end=now, limit=50
+        )
+        landed = [
+            event for event in recent
+            if getattr(event, "scheduled_at", None) is not None
+            and now - URGENT_WINDOW <= event.scheduled_at <= now
+            and any(word in (event.title or "").lower() for word in URGENT_WORDS)
+        ]
+        if not landed:
+            _record("macro_watch", True, "aucune publication majeure")
+            return
+        await job_macro_cycle()
+        _record("macro_watch", True,
+                f"réévaluation après {landed[0].title[:60]}")
+    except Exception as exc:
+        _record("macro_watch", False, str(exc)[:200])
+
+
 def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
     """Start every periodic job.
 
@@ -428,6 +491,7 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
         ("future_events_sync", job_future_events_sync, 360),
         ("evaluate", job_evaluate, 60),
         ("lexa_watch", job_lexa_watch, 5),
+        ("macro_watch", job_macro_watch, 15),
         ("purge", job_purge, 1440),
     ]
 
@@ -442,7 +506,8 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
                   "etf_sync": 4, "future_events_sync": 5,
                   "analysis": 6, "decision_track": 7,
                   "pattern_experiments": 9,
-                  "evaluate": 11, "lexa_watch": 8, "purge": 20}[job_id]
+                  "evaluate": 11, "lexa_watch": 8, "macro_watch": 12,
+                  "purge": 20}[job_id]
         scheduler.add_job(
             func,
             IntervalTrigger(minutes=minutes),
@@ -450,7 +515,19 @@ def start_scheduler(run_immediately: bool = True) -> AsyncIOScheduler:
             next_run_time=now + timedelta(minutes=offset) if run_immediately else None,
         )
 
+    # The macro cycle runs on the clock, not on an interval: 00:00, 03:00,
+    # 06:00 ... UTC, so « actualisé à 18:00, prochaine vérification 21:00 »
+    # means the same thing on every restart.
+    from .engines.macro_drivers import CYCLE_HOURS
+
+    scheduler.add_job(
+        job_macro_cycle,
+        CronTrigger(hour=",".join(str(h) for h in CYCLE_HOURS), minute=2, timezone="UTC"),
+        id="macro_cycle",
+        next_run_time=now + timedelta(minutes=10) if run_immediately else None,
+    )
+
     scheduler.start()
     _STATE["started_at"] = now.isoformat()
-    log.info("scheduler_started", jobs=[j[0] for j in jobs])
+    log.info("scheduler_started", jobs=[j[0] for j in jobs] + ["macro_cycle"])
     return scheduler
