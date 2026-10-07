@@ -139,6 +139,10 @@ class LexaClient {
 
   Future<Map<String, dynamic>> plansHistory() => _send('GET', '/plans-history');
 
+  /// Tout ce qui a été annoncé, jour par jour puis crypto par crypto.
+  Future<Map<String, dynamic>> historyByDay() =>
+      _send('GET', '/history-by-day');
+
   Future<Map<String, dynamic>> notifications() =>
       _send('GET', '/notifications');
 

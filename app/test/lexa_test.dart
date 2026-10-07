@@ -8,7 +8,7 @@ import 'dart:typed_data';
 import 'package:crypto_intelligence_app/lexa/lexa_client.dart';
 import 'package:crypto_intelligence_app/chart/candle_chart.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_chart.dart';
-import 'package:crypto_intelligence_app/lexa/lexa_home.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_history_screen.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_listen_screen.dart';
 import 'package:crypto_intelligence_app/lexa/recorder/recorder.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_models.dart';
@@ -168,49 +168,56 @@ void main() {
     expect(find.text('Clôture'), findsWidgets);
   });
 
-  testWidgets('the Lexa page follows plans by date, then shows each plan',
+  testWidgets('l\'historique se lit par jour, puis crypto par crypto',
       (tester) async {
     _tall(tester);
-    final client = _backend({
-      '/overview': _copy('overview'),
-      '/calendar': _copy('calendar'),
-      '/plans-history': {'analyses': []},
-    });
+    final client = _backend({'/history-by-day': _copy('history_by_day')});
     await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: LexaHomeScreen(client: client))));
+        MaterialApp(home: Scaffold(body: LexaHistoryScreen(client: client))));
     await tester.pumpAndSettle();
-    expect(find.text('Plans & analyses'), findsOneWidget);
-    expect(find.text('À suivre'), findsOneWidget);
-    expect(find.text("AUJOURD'HUI"), findsOneWidget);
-    expect(find.text('DEMAIN'), findsOneWidget);
-    expect(find.byKey(const ValueKey('lexa-follow-XRP')), findsOneWidget);
-    expect(find.text('Niveau surveillé : 2,444175 \$'), findsOneWidget);
-    expect(find.byKey(const ValueKey('lexa-card-BTC')), findsOneWidget);
-    expect(find.text('ENTRE DEUX NIVEAUX'), findsWidgets);
 
-    // Filters: one crypto at a time, including those outside BTC/ETH/SOL.
+    expect(find.byKey(const ValueKey('lexa-history')), findsOneWidget);
+    expect(find.text('3 analyses · 2 journées · 3 cryptos'), findsOneWidget);
+
+    // La journée la plus récente ouvre la page, les cryptos sont dedans.
+    final recent = tester.getTopLeft(
+        find.byKey(const ValueKey('lexa-day-2026-10-07'))).dy;
+    final older = tester.getTopLeft(
+        find.byKey(const ValueKey('lexa-day-2026-10-06'))).dy;
+    expect(recent, lessThan(older));
+    expect(find.text('MERCREDI 7 OCTOBRE'), findsOneWidget);
+    expect(find.text('2 analyses'), findsOneWidget);
+
+    // Les niveaux sont affichés tels qu'ils ont été relevés, fourchette comprise.
+    expect(find.text('80 700 \$ – 80 800 \$'), findsOneWidget);
+    expect(find.text('1,4733 \$'), findsOneWidget);
+    expect(find.text('Support'), findsWidgets);
+
+    // Une page d'information : aucune saisie, aucune écoute, aucun test.
+    expect(find.text('Analyser une vidéo'), findsNothing);
+    expect(find.text('Saisir une vidéo'), findsNothing);
+    expect(find.text('Tester une transcription'), findsNothing);
+    expect(find.text('Plans & analyses'), findsNothing);
+
+    // Un filtre par crypto, construit sur les cryptos réellement analysées.
+    // La puce « BTC » reste affichée : c'est son analyse qui disparaît.
     await tester.tap(find.text('XRP').first);
     await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('lexa-card-BTC')), findsNothing);
-    expect(find.byKey(const ValueKey('lexa-card-XRP')), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('lexa-view-CALENDAR')));
-    await tester.pumpAndSettle();
-    expect(find.text('Attendre clôture journalière'), findsOneWidget);
-    expect(find.text('Réévaluation du scénario'), findsWidgets);
+    expect(find.text('80 700 \$ – 80 800 \$'), findsNothing);
+    expect(find.text('Bas de range ; pas d\'achat au marché.'), findsNothing);
+    expect(find.text('1,4733 \$'), findsOneWidget);
+    expect(find.byKey(const ValueKey('lexa-day-2026-10-06')), findsNothing);
   });
 
-  testWidgets('with no analysis the page explains how to add one',
-      (tester) async {
+  testWidgets('un plan daté dit qu\'il doit être revalidé', (tester) async {
     _tall(tester);
-    final client = _backend({
-      '/overview': {'follow': [], 'plans': [], 'unread_notifications': 0},
-    });
+    final client = _backend({'/history-by-day': _copy('history_by_day')});
     await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: LexaHomeScreen(client: client))));
+        MaterialApp(home: Scaffold(body: LexaHistoryScreen(client: client))));
     await tester.pumpAndSettle();
-    expect(find.text('Aucune analyse Lexa'), findsOneWidget);
-    expect(find.text('Saisir une vidéo'), findsOneWidget);
+    expect(find.textContaining('Plan à revalider'), findsOneWidget);
+    // Et une valeur déduite du contexte n'est pas présentée comme annoncée.
+    expect(find.text('déduit'), findsOneWidget);
   });
 
   test('the client surfaces the backend refusal in French', () async {

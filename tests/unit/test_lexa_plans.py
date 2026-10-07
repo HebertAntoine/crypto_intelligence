@@ -535,3 +535,76 @@ def test_a_checked_test_run_imports_only_verified_values(tmp_path):
     assert bundle.analysis.source_type == "TRANSCRIPT_TEST"
     with pytest.raises(ValueError):
         test_run.import_run(run.name)  # never twice
+
+
+# --- l'historique jour par jour, et les fourchettes du classeur -------------------------------
+
+
+def test_a_kilo_suffix_closes_the_whole_range_not_one_bound():
+    """« 89,6–91,2k » : le k ferme la fourchette.
+
+    Sans cela la borne basse valait 89,6 $ à côté d'un haut à 91 200 $ —
+    mille fois trop petite, et affichée telle quelle dans l'historique.
+    """
+
+    from crypto_intel.lexa.excel_import import _specs
+
+    low, high = (_specs("Résistances rapprochées 89,6–91,2k")[0].value,
+                 _specs("Résistances rapprochées 89,6–91,2k")[0].value_high)
+    assert (low, high) == (89600.0, 91200.0)
+    assert _specs("~80,7–80,8k")[0].value == 80700.0
+    # Les deux bornes déjà suffixées restent correctes.
+    assert _specs("80,7k–80,8k")[0].value == 80700.0
+    # Et une fourchette sans k n'est pas multipliée.
+    assert _specs("1,20–1,24")[0].value == 1.20
+
+
+def test_the_daily_history_groups_by_day_then_by_crypto(monkeypatch):
+    """La page d'information lit les lignes enregistrées : ce qui a été dit un
+    jour donné ne change pas, et aucun plan n'est recalculé."""
+
+    from datetime import UTC, datetime
+    from types import SimpleNamespace as Ns
+
+    from crypto_intel.lexa import service
+
+    def row(analysis_id, asset, day, summary):
+        return Ns(id=analysis_id, asset=asset, summary=summary, market_context="",
+                  published_at=datetime(2026, 10, day, tzinfo=UTC), stance="WAIT",
+                  source_status="", requires_revalidation=False, price_at_video=100.0,
+                  quote="USD")
+
+    def level(analysis_id, kind, value, high=None):
+        return Ns(analysis_id=analysis_id, kind=kind, original_value=value, original_high=high,
+                  corrected_value=None, corrected_high=None, unit="USD", allocation_pct=None,
+                  basis="EXPLICIT", source_text="", label="")
+
+    analyses = [row(1, "XRP", 7, "Support sous pression"), row(2, "BTC", 7, "Bas de range"),
+                row(3, "ETH", 6, "Zone d'intérêt")]
+    levels = [level(1, "TARGET", 1.5726), level(1, "SUPPORT", 1.4733),
+              level(2, "BUY_ZONE", 80700.0, 80800.0)]
+
+    class _Session:
+        def __enter__(self): return self
+        def __exit__(self, *_): return False
+
+        def execute(self, statement):
+            table = str(statement).lower()
+            rows = levels if "lexa_levels" in table else analyses
+            return Ns(scalars=lambda: Ns(all=lambda: rows))
+
+    monkeypatch.setattr(service, "lexa_session", _Session)
+    out = service.daily_history()
+
+    assert out["days_count"] == 2 and out["analyses_count"] == 3 and out["assets_count"] == 3
+    # Le jour le plus récent en premier, les cryptos triées dans la journée.
+    first = out["days"][0]
+    assert first["date"] == "2026-10-07" and first["count"] == 2
+    assert [a["asset"] for a in first["analyses"]] == ["BTC", "XRP"]
+    assert first["label"] == "mercredi 7 octobre"
+    # Les niveaux se lisent dans l'ordre d'un plan : support, achat, objectif.
+    xrp = next(a for a in first["analyses"] if a["asset"] == "XRP")
+    assert [lv["kind"] for lv in xrp["levels"]] == ["SUPPORT", "TARGET"]
+    assert xrp["levels"][0]["value_fr"] == "1,4733 $"
+    btc = next(a for a in first["analyses"] if a["asset"] == "BTC")
+    assert btc["levels"][0]["high_fr"] == "80 800 $"

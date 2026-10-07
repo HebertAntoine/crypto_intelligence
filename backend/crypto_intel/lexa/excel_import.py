@@ -176,8 +176,14 @@ def _specs(text: Any, reference: float | None = None, *, default_unit: str = "US
         if before == "/" or after == "/" or after == "%":
             continue
         unit = {"€": "EUR", "$": "USD"}.get(match.group("unit"), cell_unit)
-        first = _number(match.group("a"), reference, bool(match.group("ak")))
-        second = (_number(match.group("b"), reference, bool(match.group("bk")))
+        kilo_low, kilo_high = bool(match.group("ak")), bool(match.group("bk"))
+        if match.group("b") and kilo_low != kilo_high:
+            # « 89,6–91,2k » : le k ferme la fourchette, il n'appartient pas à
+            # une seule borne. Sans cela la borne basse valait 89,6 $ au lieu
+            # de 89 600 $ — mille fois trop petite, à côté d'un haut correct.
+            kilo_low = kilo_high = True
+        first = _number(match.group("a"), reference, kilo_low)
+        second = (_number(match.group("b"), reference, kilo_high)
                   if match.group("b") else None)
         low, high = (min(first, second), max(first, second)) if second is not None else (first, None)
         op = "ABOVE" if match.group("op") == ">" else "AT"

@@ -314,6 +314,18 @@ def get_plans_history(request: Request, asset: str | None = None) -> dict[str, A
     return lexa_service.history(asset)
 
 
+@router.get("/history-by-day")
+def get_history_by_day(request: Request) -> dict[str, Any]:
+    """Tout ce qui a été annoncé, jour par jour puis crypto par crypto.
+
+    Lecture des lignes enregistrées : ce qui a été dit un jour donné ne change
+    pas. Aucun plan n'est recalculé ici.
+    """
+
+    _local_only(request)
+    return lexa_service.daily_history()
+
+
 @router.get("/notifications")
 def get_notifications(request: Request) -> dict[str, Any]:
     _local_only(request)

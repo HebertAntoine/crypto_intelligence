@@ -12,7 +12,7 @@ import 'package:flutter/material.dart';
 import 'api/client.dart';
 import 'config.dart';
 import 'lexa/lexa_client.dart';
-import 'lexa/lexa_home.dart';
+import 'lexa/lexa_history_screen.dart';
 import 'live_prices/live_price_service.dart';
 import 'screens/chart_screen.dart';
 import 'screens/future_analysis_screen.dart';
@@ -112,7 +112,7 @@ class _HomeShellState extends State<HomeShell> {
         'ETH' => _assetPage('ETH'),
         'SOL' => _assetPage('SOL'),
         'LEXA' =>
-          LexaHomeScreen(key: const ValueKey('lexa-page'), client: _lexa!),
+          LexaHistoryScreen(key: const ValueKey('lexa-page'), client: _lexa!),
         _ => ChartScreen(
             key: const ValueKey('chart-page'),
             client: widget.client,

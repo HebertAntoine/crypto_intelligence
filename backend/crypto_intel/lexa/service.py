@@ -270,3 +270,114 @@ def record_supersession(new_ids: list[int]) -> None:
                 analysis_id=older.id, asset=new.asset, event_type="SUPERSEDED",
                 triggered_at=datetime.now(UTC), status="TRIGGERED", dedup_key=key,
                 description=f"Remplacée par une nouvelle analyse Lexa ({plans.fr_day(plans.utc(new.published_at))})"))
+
+
+# --- l'historique, jour par jour -----------------------------------------------------------
+
+
+DAYS_FR = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
+             "septembre", "octobre", "novembre", "décembre"]
+STANCE_FR = {"BUY": "Achat", "SELL": "Vente", "WAIT": "Attendre",
+             "WAIT_CLOSE": "Attendre une clôture", "HOLD": "Conserver",
+             "WATCH": "Surveiller", "UNSPECIFIED": "Non précisé"}
+
+
+def _price_fr(value: float | None, unit: str) -> str:
+    """A level as it is read: « 1,5726 $ », « 112 400 $ », « 30 € »."""
+
+    if value is None:
+        return "—"
+    decimals = 0 if abs(value) >= 1000 else (2 if abs(value) >= 10 else 4)
+    text = f"{value:,.{decimals}f}".replace(",", " ").replace(".", ",")
+    symbol = {"USD": " $", "EUR": " €"}.get((unit or "USD").upper(), f" {unit}")
+    return f"{text}{symbol}"
+
+
+def daily_history(limit_days: int = 90) -> dict[str, Any]:
+    """Every analysis, grouped by the day it was published, newest day first.
+
+    Read straight from the stored rows: this page says what was announced on a
+    given day, which never changes. Recomputing a live plan per analysis took
+    35 seconds for fifty-four analyses and answered a different question.
+    """
+
+    from . import repository
+
+    with lexa_session() as session:
+        analyses = session.execute(
+            select(LexaAnalysisRow).order_by(LexaAnalysisRow.published_at.desc())
+        ).scalars().all()
+        rows = session.execute(select(LexaLevelRow)).scalars().all()
+        levels_by_analysis: dict[int, list[Any]] = {}
+        for level in rows:
+            levels_by_analysis.setdefault(level.analysis_id, []).append(level)
+        payload = [
+            {
+                "analysis_id": a.id,
+                "asset": a.asset,
+                "published_at": plans.utc(a.published_at).isoformat(),
+                "date": a.published_at.date().isoformat(),
+                "stance": a.stance,
+                "stance_fr": STANCE_FR.get(a.stance, a.stance),
+                "summary": a.summary or "",
+                "market_context": a.market_context or "",
+                "source_status": a.source_status or "",
+                "requires_revalidation": bool(a.requires_revalidation),
+                "price_at_video": a.price_at_video,
+                "price_at_video_fr": _price_fr(a.price_at_video, a.quote),
+                "levels": [
+                    {
+                        "kind": level.kind,
+                        "emoji": repository.KIND_FR.get(level.kind, ("📝", level.kind))[0],
+                        "kind_fr": repository.KIND_FR.get(level.kind, ("📝", level.kind))[1],
+                        "label": level.label or "",
+                        # The corrected value wins when the member fixed a
+                        # mis-heard figure; the original stays recorded.
+                        "value_fr": _price_fr(
+                            level.corrected_value if level.corrected_value is not None
+                            else level.original_value, level.unit),
+                        "high_fr": _price_fr(
+                            level.corrected_high if level.corrected_high is not None
+                            else level.original_high, level.unit)
+                        if (level.corrected_high or level.original_high) else "",
+                        "allocation_pct": level.allocation_pct,
+                        "basis": level.basis,
+                        "source_text": level.source_text or "",
+                    }
+                    for level in sorted(levels_by_analysis.get(a.id, []),
+                                        key=lambda level: (_KIND_ORDER.get(level.kind, 9),
+                                                           level.original_value))
+                ],
+            }
+            for a in analyses
+        ]
+
+    by_day: dict[str, list[dict[str, Any]]] = {}
+    for item in payload:
+        by_day.setdefault(item["date"], []).append(item)
+
+    days = []
+    for date_str in sorted(by_day, reverse=True)[:limit_days]:
+        day = datetime.fromisoformat(date_str)
+        items = sorted(by_day[date_str], key=lambda item: item["asset"])
+        days.append({
+            "date": date_str,
+            "label": f"{DAYS_FR[day.weekday()]} {day.day} {MONTHS_FR[day.month - 1]}",
+            "count": len(items),
+            "assets": sorted({item["asset"] for item in items}),
+            "analyses": items,
+        })
+    return {
+        "days": days,
+        "days_count": len(by_day),
+        "analyses_count": len(payload),
+        "assets_count": len({item["asset"] for item in payload}),
+    }
+
+
+#: Read in the order a plan is read: where it bounces, where we buy, what
+#: confirms it, what it targets, what kills it.
+_KIND_ORDER = {"CURRENT_PRICE": 0, "SUPPORT": 1, "RESISTANCE": 1, "BUY_ZONE": 2,
+               "REINFORCEMENT": 2, "CONFIRMATION": 3, "BREAKOUT": 3,
+               "TARGET": 4, "TAKE_PROFIT": 4, "SELL": 5, "INVALIDATION": 6}
