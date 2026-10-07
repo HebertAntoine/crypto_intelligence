@@ -94,8 +94,8 @@ def xrp_levels(buy=2.15696, stance="WAIT", required=1, window=None, confirm_tf="
     ])
 
 
-def add(asset_input, when=PUBLISHED, title="Analyse XRP"):
-    create_video(title=title, published_at=when, assets=[asset_input])
+def add(asset_input, when=PUBLISHED, title="Analyse XRP", source_name="Lexa"):
+    create_video(title=title, published_at=when, assets=[asset_input], source_name=source_name)
     return service.current_ids()[asset_input.asset]
 
 
@@ -230,6 +230,74 @@ def test_reaching_a_buy_zone_says_buy_but_waits_if_something_is_missing(monkeypa
     assert p["now"]["action_pending"] and "FOMC" in p["now"]["reason"]
 
 
+def test_a_source_zone_keeps_both_bounds_and_is_drawn_as_a_band():
+    aid = add(AssetInput(asset="ADA", price_at_video=1.30, levels=[
+        LevelInput("BUY_ZONE", 1.20, value_high=1.24, source_text="zone entre 1,20 et 1,24"),
+        LevelInput("TARGET", 1.40),
+    ]), source_name="Autre analyste")
+    now = PUBLISHED + timedelta(hours=8)
+    path = [*flat(1.30, 15), (1.25, 1.23, 1.235)]
+    p = plan(aid, FakeMarket(path, now))
+    buy = next(level for level in p["levels"] if level["kind"] == "BUY_ZONE")
+    assert (buy["value"], buy["value_high"]) == (1.20, 1.24)
+    assert buy["state"]["code"] == "TOUCHED"
+    assert p["now"]["verdict"] == "ACHETER"
+    overlay = next(level for level in p["chart"]["levels"]
+                   if level["level_id"] == buy["id"])
+    assert (overlay["low"], overlay["high"], overlay["provenance"]) == (
+        1.20, 1.24, "ANALYST")
+    assert p["lexa"]["source"] == "Autre analyste"
+    assert buy["basis_fr"] == "🎬 Dit par Autre analyste"
+
+
+def test_an_old_entry_is_never_reoffered_after_the_move_already_happened():
+    aid = add(AssetInput(asset="ADA", price_at_video=1.30, levels=[
+        LevelInput("BUY_ZONE", 1.20),
+        LevelInput("TARGET", 1.40),
+        LevelInput("TARGET", 1.60),
+    ]))
+    now = PUBLISHED + timedelta(days=10)
+    hours = int((now - (PUBLISHED - timedelta(hours=8))).total_seconds() // 3600)
+    path = [*flat(1.30, 24), (1.22, 1.19, 1.20),
+            (1.41, 1.35, 1.40), *flat(1.19, hours - 26)]
+    p = plan(aid, FakeMarket(path, now))
+    assert p["movement"]["entry_opportunity_passed"] is True
+    assert p["movement"]["high_since_video"] >= 1.41
+    assert p["movement"]["low_since_video"] <= 1.19
+    assert p["now"]["verdict"] == "ATTENDRE"
+    assert "déjà été touchée" in p["now"]["reason"]
+    assert all(action["direction"] != "↓" for action in p["next_actions"])
+
+
+def test_an_observation_only_plan_says_no_action():
+    aid = add(AssetInput(asset="HYPE", stance="WAIT", levels=[
+        LevelInput("SUPPORT", 40), LevelInput("RESISTANCE", 50),
+    ]))
+    now = PUBLISHED + timedelta(days=1)
+    hours = int((now - (PUBLISHED - timedelta(hours=8))).total_seconds() // 3600)
+    p = plan(aid, FakeMarket(flat(45, hours), now))
+    assert (p["now"]["status"], p["now"]["verdict"]) == (
+        "NO_ACTION", "AUCUNE ACTION")
+    assert "informatifs" in p["now"]["reason"]
+
+
+def test_first_take_profit_is_reached_without_completing_the_whole_plan():
+    aid = add(AssetInput(asset="ADA", levels=[
+        LevelInput("BUY_ZONE", 1.20),
+        LevelInput("TARGET", 1.40, allocation_pct=50),
+        LevelInput("TARGET", 1.60, allocation_pct=50),
+    ]))
+    now = PUBLISHED + timedelta(days=2)
+    hours = int((now - (PUBLISHED - timedelta(hours=8))).total_seconds() // 3600)
+    path = [*flat(1.30, hours - 3), (1.22, 1.19, 1.20),
+            (1.41, 1.30, 1.40), (1.39, 1.35, 1.38)]
+    p = plan(aid, FakeMarket(path, now))
+    assert p["now"]["status"] == "TAKE_PROFIT"
+    assert p["now"]["verdict"] == "PRENDRE DES PROFITS"
+    reached = [level for level in p["levels"] if level["state"]["code"] == "TARGET_REACHED"]
+    assert len(reached) == 1 and reached[0]["value"] == 1.40
+
+
 # --- [3] versions ---------------------------------------------------------------------
 
 
@@ -245,6 +313,10 @@ def test_3_a_new_analysis_supersedes_the_old_one_and_says_what_changed():
     change = next(c for c in new["revision"]["changes"] if c["what"] == "Zone d'achat")
     assert "2,15696 $" in change["old"] and "2,227 $" in change["new"]
     assert new["version"] == 2 and [v["version"] for v in new["versions"]] == [1, 2]
+    chart_versions = {row["version"] for row in new["chart"]["analyses"]}
+    chart_level_versions = {row["version"] for row in new["chart"]["levels"]}
+    assert chart_versions == chart_level_versions == {1, 2}
+    assert all(row["provenance"] == "ANALYST" for row in new["chart"]["levels"])
 
 
 # --- [4] expiry ---------------------------------------------------------------------------

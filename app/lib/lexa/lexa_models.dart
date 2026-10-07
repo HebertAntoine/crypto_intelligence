@@ -8,6 +8,9 @@ const lexaKinds = <String, String>{
   'REINFORCEMENT': '🟢 Renforcement',
   'CONFIRMATION': '🚀 Confirmation',
   'BREAKOUT': '🚀 Cassure',
+  'SELL': '🔴 Vente',
+  'WAIT': '🟡 Attendre',
+  'WATCH': '🟠 Surveiller',
   'INVALIDATION': '❌ Invalidation',
   'TARGET': '🎯 Objectif',
   'TAKE_PROFIT': '🎯 Prise de profit',
@@ -52,6 +55,20 @@ String fmtPrice(double? value) {
 
 String fmtEur(double? value) =>
     value == null ? '—' : '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
+
+String fmtLevelValue(double? value, String unit) {
+  if (unit == 'EUR') return fmtEur(value);
+  return fmtPrice(value);
+}
+
+String fmtPriceRange(Object? low, Object? high, {String unit = 'USD'}) {
+  final a = (low as num?)?.toDouble();
+  final b = (high as num?)?.toDouble();
+  if (a == null) return '—';
+  return b == null || b == a
+      ? fmtLevelValue(a, unit)
+      : '${fmtLevelValue(a, unit)} – ${fmtLevelValue(b, unit)}';
+}
 
 String fmtDateFr(DateTime? d, {bool time = true}) {
   if (d == null) return '—';

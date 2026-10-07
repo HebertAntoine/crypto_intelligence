@@ -189,6 +189,7 @@ def import_run(run_id: str) -> int:
             basis = lv.get("basis") if lv.get("basis") in ("EXPLICIT", "INFERRED") else "INFERRED"
             levels.append(LevelInput(
                 kind=lv["kind"], value=float(lv["value"]),
+                value_high=(float(lv["value_high"]) if lv.get("value_high") is not None else None),
                 allocation_pct=lv.get("allocation_pct") if lv.get("allocation_basis") == "EXPLICIT" else None,
                 timestamp=evidence.get("timestamp_s"), source_text=evidence.get("quote") or "",
                 confidence="HIGH" if basis == "EXPLICIT" else "MEDIUM", basis=basis,

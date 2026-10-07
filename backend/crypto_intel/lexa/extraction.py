@@ -93,7 +93,7 @@ Réponds uniquement avec un objet JSON de cette forme :
   "stance": "WAIT | BUY | SELL | NEUTRAL | UNSPECIFIED",
   "stance_basis": "EXPLICIT | INFERRED | UNKNOWN",
   "situation": [{"text": "", "basis": "", "timestamp": "mm:ss", "quote": ""}],
-  "levels": [{"value": 0, "kind": "SUPPORT | RESISTANCE | BUY_ZONE | REINFORCEMENT | CONFIRMATION | INVALIDATION | TARGET | TAKE_PROFIT | OTHER",
+  "levels": [{"value": 0, "value_high": null, "kind": "SUPPORT | RESISTANCE | BUY_ZONE | REINFORCEMENT | CONFIRMATION | BREAKOUT | INVALIDATION | TARGET | TAKE_PROFIT | SELL | WAIT | WATCH | OTHER",
               "role": "", "basis": "", "timeframe": null,
               "condition": {"kind": "BREAKOUT | CLOSE_ABOVE | CLOSE_BELOW | RETEST | VOLUME | HOLD_ABOVE | HOLD_BELOW | OTHER | UNKNOWN", "text": ""},
               "allocation_pct": null, "reasoning": "", "timestamp": "mm:ss", "quote": ""}],
@@ -299,8 +299,8 @@ def verify_asset(symbol: str, raw: dict[str, Any], window: list[Segment],
             continue
         value = _num(item.get("value"))
         kind = _choice(item.get("kind"), ("SUPPORT", "RESISTANCE", "BUY_ZONE", "REINFORCEMENT",
-                                          "CONFIRMATION", "INVALIDATION", "TARGET",
-                                          "TAKE_PROFIT", "OTHER"), "OTHER")
+                                          "CONFIRMATION", "BREAKOUT", "INVALIDATION", "TARGET",
+                                          "TAKE_PROFIT", "SELL", "WAIT", "WATCH", "OTHER"), "OTHER")
         ts = _ts(item.get("timestamp"))
         if value is None or value <= 0:
             continue
@@ -311,6 +311,16 @@ def verify_asset(symbol: str, raw: dict[str, Any], window: list[Segment],
             continue
         if (kind, value) in seen:
             continue
+        value_high = _num(item.get("value_high"))
+        high_evidence = None
+        if value_high is not None:
+            high_evidence, _ = _locate_value(value_high, ts, window, everything)
+            if value_high <= value or high_evidence is None:
+                out.rejected.append(Rejected(
+                    what=f"Borne haute de la zone {kind}", value=value_high, timestamp_s=ts,
+                    reason=("La borne haute n'est pas supérieure à la borne basse."
+                            if value_high <= value else "Valeur introuvable dans la transcription.")))
+                value_high = None
         seen.add((kind, value))
         basis = _basis(item.get("basis"))
         passage = _text(near(window, evidence.timestamp_s, 20)) or evidence.quote
@@ -327,7 +337,8 @@ def verify_asset(symbol: str, raw: dict[str, Any], window: list[Segment],
                 out.ambiguous.append(f"{format(value, 'g')} : {note}")
         cond = item.get("condition") if isinstance(item.get("condition"), dict) else {}
         out.levels.append(Level(
-            value=value, kind=kind, role=str(item.get("role") or ""), basis=basis,
+            value=value, value_high=value_high, kind=kind,
+            role=str(item.get("role") or ""), basis=basis,
             confidence=CONFIDENCE_BY_BASIS[basis], timeframe=timeframe,
             condition=Condition(
                 kind=_choice(cond.get("kind"), ("BREAKOUT", "CLOSE_ABOVE", "CLOSE_BELOW",

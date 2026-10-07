@@ -86,6 +86,7 @@ class ConditionBody(BaseModel):
 class LevelBody(BaseModel):
     kind: str
     value: float
+    value_high: float | None = None
     allocation_pct: float | None = None
     timestamp: str | None = None
     source_text: str = ""
@@ -109,6 +110,7 @@ class AssetBody(BaseModel):
 
 class VideoBody(BaseModel):
     title: str
+    source_name: str = "Lexa"
     published_at: datetime
     duration_s: int | None = None
     source_ref: str = ""
@@ -141,7 +143,7 @@ def post_video(body: VideoBody, request: Request) -> dict[str, Any]:
     try:
         video_id = create_video(
             title=body.title, published_at=body.published_at, duration_s=body.duration_s,
-            source_ref=body.source_ref, video_url=body.video_url,
+            source_ref=body.source_ref, video_url=body.video_url, source_name=body.source_name,
             assets=[
                 AssetInput(
                     asset=a.asset, price_at_video=a.price_at_video, stance=a.stance,

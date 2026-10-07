@@ -30,7 +30,7 @@ from .store import (
 LEVEL_KINDS = {
     "CURRENT_PRICE", "SUPPORT", "RESISTANCE", "BUY_ZONE", "REINFORCEMENT", "CONFIRMATION",
     "INVALIDATION", "TARGET", "TAKE_PROFIT", "MACRO", "TECHNICAL", "WARNING", "OTHER",
-    "BREAKOUT",
+    "BREAKOUT", "SELL", "WAIT", "WATCH",
 }
 KIND_FR = {
     "CURRENT_PRICE": ("💲", "Prix observé"),
@@ -43,6 +43,9 @@ KIND_FR = {
     "INVALIDATION": ("❌", "Invalidation"),
     "TARGET": ("🎯", "Objectif"),
     "TAKE_PROFIT": ("🎯", "Prise de profit"),
+    "SELL": ("🔴", "Vente"),
+    "WAIT": ("🟡", "Attendre"),
+    "WATCH": ("🟠", "Surveiller"),
     "MACRO": ("🏛️", "Macro"),
     "TECHNICAL": ("📊", "Technique"),
     "WARNING": ("⚠️", "Avertissement"),
@@ -107,6 +110,9 @@ class ConditionInput:
 class LevelInput:
     kind: str
     value: float
+    #: Upper bound only when the source says a zone. Never inferred from a line.
+    value_high: float | None = None
+    unit: str = "USD"
     #: Only a share Lexa herself stated. Our own amounts go to the user plan.
     allocation_pct: float | None = None
     timestamp: str | int | None = None
@@ -116,6 +122,7 @@ class LevelInput:
     label: str = ""
     basis: str = "EXPLICIT"
     conditions: list[ConditionInput] = field(default_factory=list)
+    extra: dict[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -131,6 +138,9 @@ class AssetInput:
     timestamp_start: str | int | None = None
     timestamp_end: str | int | None = None
     source_type: str = "MANUAL_NOTES"
+    source_status: str = ""
+    requires_revalidation: bool = False
+    extra: dict[str, Any] | None = None
 
 
 def _legacy_condition(level: LevelInput) -> list[ConditionInput]:
@@ -147,6 +157,12 @@ def _validate_level(level: LevelInput) -> None:
         raise LexaInputError(f"Type de niveau inconnu : {level.kind}.")
     if level.value is None or level.value <= 0:
         raise LexaInputError("Un niveau doit avoir une valeur positive.")
+    if level.value_high is not None and level.value_high <= 0:
+        raise LexaInputError("La borne haute d'une zone doit être positive.")
+    if level.value_high is not None and level.value_high <= level.value:
+        raise LexaInputError("La borne haute d'une zone doit être supérieure à sa borne basse.")
+    if level.unit not in {"USD", "USDT", "EUR"}:
+        raise LexaInputError("Devise de niveau attendue : USD, USDT ou EUR.")
     if level.condition not in CONDITIONS:
         raise LexaInputError(f"Condition inconnue : {level.condition}.")
     if level.allocation_pct is not None and not 0 < level.allocation_pct <= 100:
@@ -171,7 +187,7 @@ def _validate_level(level: LevelInput) -> None:
 
 def create_video(*, title: str, published_at: datetime, assets: list[AssetInput],
                  duration_s: int | None = None, source_ref: str = "", video_url: str = "",
-                 source_kind: str = "MANUAL_NOTES") -> int:
+                 source_kind: str = "MANUAL_NOTES", source_name: str = "Lexa") -> int:
     """Store one video and its per-asset scenarios. Never updates an existing one."""
 
     if not title.strip():
@@ -187,7 +203,8 @@ def create_video(*, title: str, published_at: datetime, assets: list[AssetInput]
         published_at = published_at.replace(tzinfo=UTC)
     created: list[int] = []
     with lexa_session() as session:
-        video = LexaVideoRow(title=title.strip(), published_at=published_at,
+        video = LexaVideoRow(title=title.strip(), source_name=source_name.strip() or "Non précisé",
+                             published_at=published_at,
                              duration_s=duration_s, source_ref=source_ref,
                              video_url=video_url.strip(),
                              source_kind=source_kind, status="ANALYSED")
@@ -200,6 +217,9 @@ def create_video(*, title: str, published_at: datetime, assets: list[AssetInput]
                 stance=asset.stance, summary=asset.summary.strip(),
                 market_context=asset.market_context.strip(),
                 source_type=asset.source_type,
+                source_status=asset.source_status.strip(),
+                requires_revalidation=asset.requires_revalidation,
+                extra=asset.extra,
                 review_at=_aware(asset.review_at), expires_at=_aware(asset.expires_at),
                 timestamp_start_s=parse_timestamp(asset.timestamp_start),
                 timestamp_end_s=parse_timestamp(asset.timestamp_end),
@@ -210,10 +230,13 @@ def create_video(*, title: str, published_at: datetime, assets: list[AssetInput]
             for level in asset.levels:
                 row = LexaLevelRow(
                     analysis_id=analysis.id, kind=level.kind, original_value=float(level.value),
+                    original_high=(float(level.value_high) if level.value_high is not None else None),
+                    unit=level.unit,
                     allocation_pct=level.allocation_pct,
                     timestamp_s=parse_timestamp(level.timestamp),
                     source_text=level.source_text.strip(), condition=level.condition,
                     confidence=level.confidence, label=level.label.strip(), basis=level.basis,
+                    extra=level.extra,
                 )
                 session.add(row)
                 session.flush()
@@ -289,8 +312,11 @@ def _level_dict(row: LexaLevelRow, state: dict[str, Any] | None,
         "emoji": emoji,
         "kind_label": row.label or label,
         "value": value,
+        "value_high": (row.corrected_high if row.corrected_high is not None else row.original_high),
         "original_value": row.original_value,
+        "original_high": row.original_high,
         "corrected_value": row.corrected_value,
+        "corrected_high": row.corrected_high,
         "corrected_at": _utc(row.corrected_at).isoformat() if row.corrected_at else None,
         "unit": row.unit,
         "allocation_pct": row.allocation_pct,
@@ -302,6 +328,7 @@ def _level_dict(row: LexaLevelRow, state: dict[str, Any] | None,
         "condition_label": CONDITIONS.get(row.condition, ("",))[0] or "Condition non précisée",
         "confidence": row.confidence,
         "to_verify": row.confidence == "LOW",
+        "extra": row.extra,
         "state": state,
     }
 
@@ -337,6 +364,7 @@ def asset_report(analysis_id: int, *, with_market: bool = True) -> dict[str, Any
     sim_levels = [
         SimLevel(id=row.id, kind=row.kind,
                  value=row.corrected_value if row.corrected_value is not None else row.original_value,
+                 value_high=(row.corrected_high if row.corrected_high is not None else row.original_high),
                  allocation_pct=row.allocation_pct, label=row.label)
         for row in levels
     ]
@@ -355,7 +383,7 @@ def asset_report(analysis_id: int, *, with_market: bool = True) -> dict[str, Any
             "published_at": _utc(video.published_at).isoformat(),
             "duration_s": video.duration_s,
             "source_ref": video.source_ref,
-            "source": "Lexa Moon",
+            "source": video.source_name,
         },
         "published_at": published_at.isoformat(),
         "processed_at": _utc(analysis.processed_at).isoformat(),
@@ -365,6 +393,9 @@ def asset_report(analysis_id: int, *, with_market: bool = True) -> dict[str, Any
         "stance_emoji": stance_emoji,
         "stance_label": stance_label,
         "summary": analysis.summary,
+        "source_status": analysis.source_status,
+        "requires_revalidation": analysis.requires_revalidation,
+        "extra": analysis.extra,
         "capital_eur": capital,
         "current_price": simulation.current_price,
         "levels": [
@@ -372,7 +403,8 @@ def asset_report(analysis_id: int, *, with_market: bool = True) -> dict[str, Any
                 row,
                 track(row.kind,
                       row.corrected_value if row.corrected_value is not None else row.original_value,
-                      row.condition, frame, analysis.published_at).to_dict()
+                      row.condition, frame, analysis.published_at,
+                      row.corrected_high if row.corrected_high is not None else row.original_high).to_dict()
                 if row.kind not in {"MACRO", "TECHNICAL", "WARNING", "OTHER", "CURRENT_PRICE"}
                 else None,
                 simulation.allocations_eur.get(row.id),
@@ -381,7 +413,7 @@ def asset_report(analysis_id: int, *, with_market: bool = True) -> dict[str, Any
         ],
         "simulation": simulation.to_dict(),
         "origin": "LEXA",
-        "note": "Ce que dit Lexa - distinct de ce que montrent les données de l'application.",
+        "note": "Ce que dit l'analyste - distinct de ce que montrent les données de l'application.",
     }
 
 
@@ -406,6 +438,7 @@ def list_by_date(limit: int = 60) -> list[dict[str, Any]]:
             "date": video.published_at.date().isoformat(),
             "duration_s": video.duration_s,
             "status": video.status,
+            "source": video.source_name,
             "assets": [
                 {"asset": a.asset, "analysis_id": a.id, "stance": a.stance}
                 for a in sorted(per_video.get(video.id, []), key=lambda a: a.asset)

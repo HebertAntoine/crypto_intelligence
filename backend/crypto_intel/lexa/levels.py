@@ -84,7 +84,7 @@ def _resample(hourly: pd.DataFrame, timeframe: str) -> pd.DataFrame:
 
 
 def track(kind: str, value: float, condition: str, hourly: pd.DataFrame | None,
-          published_at: datetime) -> LevelState:
+          published_at: datetime, value_high: float | None = None) -> LevelState:
     """The state of one level, from the closed hourly bars after the video."""
 
     if hourly is None or hourly.empty:
@@ -95,7 +95,11 @@ def track(kind: str, value: float, condition: str, hourly: pd.DataFrame | None,
         return LevelState("WAITING", note="Aucune bougie close depuis la vidéo.")
 
     # Entries and supports are reached from above, targets from below.
-    touched = frame[frame["low"] <= value] if kind in FROM_ABOVE else frame[frame["high"] >= value]
+    upper = value_high or value
+    if value_high is not None:
+        touched = frame[(frame["low"] <= upper) & (frame["high"] >= value)]
+    else:
+        touched = frame[frame["low"] <= value] if kind in FROM_ABOVE else frame[frame["high"] >= value]
     if touched.empty:
         return LevelState("WAITING")
 
@@ -111,7 +115,8 @@ def track(kind: str, value: float, condition: str, hourly: pd.DataFrame | None,
     if timeframe is not None:
         bars = _resample(frame, timeframe)
         bars = bars.loc[bars.index >= pd.Timestamp(touched.index[0]).floor("h")]
-        closes = bars[bars["close"] > value] if side == "above" else bars[bars["close"] < value]
+        threshold = upper if side == "above" else value
+        closes = bars[bars["close"] > threshold] if side == "above" else bars[bars["close"] < threshold]
         if not closes.empty:
             moment = pd.Timestamp(closes.index[0]).to_pydatetime()
             if kind == "INVALIDATION":

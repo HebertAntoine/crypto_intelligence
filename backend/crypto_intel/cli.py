@@ -176,6 +176,80 @@ def cmd_import_etf(args) -> int:
     return 0 if imported or not errors else 1
 
 
+def cmd_import_crypto_excel(args) -> int:
+    """Audit/import the private four-sheet crypto-history workbook."""
+
+    from .lexa import plans
+    from .lexa.excel_import import import_workbook, report_json, update_import_report
+    from .lexa.market import BinanceMarket
+    from .lexa.repository import get_capital
+
+    report = import_workbook(args.file, apply=args.apply)
+    current_ids = report.get("created_current_ids") or {}
+    if args.apply and not args.no_market and current_ids:
+        market = BinanceMarket()
+        validations = []
+        for asset, analysis_id in sorted(current_ids.items()):
+            try:
+                bundle = plans.load(int(analysis_id))
+                if bundle is None:
+                    raise RuntimeError("Analyse importée introuvable")
+                plan = plans.compute(
+                    bundle,
+                    market,
+                    budget_eur=get_capital(asset),
+                    ours=None,
+                    macro=[],
+                    include_chart=False,
+                )
+                validations.append({
+                    "asset": asset,
+                    "analysis_id": analysis_id,
+                    "market_status": "AVAILABLE" if plan["price"]["value"] is not None
+                    else "UNAVAILABLE",
+                    "current_price": plan["price"]["value"],
+                    "price_source": plan["price"]["source"],
+                    "lifecycle": plan["lifecycle"],
+                    "status": plan["now"]["status"],
+                    "verdict": plan["now"]["verdict"],
+                    "reason": plan["now"]["reason"],
+                    "entry_opportunity_passed": plan["movement"]["entry_opportunity_passed"],
+                    "movement_finished": plan["movement"]["movement_finished"],
+                    "levels_hit": len(plan["movement"]["levels_hit"]),
+                    "requires_revalidation": plan["lexa"]["requires_revalidation"],
+                })
+            except Exception as exc:
+                validations.append({
+                    "asset": asset,
+                    "analysis_id": analysis_id,
+                    "market_status": "ERROR",
+                    "error": str(exc),
+                })
+        report["market_revalidation"] = validations
+        report["metrics"]["market_available"] = sum(
+            row["market_status"] == "AVAILABLE" for row in validations)
+        report["metrics"]["market_unavailable_or_error"] = sum(
+            row["market_status"] != "AVAILABLE" for row in validations)
+        update_import_report(report["sha256"], report)
+
+    if args.report:
+        target = Path(args.report).expanduser().resolve()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(report_json(report), encoding="utf-8")
+        print(f"Rapport JSON : {target}")
+    metrics = report["metrics"]
+    print(f"Excel {report['status']}: {metrics['sheets_read']} feuilles, "
+          f"{metrics['cryptos_detected']} cryptos, "
+          f"{metrics['historical_analyses']} analyses historiques, "
+          f"{metrics['current_plan_snapshots']} plans courants")
+    print(f"Niveaux: {metrics['buy_levels']} achats, {metrics['zones']} zones, "
+          f"{metrics['confirmations']} confirmations, {metrics['take_profits']} TP, "
+          f"{metrics['invalidations']} invalidations, {metrics['supports']} supports")
+    print(f"À revoir: {metrics['ambiguous_cells']} cellules ambiguës, "
+          f"{metrics['plans_requiring_revalidation']} plans explicitement à revalider")
+    return 0
+
+
 async def cmd_evaluate(args) -> int:
     from .core.enums import Timeframe
     from .evaluation.outcomes import OutcomeEvaluator
@@ -1266,6 +1340,16 @@ def main() -> int:
     p = sub.add_parser("import-etf", help="Import ETF flow CSV files")
     p.add_argument("--file")
     p.set_defaults(func=cmd_import_etf, is_async=False)
+
+    p = sub.add_parser(
+        "import-crypto-excel",
+        help="Audit/import the private historical crypto workbook",
+    )
+    p.add_argument("file", help="Suivi_crypto_videos_*.xlsx")
+    p.add_argument("--apply", action="store_true", help="Append immutable analyses to the private DB")
+    p.add_argument("--report", help="Write the complete JSON import report")
+    p.add_argument("--no-market", action="store_true", help="Skip Binance revalidation after import")
+    p.set_defaults(func=cmd_import_crypto_excel, is_async=False)
 
     p = sub.add_parser("evaluate", help="Score past reports against realised prices")
     p.set_defaults(func=cmd_evaluate, is_async=True)

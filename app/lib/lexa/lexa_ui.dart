@@ -54,6 +54,13 @@ String fmtDistance(num? pct) {
   return '$arrow ${pct.abs().toStringAsFixed(1).replaceAll('.', ',')} %';
 }
 
+String fmtSignedPct(Object? value) {
+  final pct = (value as num?)?.toDouble();
+  if (pct == null) return '—';
+  final sign = pct > 0 ? '+' : '';
+  return '$sign${pct.toStringAsFixed(2).replaceAll('.', ',')} %';
+}
+
 /// « 🎬 Voir le passage 18:42 » — YouTube links jump to the second.
 Uri? videoAt(String? url, int? seconds) {
   if (url == null || url.trim().isEmpty) return null;

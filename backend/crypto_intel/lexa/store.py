@@ -28,6 +28,7 @@ from pathlib import Path
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     DateTime,
     Engine,
     Float,
@@ -56,6 +57,8 @@ class LexaVideoRow(LexaBase):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title: Mapped[str] = mapped_column(String(300))
+    #: Analyst/channel as stated by the member (Lexa, Lexa Moon, ...).
+    source_name: Mapped[str] = mapped_column(String(120), default="Lexa")
     published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     duration_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
     #: Where the video lives on the platform - a reference, never the file.
@@ -87,6 +90,12 @@ class LexaAnalysisRow(LexaBase):
     market_context: Mapped[str] = mapped_column(Text, default="")
     #: MANUAL_NOTES | TRANSCRIPT_TEST (imported after the member's validation)
     source_type: Mapped[str] = mapped_column(String(32), default="MANUAL_NOTES")
+    #: Exact status carried by an imported source (never collapsed to BUY/SELL).
+    source_status: Mapped[str] = mapped_column(String(120), default="")
+    #: Old or explicitly dated plans stay visible but cannot silently reactivate.
+    requires_revalidation: Mapped[bool] = mapped_column(Boolean, default=False)
+    #: Source coordinates, untouched source cells and import semantics.
+    extra: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     #: Where this asset is discussed in the video, in seconds.
     timestamp_start_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
     timestamp_end_s: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -108,7 +117,10 @@ class LexaLevelRow(LexaBase):
     analysis_id: Mapped[int] = mapped_column(ForeignKey("lexa_analyses.id"), index=True)
     kind: Mapped[str] = mapped_column(String(24))
     original_value: Mapped[float] = mapped_column(Float)
+    #: Upper bound when the source explicitly gives a zone. Null means a line.
+    original_high: Mapped[float | None] = mapped_column(Float, nullable=True)
     corrected_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    corrected_high: Mapped[float | None] = mapped_column(Float, nullable=True)
     corrected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     unit: Mapped[str] = mapped_column(String(8), default="USD")
     #: Share of the simulated capital, in percent, when the video gives one.
@@ -163,6 +175,11 @@ class LexaActionRow(LexaBase):
     amount_type: Mapped[str] = mapped_column(String(8), default="NONE")
     amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     origin: Mapped[str] = mapped_column(String(12), default="USER_PLAN")
+    #: Exact spreadsheet wording and the condition that keeps an action disabled.
+    raw_text: Mapped[str] = mapped_column(Text, default="")
+    condition_text: Mapped[str] = mapped_column(Text, default="")
+    execution_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    extra: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
@@ -219,6 +236,19 @@ class LexaSettingRow(LexaBase):
 
     key: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[str] = mapped_column(String(200))
+
+
+class LexaImportRow(LexaBase):
+    """One immutable workbook import and its machine-readable audit report."""
+
+    __tablename__ = "lexa_imports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    fingerprint: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    file_name: Mapped[str] = mapped_column(String(300))
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    status: Mapped[str] = mapped_column(String(24), default="IMPORTED")
+    report: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 def database_path() -> Path:

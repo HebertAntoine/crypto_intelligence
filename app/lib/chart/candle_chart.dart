@@ -36,6 +36,47 @@ const double _volumeFraction = 0.18;
 /// Combien de figures portent leur nom à l'écran, au plus.
 const int _maxNamedPatterns = 4;
 
+@immutable
+class ChartPriceAnnotation {
+  final String id;
+  final String label;
+  final double low;
+  final double? high;
+  final Color color;
+  final String detail;
+  final bool historical;
+
+  const ChartPriceAnnotation({
+    required this.id,
+    required this.label,
+    required this.low,
+    required this.color,
+    this.high,
+    this.detail = '',
+    this.historical = false,
+  });
+
+  double get upper => high ?? low;
+  bool get isZone => high != null && high! > low;
+}
+
+@immutable
+class ChartTimeAnnotation {
+  final String id;
+  final DateTime time;
+  final String label;
+  final Color color;
+  final bool historical;
+
+  const ChartTimeAnnotation({
+    required this.id,
+    required this.time,
+    required this.label,
+    required this.color,
+    this.historical = false,
+  });
+}
+
 class CandleChart extends StatefulWidget {
   final List<CandlePoint> candles;
   final ChartLayerSet layers;
@@ -62,6 +103,8 @@ class CandleChart extends StatefulWidget {
   /// figure sans géométrie n'est pas dessinée. C'est ce qui garantit que ce
   /// qui est tracé est exactement ce que le détecteur a vu.
   final List<StructuralPatternRead> patterns;
+  final List<ChartPriceAnnotation> priceAnnotations;
+  final List<ChartTimeAnnotation> timeAnnotations;
 
   const CandleChart({
     super.key,
@@ -72,6 +115,8 @@ class CandleChart extends StatefulWidget {
     this.source,
     this.location,
     this.patterns = const [],
+    this.priceAnnotations = const [],
+    this.timeAnnotations = const [],
   });
 
   @override
@@ -101,7 +146,8 @@ class _CandleChartState extends State<CandleChart> {
     // Un changement d'actif ou d'unité repart d'une vue propre: conserver la
     // fenêtre reviendrait à montrer un intervalle qui n'a pas de sens dans le
     // nouveau jeu.
-    if (!identical(old.candles, widget.candles)) {
+    if (!identical(old.candles, widget.candles) ||
+        !identical(old.priceAnnotations, widget.priceAnnotations)) {
       _viewport = null;
       _crosshair = null;
       _technical = TechnicalSeries.fromCandles(widget.candles);
@@ -114,6 +160,12 @@ class _CandleChartState extends State<CandleChart> {
       return _viewport = ChartViewport.initial(
         candles: widget.candles,
         plot: plot,
+        extraPrices: [
+          for (final level in widget.priceAnnotations) ...[
+            level.low,
+            if (level.high != null) level.high!,
+          ],
+        ],
       );
     }
     return _viewport = current.withPlot(plot);
@@ -208,6 +260,8 @@ class _CandleChartState extends State<CandleChart> {
               source: widget.source,
               location: widget.location,
               patterns: widget.patterns,
+              priceAnnotations: widget.priceAnnotations,
+              timeAnnotations: widget.timeAnnotations,
               technical: _technical,
               volumePanel: volumePanel,
               macdPanel: macdPanel,
@@ -233,6 +287,8 @@ class CandleChartPainter extends CustomPainter {
   final String? source;
   final StructuralLocation? location;
   final List<StructuralPatternRead> patterns;
+  final List<ChartPriceAnnotation> priceAnnotations;
+  final List<ChartTimeAnnotation> timeAnnotations;
   final TechnicalSeries technical;
   final Rect volumePanel;
   final Rect macdPanel;
@@ -248,6 +304,8 @@ class CandleChartPainter extends CustomPainter {
     this.source,
     this.location,
     this.patterns = const [],
+    this.priceAnnotations = const [],
+    this.timeAnnotations = const [],
     this.technical = TechnicalSeries.empty,
     this.volumePanel = Rect.zero,
     this.macdPanel = Rect.zero,
@@ -282,6 +340,7 @@ class CandleChartPainter extends CustomPainter {
     // ne doivent pas masquer le prix.
     if (layers.isVisible(ChartLayer.range)) _paintRange(canvas);
     if (layers.isVisible(ChartLayer.levels)) _paintZones(canvas);
+    if (layers.isVisible(ChartLayer.levels)) _paintPriceAnnotations(canvas);
     if (layers.isVisible(ChartLayer.indicators)) {
       _paintPriceIndicators(canvas);
     }
@@ -289,6 +348,9 @@ class CandleChartPainter extends CustomPainter {
     // Les figures passent au-dessus des bougies: elles décrivent ces bougies
     // précisément, les glisser dessous les rendrait illisibles.
     if (layers.isVisible(ChartLayer.patternGeometry)) _paintPatterns(canvas);
+    if (layers.isVisible(ChartLayer.eventMarkers)) {
+      _paintTimeAnnotations(canvas);
+    }
     if (layers.isVisible(ChartLayer.currentPrice)) _paintCurrentPrice(canvas);
     if (layers.isVisible(ChartLayer.indicators)) {
       _paintMacd(canvas);
@@ -303,6 +365,12 @@ class CandleChartPainter extends CustomPainter {
       }
       if (layers.isVisible(ChartLayer.range)) _paintRangeLabels(canvas);
       if (layers.isVisible(ChartLayer.levels)) _paintZoneLabels(canvas);
+      if (layers.isVisible(ChartLayer.levels)) {
+        _paintPriceAnnotationLabels(canvas);
+      }
+      if (layers.isVisible(ChartLayer.eventMarkers)) {
+        _paintTimeAnnotationLabels(canvas);
+      }
       if (layers.isVisible(ChartLayer.indicators)) {
         _paintIndicatorLabels(canvas);
       }
@@ -856,6 +924,69 @@ class CandleChartPainter extends CustomPainter {
   }
 
   /// Support et résistance: des bandes réelles, `low` à `high`.
+  void _paintPriceAnnotations(Canvas canvas) {
+    for (final level in priceAnnotations) {
+      final colour =
+          level.color.withValues(alpha: level.historical ? .46 : .92);
+      final yLow = viewport.priceToY(level.low);
+      final yHigh = viewport.priceToY(level.upper);
+      if (level.isZone) {
+        final band = Rect.fromLTRB(
+          _plot.left,
+          math.min(yLow, yHigh),
+          _plot.right,
+          math.max(yLow, yHigh),
+        ).intersect(_plot);
+        if (band.width <= 0 || band.height <= 0) continue;
+        canvas.drawRect(
+            band,
+            Paint()
+              ..color = colour.withValues(alpha: level.historical ? .05 : .12));
+        canvas.drawRect(
+          band,
+          Paint()
+            ..color = colour
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = level.historical ? .8 : 1.2,
+        );
+      } else {
+        final y = yLow;
+        if (y < _plot.top || y > _plot.bottom) continue;
+        final paint = Paint()
+          ..color = colour
+          ..strokeWidth = level.historical ? .8 : 1.25;
+        if (level.historical) {
+          for (var x = _plot.left; x < _plot.right; x += 9) {
+            canvas.drawLine(
+                Offset(x, y), Offset(math.min(x + 5, _plot.right), y), paint);
+          }
+        } else {
+          canvas.drawLine(Offset(_plot.left, y), Offset(_plot.right, y), paint);
+        }
+      }
+    }
+  }
+
+  void _paintTimeAnnotations(Canvas canvas) {
+    for (final event in timeAnnotations) {
+      final x = viewport.timeToX(event.time);
+      if (x < _plot.left || x > _plot.right) continue;
+      final paint = Paint()
+        ..color = event.color.withValues(alpha: event.historical ? .35 : .72)
+        ..strokeWidth = 1;
+      for (var y = _plot.top; y < _plot.bottom; y += 8) {
+        canvas.drawLine(
+            Offset(x, y), Offset(x, math.min(y + 4, _plot.bottom)), paint);
+      }
+      final marker = Path()
+        ..moveTo(x - 4, _plot.top + 2)
+        ..lineTo(x + 4, _plot.top + 2)
+        ..lineTo(x, _plot.top + 8)
+        ..close();
+      canvas.drawPath(marker, Paint()..color = paint.color);
+    }
+  }
+
   void _paintZones(Canvas canvas) {
     final range = _range;
     for (final zone in [range?.bottomZone, range?.topZone]) {
@@ -910,6 +1041,42 @@ class CandleChartPainter extends CustomPainter {
       );
     }
     _paintPositionTag(canvas);
+  }
+
+  void _paintPriceAnnotationLabels(Canvas canvas) {
+    for (final level in priceAnnotations) {
+      final middle = (level.low + level.upper) / 2;
+      final y = viewport.priceToY(middle);
+      if (y < _plot.top + 8 || y > _plot.bottom - 8) continue;
+      final price = level.isZone
+          ? '${_price(level.low)}–${_price(level.upper)}'
+          : _price(level.low);
+      final suffix = level.detail.isEmpty ? '' : ' · ${level.detail}';
+      _tag(
+        canvas,
+        Offset(_plot.right - 6, y - 7),
+        '${level.label} · $price$suffix',
+        level.color.withValues(alpha: level.historical ? .65 : 1),
+        rightAligned: true,
+      );
+    }
+  }
+
+  void _paintTimeAnnotationLabels(Canvas canvas) {
+    final visible = timeAnnotations.where((event) {
+      final x = viewport.timeToX(event.time);
+      return x >= _plot.left && x <= _plot.right;
+    }).toList();
+    for (var index = 0; index < visible.length; index++) {
+      final event = visible[index];
+      final x = viewport.timeToX(event.time);
+      _tag(
+        canvas,
+        Offset(x + 3, _plot.top + 10 + index % 3 * 18),
+        event.label,
+        event.color.withValues(alpha: event.historical ? .65 : 1),
+      );
+    }
   }
 
   /// « 85 % du range », posé près du prix courant.
@@ -1183,7 +1350,7 @@ class CandleChartPainter extends CustomPainter {
         canvas,
         Offset(_plot.right - 6, _plot.top + 4),
         '${pattern.label.toUpperCase()} · '
-            '${realPatternStateLabel(pattern.state)}$noise',
+        '${realPatternStateLabel(pattern.state)}$noise',
         colour,
         rightAligned: true,
       );
@@ -1453,7 +1620,9 @@ class CandleChartPainter extends CustomPainter {
       oldDelegate.volumePanel != volumePanel ||
       oldDelegate.macdPanel != macdPanel ||
       oldDelegate.rsiPanel != rsiPanel ||
-      !identical(oldDelegate.patterns, patterns);
+      !identical(oldDelegate.patterns, patterns) ||
+      !identical(oldDelegate.priceAnnotations, priceAnnotations) ||
+      !identical(oldDelegate.timeAnnotations, timeAnnotations);
 }
 
 enum _Anchor { topLeft, topRight, topCenter, centerLeft, center }

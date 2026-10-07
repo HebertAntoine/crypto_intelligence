@@ -6,6 +6,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:crypto_intelligence_app/lexa/lexa_client.dart';
+import 'package:crypto_intelligence_app/chart/candle_chart.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_chart.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_home.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_listen_screen.dart';
 import 'package:crypto_intelligence_app/lexa/recorder/recorder.dart';
@@ -88,7 +90,7 @@ void main() {
       'Plan',
       'Mon budget',
       'Dates',
-      'Ce que dit Lexa',
+      'Ce que dit l’analyste',
       'Interprétation de l\'application',
       'Validation par nos données',
       'Historique du plan',
@@ -107,9 +109,52 @@ void main() {
     expect(find.text('Montant décidé par toi'), findsNWidgets(2));
     expect(find.text('60,00 €'), findsWidgets);
     expect(find.textContaining('🎬 18:42'), findsWidgets);
-    expect(find.textContaining('(dit par Lexa)'), findsWidgets); // TP shares
+    expect(
+        find.textContaining('(dit par l’analyste)'), findsWidgets); // TP shares
     expect(find.textContaining('Données insuffisantes'), findsWidgets);
     expect(find.textContaining('aucun ordre'), findsWidgets);
+  });
+
+  testWidgets('the chart draws source zones and can reveal old analyses',
+      (tester) async {
+    tester.view.physicalSize = const Size(390, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final plan = _copy('plan_wait_close');
+    final chart = (plan['chart'] as Map).cast<String, dynamic>();
+    final levels = (chart['levels'] as List).cast<Map<String, dynamic>>();
+    levels.first['high'] = (levels.first['low'] as num).toDouble() * 1.01;
+    levels.add({
+      ...levels.first,
+      'analysis_id': 99,
+      'version': 0,
+      'selected': false,
+      'latest': false,
+      'level_id': 999,
+    });
+    (chart['analyses'] as List).add({
+      'analysis_id': 99,
+      'version': 0,
+      'published_at': chart['candles'][0]['time'],
+      'selected': false,
+      'latest': false,
+      'label': 'Analyse #0',
+    });
+    await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+            body: SingleChildScrollView(child: LexaPlanChart(plan: plan)))));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('lexa-market-chart')), findsOneWidget);
+    var candle = tester.widget<CandleChart>(find.byType(CandleChart));
+    expect(candle.priceAnnotations.any((level) => level.isZone), isTrue);
+    expect(candle.priceAnnotations.any((level) => level.historical), isFalse);
+
+    await tester.tap(find.text('Anciennes analyses'));
+    await tester.pumpAndSettle();
+    candle = tester.widget<CandleChart>(find.byType(CandleChart));
+    expect(candle.priceAnnotations.any((level) => level.historical), isTrue);
+    expect(candle.timeAnnotations.any((event) => event.historical), isTrue);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('« Pourquoi ? » lists the reasons and the IF / THEN rules',

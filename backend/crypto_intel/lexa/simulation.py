@@ -36,6 +36,7 @@ class SimLevel:
     value: float
     allocation_pct: float | None = None
     label: str = ""
+    value_high: float | None = None
 
 
 @dataclass(slots=True)
@@ -165,6 +166,11 @@ def simulate(
         (lv for lv in levels if lv.kind in ENTRY_KINDS and lv.id in allocations),
         key=lambda lv: -lv.value,
     )
+    if any(level.value_high is not None for level in pending_entries):
+        result.assumptions.append(
+            "Zone touchée à sa première borne ; la simulation utilise cette borne comme prix "
+            "théorique, jamais comme ordre réel."
+        )
     exits = sorted((lv for lv in levels if lv.kind in EXIT_KINDS), key=lambda lv: lv.value)
     exit_given = [lv for lv in exits if lv.allocation_pct is not None]
     if exits and len(exit_given) < len(exits):
@@ -181,12 +187,15 @@ def simulate(
             moment = pd.Timestamp(stamp).to_pydatetime()
             low, high = float(bar["low"]), float(bar["high"])
             for level in list(pending_entries):
-                if low <= level.value:
+                entry_price = level.value_high or level.value
+                zone_hit = ((low <= entry_price and high >= level.value)
+                            if level.value_high is not None else low <= level.value)
+                if zone_hit:
                     amount = allocations[level.id]
-                    qty = amount / level.value
+                    qty = amount / entry_price
                     quantity += qty
                     bought_quantity += qty
-                    result.fills.append(Fill(level.id, level.kind, level.value, moment, amount, qty))
+                    result.fills.append(Fill(level.id, level.kind, entry_price, moment, amount, qty))
                     pending_entries.remove(level)
             if bought_quantity > 0:
                 for level in exits:

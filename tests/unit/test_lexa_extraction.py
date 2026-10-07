@@ -115,6 +115,22 @@ def test_only_values_written_in_the_transcript_survive():
     assert ada.scenarios[0].targets == [0.575]
 
 
+def test_a_zone_keeps_two_verified_bounds_and_never_invents_its_width():
+    segments = parse("[00:10] ADA, zone d'achat entre 1,20 et 1,24.")
+    raw = {"levels": [{
+        "value": 1.20, "value_high": 1.24, "kind": "BUY_ZONE",
+        "basis": "EXPLICIT", "timestamp": "00:10",
+    }]}
+    asset = extraction.verify_asset("ADA", raw, segments, segments)
+    assert len(asset.levels) == 1
+    assert (asset.levels[0].value, asset.levels[0].value_high) == (1.20, 1.24)
+
+    raw["levels"][0]["value_high"] = 1.25  # absent from the source
+    asset = extraction.verify_asset("ADA", raw, segments, segments)
+    assert asset.levels[0].value_high is None
+    assert any(item.value == 1.25 for item in asset.rejected)
+
+
 def test_evidence_is_the_transcript_at_the_right_time():
     ada = next(a for a in _run().assets if a.symbol == "ADA")
     level = next(lv for lv in ada.levels if lv.value == 0.612)

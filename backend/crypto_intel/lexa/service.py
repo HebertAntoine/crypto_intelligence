@@ -96,7 +96,7 @@ def current_ids() -> dict[str, int]:
 
 
 def plan_for(analysis_id: int, market: MarketData | None = None, *,
-             with_ours: bool = True) -> dict[str, Any] | None:
+             with_ours: bool = True, with_chart: bool = True) -> dict[str, Any] | None:
     market = market or default_market()
     bundle = plans.load(analysis_id)
     if bundle is None:
@@ -104,7 +104,7 @@ def plan_for(analysis_id: int, market: MarketData | None = None, *,
     asset = bundle.analysis.asset
     plan = plans.compute(bundle, market, budget_eur=get_capital(asset),
                          ours=our_reading(asset) if with_ours else None,
-                         macro=macro_events())
+                         macro=macro_events(), include_chart=with_chart)
     plans.finish_concordance(plan)
     plan["revision"] = revision(bundle)
     return plan
@@ -193,7 +193,7 @@ def overview(market: MarketData | None = None) -> dict[str, Any]:
     now = market.now()
     follow, cards = [], []
     for _asset, analysis_id in sorted(current_ids().items()):
-        plan = plan_for(analysis_id, market)
+        plan = plan_for(analysis_id, market, with_chart=False)
         if plan is None:
             continue
         cards.append(_card(plan))
@@ -214,7 +214,7 @@ def calendar(market: MarketData | None = None) -> dict[str, Any]:
     now = market.now()
     items: list[dict[str, Any]] = []
     for asset, analysis_id in sorted(current_ids().items()):
-        plan = plan_for(analysis_id, market)
+        plan = plan_for(analysis_id, market, with_chart=False)
         if plan is None:
             continue
         for item in plan["calendar"]:
@@ -240,7 +240,7 @@ def history(asset: str | None = None, market: MarketData | None = None) -> dict[
     rows = [a for a in _analyses() if asset is None or a.asset == asset.upper()]
     out = []
     for a in reversed(rows):
-        plan = plan_for(a.id, market, with_ours=False)
+        plan = plan_for(a.id, market, with_ours=False, with_chart=False)
         if plan is None:
             continue
         out.append({"analysis_id": a.id, "asset": a.asset, "version": plan["version"],

@@ -56,11 +56,16 @@ class ChartViewport {
   /// La zone de dessin des prix, en pixels.
   final Rect plot;
 
+  /// Explicit prices that must share the vertical scale with the candles
+  /// (for example source-stated plan levels). Empty for the regular chart.
+  final List<double> extraPrices;
+
   const ChartViewport({
     required this.candles,
     required this.startIndex,
     required this.visibleCount,
     required this.plot,
+    this.extraPrices = const [],
   });
 
   /// Une vue initiale raisonnable : les dernières bougies, pas tout le passé.
@@ -68,6 +73,7 @@ class ChartViewport {
     required List<CandlePoint> candles,
     required Rect plot,
     int desired = kDefaultVisibleCandles,
+    List<double> extraPrices = const [],
   }) {
     final count = _clampCount(desired, candles.length);
     return ChartViewport(
@@ -75,6 +81,7 @@ class ChartViewport {
       startIndex: math.max(0, candles.length - count),
       visibleCount: count,
       plot: plot,
+      extraPrices: extraPrices,
     );
   }
 
@@ -93,28 +100,30 @@ class ChartViewport {
   List<CandlePoint> get visible =>
       isEmpty ? const [] : candles.sublist(startIndex, endIndex);
 
-  DateTime? get visibleStartTime =>
-      isEmpty ? null : candles[startIndex].time;
+  DateTime? get visibleStartTime => isEmpty ? null : candles[startIndex].time;
 
-  DateTime? get visibleEndTime =>
-      isEmpty ? null : candles[endIndex - 1].time;
+  DateTime? get visibleEndTime => isEmpty ? null : candles[endIndex - 1].time;
 
   /// Largeur d'une bougie, espacement compris.
-  double get candleWidth =>
-      visibleCount <= 0 ? 0 : plot.width / visibleCount;
+  double get candleWidth => visibleCount <= 0 ? 0 : plot.width / visibleCount;
 
   // --- échelle verticale -------------------------------------------------
   //
   // Calculée sur la fenêtre seule. La calculer sur tout le jeu écrasait les
   // mouvements récents contre un extrême vieux de plusieurs années.
 
-  double get _rawLow => visible.isEmpty
-      ? 0
-      : visible.map((c) => c.low).reduce(math.min);
+  Iterable<double> get _visibleExtraPrices =>
+      extraPrices.where((price) => price.isFinite && price > 0);
 
-  double get _rawHigh => visible.isEmpty
-      ? 1
-      : visible.map((c) => c.high).reduce(math.max);
+  double get _rawLow {
+    final values = [...visible.map((c) => c.low), ..._visibleExtraPrices];
+    return values.isEmpty ? 0 : values.reduce(math.min);
+  }
+
+  double get _rawHigh {
+    final values = [...visible.map((c) => c.high), ..._visibleExtraPrices];
+    return values.isEmpty ? 1 : values.reduce(math.max);
+  }
 
   double get visibleMinPrice {
     final low = _rawLow, high = _rawHigh;
@@ -273,7 +282,11 @@ class ChartViewport {
 
   /// Retour à une vue raisonnable : les dernières bougies.
   ChartViewport reset({int desired = kDefaultVisibleCandles}) =>
-      ChartViewport.initial(candles: candles, plot: plot, desired: desired);
+      ChartViewport.initial(
+          candles: candles,
+          plot: plot,
+          desired: desired,
+          extraPrices: extraPrices);
 
   int _clampStart(int start, {int? count}) {
     final window = count ?? visibleCount;
@@ -286,6 +299,7 @@ class ChartViewport {
     int? startIndex,
     int? visibleCount,
     Rect? plot,
+    List<double>? extraPrices,
   }) {
     final data = candles ?? this.candles;
     final count = _clampCount(visibleCount ?? this.visibleCount, data.length);
@@ -295,6 +309,7 @@ class ChartViewport {
       startIndex: (startIndex ?? this.startIndex).clamp(0, maxStart),
       visibleCount: count,
       plot: plot ?? this.plot,
+      extraPrices: extraPrices ?? this.extraPrices,
     );
   }
 
@@ -311,8 +326,10 @@ class ChartViewport {
           other.startIndex == startIndex &&
           other.visibleCount == visibleCount &&
           other.plot == plot &&
+          identical(other.extraPrices, extraPrices) &&
           identical(other.candles, candles);
 
   @override
-  int get hashCode => Object.hash(startIndex, visibleCount, plot, candles.length);
+  int get hashCode => Object.hash(
+      startIndex, visibleCount, plot, candles.length, extraPrices.length);
 }

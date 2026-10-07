@@ -25,7 +25,8 @@ Timeframe = Literal["15M", "1H", "4H", "1D", "1W", "LONG_TERM"]
 
 LevelKind = Literal[
     "SUPPORT", "RESISTANCE", "BUY_ZONE", "REINFORCEMENT", "CONFIRMATION",
-    "INVALIDATION", "TARGET", "TAKE_PROFIT", "OTHER",
+    "BREAKOUT", "INVALIDATION", "TARGET", "TAKE_PROFIT", "SELL", "WAIT",
+    "WATCH", "OTHER",
 ]
 ConditionKind = Literal[
     "BREAKOUT", "CLOSE_ABOVE", "CLOSE_BELOW", "RETEST", "VOLUME", "HOLD_ABOVE",
@@ -63,6 +64,9 @@ class Condition(BaseModel):
 
 class Level(BaseModel):
     value: float
+    # A real zone keeps both bounds. ``None`` means that the analyst stated a
+    # line, not a band; the verifier never manufactures a width.
+    value_high: float | None = None
     kind: LevelKind
     role: str = ""  # "Achat principal", "TP1", ... in Lexa's own ordering
     basis: Basis = "UNKNOWN"

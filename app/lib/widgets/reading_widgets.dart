@@ -361,7 +361,8 @@ class ConditionsCard extends StatelessWidget {
           if (event != null)
             Padding(
               padding: const EdgeInsets.only(top: 12),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              child:
+                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 ColorEmoji(emoji: event.emoji, size: 15),
                 const SizedBox(width: 8),
                 Expanded(
@@ -482,8 +483,7 @@ class DecisionFooter extends StatelessWidget {
             onTap: onHistory,
             child: Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                  onHistory == null ? label : '$label · Historique ›',
+              child: Text(onHistory == null ? label : '$label · Historique ›',
                   style: const TextStyle(
                       color: Color(0xFF6FA8DC),
                       fontSize: 11.5,
@@ -650,23 +650,32 @@ class ReasonDetailSheet extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 6),
                 child: Row(children: [
                   Expanded(
+                      flex: 3,
                       child: Text(row.label,
                           style:
                               const TextStyle(color: _white, fontSize: 13.5))),
-                  Text(
-                      [row.value, if (row.change.isNotEmpty) row.change]
-                          .join('  '),
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700)),
-                  if (row.period.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Text(row.period,
-                          style:
-                              const TextStyle(color: _muted, fontSize: 11.5)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                            [row.value, if (row.change.isNotEmpty) row.change]
+                                .join('  '),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700)),
+                        if (row.period.isNotEmpty)
+                          Text(row.period,
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(
+                                  color: _muted, fontSize: 11.5)),
+                      ],
                     ),
+                  ),
                 ]),
               ),
           ],

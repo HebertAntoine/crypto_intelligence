@@ -153,7 +153,7 @@ def evaluate_all(market: MarketData | None = None) -> list[str]:
     now = market.now()
     sent: list[str] = []
     for analysis_id in current_ids().values():
-        plan = plan_for(analysis_id, market)
+        plan = plan_for(analysis_id, market, with_chart=False)
         if plan is not None:
             sent += dispatch(plan, now)
     return sent

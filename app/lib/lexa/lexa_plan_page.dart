@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../widgets/color_emoji.dart';
 import '../widgets/mobile_kit.dart';
+import 'lexa_chart.dart';
 import 'lexa_client.dart';
 import 'lexa_models.dart';
 import 'lexa_ui.dart';
@@ -159,6 +160,8 @@ class _LexaPlanPageState extends State<LexaPlanPage> {
 
   Future<void> _editPlan(Map<String, dynamic> plan) async {
     final budget = (plan['budget'] as Map).cast<String, dynamic>();
+    final analyst =
+        ((plan['lexa'] as Map?)?['source'] as String?) ?? 'L’analyste';
     final budgetCtl =
         TextEditingController(text: '${(budget['budget_eur'] as num).round()}');
     final controllers = <int, TextEditingController>{};
@@ -180,10 +183,10 @@ class _LexaPlanPageState extends State<LexaPlanPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                  'Ces montants sont les tiens. Lexa donne des niveaux ; '
+              Text(
+                  'Ces montants sont les tiens. $analyst donne des niveaux ; '
                   'c\'est toi qui décides combien.',
-                  style: TextStyle(fontSize: 12.5, color: lexaMuted)),
+                  style: const TextStyle(fontSize: 12.5, color: lexaMuted)),
               TextField(
                   controller: budgetCtl,
                   keyboardType: TextInputType.number,
@@ -358,6 +361,8 @@ class LexaPlanView extends StatelessWidget {
         if (header != null) header!,
         _hero(),
         const SizedBox(height: 14),
+        LexaPlanChart(plan: plan),
+        const SizedBox(height: 14),
         if (_l(plan['next_actions']).isNotEmpty) ...[
           _next(),
           const SizedBox(height: 14),
@@ -373,6 +378,8 @@ class LexaPlanView extends StatelessWidget {
         _interpretation(),
         const SizedBox(height: 14),
         _validation(),
+        const SizedBox(height: 14),
+        _movement(),
         if (plan['revision'] != null) ...[
           const SizedBox(height: 14),
           _revision(),
@@ -394,6 +401,7 @@ class LexaPlanView extends StatelessWidget {
     final price = _m('price');
     final lexa = _m('lexa');
     final video = ((lexa['video'] as Map?) ?? const {}).cast<String, dynamic>();
+    final analyst = '${lexa['source'] ?? 'Analyste'}';
     final color = toneColor('${now['tone']}');
     return GlassPanel(
       key: const ValueKey('lexa-now'),
@@ -411,9 +419,11 @@ class LexaPlanView extends StatelessWidget {
             const SizedBox(width: 10),
             const ColorEmoji(emoji: '🎬', size: 20),
             const SizedBox(width: 4),
-            const Text('Plan Lexa',
+            const Text('Plan analyste',
                 style: TextStyle(color: mobileMuted, fontSize: 16)),
           ]),
+          if (price['change_24h_pct'] != null)
+            LexaLine('Variation 24 h', fmtSignedPct(price['change_24h_pct'])),
           const SizedBox(height: 10),
           Row(children: [
             const ColorEmoji(emoji: '💰', size: 16),
@@ -448,10 +458,14 @@ class LexaPlanView extends StatelessWidget {
           Wrap(spacing: 12, runSpacing: 4, children: [
             Text('Vidéo du ${dayMonth(parseIso(video['published_at']))}',
                 style: const TextStyle(color: lexaMuted, fontSize: 12.5)),
-            Text('Analyse Lexa #${plan['version']}',
+            Text('Analyse $analyst #${plan['version']}',
                 style: const TextStyle(color: lexaMuted, fontSize: 12.5)),
             if (price['at_video'] != null)
               Text('Prix pendant la vidéo : ${priceOf(price['at_video'])}',
+                  style: const TextStyle(color: lexaMuted, fontSize: 12.5)),
+            if (price['move_since_video_pct'] != null)
+              Text(
+                  'Depuis la vidéo : ${fmtSignedPct(price['move_since_video_pct'])}',
                   style: const TextStyle(color: lexaMuted, fontSize: 12.5)),
           ]),
           if (onWhy != null)
@@ -505,7 +519,8 @@ class LexaPlanView extends StatelessWidget {
                             fontWeight: FontWeight.w800)),
                     Text(
                         [
-                          priceOf(actions[i]['value']),
+                          fmtPriceRange(
+                              actions[i]['value'], actions[i]['value_high']),
                           fmtDistance(actions[i]['distance_pct'] as num?),
                           '${actions[i]['detail'] ?? ''}',
                         ].where((s) => s.isNotEmpty).join(' · '),
@@ -548,7 +563,9 @@ class LexaPlanView extends StatelessWidget {
           Row(children: [
             ColorEmoji(emoji: '${lv['emoji']}', size: 18),
             const SizedBox(width: 8),
-            Text(priceOf(lv['value']),
+            Text(
+                fmtPriceRange(lv['value'], lv['value_high'],
+                    unit: '${lv['unit'] ?? 'USD'}'),
                 style: const TextStyle(
                     color: Colors.white,
                     fontSize: 21,
@@ -570,14 +587,24 @@ class LexaPlanView extends StatelessWidget {
           const SizedBox(height: 8),
           if (userPlan?['amount_eur'] != null)
             LexaLine('Montant prévu', eurOf(userPlan!['amount_eur'])),
+          if (userPlan?['amount_display'] != null &&
+              userPlan?['amount_eur'] == null)
+            LexaLine('Montant prévu', '${userPlan!['amount_display']}'),
           if (userPlan?['amount_eur'] != null) lexaNote('${userPlan!['note']}'),
+          if ('${userPlan?['raw_text'] ?? ''}'.isNotEmpty)
+            lexaNote('Source Excel : ${userPlan!['raw_text']}'),
+          if (userPlan?['execution_enabled'] == false)
+            lexaNote(
+              '⏳ Action désactivée : ${userPlan!['condition_text'] ?? 'confirmation à valider'}',
+              color: lexaOrange,
+            ),
           if (userPlan != null && userPlan.containsKey('pct'))
             LexaLine(
                 'Plan de vente',
                 userPlan['pct'] == null
                     ? 'Non défini'
                     : '${(userPlan['pct'] as num).round()} %'
-                        '${userPlan['origin'] == 'LEXA' ? ' (dit par Lexa)' : ' (ton plan)'}'),
+                        '${userPlan['origin'] == 'LEXA' ? ' (dit par l’analyste)' : ' (ton plan)'}'),
           LexaLine('État', '${state['emoji']} ${state['label']}'),
           if (lv['distance_fr'] != null)
             LexaLine('Distance', '${lv['distance_fr']}'),
@@ -732,9 +759,11 @@ class LexaPlanView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const LexaSectionTitle(emoji: '🎬', text: 'Ce que dit Lexa'),
+          const LexaSectionTitle(emoji: '🎬', text: 'Ce que dit l’analyste'),
           const SizedBox(height: 6),
-          LexaLine('Source', 'Lexa'),
+          LexaLine('Source', '${lexa['source'] ?? 'Non précisé'}'),
+          if ('${lexa['source_status'] ?? ''}'.isNotEmpty)
+            LexaLine('Statut dans la source', '${lexa['source_status']}'),
           LexaLine('Vidéo', '${video['title'] ?? '—'}'),
           if ('${lexa['summary'] ?? ''}'.isNotEmpty)
             Padding(
@@ -789,6 +818,7 @@ class LexaPlanView extends StatelessWidget {
   // 7. Validation par nos données
   Widget _validation() {
     final v = _m('validation');
+    final analyst = '${_m('lexa')['source'] ?? 'L’analyste'}';
     return GlassPanel(
       key: const ValueKey('lexa-validation'),
       child: Column(
@@ -805,13 +835,50 @@ class LexaPlanView extends StatelessWidget {
                 emoji: '${v['emoji']}', label: 'Concordance : ${v['label']}'),
           if (v['divergence'] == true) ...[
             const SizedBox(height: 6),
-            const LexaStatusPill(
-                emoji: '⚠️', label: 'Divergence : Lexa ≠ notre moteur'),
+            LexaStatusPill(
+                emoji: '⚠️', label: 'Divergence : $analyst ≠ notre moteur'),
           ],
           lexaNote('${v['explanation'] ?? ''}'),
-          lexaNote(
-              'Nos données ne modifient pas le plan Lexa, et Lexa ne modifie '
-              'jamais notre moteur.'),
+          lexaNote('Nos données ne modifient pas le plan analyste, et le plan '
+              'analyste ne modifie jamais notre moteur.'),
+        ],
+      ),
+    );
+  }
+
+  // What market data printed after the source analysis. Never rewrites it.
+  Widget _movement() {
+    final movement = _m('movement');
+    final hits = _l(movement['levels_hit']);
+    return GlassPanel(
+      key: const ValueKey('lexa-after'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const LexaSectionTitle(
+              emoji: '📈', text: 'Ce qui s’est passé ensuite'),
+          const SizedBox(height: 6),
+          Text('${movement['summary'] ?? 'Données indisponibles.'}',
+              style: const TextStyle(color: Colors.white, height: 1.4)),
+          if (movement['high_since_video'] != null)
+            LexaLine('Plus haut depuis la vidéo',
+                priceOf(movement['high_since_video'])),
+          if (movement['low_since_video'] != null)
+            LexaLine('Plus bas depuis la vidéo',
+                priceOf(movement['low_since_video'])),
+          if (movement['performance_after_first_entry_pct'] != null)
+            LexaLine('Depuis la première entrée touchée',
+                fmtSignedPct(movement['performance_after_first_entry_pct'])),
+          for (final hit in hits)
+            LexaLine(
+              '${(hit['state'] as Map?)?['emoji'] ?? '📍'} ${hit['label']}',
+              '${fmtPriceRange(hit['value'], hit['value_high'])} · ${dayMonth(parseIso(hit['at']))}',
+            ),
+          if (movement['entry_opportunity_passed'] == true)
+            lexaNote(
+              'Entrée historique déjà déclenchée : elle n’est pas affichée comme un nouvel achat.',
+              color: lexaOrange,
+            ),
         ],
       ),
     );

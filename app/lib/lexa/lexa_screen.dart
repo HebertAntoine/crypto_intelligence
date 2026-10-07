@@ -55,6 +55,7 @@ Widget _small(String text, {Color color = _muted}) => Padding(
 class _LevelDraft {
   String kind;
   final value = TextEditingController();
+  final valueHigh = TextEditingController();
   final lexaPct = TextEditingController();
   final timestamp = TextEditingController();
   final source = TextEditingController();
@@ -94,6 +95,7 @@ class LexaEntryScreen extends StatefulWidget {
 
 class _LexaEntryScreenState extends State<LexaEntryScreen> {
   final _title = TextEditingController();
+  final _sourceName = TextEditingController(text: 'Lexa');
   final _url = TextEditingController();
   late final _date =
       TextEditingController(text: _fmtInput(widget.now ?? DateTime.now()));
@@ -139,6 +141,14 @@ class _LexaEntryScreenState extends State<LexaEntryScreen> {
         if (l.lexaPct.text.trim().isNotEmpty && pct == null) {
           return (null, '$name : pourcentage illisible « ${l.lexaPct.text} ».');
         }
+        final valueHigh = parseFrNumber(l.valueHigh.text);
+        if (l.valueHigh.text.trim().isNotEmpty &&
+            (valueHigh == null || valueHigh <= value)) {
+          return (
+            null,
+            '$name : la borne haute doit être supérieure à la borne basse.'
+          );
+        }
         final conditions = <Map<String, dynamic>>[];
         if (_conditionKinds.contains(l.kind) && l.timeframe.isNotEmpty) {
           final closes = int.tryParse(l.closes.text.trim()) ?? 1;
@@ -155,6 +165,7 @@ class _LexaEntryScreenState extends State<LexaEntryScreen> {
         levels.add({
           'kind': l.kind,
           'value': value,
+          'value_high': valueHigh,
           'allocation_pct': pct,
           'timestamp':
               l.timestamp.text.trim().isEmpty ? null : l.timestamp.text.trim(),
@@ -184,6 +195,9 @@ class _LexaEntryScreenState extends State<LexaEntryScreen> {
     return (
       {
         'title': _title.text.trim(),
+        'source_name': _sourceName.text.trim().isEmpty
+            ? 'Non précisé'
+            : _sourceName.text.trim(),
         'published_at': date.toUtc().toIso8601String(),
         'video_url': _url.text.trim(),
         'assets': assets,
@@ -239,6 +253,9 @@ class _LexaEntryScreenState extends State<LexaEntryScreen> {
                     TextField(
                         controller: _title,
                         decoration: _dec('Titre de la vidéo')),
+                    TextField(
+                        controller: _sourceName,
+                        decoration: _dec('Source / analyste')),
                     TextField(
                         controller: _date,
                         decoration: _dec('Date de publication',
@@ -348,7 +365,8 @@ class _LexaEntryScreenState extends State<LexaEntryScreen> {
                   'REINFORCEMENT',
                   'CONFIRMATION',
                   'INVALIDATION',
-                  'TARGET'
+                  'TARGET',
+                  'SELL'
                 ])
                   ActionChip(
                     label: Text('+ ${lexaKinds[k]}'),
@@ -391,6 +409,15 @@ class _LexaEntryScreenState extends State<LexaEntryScreen> {
                   icon: const Icon(Icons.delete_outline, size: 20),
                 ),
               ],
+            ),
+            TextField(
+              controller: l.valueHigh,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: _dec(
+                'Borne haute de zone (facultatif)',
+                hint: 'Laisser vide si la vidéo donne une ligne',
+              ),
             ),
             Row(
               children: [
