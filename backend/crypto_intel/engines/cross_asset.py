@@ -23,6 +23,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from ..core.enums import Asset, Timeframe
+from ..core.source_rights import observation_is_admissible, record_is_admissible
 from ..history import store
 from ..logging_setup import get_logger
 
@@ -116,6 +117,50 @@ def _normalise_index(series: pd.Series) -> pd.Series:
     return out[~out.index.duplicated(keep="last")]
 
 
+def _admissible_macro(metric: str, as_of: datetime | None = None) -> pd.Series:
+    """Retained macro values that remain usable under current source rights."""
+
+    records = [
+        record
+        for record in store.load_macro_records(metric)
+        if record_is_admissible(metric, record)
+    ]
+    if as_of is not None:
+        cutoff = pd.Timestamp(as_of)
+        cutoff = (
+            cutoff.tz_localize(UTC)
+            if cutoff.tzinfo is None
+            else cutoff.tz_convert(UTC)
+        )
+        records = [
+            record
+            for record in records
+            if pd.Timestamp(
+                record.get("release_time")
+                or record.get("ingested_at")
+                or record["timestamp"]
+            )
+            <= cutoff
+        ]
+    by_timestamp: dict[pd.Timestamp, float] = {}
+    for record in records:
+        stamp = pd.Timestamp(record["timestamp"])
+        stamp = (
+            stamp.tz_localize(UTC)
+            if stamp.tzinfo is None
+            else stamp.tz_convert(UTC)
+        )
+        by_timestamp[stamp] = float(record["value"])
+    if not by_timestamp:
+        return pd.Series(dtype=float, name=metric)
+    ordered = sorted(by_timestamp)
+    return pd.Series(
+        [by_timestamp[stamp] for stamp in ordered],
+        index=pd.DatetimeIndex(ordered),
+        name=metric,
+    )
+
+
 class CrossAssetAnalyzer:
     """Rolling correlation and beta of one crypto asset against macro series."""
 
@@ -135,7 +180,7 @@ class CrossAssetAnalyzer:
         crypto_returns = closes.pct_change()
 
         for metric, meta in MACRO_SERIES.items():
-            macro = _normalise_index(store.load_macro(metric))
+            macro = _normalise_index(_admissible_macro(metric, as_of))
             if macro.empty:
                 out.missing.append(metric)
                 continue
@@ -267,10 +312,10 @@ class MarketRatiosEngine:
 
         return {
             "ratios": [r.model_dump() for r in readings],
-            "btc_dominance": self.dominance(),
+            "btc_dominance": self.dominance(as_of),
         }
 
-    def dominance(self) -> dict[str, Any]:
+    def dominance(self, as_of: datetime | None = None) -> dict[str, Any]:
         """True market-cap dominance, or an explicit UNAVAILABLE.
 
         An earlier version of this computed a "dominance proxy" by normalising
@@ -288,12 +333,16 @@ class MarketRatiosEngine:
         from ..db import repo
 
         try:
-            observation = repo.latest_observation(Asset.BTC, "market.dominance")
+            observation = repo.latest_observation(
+                Asset.BTC,
+                "market.dominance",
+                as_of=as_of,
+            )
         except Exception as exc:   # storage shape varies; never fail the caller
             log.debug("dominance_lookup_failed", error=str(exc))
             observation = None
 
-        if observation is None:
+        if observation is None or not observation_is_admissible(observation):
             return {
                 "available": False,
                 "status": "UNAVAILABLE",
@@ -396,7 +445,9 @@ class LiquidityRegimeEngine:
         votes: list[float] = []
 
         def trend_vote(metric: str, label: str, easing_when_falling: bool) -> None:
-            series = _normalise_index(store.load_macro(metric))
+            # Read the rich records so current licence/redistribution settings
+            # are enforced even for rows retained from an older provider.
+            series = _normalise_index(_admissible_macro(metric, as_of))
             if as_of is not None and not series.empty:
                 series = series[series.index <= pd.Timestamp(as_of).tz_convert(UTC).normalize()]
             if series.empty or len(series) < 90:
@@ -419,7 +470,9 @@ class LiquidityRegimeEngine:
 
         # Stablecoin supply is the crypto-native liquidity measure; include it
         # when the history is there.
-        stables = _normalise_index(store.load_macro("stablecoin.total_supply"))
+        stables = _normalise_index(
+            _admissible_macro("stablecoin.total_supply", as_of)
+        )
         if not stables.empty and len(stables) >= 90:
             change = float((stables.iloc[-1] / stables.iloc[-64] - 1) * 100)
             components["stablecoin supply"] = {

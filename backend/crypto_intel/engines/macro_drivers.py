@@ -59,71 +59,91 @@ class Driver:
     channel: str
     #: Events whose titles belong to this driver, for « next publication ».
     event_words: tuple[str, ...] = ()
+    #: Stable catalogue identity from the market-intelligence contract.  The
+    #: human-facing key remains unchanged so existing clients keep working.
+    signal_id: str = ""
+    geographic_scope: str = "GLOBAL"
+    associated_assets: tuple[str, ...] = ("BTC", "ETH", "SOL", "EQUITIES", "ETF")
+    release_frequency: str = "VARIABLE"
+    #: Drivers in the same group may be consequences of one shock.  The home
+    #: ranking gives each group one place before filling any remaining slots,
+    #: so VIX, credit and broad stress cannot masquerade as three independent
+    #: confirmations.
+    independence_group: str = ""
 
 
 DRIVERS: tuple[Driver, ...] = (
     Driver("fed", "🏛️", "Fed / taux américains", RadarCategory.CENTRAL_BANK,
            "La Fed fixe le taux sans risque. Il commande le coût de l'argent, donc "
            "l'appétit pour les actifs qui ne versent aucun rendement.",
-           ("fomc", "federal reserve", "réserve fédérale", "powell")),
+           ("fomc", "federal reserve", "réserve fédérale", "powell"),
+           "S01", "US", release_frequency="CALENDAR", independence_group="US_MONETARY"),
     Driver("inflation", "🇺🇸", "Inflation US", RadarCategory.MACRO,
            "L'inflation décide de la marge de manœuvre de la Fed. C'est l'écart avec "
            "les attentes qui fait bouger les marchés, pas le niveau seul.",
-           ("cpi", "consumer price", "inflation", "pce", "personal income")),
+           ("cpi", "consumer price", "inflation", "pce", "personal income"),
+           "S02", "US", release_frequency="MONTHLY", independence_group="US_MONETARY"),
     Driver("employment", "👷", "Emploi US", RadarCategory.MACRO,
            "L'emploi pèse sur la politique monétaire : un marché du travail qui "
            "ralentit ouvre la porte à des taux plus bas, mais souvent parce que "
            "l'économie faiblit.",
-           ("payroll", "employment situation", "jobless", "unemployment")),
+           ("payroll", "employment situation", "jobless", "unemployment"),
+           "S03", "US", release_frequency="WEEKLY_MONTHLY",
+           independence_group="US_GROWTH"),
     Driver("yields", "📈", "Rendements US", RadarCategory.RATES,
            "Le rendement réel est le coût d'opportunité de détenir une crypto : "
            "plus il monte, plus renoncer à un rendement sûr coûte cher.",
-           ("treasury auction", "adjudication")),
-    Driver("dollar", "💵", "Dollar", RadarCategory.FX,
-           "Le dollar est l'unité dans laquelle la crypto est cotée et la jauge de "
-           "la liquidité mondiale. Un dollar fort resserre les conditions partout.",
-           ()),
-    Driver("liquidity", "💧", "Liquidité banque centrale", RadarCategory.LIQUIDITY,
-           "Bilan de la Fed, compte du Trésor et prises en pension : ce qui reste "
-           "de liquidités dans le système bancaire pour alimenter les actifs risqués.",
-           ()),
+           ("treasury auction", "adjudication"), "S04", "US",
+           release_frequency="DAILY", independence_group="US_MONETARY"),
+    Driver("oil", "🛢️", "Pétrole", RadarCategory.ENERGY,
+           "Le pétrole entre dans l'analyse comme intrant d'inflation : il agit sur "
+           "la crypto par les anticipations de taux, jamais directement.", (),
+           "S05", "GLOBAL", release_frequency="DAILY", independence_group="ENERGY"),
     Driver("credit", "🏦", "Conditions de crédit", RadarCategory.FINANCIAL_RISK,
            "Les primes de risque séparent une correction d'un vrai stress : des "
            "actions qui baissent avec des primes calmes n'ont pas le même sens que "
-           "des actions qui baissent avec des primes qui s'écartent.",
-           ()),
+           "des actions qui baissent avec des primes qui s'écartent.", (),
+           "S06", "US", release_frequency="DAILY", independence_group="FINANCIAL_STRESS"),
+    Driver("financial_stress", "⚠️", "Stress financier", RadarCategory.FINANCIAL_RISK,
+           "Les indices NFCI et STLFSI agrègent plusieurs tensions de financement. "
+           "Ils confirment un stress large, sans être comptés comme une cause séparée du crédit.",
+           (), "S07", "US", release_frequency="WEEKLY",
+           independence_group="FINANCIAL_STRESS"),
+    Driver("dollar", "💵", "Dollar et changes", RadarCategory.FX,
+           "Le dollar est l'unité dans laquelle la crypto est cotée et une jauge de "
+           "la liquidité mondiale. Les paires EUR/USD et USD/JPY précisent le canal.", (),
+           "S08", "GLOBAL", release_frequency="DAILY", independence_group="FX"),
+    Driver("liquidity", "💧", "Liquidité américaine", RadarCategory.LIQUIDITY,
+           "Bilan de la Fed, compte du Trésor et prises en pension : ce qui reste "
+           "de liquidités dans le système bancaire pour alimenter les actifs risqués.", (),
+           "S09", "US", release_frequency="DAILY_WEEKLY", independence_group="LIQUIDITY"),
+    Driver("us_index_divergence", "📊", "Divergence des indices US", RadarCategory.MACRO,
+           "S&P 500, Nasdaq, Dow et Russell 2000 montrent si la hausse ou la baisse "
+           "est largement partagée plutôt que portée par quelques grandes valeurs.", (),
+           "S10", "US", release_frequency="DAILY", independence_group="EQUITY_RISK"),
+    Driver("international_contagion", "🌍", "Contagion internationale", RadarCategory.MACRO,
+           "Le Nikkei et les indices européens indiquent si un mouvement américain "
+           "reste local ou se propage aux autres grandes places.", (),
+           "S11", "GLOBAL", release_frequency="DAILY", independence_group="EQUITY_RISK"),
+    Driver("volatility", "📉", "Volatilité", RadarCategory.FINANCIAL_RISK,
+           "Le VIX mesure le prix de la protection sur actions. Son percentile historique "
+           "situe la tension sans transformer un niveau élevé en prévision automatique.", (),
+           "S12", "US", release_frequency="DAILY", independence_group="FINANCIAL_STRESS"),
+    Driver("earnings_ai", "🧠", "Résultats et IA", RadarCategory.MACRO,
+           "Bénéfices, flux de trésorerie et dépenses d'investissement indiquent si "
+           "les valorisations technologiques sont soutenues par des résultats mesurés.",
+           ("earnings", "results", "10-q", "10-k"), "S13", "US_GLOBAL",
+           release_frequency="QUARTERLY", independence_group="EARNINGS"),
     Driver("ecb", "🇪🇺", "BCE / Europe", RadarCategory.CENTRAL_BANK,
            "La BCE agit sur la liquidité en euro et sur le dollar par le taux de "
            "change. Son poids sur la crypto reste inférieur à celui de la Fed.",
-           ("bce", "ecb", "lagarde")),
+           ("bce", "ecb", "lagarde"), "S14", "EU",
+           release_frequency="CALENDAR", independence_group="EU_MONETARY"),
     Driver("boj", "🇯🇵", "BoJ / Japon", RadarCategory.CENTRAL_BANK,
            "Le Japon finance une partie des positions mondiales à effet de levier. "
            "Un resserrement japonais peut forcer des débouclages bien au-delà du yen.",
-           ("boj", "banque du japon", "bank of japan")),
-    Driver("oil", "🛢️", "Pétrole / énergie", RadarCategory.ENERGY,
-           "Le pétrole entre dans l'analyse comme intrant d'inflation : il agit sur "
-           "la crypto par les anticipations de taux, jamais directement.",
-           ()),
-    Driver("etf_flows", "🪙", "Flux ETF crypto", RadarCategory.ETF,
-           "Les ETF au comptant mesurent de l'argent institutionnel réellement "
-           "engagé, par opposition aux récits.",
-           ()),
-    Driver("stablecoins", "💰", "Stablecoins", RadarCategory.CRYPTO_NATIVE,
-           "L'offre de stablecoins est la mesure la plus proche d'une masse "
-           "monétaire crypto : des munitions disponibles dans l'écosystème.",
-           ()),
-    Driver("regulation", "⚖️", "Réglementation", RadarCategory.REGULATION,
-           "Le cadre légal décide de ce qui est possible. Un texte discuté n'est "
-           "pas un texte adopté, et la distinction est conservée à chaque étape.",
-           ("sec", "règlement", "regulation", "bill", "mica")),
-    Driver("geopolitics", "🌍", "Risque géopolitique", RadarCategory.GEOPOLITICS,
-           "La géopolitique n'atteint la crypto que par des canaux mesurables : "
-           "pétrole, dollar, obligations, volatilité.",
-           ()),
-    Driver("risk_markets", "📊", "Marchés risqués", RadarCategory.MACRO,
-           "Actions et volatilité décrivent le régime de risque dans lequel la "
-           "crypto évolue, sans en être la cause.",
-           ()),
+           ("boj", "banque du japon", "bank of japan"), "S15", "JP",
+           release_frequency="CALENDAR", independence_group="JP_MONETARY"),
 )
 
 BY_KEY = {driver.key: driver for driver in DRIVERS}
@@ -160,30 +180,78 @@ class Reading:
     summary: str = ""
     watching: str = ""
     values: list[Value] = field(default_factory=list)
+    #: Observation time and publication time are deliberately distinct.  The
+    #: legacy ``last_release`` field is kept for existing clients and denotes
+    #: the observation timestamp until a provider supplies a true publication
+    #: time.  Missing publication time stays null; it is never inferred.
     last_release: datetime | None = None
+    last_publication: datetime | None = None
     next_release: datetime | None = None
     next_release_label: str = ""
     available: bool = True
     unavailable_reason: str = ""
+    historical_percentile: float | None = None
+    data_quality: str = "UNVERIFIED"
+    invalidation_conditions: list[str] = field(default_factory=list)
+    primary_metric: str | None = None
+    current_numeric_value: float | None = None
+    previous_numeric_value: float | None = None
+    numeric_delta: float | None = None
+    source_url: str | None = None
+    historical_series: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        primary = self.values[0] if self.values else None
         return {
+            "signal_id": self.driver.signal_id,
             "key": self.driver.key,
             "emoji": self.driver.emoji,
             "name": self.driver.name,
             "category": self.driver.category.value,
+            "geographic_scope": self.driver.geographic_scope,
+            "associated_assets": list(self.driver.associated_assets),
             "channel": self.driver.channel,
             "state": self.state,
             "direction": self.direction.value,
             "attention": self.attention.value,
+            "attention_level": self.attention.value,
             "importance": self.importance,
             "importance_reasons": list(self.importance_reasons),
             "summary": self.summary,
             "watching": self.watching,
             "values": [v.to_dict() for v in self.values],
+            # Stable contract fields.  The formatted display value is kept
+            # rather than reverse-parsing locale-aware text into a new number.
+            "current_value": (
+                self.current_numeric_value
+                if self.current_numeric_value is not None
+                else (primary.value if primary else None)
+            ),
+            "previous_value": self.previous_numeric_value,
+            "delta": (
+                self.numeric_delta
+                if self.numeric_delta is not None
+                else (primary.change or None if primary else None)
+            ),
+            "reference_window": primary.period or None if primary else None,
+            "source": primary.source or None if primary else None,
+            "source_url": self.source_url,
+            "primary_metric": self.primary_metric,
+            "historical_series": list(self.historical_series),
             "last_release": self.last_release.isoformat() if self.last_release else None,
+            "last_observation_at": self.last_release.isoformat() if self.last_release else None,
+            "last_publication_at": (
+                self.last_publication.isoformat() if self.last_publication else None
+            ),
             "next_release": self.next_release.isoformat() if self.next_release else None,
+            "next_event_at": self.next_release.isoformat() if self.next_release else None,
             "next_release_label": self.next_release_label,
+            "release_frequency": self.driver.release_frequency,
+            "historical_percentile": self.historical_percentile,
+            "data_quality": self.data_quality,
+            "relevance_score": self.importance,
+            "explanation": self.summary,
+            "invalidation_conditions": list(self.invalidation_conditions),
             "available": self.available,
             "unavailable_reason": self.unavailable_reason,
         }
@@ -231,6 +299,31 @@ FRESH_RELEASE: dict[RadarCategory, timedelta] = {
     RadarCategory.GEOPOLITICS: timedelta(hours=48),
     RadarCategory.CRYPTO_NATIVE: timedelta(hours=36),
     RadarCategory.OTHER: timedelta(hours=12),
+}
+
+_MAX_AGE_BY_FREQUENCY: dict[str, timedelta] = {
+    "DAILY": timedelta(days=5),
+    "WEEKLY": timedelta(days=14),
+    "MONTHLY": timedelta(days=62),
+    "QUARTERLY": timedelta(days=140),
+    "CALENDAR": timedelta(days=240),
+}
+
+_PRIMARY_METRICS: dict[str, tuple[str, ...]] = {
+    "fed": ("cb.fed.target_upper", "macro.fed_funds_rate"),
+    "inflation": ("macro.core_cpi", "macro.core_pce"),
+    "employment": ("macro.unemployment", "macro.jobless_claims"),
+    "yields": ("macro.real10y", "macro.us10y", "macro.us2y"),
+    "oil": ("macro.brent", "macro.wti", "macro.oil_wti"),
+    "credit": ("macro.hy_spread", "macro.ig_spread"),
+    "financial_stress": ("macro.nfci", "macro.stlfsi4"),
+    "dollar": ("macro.dxy", "macro.dxy_broad"),
+    "liquidity": ("liquidity.fed_total_assets", "liquidity.tga", "liquidity.rrp"),
+    "us_index_divergence": ("macro.sp500", "macro.nasdaq"),
+    "international_contagion": ("macro.nikkei225", "macro.eurostoxx50"),
+    "volatility": ("macro.vix",),
+    "ecb": ("cb.ecb.deposit_rate",),
+    "boj": ("cb.boj.call_rate",),
 }
 
 ATTENTION_FROM_SCORE: tuple[tuple[int, AttentionLevel], ...] = (
@@ -327,6 +420,21 @@ class Context:
         current = moves[-1]
         return sum(1 for m in moves if m <= current) / len(moves)
 
+    def percentile(self, metric: str) -> float | None:
+        """Robust empirical percentile of the latest level, from 0 to 1.
+
+        A minimum history prevents a handful of points from being dressed up
+        as historical context.  Percentiles rank observations; they are never
+        probabilities of a future market move.
+        """
+
+        points = self.points(metric)
+        values = [float(p.value) for p in points if getattr(p, "value", None) is not None]
+        if len(values) < 30:
+            return None
+        latest = values[-1]
+        return sum(1 for value in values if value <= latest) / len(values)
+
     def next_event(self, driver: Driver) -> Any | None:
         """The soonest scheduled event whose title belongs to this driver."""
 
@@ -378,6 +486,112 @@ def _period_fr(stamp: datetime | None) -> str:
     return f"{stamp.day} {MONTHS_FR[stamp.month - 1]} {stamp.year}"
 
 
+def _source(point: Any, fallback: str = "") -> str:
+    """Use the provenance carried by the point; never relabel a provider."""
+
+    return str(getattr(point, "source", "") or fallback)
+
+
+def _publication_time(point: Any) -> datetime | None:
+    """Return an explicit source publication time, never an inferred availability."""
+
+    meta = getattr(point, "meta", None)
+    if not isinstance(meta, dict):
+        return None
+    value = meta.get("publication_time") or meta.get("source_published_at")
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=UTC)
+    if isinstance(value, str) and value:
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+    return None
+
+
+def _source_url(point: Any) -> str | None:
+    meta = getattr(point, "meta", None)
+    if not isinstance(meta, dict):
+        return None
+    raw = meta.get("source_url") or meta.get("canonical_source_url")
+    return str(raw) if raw else None
+
+
+def _enrich_contract(reading: Reading, ctx: Context) -> None:
+    """Attach one reproducible reference series and derive honest quality.
+
+    Composite drivers still keep their formatted multi-value explanation.  The
+    reference series exists for the API/UI contract (previous value, delta,
+    source link and compact history); ``primary_metric`` makes clear which
+    series it represents rather than presenting it as the composite itself.
+    """
+
+    if not reading.available:
+        return
+    primary: Any | None = None
+    points: list[Any] = []
+    for metric in _PRIMARY_METRICS.get(reading.driver.key, ()):
+        candidate = ctx.points(metric)
+        if candidate:
+            reading.primary_metric = metric
+            points = candidate
+            primary = candidate[-1]
+            break
+
+    if primary is not None:
+        reading.current_numeric_value = float(primary.value)
+        reading.previous_numeric_value = float(points[-2].value) if len(points) >= 2 else None
+        if reading.previous_numeric_value is not None:
+            reading.numeric_delta = reading.current_numeric_value - reading.previous_numeric_value
+        reading.last_release = primary.timestamp
+        reading.last_publication = _publication_time(primary)
+        reading.source_url = _source_url(primary)
+        reading.historical_series = [
+            {
+                "observation_time": point.timestamp.isoformat(),
+                "publication_time": (
+                    published.isoformat() if (published := _publication_time(point)) else None
+                ),
+                "value": float(point.value),
+                "source": _source(point),
+                "source_url": _source_url(point),
+            }
+            for point in points[-120:]
+        ]
+
+    if reading.last_release is not None and reading.last_release > ctx.now:
+        reading.data_quality = "CONFLICTING"
+        return
+
+    meta = getattr(primary, "meta", None) if primary is not None else None
+    if isinstance(meta, dict):
+        flags = {str(item).upper() for item in (meta.get("quality_flags") or [])}
+        if flags & {"CONFLICTING", "INVALID", "OUTLIER_UNRESOLVED"}:
+            reading.data_quality = "CONFLICTING"
+            return
+        if int(meta.get("revision_number") or 0) > 0:
+            reading.data_quality = "REVISED"
+            return
+
+    # Observation and publication are deliberately not interchangeable.  A
+    # current price may be useful, but without an explicit provider release
+    # time the contract cannot truthfully call its publication validated.
+    if reading.last_publication is None:
+        reading.data_quality = "UNVERIFIED"
+        return
+    if reading.last_publication > ctx.now:
+        reading.data_quality = "CONFLICTING"
+        return
+
+    maximum_age = _MAX_AGE_BY_FREQUENCY.get(
+        reading.driver.release_frequency, timedelta(days=45)
+    )
+    reading.data_quality = (
+        "STALE" if ctx.now - reading.last_publication > maximum_age else "VALID"
+    )
+
+
 MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août",
              "septembre", "octobre", "novembre", "décembre"]
 
@@ -400,7 +614,8 @@ def _unavailable(driver: Driver, reason: str) -> Reading:
     return Reading(driver=driver, state="Source non branchée", direction=UNKNOWN,
                    attention=AttentionLevel.LOW, importance=0,
                    summary=f"{reason} Rien n'en est déduit.",
-                   available=False, unavailable_reason=reason)
+                   available=False, unavailable_reason=reason,
+                   data_quality="SOURCE_UNAVAILABLE")
 
 
 def read_fed(ctx: Context, driver: Driver) -> Reading:
@@ -652,17 +867,20 @@ def read_yields(ctx: Context, driver: Driver) -> Reading:
 
 
 def read_dollar(ctx: Context, driver: Driver) -> Reading:
-    points = ctx.points("macro.dxy")
+    metric = "macro.dxy" if ctx.points("macro.dxy") else "macro.dxy_broad"
+    points = ctx.points(metric)
     if not points:
-        return _unavailable(driver, "L'indice du dollar n'est pas collecté.")
+        return _unavailable(driver, "Aucun indice du dollar autorisé n'est collecté.")
     reading = Reading(driver=driver)
     last = points[-1]
     reading.last_release = last.timestamp
-    _, _, change_30d = ctx.change("macro.dxy", 30)
-    reading.values.append(Value("Indice du dollar (DXY)", fr_number(last.value, 2),
+    reading.last_publication = _publication_time(last)
+    _, _, change_30d = ctx.change(metric, 30)
+    label = "Indice du dollar (DXY)" if metric == "macro.dxy" else "Dollar pondéré par les échanges"
+    reading.values.append(Value(label, fr_number(last.value, 2),
                                 change=(f"{fr_number(change_30d, 1, signed=True)} % sur 30 j"
                                         if change_30d is not None else ""),
-                                period=_period_fr(last.timestamp), source="Yahoo Finance"))
+                                period=_period_fr(last.timestamp), source=_source(last)))
     if change_30d is None:
         reading.direction, reading.state = UNKNOWN, "Variation non calculable"
         reading.summary = "L'historique disponible ne couvre pas trente jours."
@@ -679,6 +897,8 @@ def read_dollar(ctx: Context, driver: Driver) -> Reading:
         reading.direction, reading.state = NEUTRAL, "Dollar stable"
         reading.summary = "Le dollar évolue sans mouvement notable sur un mois."
     reading.watching = "Un retournement du dollar, dans un sens comme dans l'autre."
+    reading.historical_percentile = ctx.percentile(metric)
+    reading.invalidation_conditions = ["Retournement confirmé du dollar sur la même fenêtre"]
     return reading
 
 
@@ -708,7 +928,11 @@ def read_liquidity(ctx: Context, driver: Driver) -> Reading:
         _, assets_change, _ = ctx.change("liquidity.fed_total_assets", 60)
         _, tga_change, _ = ctx.change("liquidity.tga", 60)
         _, rrp_change, _ = ctx.change("liquidity.rrp", 60)
-        if None not in (assets_change, tga_change, rrp_change):
+        if (
+            assets_change is not None
+            and tga_change is not None
+            and rrp_change is not None
+        ):
             net_change = assets_change - tga_change - rrp_change * 1000
             reading.values.append(Value("Liquidité nette, variation", _usd_bn(net_change),
                                         period="60 jours", source="Calcul : bilan − TGA − RRP"))
@@ -762,6 +986,250 @@ def read_credit(ctx: Context, driver: Driver) -> Reading:
         reading.direction, reading.state = NEUTRAL, "Crédit sans tension marquée"
         reading.summary = "Les primes de risque restent dans leur zone habituelle."
     reading.watching = "Un écartement rapide des primes, qui signalerait un stress réel."
+    reading.historical_percentile = ctx.percentile("macro.hy_spread")
+    reading.invalidation_conditions = [
+        "Retour durable des primes de risque vers leur médiane historique",
+        "Désaccord persistant entre crédit et autres mesures de stress",
+    ]
+    return reading
+
+
+def read_financial_stress(ctx: Context, driver: Driver) -> Reading:
+    """Read broad financial stress without double-counting its components.
+
+    NFCI and STLFSI4 are composite *descriptions* of financial conditions.
+    They share an independence group with credit and VIX in the top-five
+    selector, because three views of one shock are not three independent
+    causes.
+    """
+
+    available = [
+        (metric, label, point)
+        for metric, label in (
+            ("macro.nfci", "Chicago Fed NFCI"),
+            ("macro.stlfsi4", "St. Louis Fed FSI"),
+        )
+        if (point := ctx.latest(metric)) is not None
+    ]
+    if not available:
+        return _unavailable(driver, "Les indices NFCI et STLFSI4 ne sont pas collectés.")
+
+    reading = Reading(driver=driver)
+    percentiles: list[float] = []
+    signs: list[int] = []
+    for metric, label, point in available:
+        percentile = ctx.percentile(metric)
+        if percentile is not None:
+            percentiles.append(percentile)
+            signs.append(1 if percentile >= 0.85 else -1 if percentile <= 0.35 else 0)
+        reading.values.append(Value(
+            label,
+            fr_number(point.value, 2),
+            period=_period_fr(point.timestamp),
+            source=_source(point, "Federal Reserve"),
+        ))
+    latest = max((point for _, _, point in available), key=lambda p: p.timestamp)
+    reading.last_release = latest.timestamp
+    reading.last_publication = _publication_time(latest)
+    reading.historical_percentile = max(percentiles) if percentiles else None
+
+    if not percentiles:
+        reading.direction, reading.state = UNKNOWN, "Contexte historique insuffisant"
+        reading.summary = (
+            "Les niveaux sont disponibles, mais l'historique est trop court pour les situer "
+            "sans seuil arbitraire. Aucune direction n'est déduite."
+        )
+    elif 1 in signs and -1 in signs:
+        reading.direction, reading.state = MIXED, "Indices de stress contradictoires"
+        reading.summary = "Les indices composites ne confirment pas le même régime de stress."
+    elif 1 in signs:
+        reading.direction, reading.state = UNFAVORABLE, "Stress historiquement élevé"
+        reading.summary = (
+            "Au moins un indice composite se situe dans le haut de sa propre distribution "
+            "historique. Cela décrit un resserrement large, pas une prévision de rendement."
+        )
+    elif all(sign == -1 for sign in signs):
+        reading.direction, reading.state = FAVORABLE, "Conditions historiquement détendues"
+        reading.summary = "Les indices disponibles se situent dans le bas de leur histoire."
+    else:
+        reading.direction, reading.state = NEUTRAL, "Stress dans sa zone habituelle"
+        reading.summary = "Les indices composites restent au cœur de leur distribution historique."
+    reading.watching = "La persistance du régime et sa confirmation par le marché du crédit."
+    reading.invalidation_conditions = [
+        "Retour des indices composites vers leur médiane historique",
+        "Absence de confirmation par le crédit et la volatilité",
+    ]
+    return reading
+
+
+def _window_returns(ctx: Context, metrics: tuple[tuple[str, str], ...], days: int = 30) -> list[tuple[str, str, Any, float]]:
+    out: list[tuple[str, str, Any, float]] = []
+    for metric, label in metrics:
+        point = ctx.latest(metric)
+        if point is None:
+            continue
+        _, _, change = ctx.change(metric, days)
+        if change is not None:
+            out.append((metric, label, point, change))
+    return out
+
+
+def read_us_index_divergence(ctx: Context, driver: Driver) -> Reading:
+    rows = _window_returns(ctx, (
+        ("macro.sp500", "S&P 500"),
+        ("macro.nasdaq", "Nasdaq Composite"),
+        ("macro.dow", "Dow Jones"),
+        ("macro.russell2000", "Russell 2000"),
+    ))
+    if len(rows) < 2:
+        return _unavailable(
+            driver,
+            "Moins de deux indices US disposent d'un historique comparable de 30 jours.",
+        )
+    reading = Reading(driver=driver)
+    for _, label, point, change in rows:
+        reading.values.append(Value(
+            label,
+            fr_number(point.value, 2),
+            change=f"{fr_number(change, 1, signed=True)} % sur 30 j",
+            period=_period_fr(point.timestamp),
+            source=_source(point),
+        ))
+    latest = max((row[2] for row in rows), key=lambda p: p.timestamp)
+    reading.last_release = latest.timestamp
+    reading.last_publication = _publication_time(latest)
+    positives = sum(change > 0 for *_, change in rows)
+    negatives = sum(change < 0 for *_, change in rows)
+    if positives and negatives:
+        reading.direction, reading.state = MIXED, "Participation divergente"
+        reading.summary = (
+            "Les grands indices US n'évoluent pas tous dans le même sens sur 30 jours. "
+            "La participation est incomplète et ne confirme pas un mouvement uniforme."
+        )
+    elif positives == len(rows):
+        reading.direction, reading.state = FAVORABLE, "Hausse largement partagée"
+        reading.summary = "Tous les indices disponibles progressent sur la même fenêtre."
+    elif negatives == len(rows):
+        reading.direction, reading.state = UNFAVORABLE, "Baisse largement partagée"
+        reading.summary = "Tous les indices disponibles reculent sur la même fenêtre."
+    else:
+        reading.direction, reading.state = NEUTRAL, "Indices sans direction commune"
+        reading.summary = "Les variations disponibles ne dessinent pas une direction commune."
+    reading.watching = "La participation du Russell 2000 et du Dow face aux indices technologiques."
+    reading.invalidation_conditions = ["Convergence durable des indices sur une même direction"]
+    return reading
+
+
+def read_international_contagion(ctx: Context, driver: Driver) -> Reading:
+    international = _window_returns(ctx, (
+        ("macro.nikkei225", "Nikkei 225"),
+        ("macro.eurostoxx50", "Euro Stoxx 50"),
+    ))
+    us = _window_returns(ctx, (("macro.sp500", "S&P 500"),))
+    if not international or not us:
+        return _unavailable(
+            driver,
+            "Un indice international et un indice US comparables sont nécessaires.",
+        )
+    rows = us + international
+    reading = Reading(driver=driver)
+    for _, label, point, change in rows:
+        reading.values.append(Value(
+            label,
+            fr_number(point.value, 2),
+            change=f"{fr_number(change, 1, signed=True)} % sur 30 j",
+            period=_period_fr(point.timestamp),
+            source=_source(point),
+        ))
+    latest = max((row[2] for row in rows), key=lambda p: p.timestamp)
+    reading.last_release = latest.timestamp
+    reading.last_publication = _publication_time(latest)
+    signs = {1 if change > 0 else -1 if change < 0 else 0 for *_, change in rows}
+    if signs == {1}:
+        reading.direction, reading.state = FAVORABLE, "Prise de risque internationale"
+        reading.summary = "Les places disponibles progressent ensemble sur 30 jours."
+    elif signs == {-1}:
+        reading.direction, reading.state = UNFAVORABLE, "Repli international"
+        reading.summary = "Le repli touche les États-Unis et les places internationales suivies."
+    elif len(signs - {0}) > 1:
+        reading.direction, reading.state = MIXED, "Mouvement non généralisé"
+        reading.summary = "Les régions ne confirment pas la même direction."
+    else:
+        reading.direction, reading.state = NEUTRAL, "Contagion non confirmée"
+        reading.summary = "Les données disponibles ne montrent pas de propagation uniforme."
+    reading.watching = "La confirmation du mouvement sur plusieurs clôtures régionales."
+    reading.invalidation_conditions = ["Découplage persistant entre régions"]
+    return reading
+
+
+def read_volatility(ctx: Context, driver: Driver) -> Reading:
+    point = ctx.latest("macro.vix")
+    if point is None:
+        return _unavailable(driver, "Le VIX n'est pas collecté par une source autorisée.")
+    percentile = ctx.percentile("macro.vix")
+    reading = Reading(driver=driver, last_release=point.timestamp,
+                      last_publication=_publication_time(point),
+                      historical_percentile=percentile)
+    _, change_7d, _ = ctx.change("macro.vix", 7)
+    reading.values.append(Value(
+        "VIX",
+        fr_number(point.value, 2),
+        change=(f"{fr_number(change_7d, 1, signed=True)} pt sur 7 j"
+                if change_7d is not None else ""),
+        period=_period_fr(point.timestamp),
+        source=_source(point, "Cboe"),
+    ))
+    if percentile is None:
+        reading.direction, reading.state = UNKNOWN, "Percentile indisponible"
+        reading.summary = "Le niveau est connu, mais l'historique est insuffisant pour le situer."
+    elif percentile >= 0.85:
+        reading.direction, reading.state = UNFAVORABLE, "Volatilité historiquement élevée"
+        reading.summary = (
+            "Le VIX se situe dans le haut de sa propre distribution historique. "
+            "C'est un diagnostic d'incertitude, pas une prévision de baisse."
+        )
+    elif percentile <= 0.35:
+        reading.direction, reading.state = FAVORABLE, "Volatilité historiquement basse"
+        reading.summary = "Le coût de la protection se situe dans le bas de son histoire."
+    else:
+        reading.direction, reading.state = NEUTRAL, "Volatilité dans sa zone habituelle"
+        reading.summary = "Le VIX reste au cœur de sa distribution historique."
+    reading.watching = "Le percentile et l'accélération sur plusieurs séances."
+    reading.invalidation_conditions = ["Retour durable du VIX vers sa médiane historique"]
+    return reading
+
+
+def read_earnings_ai(ctx: Context, driver: Driver) -> Reading:
+    """Track dated company releases without fabricating fundamentals.
+
+    The repository already collects SEC filings, but does not yet normalize a
+    cross-company revenue/CAPEX/cash-flow panel.  A dated official publication
+    can therefore raise attention while direction remains unknown; without one
+    the signal is explicitly unavailable.
+    """
+
+    event = ctx.next_event(driver)
+    if event is None:
+        return _unavailable(
+            driver,
+            "Aucun panel normalisé de bénéfices, trésorerie et CAPEX IA n'est connecté.",
+        )
+    reading = Reading(driver=driver, state="Publication d'entreprise à venir",
+                      direction=UNKNOWN)
+    reading.next_release = event.scheduled_at
+    reading.next_release_label = getattr(event, "title", "Publication de résultats")
+    reading.summary = (
+        "Une publication officielle est datée, mais son résultat n'est pas connu. "
+        "Aucune direction n'est attribuée avant des chiffres vérifiés."
+    )
+    reading.values.append(Value(
+        "Prochaine publication",
+        reading.next_release_label,
+        period=_period_fr(reading.next_release),
+        source=str(getattr(event, "source", "") or "Publication de l'émetteur"),
+    ))
+    reading.watching = "Revenus, marges, flux de trésorerie et CAPEX effectivement publiés."
+    reading.invalidation_conditions = ["Publication reportée ou source officielle retirée"]
     return reading
 
 
@@ -823,36 +1291,59 @@ def read_boj(ctx: Context, driver: Driver) -> Reading:
 
 
 def read_oil(ctx: Context, driver: Driver) -> Reading:
-    points = ctx.points("macro.oil_wti")
+    # Brent is the requested reference.  WTI is an explicit fallback and is
+    # labelled as such; spot and futures are never silently merged.
+    metric = "macro.brent" if ctx.points("macro.brent") else (
+        "macro.wti" if ctx.points("macro.wti") else "macro.oil_wti"
+    )
+    points = ctx.points(metric)
     if not points:
         return _unavailable(driver, "Le prix du pétrole n'est pas collecté.")
     reading = Reading(driver=driver)
     last = points[-1]
     reading.last_release = last.timestamp
-    _, _, change_30d = ctx.change("macro.oil_wti", 30)
-    reading.values.append(Value("Pétrole WTI", f"{fr_number(last.value, 2)} $",
+    reading.last_publication = _publication_time(last)
+    _, _, change_30d = ctx.change(metric, 30)
+    percentile = ctx.abnormality(metric, 30)
+    reading.historical_percentile = percentile
+    label = "Pétrole Brent" if metric == "macro.brent" else "Pétrole WTI"
+    reading.values.append(Value(label, f"{fr_number(last.value, 2)} $",
                                 change=(f"{fr_number(change_30d, 1, signed=True)} % sur 30 j"
                                         if change_30d is not None else ""),
-                                period=_period_fr(last.timestamp), source="Yahoo Finance"))
-    # Oil only becomes macro-relevant when the move is large enough to change
-    # inflation expectations. Below that, it is a commodity price.
+                                period=_period_fr(last.timestamp), source=_source(last)))
+    # Relevance comes from the move's own historical distribution, not from a
+    # universal dollar or percentage threshold.
     if change_30d is None:
         reading.direction, reading.state = UNKNOWN, "Variation non calculable"
         reading.summary = "L'historique disponible ne couvre pas trente jours."
-    elif change_30d >= 12:
+    elif percentile is None:
+        reading.direction, reading.state = UNKNOWN, "Contexte historique insuffisant"
+        reading.summary = (
+            "La variation est calculable, mais l'historique est trop court pour décider si elle "
+            "est inhabituelle sans inventer un seuil universel."
+        )
+    elif percentile >= 0.85 and change_30d > 0:
         reading.direction, reading.state = UNFAVORABLE, "Pétrole en forte hausse"
-        reading.summary = (f"Le pétrole a pris {_pct(change_30d, 1)} en un mois. À cette ampleur, "
+        reading.summary = (f"Le pétrole a pris {_pct(change_30d, 1)} en un mois, un mouvement "
+                           "inhabituel dans sa propre histoire. À cette ampleur, "
                            "il ravive la pression inflationniste attendue et donc la perspective "
                            "de taux plus hauts.")
-    elif change_30d <= -12:
+    elif percentile >= 0.85 and change_30d < 0:
         reading.direction, reading.state = FAVORABLE, "Pétrole en forte baisse"
-        reading.summary = (f"Le pétrole a cédé {_pct(abs(change_30d), 1)} en un mois, ce qui "
+        reading.summary = (f"Le pétrole a cédé {_pct(abs(change_30d), 1)} en un mois, un "
+                           "mouvement inhabituel dans sa propre histoire, ce qui "
                            "réduit la pression inflationniste attendue.")
     else:
         reading.direction, reading.state = NEUTRAL, "Pétrole sans effet macro"
-        reading.summary = ("Le mouvement du pétrole reste trop limité pour peser sur les "
-                           "anticipations d'inflation.")
-    reading.watching = "Un mouvement de plus de 12 % en un mois, seuil à partir duquel il compte."
+        reading.summary = (
+            "Le mouvement reste dans sa distribution historique habituelle ; le moteur ne lui "
+            "attribue pas automatiquement un effet macro."
+        )
+    reading.watching = "L'amplitude, la persistance et le percentile du mouvement sur 30 jours."
+    reading.invalidation_conditions = [
+        "Retour du mouvement dans sa distribution historique habituelle",
+        "Absence de transmission aux anticipations d'inflation et aux rendements",
+    ]
     return reading
 
 
@@ -1034,17 +1525,17 @@ READERS: dict[str, Any] = {
     "inflation": read_inflation,
     "employment": read_employment,
     "yields": read_yields,
+    "oil": read_oil,
+    "credit": read_credit,
+    "financial_stress": read_financial_stress,
     "dollar": read_dollar,
     "liquidity": read_liquidity,
-    "credit": read_credit,
+    "us_index_divergence": read_us_index_divergence,
+    "international_contagion": read_international_contagion,
+    "volatility": read_volatility,
+    "earnings_ai": read_earnings_ai,
     "ecb": read_ecb,
     "boj": read_boj,
-    "oil": read_oil,
-    "etf_flows": read_etf_flows,
-    "stablecoins": read_stablecoins,
-    "regulation": read_regulation,
-    "geopolitics": read_geopolitics,
-    "risk_markets": read_risk_markets,
 }
 
 
@@ -1066,7 +1557,11 @@ def next_cycle(now: datetime) -> datetime:
     return (now + timedelta(days=1)).replace(hour=CYCLE_HOURS[0], minute=0, second=0, microsecond=0)
 
 
-def score_of(reading: Reading, ctx: Context) -> Score:
+def score_of(
+    reading: Reading,
+    ctx: Context,
+    previous_reading: dict[str, Any] | None = None,
+) -> Score:
     """How much this driver deserves the reader's attention right now.
 
     Additive and explainable: the page can say why a driver is at 94 instead of
@@ -1087,8 +1582,8 @@ def score_of(reading: Reading, ctx: Context) -> Score:
                 score.add(points, label)
                 break
 
-    if reading.last_release is not None:
-        age = ctx.now - reading.last_release
+    if reading.last_publication is not None:
+        age = ctx.now - reading.last_publication
         window = FRESH_RELEASE.get(driver.category, timedelta(hours=24))
         if age <= window:
             score.add(12, "publication récente")
@@ -1096,6 +1591,21 @@ def score_of(reading: Reading, ctx: Context) -> Score:
             # Importance decays on its own: a page that accumulates is a page
             # nobody reads.
             score.add(-10, "donnée ancienne")
+    elif reading.last_release is not None:
+        score.add(-8, "date de publication non vérifiée")
+
+    if reading.data_quality == "STALE":
+        score.add(-15, "donnée périmée")
+    elif reading.data_quality == "CONFLICTING":
+        score.add(-25, "provenance ou date contradictoire")
+    elif reading.data_quality == "REVISED":
+        score.add(-3, "valeur révisée")
+
+    if previous_reading is not None and (
+        previous_reading.get("state") != reading.state
+        or previous_reading.get("direction") != reading.direction.value
+    ):
+        score.add(8, "changement depuis le cycle précédent")
 
     # An unusual move is what makes a standing driver suddenly matter.
     for metric, days, label in _ABNORMALITY_WATCH.get(driver.key, ()):
@@ -1116,18 +1626,50 @@ def score_of(reading: Reading, ctx: Context) -> Score:
 #: Which series makes each driver abnormal, and over how many days.
 _ABNORMALITY_WATCH: dict[str, tuple[tuple[str, int, str], ...]] = {
     "yields": (("macro.real10y", 30, "taux réel 10 ans"),),
-    "dollar": (("macro.dxy", 30, "dollar"),),
+    "dollar": (("macro.dxy", 30, "dollar DXY"),
+               ("macro.dxy_broad", 30, "dollar pondéré par les échanges")),
     "credit": (("macro.hy_spread", 30, "prime du haut rendement"),),
-    "oil": (("macro.oil_wti", 30, "pétrole"),),
-    "risk_markets": (("macro.vix", 7, "volatilité des actions"),),
+    "oil": (("macro.brent", 30, "pétrole Brent"),
+            ("macro.wti", 30, "pétrole WTI"),
+            ("macro.oil_wti", 30, "pétrole WTI")),
+    "financial_stress": (("macro.nfci", 30, "conditions financières"),),
+    "volatility": (("macro.vix", 7, "volatilité des actions"),),
+    "us_index_divergence": (("macro.sp500", 30, "indices américains"),),
+    "international_contagion": (("macro.nikkei225", 30, "indices internationaux"),),
     "liquidity": (("liquidity.fed_total_assets", 60, "bilan de la Fed"),),
-    "stablecoins": (("stablecoin.supply.total", 30, "offre de stablecoins"),),
     "inflation": (("macro.core_cpi", 180, "inflation sous-jacente"),),
     "employment": (("macro.jobless_claims", 60, "inscriptions au chômage"),),
 }
 
 #: How many drivers reach the home. The rest stay one tap away.
 TOP = 5
+
+
+def _select_top(readings: list[Reading]) -> list[Reading]:
+    """Choose five useful explanations while controlling correlated echoes.
+
+    The first pass admits at most one member of each independence group.  If
+    fewer than five independent groups are measurable, a second pass fills the
+    page by score.  Nothing is discarded from the full fifteen-signal page.
+    """
+
+    available = [reading for reading in readings if reading.available]
+    selected: list[Reading] = []
+    seen_groups: set[str] = set()
+    for reading in available:
+        group = reading.driver.independence_group or reading.driver.key
+        if group in seen_groups:
+            continue
+        selected.append(reading)
+        seen_groups.add(group)
+        if len(selected) == TOP:
+            return selected
+    for reading in available:
+        if reading not in selected:
+            selected.append(reading)
+            if len(selected) == TOP:
+                break
+    return selected
 
 
 def build(view: Any, *, now: datetime | None = None, events: list[Any] | None = None,
@@ -1143,6 +1685,11 @@ def build(view: Any, *, now: datetime | None = None, events: list[Any] | None = 
     if events is None:
         events = _load_events(now)
     ctx = Context(view=view, now=now, events=events)
+    previous_by_key = {
+        item.get("key"): item
+        for item in ((previous or {}).get("drivers") or [])
+        if isinstance(item, dict) and item.get("key")
+    }
 
     readings: list[Reading] = []
     for driver in DRIVERS:
@@ -1151,14 +1698,15 @@ def build(view: Any, *, now: datetime | None = None, events: list[Any] | None = 
             reading = reader(ctx, driver)
         except Exception as exc:  # one broken series never takes the page down
             reading = _unavailable(driver, f"Lecture impossible : {str(exc)[:120]}")
-        score = score_of(reading, ctx)
+        _enrich_contract(reading, ctx)
+        score = score_of(reading, ctx, previous_by_key.get(driver.key))
         reading.importance = score.clamped
         reading.importance_reasons = score.reasons
         reading.attention = attention_of(reading.importance)
         readings.append(reading)
 
     ranked = sorted(readings, key=lambda r: (-r.importance, r.driver.name))
-    top = [r for r in ranked if r.available][:TOP]
+    top = _select_top(ranked)
     changes = _changes_since(ranked, previous)
     return {
         "as_of": now.isoformat(),

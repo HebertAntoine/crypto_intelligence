@@ -270,7 +270,27 @@ def asset_report(asset: AssetAnalysis, table: dict[str, Any]) -> str:
     return "\n".join(out)
 
 
-def human_report(result: ExtractionResult, tables: dict[str, dict[str, Any]]) -> str:
+def _fact_check_section(fact_checks: list[dict[str, Any]] | None) -> list[str]:
+    if not fact_checks:
+        return ["## Ce qui est vérifié par les données", "", "Aucune affirmation factuelle vérifiable extraite.", ""]
+    lines = ["## Ce qui est vérifié par les données", "", "| Actif | Statut | Affirmation | Calcul |", "|---|---|---|---|"]
+    for item in fact_checks:
+        calculated = item.get("calculated_value")
+        calculation = "—" if calculated is None else f"{float(calculated):+.2f} %"
+        text = str(item.get("original_text") or "").replace("|", "\\|")
+        lines.append(
+            f"| {item.get('asset_context') or 'MARCHÉ'} | {item.get('verification_status')} "
+            f"| {text} | {calculation} |"
+        )
+    return [*lines, ""]
+
+
+def human_report(
+    result: ExtractionResult,
+    tables: dict[str, dict[str, Any]],
+    *,
+    fact_checks: list[dict[str, Any]] | None = None,
+) -> str:
     head = [f"# 🎬 {result.video.title}", "",
             f"Publiée : {result.video.published_at or 'non précisé'} · "
             f"Source de la transcription : {result.transcript.source} · Modèle : {result.model}", "",
@@ -279,13 +299,17 @@ def human_report(result: ExtractionResult, tables: dict[str, dict[str, Any]]) ->
     body = [asset_report(a, tables[a.symbol]) for a in result.assets]
     if not result.assets:
         body = ["Aucune crypto n'a pu être rattachée à des niveaux vérifiés.", ""]
-    return "\n".join(head + body)
+    return "\n".join(head + body + _fact_check_section(fact_checks))
 
 
 # --- validation report ------------------------------------------------------------
 
 
-def validation_report(result: ExtractionResult) -> str:
+def validation_report(
+    result: ExtractionResult,
+    *,
+    fact_checks: list[dict[str, Any]] | None = None,
+) -> str:
     t = result.transcript
     levels = sum(len(a.levels) for a in result.assets)
     rejected = [(a.symbol, r) for a in result.assets for r in a.rejected]
@@ -325,6 +349,19 @@ def validation_report(result: ExtractionResult) -> str:
     out += [f"- {e}" for e in result.errors]
     if not rejected and not result.errors:
         out.append("- Aucune valeur rejetée par le vérificateur.")
+    out += ["", "## VÉRIFICATION DES AFFIRMATIONS", ""]
+    if fact_checks:
+        out += ["| Crypto | Statut | Valeur annoncée | Valeur recalculée | Méthode |",
+                "|---|---|---:|---:|---|"]
+        for item in fact_checks:
+            out.append(
+                f"| {item.get('asset_context') or 'MARCHÉ'} | "
+                f"{item.get('verification_status')} | {item.get('claimed_value')} | "
+                f"{item.get('calculated_value')} | "
+                f"{str(item.get('comparison_method') or '').replace('|', '/')} |"
+            )
+    else:
+        out.append("- Aucune affirmation factuelle vérifiable extraite.")
     out += ["", "## COMPARAISON MANUELLE (à remplir par toi)", "",
             "✅ correct · 🟡 détecté mais mal interprété · 🔴 incorrect · ⚪ manquant", "",
             "| Crypto | Valeur | Lecture automatique | 🎬 | Ta lecture | Verdict |",

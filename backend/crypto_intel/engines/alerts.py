@@ -240,10 +240,8 @@ class AlertEngine:
         # or sell, and each carries the measured edge alongside so the reader
         # sees immediately that the structure is descriptive.
         location = ctx.get("structural_location")
-        edge_state = str(
-            getattr(ctx.get("edge"), "state", None).value
-            if getattr(ctx.get("edge"), "state", None) else "NO_MEASURABLE_EDGE"
-        )
+        edge_value = getattr(ctx.get("edge"), "state", None)
+        edge_state = str(edge_value.value if edge_value else "NO_MEASURABLE_EDGE")
 
         if location is not None and getattr(location, "state", None):
             current = location.state.value
@@ -626,12 +624,29 @@ class AlertEngine:
         return kept
 
     @staticmethod
-    def to_rows(alerts: list[Alert]) -> list[dict[str, Any]]:
-        """Serialise for persistence, carrying dedup_key and reason through."""
+    def to_rows(
+        alerts: list[Alert], *, analysis_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        """Serialise alerts plus the facts needed for an auditable receipt."""
         rows = []
         for alert in alerts:
             row = alert.model_dump(mode="json")
-            row["dedup_key"] = alert.__dict__.get("dedup_key")
+            dedup_key = alert.__dict__.get("dedup_key")
+            row["dedup_key"] = dedup_key
+            row["trigger_id"] = dedup_key
             row["reason"] = alert.__dict__.get("reason", "")
+            row["analysis_id"] = analysis_id
+            row["cooldown_minutes"] = COOLDOWN_MINUTES.get(
+                alert.kind, DEFAULT_COOLDOWN_MINUTES
+            )
+            row["source_snapshot"] = {
+                "trigger_id": dedup_key,
+                "asset_id": alert.asset.value if alert.asset else None,
+                "analysis_id": analysis_id,
+                "kind": alert.kind,
+                "triggered_at": alert.triggered_at.isoformat(),
+                "evidence_ids": list(alert.evidence_ids),
+                "reason": row["reason"],
+            }
             rows.append(row)
         return rows

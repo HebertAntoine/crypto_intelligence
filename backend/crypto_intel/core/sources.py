@@ -55,6 +55,7 @@ PROVIDER_TIERS: dict[str, SourceTier] = {
     "blockchair": SourceTier.BLOCKCHAIN_NATIVE,
     "fred": SourceTier.OFFICIAL_API,
     "alfred": SourceTier.OFFICIAL_API,
+    "twelve_data": SourceTier.SPECIALIST_PROVIDER,
     "binance": SourceTier.OFFICIAL_API,
     "binance_futures": SourceTier.OFFICIAL_API,
     "bybit": SourceTier.OFFICIAL_API,

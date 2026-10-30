@@ -60,7 +60,13 @@ class _RSSBase(BaseProvider):
             headers = {}
             # SEC's published policy: identify yourself on their feeds.
             if "sec.gov" in url:
-                headers["User-Agent"] = settings.sec_user_agent
+                if not settings.sec_user_agent_configured:
+                    failures.append(
+                        f"{feed.get('name', url)}: NOT_CONFIGURED "
+                        "(SEC_USER_AGENT with real contact email required)"
+                    )
+                    continue
+                headers["User-Agent"] = settings.sec_user_agent.strip()
 
             res = await http.get_text(
                 url, provider=self.name, headers=headers or None,

@@ -24,7 +24,11 @@ from ..core.models import Interpretation, ScoreCard
 from ..knowledge.store import get_retriever
 from ..llm.base import LLMProvider
 from ..llm.schemas import AnalystOutput
-from ..llm.validation import ANTI_HALLUCINATION_RULES, find_unsupported_numbers
+from ..llm.validation import (
+    ANTI_HALLUCINATION_RULES,
+    find_evidence_reference_errors,
+    find_unsupported_numbers,
+)
 from ..logging_setup import get_logger
 
 log = get_logger("analysts")
@@ -122,6 +126,9 @@ class BaseAnalyst(ABC):
         self, result: AnalystResult, asset: Asset, context: dict[str, Any]
     ) -> None:
         """Ask the model to explain the computed findings - never to produce the score."""
+        llm = self.llm
+        if llm is None:
+            return
         data_block = self.build_data_block(result, asset, context)
         knowledge_block = ""
         if result.knowledge_citations:
@@ -149,10 +156,18 @@ class BaseAnalyst(ABC):
             "The summary must be factual, concise and free of filler."
         )
 
-        output: AnalystOutput = await self.llm.complete_json(system, user, AnalystOutput)
+        output: AnalystOutput = await llm.complete_json(system, user, AnalystOutput)
 
-        # Grounding check: any number the model wrote must trace back to the data.
-        unsupported = find_unsupported_numbers(output.summary, data_block)
+        # Ground every narrative field that is copied into AnalystResult.  A
+        # clean summary must not allow an invented value to slip through in a
+        # finding or a missing-data note.
+        copied_narrative = [
+            output.summary,
+            *(finding.statement for finding in output.positives),
+            *(finding.statement for finding in output.negatives),
+            *output.missing_data,
+        ]
+        unsupported = find_unsupported_numbers("\n".join(copied_narrative), data_block)
         if unsupported:
             log.warning(
                 "llm_hallucination_blocked", analyst=self.name, asset=asset.value,
@@ -160,6 +175,23 @@ class BaseAnalyst(ABC):
             )
             result.missing_data.append(
                 f"LLM narrative rejected: it cited values absent from the data ({unsupported[:3]})"
+            )
+            return
+
+        reference_errors = find_evidence_reference_errors(
+            [*output.positives, *output.negatives],
+            set(result.evidence_ids),
+        )
+        if reference_errors:
+            log.warning(
+                "llm_evidence_reference_blocked",
+                analyst=self.name,
+                asset=asset.value,
+                errors=reference_errors[:5],
+            )
+            result.missing_data.append(
+                "LLM narrative rejected: evidence references are missing or invalid "
+                f"({reference_errors[:3]})"
             )
             return
 
@@ -185,6 +217,8 @@ class BaseAnalyst(ABC):
         """
         lines = [f"Score: {result.score:+.1f}", f"Confidence: {result.confidence:.0f}%",
                  f"Freshness: {result.freshness.value}"]
+        if result.evidence_ids:
+            lines.append("Allowed evidence IDs: " + ", ".join(result.evidence_ids[:20]))
         if result.positives:
             lines.append("Positive findings:")
             lines += [f"  - {p}" for p in result.positives]

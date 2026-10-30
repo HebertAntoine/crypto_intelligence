@@ -177,8 +177,21 @@ class AlertRow(Base):
     # condition fires once rather than on every collection cycle.
     dedup_key: Mapped[str | None] = mapped_column(String(128), index=True)
     reason: Mapped[str] = mapped_column(Text, default="")
+    # Delivery receipt.  These fields are nullable for databases created
+    # before receipts existed; every new in-app alert populates all of them.
+    notification_id: Mapped[str | None] = mapped_column(String(40))
+    trigger_id: Mapped[str | None] = mapped_column(String(128))
+    asset_id: Mapped[str | None] = mapped_column(String(16))
+    analysis_id: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    delivery_status: Mapped[str | None] = mapped_column(String(24))
+    source_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
-    __table_args__ = (Index("ix_alert_dedup_time", "dedup_key", "triggered_at"),)
+    __table_args__ = (
+        Index("ix_alert_dedup_time", "dedup_key", "triggered_at"),
+        Index("ux_alert_notification_id", "notification_id", unique=True),
+    )
 
 
 class EventRow(Base):
@@ -353,10 +366,17 @@ class MacroSeriesRow(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     value: Mapped[float] = mapped_column(Float)
     source: Mapped[str] = mapped_column(String(48), default="")
+    provider: Mapped[str] = mapped_column(String(64), default="")
+    unit: Mapped[str] = mapped_column(String(24), default="")
+    source_url: Mapped[str | None] = mapped_column(String(512))
+    series_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    license_status: Mapped[str] = mapped_column(String(32), default="UNKNOWN")
+    meta: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     release_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
     revision_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     availability: Mapped[str] = mapped_column(String(24), default="UNKNOWN")
     is_first_print: Mapped[bool] = mapped_column(Boolean, default=True)
+    revision_number: Mapped[int] = mapped_column(Integer, default=0)
     vintage_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
@@ -382,6 +402,16 @@ class MacroVintageRow(Base):
     is_first_print: Mapped[bool] = mapped_column(Boolean, default=False)
     revision_number: Mapped[int] = mapped_column(Integer, default=0)
     ingested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    # Nullable for rows imported before vintage-level provenance existed.
+    # Readers fall back to ``macro_series`` only for those legacy NULLs.
+    source: Mapped[str | None] = mapped_column(String(48))
+    provider: Mapped[str | None] = mapped_column(String(64))
+    unit: Mapped[str | None] = mapped_column(String(24))
+    source_url: Mapped[str | None] = mapped_column(String(512))
+    license_status: Mapped[str | None] = mapped_column(String(32))
+    meta: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    release_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    availability: Mapped[str | None] = mapped_column(String(24))
 
     __table_args__ = (
         Index("ix_vintage_lookup", "metric", "observation_time", "vintage_date", unique=True),
@@ -567,3 +597,243 @@ class PredictionOutcomeRow(Base):
     evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     __table_args__ = (Index("ix_outcome_snapshot_horizon", "snapshot_id", "horizon"),)
+
+
+# --- Trader News documentary registry -------------------------------------
+#
+# ``future_events`` remains the only event projection consumed by the radar
+# and decision engines.  The tables below retain the documentary trail that a
+# FutureEvent deliberately does not model: article versions, verification
+# runs, analyses, observed reactions and audit entries.  They are therefore
+# complementary, not a second radar or decision store.
+
+
+class NewsSourceRow(Base):
+    __tablename__ = "news_sources"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    name: Mapped[str] = mapped_column(String(160), unique=True, index=True)
+    official_url: Mapped[str] = mapped_column(String(1024))
+    source_type: Mapped[str] = mapped_column(String(32), index=True)
+    authority: Mapped[str] = mapped_column(String(32), index=True)
+    publication_frequency: Mapped[str] = mapped_column(String(64), default="UNKNOWN")
+    availability_delay: Mapped[str] = mapped_column(String(64), default="UNKNOWN")
+    access_method: Mapped[str] = mapped_column(String(48), default="NOT_INTEGRATED")
+    usage_restrictions: Mapped[str] = mapped_column(Text, default="")
+    license_status: Mapped[str] = mapped_column(String(32), default="UNVERIFIED", index=True)
+    operational_status: Mapped[str] = mapped_column(
+        String(32), default="NOT_CONFIGURED", index=True
+    )
+    configured: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    failure_reason: Mapped[str] = mapped_column(Text, default="")
+    metadata_json: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class NewsArticleRow(Base):
+    """Immutable version of one externally published item.
+
+    ``logical_id`` identifies the publication across corrections; ``id`` also
+    includes the content hash.  A correction therefore adds a row instead of
+    rewriting what the engine saw previously.
+    """
+
+    __tablename__ = "news_articles"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    logical_id: Mapped[str] = mapped_column(String(64), index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    source_id: Mapped[str] = mapped_column(String(64), index=True)
+    source_item_id: Mapped[str | None] = mapped_column(String(256), index=True)
+    original_url: Mapped[str | None] = mapped_column(String(2048))
+    canonical_url: Mapped[str | None] = mapped_column(String(2048), index=True)
+    title: Mapped[str] = mapped_column(String(1024))
+    summary: Mapped[str] = mapped_column(Text, default="")
+    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    language: Mapped[str | None] = mapped_column(String(16))
+    author: Mapped[str | None] = mapped_column(String(256))
+    retracted: Mapped[bool] = mapped_column(Boolean, default=False)
+    external_instruction_detected: Mapped[bool] = mapped_column(Boolean, default=False)
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    __table_args__ = (
+        Index("ux_news_article_version", "logical_id", "version", unique=True),
+        Index("ix_news_article_source_time", "source_id", "published_at"),
+    )
+
+
+class NewsEventRow(Base):
+    """Canonical documentary event; projected to ``future_events`` once safe."""
+
+    __tablename__ = "news_events"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    future_event_id: Mapped[str | None] = mapped_column(String(40), index=True)
+    title: Mapped[str] = mapped_column(String(1024))
+    summary: Mapped[str] = mapped_column(Text, default="")
+    primary_category: Mapped[str] = mapped_column(String(48), index=True)
+    secondary_categories: Mapped[list[str] | None] = mapped_column(JSON)
+    country: Mapped[str | None] = mapped_column(String(8), index=True)
+    affected_assets: Mapped[list[str] | None] = mapped_column(JSON)
+    affected_markets: Mapped[list[str] | None] = mapped_column(JSON)
+    attention: Mapped[str] = mapped_column(String(16), default="LOW", index=True)
+    direction: Mapped[str] = mapped_column(String(16), default="UNKNOWN", index=True)
+    verification_status: Mapped[str] = mapped_column(
+        String(32), default="UNCONFIRMED", index=True
+    )
+    confidence: Mapped[float | None] = mapped_column(Float)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    event_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    expected_value: Mapped[Any | None] = mapped_column(JSON)
+    actual_value: Mapped[Any | None] = mapped_column(JSON)
+    previous_value: Mapped[Any | None] = mapped_column(JSON)
+    unit: Mapped[str | None] = mapped_column(String(32))
+    raw_surprise: Mapped[float | None] = mapped_column(Float)
+    normalized_surprise: Mapped[float | None] = mapped_column(Float)
+    priority_score: Mapped[float] = mapped_column(Float, default=0.0, index=True)
+    source_count: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(24), default="ACTIVE", index=True)
+    analysis_version: Mapped[str | None] = mapped_column(String(64))
+    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+    revision: Mapped[int] = mapped_column(Integer, default=1)
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    __table_args__ = (
+        Index("ix_news_event_priority_time", "priority_score", "published_at"),
+        Index("ix_news_event_category_time", "primary_category", "published_at"),
+    )
+
+
+class NewsEventSourceRow(Base):
+    __tablename__ = "news_event_sources"
+
+    id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(64), index=True)
+    article_id: Mapped[str] = mapped_column(String(80), index=True)
+    source_id: Mapped[str] = mapped_column(String(64), index=True)
+    role: Mapped[str] = mapped_column(String(24), default="CORROBORATING")
+    attached_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    __table_args__ = (
+        Index("ux_news_event_article", "event_id", "article_id", unique=True),
+    )
+
+
+class NewsVerificationRow(Base):
+    __tablename__ = "news_verifications"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(32), index=True)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    verifier_version: Mapped[str] = mapped_column(String(64))
+    source_ids: Mapped[list[str] | None] = mapped_column(JSON)
+    contradictions: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+    evidence: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+    limitations: Mapped[list[str] | None] = mapped_column(JSON)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+
+    __table_args__ = (Index("ix_news_verification_event_time", "event_id", "checked_at"),)
+
+
+class NewsAnalysisRow(Base):
+    __tablename__ = "news_analyses"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(64), index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    engine_version: Mapped[str] = mapped_column(String(64))
+    model_version: Mapped[str | None] = mapped_column(String(128))
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    status: Mapped[str] = mapped_column(String(24), default="COMPLETE", index=True)
+    facts: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+    interpretations: Mapped[list[str] | None] = mapped_column(JSON)
+    hypotheses: Mapped[list[str] | None] = mapped_column(JSON)
+    limitations: Mapped[list[str] | None] = mapped_column(JSON)
+    source_ids: Mapped[list[str] | None] = mapped_column(JSON)
+    input_data: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    content_hash: Mapped[str] = mapped_column(String(64), index=True)
+
+    __table_args__ = (Index("ux_news_analysis_version", "event_id", "version", unique=True),)
+
+
+class MarketReactionRow(Base):
+    __tablename__ = "market_reactions"
+
+    id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(64), index=True)
+    asset: Mapped[str] = mapped_column(String(24), index=True)
+    window: Mapped[str] = mapped_column(String(16), index=True)
+    available: Mapped[bool] = mapped_column(Boolean, default=False)
+    observed_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    observed_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    price_before: Mapped[float | None] = mapped_column(Float)
+    price_after: Mapped[float | None] = mapped_column(Float)
+    return_pct: Mapped[float | None] = mapped_column(Float)
+    source: Mapped[str | None] = mapped_column(String(128))
+    source_url: Mapped[str | None] = mapped_column(String(1024))
+    evidence_ids: Mapped[list[str] | None] = mapped_column(JSON)
+    unavailable_reason: Mapped[str | None] = mapped_column(Text)
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+
+    __table_args__ = (
+        Index("ux_market_reaction_event_asset_window", "event_id", "asset", "window", unique=True),
+    )
+
+
+class NewsSignalLinkRow(Base):
+    __tablename__ = "news_signal_links"
+
+    id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    event_id: Mapped[str] = mapped_column(String(64), index=True)
+    asset: Mapped[str | None] = mapped_column(String(16), index=True)
+    signal_id: Mapped[str] = mapped_column(String(64), index=True)
+    action: Mapped[str] = mapped_column(String(32), index=True)
+    effect: Mapped[str] = mapped_column(String(24), default="MONITOR")
+    rationale: Mapped[str] = mapped_column(Text, default="")
+    evidence_ids: Mapped[list[str] | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class NewsProcessingJobRow(Base):
+    __tablename__ = "news_processing_jobs"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(48), index=True)
+    status: Mapped[str] = mapped_column(String(24), index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str] = mapped_column(Text, default="")
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+
+
+class NewsAuditLogRow(Base):
+    __tablename__ = "news_audit_logs"
+
+    id: Mapped[str] = mapped_column(String(96), primary_key=True)
+    event_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    action: Mapped[str] = mapped_column(String(48), index=True)
+    actor: Mapped[str] = mapped_column(String(64), default="trader_news_engine")
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    previous_hash: Mapped[str | None] = mapped_column(String(64))
+    new_hash: Mapped[str | None] = mapped_column(String(64))
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSON)

@@ -36,6 +36,80 @@ log = get_logger(__name__)
 MAX_TRANSCRIPT_CHARS = 400_000
 
 
+def _verify_extracted_claims(
+    result: Any,
+    source_time: datetime | None,
+    transcript: str = "",
+) -> list[dict[str, Any]]:
+    """Check transcript-backed factual statements; levels remain source claims.
+
+    A level is verified elsewhere as something the analyst actually said.  It
+    is not promoted here into a current market fact.  Only ``situation``
+    statements enter this fact-check pass.
+    """
+
+    from ..engines.claim_verification import (
+        ClaimVerificationEngine,
+        extract_claim_texts,
+        normalize_text,
+    )
+
+    checks: list[dict[str, Any]] = []
+    candidates: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for asset in result.assets:
+        for extracted in asset.situation:
+            original = extracted.evidence.quote or extracted.text
+            key = normalize_text(original)
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append({
+                "text": original,
+                "asset_context": asset.symbol,
+                "extracted_summary": extracted.text,
+                "transcript_timestamp_s": extracted.evidence.timestamp_s,
+                "transcript_verified": extracted.evidence.verified,
+            })
+
+    # General index, percentage and causal claims can sit outside a crypto's
+    # extracted situation block.  The conservative extractor deliberately
+    # excludes plain price levels and allocations.
+    for original in extract_claim_texts(transcript):
+        key = normalize_text(original)
+        if key in seen:
+            continue
+        seen.add(key)
+        candidates.append({
+            "text": original,
+            "asset_context": "MARCHÉ",
+            "extracted_summary": original,
+            "transcript_timestamp_s": None,
+            "transcript_verified": True,
+        })
+
+    engine = ClaimVerificationEngine()
+    observations = []
+    if source_time is not None:
+        from ..engines.claim_evidence import stored_claim_evidence
+
+        observations = stored_claim_evidence(source_time)
+    for candidate in candidates:
+        verified = engine.verify(
+            candidate["text"],
+            observations=observations,
+            source_timestamp=source_time,
+            # A transcript is fact-checked at its publication time.  Whether
+            # its wording is still current today is a separate freshness
+            # question and must not replace the historical truth verdict.
+            as_of=source_time,
+        )
+        payload = verified.model_dump(mode="json")
+        payload.update({key: value for key, value in candidate.items() if key != "text"})
+        checks.append(payload)
+    return checks
+
+
 def runs_dir() -> Path:
     path = database_path().parent / "tests"
     path.mkdir(parents=True, exist_ok=True)
@@ -76,17 +150,22 @@ def execute(run_path: Path, raw: str, *, title: str, published_at: str | None,
                      model=model, **kwargs)
 
     moment = _parse_date(published_at)
+    fact_checks = _verify_extracted_claims(result, moment, raw)
     if prices is None:
-        from .prices import hourly_prices as prices
+        from .prices import hourly_prices
+
+        price_loader = hourly_prices
+    else:
+        price_loader = prices
     tables = {}
     for asset in result.assets:
-        frame = prices(asset.symbol, moment) if moment else None
+        frame = price_loader(asset.symbol, moment) if moment else None
         tables[asset.symbol] = plan(asset, capital=capital, frame=frame, published_at=moment)
 
-    payload = {**result.model_dump(), "plans": tables}
+    payload = {**result.model_dump(), "plans": tables, "fact_checks": fact_checks}
     _write(run_path, "extraction.json", json.dumps(payload, ensure_ascii=False, indent=2))
-    _write(run_path, "report.md", human_report(result, tables))
-    _write(run_path, "validation.md", validation_report(result))
+    _write(run_path, "report.md", human_report(result, tables, fact_checks=fact_checks))
+    _write(run_path, "validation.md", validation_report(result, fact_checks=fact_checks))
     return payload
 
 
@@ -150,6 +229,18 @@ _OTHER_KINDS = {"BREAKOUT": "OTHER", "RETEST": "RETEST", "VOLUME": "VOLUME",
 _TF = {"1H": "1H", "4H": "4H", "1D": "1D", "1W": "1W"}
 
 
+def _fact_checks_for_asset(
+    fact_checks: list[dict[str, Any]], asset: str
+) -> list[dict[str, Any]]:
+    """Keep asset-specific checks plus video-wide market assertions."""
+
+    return [
+        item
+        for item in fact_checks
+        if item.get("asset_context") in {asset, "MARCHÉ"}
+    ]
+
+
 def import_run(run_id: str) -> int:
     """Store a checked run as a video with one analysis per crypto."""
 
@@ -183,7 +274,9 @@ def import_run(run_id: str) -> int:
                                                  basis=lv.get("basis") if lv.get("basis") in
                                                  ("EXPLICIT", "INFERRED") else "INFERRED"))
             elif cond.get("kind") in _OTHER_KINDS:
-                conditions.append(ConditionInput(_OTHER_KINDS[cond["kind"]], _TF.get(cond.get("timeframe")),
+                timeframe = cond.get("timeframe")
+                conditions.append(ConditionInput(_OTHER_KINDS[cond["kind"]],
+                                                 _TF.get(timeframe) if isinstance(timeframe, str) else None,
                                                  "BELOW" if cond["kind"].endswith("BELOW") else "ABOVE",
                                                  description=cond.get("text") or cond["kind"].lower()))
             basis = lv.get("basis") if lv.get("basis") in ("EXPLICIT", "INFERRED") else "INFERRED"
@@ -202,6 +295,12 @@ def import_run(run_id: str) -> int:
             asset=a["symbol"], price_at_video=a.get("price_at_video"),
             stance=a.get("stance") if a.get("stance_basis") in ("EXPLICIT", "INFERRED") else "UNSPECIFIED",
             market_context=context.strip(), levels=levels, source_type="TRANSCRIPT_TEST",
+            extra={
+                "fact_checks": _fact_checks_for_asset(
+                    extraction.get("fact_checks") or [], a["symbol"]
+                ),
+                "fact_check_contract": "claim-verification/1",
+            },
             timestamp_start=min(stamps) if stamps else None,
             timestamp_end=max(stamps) if stamps else None))
     if not assets:

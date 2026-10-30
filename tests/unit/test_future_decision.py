@@ -120,26 +120,81 @@ def test_five_family_constructor_rejects_missing_slot() -> None:
 
 
 def test_scenarios_exist_but_probabilities_are_not_invented() -> None:
-    scenarios = FutureScenarioEngine().build([event(hours=72)], five(), as_of=NOW)
-    assert [scenario.kind for scenario in scenarios] == list(ScenarioKind)
+    scenarios = FutureScenarioEngine().build(
+        [event(hours=72)], five(), as_of=NOW, asset=Asset.BTC
+    )
+    assert [scenario.kind for scenario in scenarios] == [
+        ScenarioKind.BASE_CASE,
+        ScenarioKind.BULLISH_CASE,
+        ScenarioKind.BEARISH_CASE,
+    ]
     assert all(scenario.probability is None for scenario in scenarios)
     assert all(scenario.confidence > 0 for scenario in scenarios)
+    assert all(scenario.horizon == "7d" for scenario in scenarios)
+    assert all(scenario.affected_assets == ["BTC"] for scenario in scenarios)
+    assert all(scenario.hypothesis for scenario in scenarios)
+    assert all(scenario.conditions for scenario in scenarios)
+    assert all(scenario.confirmation_signals for scenario in scenarios)
+    assert all(scenario.invalidation_conditions for scenario in scenarios)
+    assert all(scenario.uncertainties for scenario in scenarios)
+    assert all(scenario.prudence_note for scenario in scenarios)
 
 
 def test_scenario_probability_requires_source_timestamp_and_full_distribution() -> None:
+    public_kinds = (
+        ScenarioKind.BASE_CASE,
+        ScenarioKind.BULLISH_CASE,
+        ScenarioKind.BEARISH_CASE,
+    )
     probabilities = {
         kind: {
-            "probability": 0.25,
+            "probability": 1 / 3,
             "source": "licensed market feed",
             "observed_at": NOW.isoformat(),
+            "calibrated": True,
+            "calibration_metadata": {
+                "model_name": "scenario-calibrator",
+                "model_version": "1",
+                "target_definition": "Direction realised over the selected horizon",
+                "target_horizon": "7 days",
+                "calibration_method": "isotonic",
+                "out_of_sample_tested": True,
+                "out_of_sample_sample_size": 500,
+                "evaluation_metric": "Brier score",
+                "evaluation_score": 0.18,
+                "evaluated_at": NOW.isoformat(),
+                "evidence_ids": ["calibration:scenario:v1"],
+            },
         }
-        for kind in ScenarioKind
+        for kind in public_kinds
     }
     scenarios = FutureScenarioEngine().build(
         [], five(), as_of=NOW, scenario_probabilities=probabilities
     )
-    assert scenarios[0].probability == pytest.approx(0.25)
+    assert scenarios[0].probability == pytest.approx(1 / 3)
     assert scenarios[0].probability_source == "licensed market feed"
+    assert scenarios[0].calibrated is True
+    assert scenarios[0].calibration_metadata is not None
+
+
+def test_scenario_probability_rejects_an_uncalibrated_distribution() -> None:
+    probabilities = {
+        kind: {
+            "probability": 1 / 3,
+            "source": "narrative score",
+            "observed_at": NOW.isoformat(),
+        }
+        for kind in (
+            ScenarioKind.BASE_CASE,
+            ScenarioKind.BULLISH_CASE,
+            ScenarioKind.BEARISH_CASE,
+        )
+    }
+
+    with pytest.raises(ValueError, match="calibrated=true"):
+        FutureScenarioEngine().build(
+            [], five(), as_of=NOW, scenario_probabilities=probabilities
+        )
 
 
 def test_event_outside_gate_window_does_not_block() -> None:

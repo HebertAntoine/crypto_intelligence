@@ -104,7 +104,19 @@ def test_future_decision_endpoint_contract(monkeypatch) -> None:
     assert result["event_risk_gate"]["active"] is True
     assert result["event_risk"]["horizon"] == "7d"
     assert result["families"]["total_count"] == 5
-    assert len(result["scenarios"]) == 4
+    assert len(result["scenarios"]) == 3
+    assert [item["id"] for item in result["scenarios"]] == [
+        "base_case",
+        "bullish_case",
+        "bearish_case",
+    ]
+    assert all(item["hypothesis"] for item in result["scenarios"])
+    assert all(item["horizon"] == "7d" for item in result["scenarios"])
+    assert all(item["affected_assets"] == ["BTC"] for item in result["scenarios"])
+    assert all(item["conditions"] for item in result["scenarios"])
+    assert all(item["confirmation_signals"] for item in result["scenarios"])
+    assert all(item["invalidation_conditions"] for item in result["scenarios"])
+    assert all(item["uncertainties"] for item in result["scenarios"])
     assert result["reasons"][0]["source"] == "Federal Reserve"
 
 

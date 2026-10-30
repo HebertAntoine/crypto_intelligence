@@ -3,10 +3,16 @@ import { useSearchParams } from "react-router-dom";
 import { ErrorBox, Loading, fmtNumber, fmtSigned, signClass } from "../components/common";
 import {
   api,
+  calibratedScenarioProbability,
+  orderedGlobalRiskHorizons,
+  publicFutureScenarios,
   type AssetDetail,
   type DecisionHorizon,
   type FutureDecision,
   type FutureEventRead,
+  type GlobalRiskRead,
+  type GlobalRiskHorizonRead,
+  type FutureScenarioRead,
   type FutureTimeline,
 } from "../lib/api";
 
@@ -34,27 +40,39 @@ export default function FutureAnalysis() {
   const [decision, setDecision] = useState<FutureDecision | null>(null);
   const [timeline, setTimeline] = useState<FutureTimeline | null>(null);
   const [market, setMarket] = useState<AssetDetail | null>(null);
+  const [globalRisk, setGlobalRisk] = useState<GlobalRiskRead | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setDecision(null);
     setTimeline(null);
+    setGlobalRisk(null);
     setError(null);
-    Promise.all([api.future(asset, horizon), api.futureTimeline(asset), api.asset(asset)])
-      .then(([nextDecision, nextTimeline, nextMarket]) => {
+    Promise.all([
+      api.future(asset, horizon),
+      api.futureTimeline(asset),
+      api.asset(asset),
+      api.globalRisk(asset),
+    ])
+      .then(([nextDecision, nextTimeline, nextMarket, nextGlobalRisk]) => {
         setDecision(nextDecision);
         setTimeline(nextTimeline);
         setMarket(nextMarket);
+        setGlobalRisk(nextGlobalRisk);
       })
       .catch((reason) => setError(String(reason)));
   }, [asset, horizon]);
 
   const selectAsset = (next: string) => setParams({ asset: next });
   if (error) return <ErrorBox error={error} />;
-  if (!decision || !timeline || !market) return <Loading what={`l'analyse ${asset}`} />;
+  if (!decision || !timeline || !market || !globalRisk) {
+    return <Loading what={`l'analyse ${asset}`} />;
+  }
 
   const nextEvent = decision.next_major_event;
   const familyItems = Object.values(decision.families.items);
+  const scenarios = publicFutureScenarios(decision.scenarios);
+  const riskHorizons = orderedGlobalRiskHorizons(globalRisk.risk_horizons);
 
   return (
     <>
@@ -223,28 +241,173 @@ export default function FutureAnalysis() {
       </section>
 
       <section className="panel section">
-        <div className="panel-title">Scénarios</div>
-        <div className="scenario-grid">
-          {decision.scenarios.map((scenario) => (
-            <article key={scenario.id} className="scenario-card">
-              <strong>{scenarioName(scenario.id)}</strong>
-              <div className="row small">
-                <span>{directionLabel[scenario.directional_bias] ?? scenario.directional_bias}</span>
-                <span>Mouvement {scenario.expected_movement}</span>
-              </div>
-              <p className="small dim">{scenario.event_chain.join(" → ")}</p>
-              <div className="tiny faint">
-                Probabilité : {scenario.probability == null
-                  ? "non défendable avec les données disponibles"
-                  : `${Math.round(scenario.probability * 100)} % · ${scenario.probability_source}`}
-              </div>
-              <div className="tiny faint">
-                Confiance d'analyse : {Math.round(scenario.confidence * 100)} %
-              </div>
-            </article>
+        <div className="future-section-head">
+          <div className="panel-title">Risque global</div>
+          <span className="tiny faint">Fenêtres disjointes · aucune probabilité de rendement</span>
+        </div>
+        <div className="global-risk-grid">
+          {riskHorizons.map((item) => (
+            <GlobalRiskCard key={item.horizon} risk={item} />
           ))}
         </div>
+        {riskHorizons.length !== 3 && (
+          <div className="unavailable">
+            Contrat de risque incomplet : {riskHorizons.length}/3 horizon(s) reçu(s).
+          </div>
+        )}
+        <div className="tiny faint global-risk-methodology">{globalRisk.methodology}</div>
       </section>
+
+      <section className="panel section">
+        <div className="panel-title">Scénarios</div>
+        {scenarios.length !== 3 && (
+          <div className="unavailable">
+            Contrat de scénarios incomplet : {scenarios.length}/3 scénario(s) public(s) reçu(s).
+          </div>
+        )}
+        <div className="scenario-grid">
+          {scenarios.map((scenario) => <ScenarioCard key={scenario.id} scenario={scenario} />)}
+        </div>
+      </section>
+    </>
+  );
+}
+
+function GlobalRiskCard({ risk }: { risk: GlobalRiskHorizonRead }) {
+  const limitations = risk.data_coverage.limitations;
+  return (
+    <article className={`global-risk-card global-risk-${risk.risk_level.toLowerCase()}`}>
+      <div className="row">
+        <strong>{riskHorizonLabel(risk.horizon)}</strong>
+        <span className="pill">{riskLevelLabel(risk.risk_level)}</span>
+      </div>
+      <div className="tiny dim">
+        {risk.data_coverage.usable_family_count}/5 familles utilisables
+        {` · ${risk.data_coverage.authorized_event_count} événement(s) autorisé(s)`}
+      </div>
+      {risk.main_drivers.length > 0 ? (
+        <ul className="finding-list neutral">
+          {risk.main_drivers.slice(0, 3).map((driver) => <li key={driver}>{driver}</li>)}
+        </ul>
+      ) : (
+        <div className="unavailable">Aucun facteur dominant sourcé dans cette fenêtre.</div>
+      )}
+      {risk.counter_signals.length > 0 && (
+        <details className="future-details">
+          <summary>Signaux contraires</summary>
+          <ScenarioList title="Contradictions observées" items={risk.counter_signals} />
+        </details>
+      )}
+      {limitations.length > 0 && (
+        <div className="tiny faint">Limites : {limitations.join(" ")}</div>
+      )}
+      <div className="tiny faint">
+        Évolution : {riskChangeLabel(risk.change_since_previous)}
+      </div>
+    </article>
+  );
+}
+
+function riskHorizonLabel(value: GlobalRiskHorizonRead["horizon"]): string {
+  return ({
+    "1-7d": "1 à 7 jours",
+    "8-30d": "8 à 30 jours",
+    "31-90d": "31 à 90 jours",
+  } as const)[value];
+}
+
+function riskLevelLabel(value: GlobalRiskHorizonRead["risk_level"]): string {
+  return ({
+    LOW: "FAIBLE",
+    MODERATE: "MODÉRÉ",
+    HIGH: "ÉLEVÉ",
+    CRITICAL: "CRITIQUE",
+    INDETERMINATE: "INDÉTERMINÉ",
+  } as const)[value];
+}
+
+function riskChangeLabel(value: GlobalRiskHorizonRead["change_since_previous"]): string {
+  return ({
+    INCREASED: "en hausse",
+    DECREASED: "en baisse",
+    UNCHANGED: "inchangée",
+    NOT_AVAILABLE: "comparaison précédente indisponible",
+  } as const)[value];
+}
+
+function ScenarioCard({ scenario }: { scenario: FutureScenarioRead }) {
+  const probability = calibratedScenarioProbability(scenario);
+  const calibration = probability == null ? null : scenario.calibration_metadata;
+
+  return (
+    <article className="scenario-card">
+      <strong>{scenarioName(scenario.id)}</strong>
+      <p className="small">{scenario.hypothesis}</p>
+      <div className="row small">
+        <span>{directionLabel[scenario.directional_bias] ?? scenario.directional_bias}</span>
+        <span>Mouvement {scenario.expected_movement}</span>
+      </div>
+      <div className="tiny faint">
+        Horizon {scenario.horizon}
+        {scenario.affected_assets.length > 0 && ` · Actifs ${scenario.affected_assets.join(", ")}`}
+      </div>
+      <div className="tiny faint">
+        Probabilité : {probability == null
+          ? "non quantifiée — aucun modèle calibré publié"
+          : `${Math.round(probability * 100)} % · modèle calibré`}
+      </div>
+      <div className="tiny faint">
+        Confiance d'analyse : {Math.round(scenario.confidence * 100)} %
+      </div>
+
+      <details className="future-details">
+        <summary>Hypothèses, preuves et conditions</summary>
+        <div className="future-detail-body">
+          <ScenarioList title="Éléments déjà confirmés" items={scenario.confirmed_evidence} />
+          <ScenarioList title="Chaîne d'événements" items={scenario.event_chain} />
+          <ScenarioList title="Conditions observables" items={scenario.conditions} />
+          <ScenarioList title="Signaux de confirmation" items={scenario.confirmation_signals} />
+          <ScenarioList title="Signaux d'invalidation" items={scenario.invalidation_conditions} />
+          <ScenarioList title="Incertitudes" items={scenario.uncertainties} />
+          {scenario.prudence_note && <p className="small dim">Prudence : {scenario.prudence_note}</p>}
+          {scenario.evidence_ids.length > 0 && (
+            <div className="tiny faint">Preuves : {scenario.evidence_ids.join(" · ")}</div>
+          )}
+          {probability != null && (
+            <div className="tiny faint">
+              Source de probabilité : {scenario.probability_source ?? "non documentée"}
+              {scenario.probability_observed_at
+                ? ` · observée ${formatDate(scenario.probability_observed_at)}`
+                : ""}
+            </div>
+          )}
+          {calibration && (
+            <div className="tiny faint">
+              Calibration : {calibration.model_name} v{calibration.model_version}
+              {` · ${calibration.calibration_method}`}
+              {` · hors échantillon n=${calibration.out_of_sample_sample_size}`}
+              {` · ${calibration.evaluation_metric} ${calibration.evaluation_score}`}
+              {` · cible ${calibration.target_definition} (${calibration.target_horizon})`}
+              {` · évaluée ${formatDate(calibration.evaluated_at)}`}
+              {calibration.evidence_ids.length > 0
+                ? ` · preuves ${calibration.evidence_ids.join(", ")}`
+                : ""}
+            </div>
+          )}
+        </div>
+      </details>
+    </article>
+  );
+}
+
+function ScenarioList({ title, items }: { title: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      <h4>{title}</h4>
+      <ul className="finding-list neutral">
+        {items.map((item, index) => <li key={`${title}-${index}`}>{item}</li>)}
+      </ul>
     </>
   );
 }
@@ -308,10 +471,9 @@ function importanceClass(value: string): string {
 function scenarioName(value: string): string {
   return (
     {
-      base_case: "Scénario central",
-      bullish_case: "Scénario haussier",
-      bearish_case: "Scénario baissier",
-      tail_risk_case: "Risque extrême",
+      base_case: "Scénario intermédiaire",
+      bullish_case: "Scénario favorable",
+      bearish_case: "Scénario défavorable",
     } as Record<string, string>
   )[value] ?? value;
 }

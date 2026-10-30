@@ -35,8 +35,10 @@ from typing import ClassVar
 from ...core.enums import DataQuality, FetchStatus, ProviderCategory
 from ...core.freshness import compute_freshness
 from ...core.models import Observation
-from ..base import BaseProvider, FetchRequest, FetchResult
+from ...settings import get_settings
+from ..base import BaseProvider, FetchRequest, FetchResult, ProviderStatus
 from ..http import get_http
+from .fred import rights_exclusion
 
 CSV_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 
@@ -60,6 +62,8 @@ SERIES: dict[str, tuple[str, str, str, timedelta]] = {
     "WALCL": ("liquidity.fed_total_assets", "musd",
               "Total des actifs de la Réserve fédérale (H.4.1)", timedelta(days=5)),
 }
+
+THIRD_PARTY_SERIES = frozenset({"BAMLH0A0HYM2", "BAMLC0A0CM"})
 
 
 def parse_csv(text: str) -> list[tuple[datetime, float]]:
@@ -102,12 +106,37 @@ class FredPublicCsvProvider(BaseProvider):
     #: decades on every cycle.
     HISTORY_DAYS: ClassVar[int] = 1100
 
+    async def available(self) -> ProviderStatus:
+        if not get_settings().fred_content_use_authorized:
+            return ProviderStatus(
+                name=self.name,
+                available=False,
+                configured=False,
+                reason="FRED storage/AI-system use is not documented as authorized",
+            )
+        return ProviderStatus(name=self.name, available=True, configured=True)
+
     async def fetch(self, request: FetchRequest) -> FetchResult:
+        settings = get_settings()
+        status = await self.available()
+        if not status.available:
+            return FetchResult.failure(
+                FetchStatus.NOT_CONFIGURED,
+                self.name,
+                f"UNAVAILABLE - {status.reason}; the public CSV endpoint is not a licence override",
+            )
         http = get_http()
         start = (datetime.now(UTC) - timedelta(days=self.HISTORY_DAYS)).date().isoformat()
         out: list[Observation] = []
         failures: list[str] = []
+        excluded_series: list[dict[str, str]] = []
         for series_id, (metric, unit, label, lag) in SERIES.items():
+            if (
+                series_id in THIRD_PARTY_SERIES
+                and not settings.fred_third_party_redistribution_authorized
+            ):
+                excluded_series.append(rights_exclusion(series_id))
+                continue
             result = await http.get_text(
                 CSV_URL, provider=self.name,
                 params={"id": series_id, "cosd": start},
@@ -134,11 +163,27 @@ class FredPublicCsvProvider(BaseProvider):
                         "series_id": series_id,
                         "available_at": available.isoformat(),
                         "source_tier": "OFFICIAL",
+                        "license_status": (
+                            "OPERATOR_CONFIRMED"
+                            if series_id in THIRD_PARTY_SERIES
+                            else "FRED_TERMS"
+                        ),
                     },
                 ))
+        rights_summary = {
+            "requested_series": list(SERIES),
+            "excluded_series": excluded_series,
+            "failed_series": failures,
+        }
         if not out:
-            return FetchResult.failure(
-                FetchStatus.NO_DATA, self.name,
-                f"aucune série lue ({', '.join(failures)})" if failures else "",
+            details = list(failures)
+            details.extend(
+                f"{item['series_id']}:droits non confirmés" for item in excluded_series
             )
-        return FetchResult.success(out, self.name)
+            return FetchResult(
+                status=FetchStatus.NO_DATA,
+                provider=self.name,
+                raw=rights_summary,
+                message=f"aucune série lue ({', '.join(details)})" if details else "",
+            )
+        return FetchResult.success(out, self.name, raw=rights_summary)

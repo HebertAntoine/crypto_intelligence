@@ -30,18 +30,18 @@
       "status": "OK"
     },
     {
-      "configured": true,
+      "configured": false,
       "provider": "coingecko",
-      "reason": "",
+      "reason": "UNAVAILABLE - CoinGecko paid-plan/display rights and attribution are not fully configured; missing: COINGECKO_API_KEY, COINGECKO_COMMERCIAL_USE_AUTHORIZED, COINGECKO_ATTRIBUTION_CONFIGURED",
       "requires_key": null,
-      "status": "OK"
+      "status": "UNAVAILABLE"
     },
     {
-      "configured": true,
+      "configured": false,
       "provider": "coingecko_breadth",
-      "reason": "",
+      "reason": "UNAVAILABLE - CoinGecko paid-plan/display rights and attribution are not fully configured; missing: COINGECKO_API_KEY, COINGECKO_COMMERCIAL_USE_AUTHORIZED, COINGECKO_ATTRIBUTION_CONFIGURED",
       "requires_key": null,
-      "status": "OK"
+      "status": "UNAVAILABLE"
     },
     {
       "configured": true,
@@ -144,16 +144,16 @@
     {
       "configured": false,
       "provider": "fred",
-      "reason": "UNAVAILABLE - provider not configured (FRED_API_KEY missing)",
+      "reason": "FRED storage/AI-system use is not documented as authorized",
       "requires_key": "FRED_API_KEY",
       "status": "UNAVAILABLE"
     },
     {
-      "configured": true,
+      "configured": false,
       "provider": "fred_public_csv",
-      "reason": "",
+      "reason": "FRED storage/AI-system use is not documented as authorized",
       "requires_key": null,
-      "status": "OK"
+      "status": "UNAVAILABLE"
     },
     {
       "configured": true,
@@ -203,6 +203,13 @@
       "reason": "",
       "requires_key": null,
       "status": "OK"
+    },
+    {
+      "configured": false,
+      "provider": "twelve_data",
+      "reason": "UNAVAILABLE - provider not configured (TWELVE_DATA_API_KEY missing)",
+      "requires_key": "TWELVE_DATA_API_KEY",
+      "status": "UNAVAILABLE"
     },
     {
       "configured": true,
@@ -387,8 +394,8 @@
       "status": "OK"
     }
   ],
-  "run_id": "run_20261007T184601Z_light",
+  "run_id": "run_20261030T104601Z_light",
   "status": "ok",
-  "time": "2026-10-07T18:47:59.044282+00:00",
+  "time": "2026-10-30T10:47:53.714620+00:00",
   "version": "0.1.0"
 }

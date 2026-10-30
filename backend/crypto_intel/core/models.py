@@ -17,9 +17,10 @@ from __future__ import annotations
 
 import hashlib
 from datetime import UTC, datetime
+from math import isfinite
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .enums import (
     Asset,
@@ -193,11 +194,85 @@ class Interpretation(BaseModel):
             object.__setattr__(self, "id", "int_" + hashlib.sha1(raw.encode()).hexdigest()[:16])
 
 
+class ProbabilityCalibrationMetadata(BaseModel):
+    """Audit trail required before any probability can be published.
+
+    A conviction score or a narrative confidence is not calibration.  The
+    metadata below documents the precise target, horizon and genuinely
+    out-of-sample evaluation that authorised the probability.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    model_name: str = Field(..., min_length=3)
+    model_version: str = Field(..., min_length=1)
+    target_definition: str = Field(..., min_length=10)
+    target_horizon: str = Field(..., min_length=3)
+    calibration_method: str = Field(..., min_length=3)
+    out_of_sample_tested: bool
+    out_of_sample_sample_size: int = Field(..., ge=1)
+    evaluation_metric: str = Field(..., min_length=3)
+    evaluation_score: float
+    evaluated_at: datetime
+    evidence_ids: list[str] = Field(..., min_length=1)
+
+    @field_validator(
+        "model_name",
+        "model_version",
+        "target_definition",
+        "target_horizon",
+        "calibration_method",
+        "evaluation_metric",
+    )
+    @classmethod
+    def _non_blank_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("calibration metadata text cannot be blank")
+        return value
+
+    @field_validator("evaluation_score")
+    @classmethod
+    def _finite_score(cls, value: float) -> float:
+        if not isfinite(value):
+            raise ValueError("calibration evaluation score must be finite")
+        return value
+
+    @field_validator("evidence_ids")
+    @classmethod
+    def _documented_evidence(cls, value: list[str]) -> list[str]:
+        cleaned = [item.strip() for item in value]
+        if any(not item for item in cleaned):
+            raise ValueError("calibration evidence identifiers cannot be blank")
+        return cleaned
+
+    @field_validator("evaluated_at")
+    @classmethod
+    def _evaluated_at_utc(cls, value: datetime) -> datetime:
+        return _ensure_utc(value)
+
+
+def _require_calibrated_probability(
+    probability: float | None,
+    calibrated: bool,
+    metadata: ProbabilityCalibrationMetadata | None,
+) -> None:
+    if probability is not None and not calibrated:
+        raise ValueError("a numeric probability requires calibrated=true")
+    if calibrated and metadata is None:
+        raise ValueError("calibrated probabilities require calibration_metadata")
+    if metadata is not None and not calibrated:
+        raise ValueError("calibration_metadata requires calibrated=true")
+    if metadata is not None and not metadata.out_of_sample_tested:
+        raise ValueError("probability calibration must be tested out of sample")
+
+
 class Hypothesis(BaseModel):
     """A HYPOTHESIS: conditional, never asserted as fact.
 
-    `probability` is an *indicative analytical* probability unless
-    `calibrated` is True - which only a backtested model may set.
+    A numeric probability is allowed only when a separately calibrated model
+    supplies a documented, out-of-sample evaluation.  Otherwise the
+    hypothesis remains useful but explicitly non-quantified.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -209,18 +284,24 @@ class Hypothesis(BaseModel):
     conditions: list[str] = Field(default_factory=list)
     probability: float | None = Field(default=None, ge=0.0, le=100.0)
     calibrated: bool = False
+    calibration_metadata: ProbabilityCalibrationMetadata | None = None
     invalidation: str | None = None
     evidence_ids: list[str] = Field(default_factory=list)
     horizon: Horizon = Horizon.MEDIUM
     created_at: datetime = Field(default_factory=utcnow)
 
+    @model_validator(mode="after")
+    def _validate_probability_calibration(self) -> Hypothesis:
+        _require_calibrated_probability(
+            self.probability, self.calibrated, self.calibration_metadata
+        )
+        return self
+
     @property
     def probability_label(self) -> str:
         if self.probability is None:
             return "non quantifiee"
-        if self.calibrated:
-            return f"{self.probability:.0f}% (modele calibre)"
-        return f"{self.probability:.0f}% (probabilite analytique indicative)"
+        return f"{self.probability:.0f}% (modele calibre)"
 
     def model_post_init(self, __context: Any) -> None:
         if not self.id:
@@ -356,22 +437,44 @@ class Contradiction(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list)
 
 
+# Scenario-specific name kept as a public compatibility alias while both
+# hypotheses and scenarios share the exact same probability contract.
+ScenarioCalibrationMetadata = ProbabilityCalibrationMetadata
+
+
 class Scenario(BaseModel):
     name: str                     # "central" | "bull" | "bear"
     label: str
-    probability: float = Field(..., ge=0.0, le=100.0)
+    # A scenario is useful without a probability.  A number is admissible only
+    # when a separately calibrated model supplied it; narrative confidence or
+    # a conviction score is not a probability distribution.
+    probability: float | None = Field(default=None, ge=0.0, le=100.0)
     calibrated: bool = False
+    calibration_metadata: ScenarioCalibrationMetadata | None = None
     narrative: str
+    horizon: str = "UNSPECIFIED"
+    affected_assets: list[Asset] = Field(default_factory=list)
+    confirmed_evidence: list[str] = Field(default_factory=list)
     conditions: list[str] = Field(default_factory=list)
+    confirmation_signals: list[str] = Field(default_factory=list)
     key_levels: dict[str, float] = Field(default_factory=dict)
     catalysts: list[str] = Field(default_factory=list)
     invalidation: str = ""
+    uncertainties: list[str] = Field(default_factory=list)
+    prudence_note: str = "Scenario conditional, not a forecast or an automated order."
+
+    @model_validator(mode="after")
+    def _validate_probability_calibration(self) -> Scenario:
+        _require_calibrated_probability(
+            self.probability, self.calibrated, self.calibration_metadata
+        )
+        return self
 
     @property
     def probability_label(self) -> str:
-        if self.calibrated:
-            return f"{self.probability:.0f}%"
-        return f"{self.probability:.0f}% (probabilite analytique indicative)"
+        if self.probability is None:
+            return "non quantifiee"
+        return f"{self.probability:.0f}% (calibree)"
 
 
 class Conviction(BaseModel):

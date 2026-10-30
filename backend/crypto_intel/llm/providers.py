@@ -120,17 +120,7 @@ class MockLLMProvider(LLMProvider):
                 "key_catalysts": [],
                 "key_risks": ["LLM narrative disabled - rely on the numeric sections"],
                 "what_would_change_my_mind": [],
-                "scenarios": [
-                    {"name": "central", "label": "Mock central scenario", "probability": 60,
-                     "narrative": "MOCK - configure an LLM provider for real scenarios.",
-                     "conditions": [], "key_levels": {}, "catalysts": [], "invalidation": ""},
-                    {"name": "bull", "label": "Mock bullish scenario", "probability": 20,
-                     "narrative": "MOCK - configure an LLM provider for real scenarios.",
-                     "conditions": [], "key_levels": {}, "catalysts": [], "invalidation": ""},
-                    {"name": "bear", "label": "Mock bearish scenario", "probability": 20,
-                     "narrative": "MOCK - configure an LLM provider for real scenarios.",
-                     "conditions": [], "key_levels": {}, "catalysts": [], "invalidation": ""},
-                ],
+                "scenarios": [],
                 "missing_data": [],
                 "data_quality_note": "MOCK MODE - no language model was called.",
             })

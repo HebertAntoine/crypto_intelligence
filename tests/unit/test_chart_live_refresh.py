@@ -85,6 +85,11 @@ async def test_recent_refresh_supports_every_chart_pair_and_interval(
     assert saved["timeframe"] is timeframe
     assert saved["source"] == "binance"
     assert saved["candles"][0].timestamp == opened_at
+    assert result["fetched_closed"] == 1
+    assert result["fetched_incomplete"] == 0
+    assert result["last_candle_time"] == opened_at
+    assert result["latest_stored_candle_time"] == opened_at
+    assert result["latest_stored_candle_closed"] is True
 
 
 async def test_chart_refresh_has_a_real_wall_clock_timeout(monkeypatch):

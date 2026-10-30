@@ -278,15 +278,38 @@ def render_report(analysis: AssetAnalysis) -> str:
     add(SUB)
     if a.scenarios:
         for s in a.scenarios:
-            add(f"  {s['name'].upper()} - {s['probability']:.0f}% (indicative analytical probability)")
+            probability = s.get("probability")
+            probability_label = (
+                f"{probability:.0f}% (calibrated)"
+                if probability is not None and s.get("calibrated")
+                else "probability not quantified"
+            )
+            add(f"  {s['name'].upper()} - {probability_label}")
             add(f"    {s['label']}")
+            if s.get("horizon"):
+                assets = ", ".join(s.get("affected_assets") or []) or "UNSPECIFIED"
+                add(f"    Horizon: {s['horizon']} | affected assets: {assets}")
             add(f"    {s['narrative'][:300]}")
+            if s.get("confirmed_evidence"):
+                add("    Confirmed evidence:")
+                for evidence in s["confirmed_evidence"][:4]:
+                    add(f"      - {evidence}")
             if s.get("conditions"):
                 add("    Conditions:")
-                for c in s["conditions"][:3]:
+                for c in s["conditions"][:4]:
                     add(f"      - {c}")
+            if s.get("confirmation_signals"):
+                add("    Confirmation signals:")
+                for signal in s["confirmation_signals"][:4]:
+                    add(f"      - {signal}")
             if s.get("invalidation"):
                 add(f"    Invalidation: {s['invalidation']}")
+            if s.get("uncertainties"):
+                add("    Uncertainties:")
+                for uncertainty in s["uncertainties"][:4]:
+                    add(f"      - {uncertainty}")
+            if s.get("prudence_note"):
+                add(f"    Prudence: {s['prudence_note']}")
             add("")
     else:
         add("  No scenarios generated.")

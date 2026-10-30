@@ -562,6 +562,10 @@ class Pipeline:
             asset, analyst_results, conviction, contradiction_report, context
         )
 
+        report_id = "rpt_" + hashlib.sha1(
+            f"{asset.value}|{now.isoformat()}".encode()
+        ).hexdigest()[:16]
+
         # State-change alerts need to know what the previous state was.
         previous_state = self._previous_state(asset)
         probability = assess_probability(conviction, empirical_result) if empirical_result else None
@@ -570,7 +574,7 @@ class Pipeline:
         alerts = self.alerts.evaluate(asset, context, previous=previous_state)
         if alerts:
             try:
-                repo.save_alerts(self.alerts.to_rows(alerts))
+                repo.save_alerts(self.alerts.to_rows(alerts, analysis_id=report_id))
             except Exception as exc:
                 log.warning("alert_persist_failed", error=str(exc))
 
@@ -617,10 +621,6 @@ class Pipeline:
                 )
         except Exception as exc:
             log.warning("shadow_record_failed", asset=asset.value, error=str(exc))
-
-        report_id = "rpt_" + hashlib.sha1(
-            f"{asset.value}|{now.isoformat()}".encode()
-        ).hexdigest()[:16]
 
         return AssetAnalysis(
             asset=asset, generated_at=now, price=price,

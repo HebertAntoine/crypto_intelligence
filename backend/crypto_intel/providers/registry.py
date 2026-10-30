@@ -183,6 +183,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         TreasuryYieldsProvider,
     )
     from .macro.stooq import StooqProvider
+    from .macro.twelve_data import TwelveDataProvider
     from .macro.yahoo import YahooFinanceProvider
     from .market.binance import BinanceSpotProvider
     from .market.breadth import MarketBreadthProvider
@@ -234,6 +235,7 @@ def _provider_classes() -> dict[str, type[BaseProvider]]:
         BlsProvider,
         CentralBankRatesProvider,
         BitcoinChainProvider,
+        TwelveDataProvider,
         YahooFinanceProvider,
         StooqProvider,
         FederalReserveCalendarProvider,

@@ -54,10 +54,17 @@ def init_db() -> None:
 
 
 @contextmanager
-def session_scope() -> Iterator[Session]:
-    """Transactional scope. Rolls back on any exception."""
+def session_scope(*, immediate: bool = False) -> Iterator[Session]:
+    """Transactional scope. Rolls back on any exception.
+
+    ``immediate`` reserves SQLite's write lock before a read/check/insert
+    sequence. It is opt-in so ordinary readers remain concurrent; alert
+    receipt deduplication needs it to make its cooldown check atomic.
+    """
     session = get_session_factory()()
     try:
+        if immediate and session.bind is not None and session.bind.dialect.name == "sqlite":
+            session.connection().exec_driver_sql("BEGIN IMMEDIATE")
         yield session
         session.commit()
     except Exception:

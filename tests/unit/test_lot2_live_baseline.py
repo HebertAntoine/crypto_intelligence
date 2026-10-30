@@ -22,3 +22,13 @@ def test_initial_analysis_runs_after_live_input_refreshes() -> None:
     assert offset("ohlcv_sync") < offset("analysis")
     assert offset("derivatives_sync") < offset("analysis")
     assert offset("market") < offset("analysis")
+
+
+def test_macro_cycle_uses_the_documented_three_hour_utc_clock() -> None:
+    from crypto_intel import scheduler
+    from crypto_intel.engines.macro_drivers import CYCLE_HOURS
+
+    source = Path(scheduler.__file__).read_text(encoding="utf-8")
+
+    assert 'CronTrigger(hour=",".join(str(h) for h in CYCLE_HOURS), minute=0' in source
+    assert tuple(CYCLE_HOURS) == tuple(range(0, 24, 3))

@@ -3,7 +3,7 @@
 STATUS, verified 2026-09-04: Stooq now answers non-browser clients with a
 JavaScript proof-of-work challenge page. Solving it would be an anti-bot
 bypass, which this project forbids, so this provider detects the challenge and
-reports BLOCKED_BY_SOURCE. Yahoo Finance is the working no-key alternative.
+reports BLOCKED_BY_SOURCE. No bypass or unlicensed web fallback is attempted.
 
 The code stays because the site's policy may change again.
 """
@@ -59,7 +59,7 @@ class StooqProvider(BaseProvider):
                 return FetchResult.failure(
                     FetchStatus.BLOCKED_BY_SOURCE, self.name,
                     "UNAVAILABLE - Stooq serves a JavaScript anti-bot challenge to "
-                    "non-browser clients. No bypass attempted; Yahoo Finance is used instead.",
+                    "non-browser clients. No bypass or alternate scraping attempted.",
                 )
             if not res.ok or not isinstance(res.data, str):
                 continue

@@ -22,6 +22,11 @@ class Finding(BaseModel):
         v = v.upper().strip()
         return v if v in ("BULLISH", "BEARISH", "NEUTRAL", "INCONCLUSIVE") else "NEUTRAL"
 
+    @field_validator("evidence_refs")
+    @classmethod
+    def _evidence_refs(cls, values: list[str]) -> list[str]:
+        return list(dict.fromkeys(value.strip() for value in values if value.strip()))
+
 
 class AnalystOutput(BaseModel):
     """What each specialised analyst returns."""
@@ -39,7 +44,10 @@ class AnalystOutput(BaseModel):
 class ScenarioOutput(BaseModel):
     name: str
     label: str = Field(..., max_length=160)
-    probability: float = Field(..., ge=0, le=100)
+    # The language model is never the authority for a scenario probability.
+    # Calibrated probabilities enter through deterministic model contracts,
+    # not through this narrative schema.
+    probability: None = None
     narrative: str = Field(..., min_length=15, max_length=1200)
     conditions: list[str] = Field(default_factory=list)
     key_levels: dict[str, float] = Field(default_factory=dict)
@@ -66,24 +74,6 @@ class ChiefAnalystOutput(BaseModel):
     scenarios: list[ScenarioOutput] = Field(default_factory=list, max_length=3)
     missing_data: list[str] = Field(default_factory=list, max_length=10)
     data_quality_note: str = ""
-
-    @field_validator("scenarios")
-    @classmethod
-    def _probabilities(cls, v: list[ScenarioOutput]) -> list[ScenarioOutput]:
-        """Normalise scenario probabilities to sum to 100.
-
-        Models routinely emit 60/30/20. Rather than reject an otherwise good
-        answer, we rescale - and the report still labels these as indicative
-        analytical probabilities, not calibrated ones.
-        """
-        if not v:
-            return v
-        total = sum(s.probability for s in v)
-        if total > 0 and abs(total - 100.0) > 0.5:
-            for s in v:
-                s.probability = round(s.probability / total * 100.0, 1)
-        return v
-
 
 class NewsAssessment(BaseModel):
     """LLM reading of clustered news - kept separate from numeric scoring."""

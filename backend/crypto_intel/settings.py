@@ -7,6 +7,7 @@ fake value to be substituted.
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -17,6 +18,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 DEFAULT_DATABASE_URL = "sqlite:///data/crypto_intel.db"
+
+_CONTACT_EMAIL = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.IGNORECASE)
+_PLACEHOLDER_CONTACT_DOMAINS = (
+    "@example.com",
+    "@example.org",
+    "@example.net",
+    ".invalid",
+    ".test",
+)
 
 
 class Settings(BaseSettings):
@@ -57,11 +67,30 @@ class Settings(BaseSettings):
 
     # --- free keys --------------------------------------------------------
     fred_api_key: str = ""
+    # Current FRED terms restrict storage/caching and use in AI-system
+    # development. This flag must represent documented permission for the
+    # deployed use case, not merely acceptance of the public website terms.
+    fred_content_use_authorized: bool = False
+    # ICE BofA and Cboe series visible through FRED retain third-party rights.
+    # They stay excluded unless the operator has verified redistribution.
+    fred_third_party_redistribution_authorized: bool = False
     congress_api_key: str = ""
     cme_fedwatch_api_key: str = ""
     cme_fedwatch_api_url: str = ""
+    twelve_data_api_key: str = ""
+    # A key proves access, not display/redistribution rights.  Keep collection
+    # disabled until the operator has checked the subscribed contract.
+    twelve_data_redistribution_authorized: bool = False
+    coingecko_api_key: str = ""
+    # CoinGecko public availability does not grant commercial display rights.
+    # Paid-plan rights and the required visible attribution are separate,
+    # explicit operator confirmations.
+    coingecko_commercial_use_authorized: bool = False
+    coingecko_attribution_configured: bool = False
     etherscan_api_key: str = ""
-    sec_user_agent: str = "CryptoIntelligence/0.1 (personal research)"
+    # SEC automated access requires honest identification with a real contact.
+    # Empty by default so the application never calls SEC anonymously.
+    sec_user_agent: str = ""
 
     # --- paid keys (all optional) ----------------------------------------
     glassnode_api_key: str = ""
@@ -146,6 +175,17 @@ class Settings(BaseSettings):
 
     def has_key(self, name: str) -> bool:
         return bool(self.api_key_for(name).strip())
+
+    @property
+    def sec_user_agent_configured(self) -> bool:
+        """Whether SEC requests can be made with a non-placeholder contact."""
+
+        agent = self.sec_user_agent.strip()
+        match = _CONTACT_EMAIL.search(agent)
+        if not agent or match is None:
+            return False
+        email = match.group(0).lower()
+        return not email.endswith(_PLACEHOLDER_CONTACT_DOMAINS)
 
     @property
     def llm_enabled(self) -> bool:

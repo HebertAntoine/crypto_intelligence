@@ -1,9 +1,8 @@
-"""Equity indices, DXY, oil and gold via Yahoo Finance's public chart endpoint.
+"""Legacy Yahoo chart adapter, retained only for historical compatibility.
 
-This is the no-key macro fallback. It replaced Stooq as primary because Stooq
-now serves a JavaScript proof-of-work challenge to non-browser clients, and
-solving such a challenge would be exactly the kind of bypass this project
-forbids.
+It is deliberately absent from the production provider chain: a public web
+endpoint is not treated as a redistribution licence.  Existing installations
+can still identify old rows by the ``yahoo_finance`` provider name.
 """
 
 from __future__ import annotations

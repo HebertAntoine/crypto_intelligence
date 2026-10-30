@@ -179,20 +179,40 @@ export default function GlobalMarketPage() {
       )}
 
       <div className="panel section">
-        <div className="panel-title">Recent alerts</div>
+        <div className="panel-title">Recent alerts · delivery receipts</div>
         {data.alerts?.length ? (
           <table>
+            <thead>
+              <tr>
+                <th>Importance</th>
+                <th>Asset</th>
+                <th>Trigger and reason</th>
+                <th>Delivery</th>
+                <th>Created</th>
+              </tr>
+            </thead>
             <tbody>
-              {data.alerts.slice(0, 20).map((a, i) => (
-                <tr key={i}>
+              {data.alerts.slice(0, 20).map((a) => (
+                <tr key={a.notification_id}>
                   <td style={{ width: 90 }}><ImportancePill importance={a.importance} /></td>
-                  <td className="mono tiny" style={{ width: 46 }}>{a.asset ?? "—"}</td>
+                  <td className="mono tiny" style={{ width: 46 }}>{a.asset_id ?? a.asset ?? "—"}</td>
                   <td>
                     {a.title}
                     {a.detail && <div className="tiny faint">{a.detail}</div>}
+                    {a.reason && <div className="tiny dim">Reason: {a.reason}</div>}
+                    <div className="mono tiny faint" title={a.notification_id}>
+                      {a.notification_id}
+                      {a.analysis_id ? ` · ${a.analysis_id}` : ""}
+                    </div>
+                  </td>
+                  <td className="tiny" style={{ width: 100 }}>
+                    <span className="pill">{a.delivery_status}</span>
+                    <div className="faint">
+                      {a.delivered_at ? new Date(a.delivered_at).toLocaleString() : "Not delivered"}
+                    </div>
                   </td>
                   <td className="tiny faint" style={{ width: 130 }}>
-                    {new Date(a.triggered_at).toLocaleString()}
+                    {new Date(a.created_at ?? a.triggered_at).toLocaleString()}
                   </td>
                 </tr>
               ))}

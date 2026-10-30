@@ -115,6 +115,8 @@ export const api = {
     request<FutureWhy>(`/future/${symbol}/why?horizon=${horizon}`),
   futureTimeline: (symbol: string, days = 30) =>
     request<FutureTimeline>(`/future/${symbol}/timeline?days=${days}`),
+  globalRisk: (symbol: string) =>
+    request<GlobalRiskRead>(`/future/${symbol}/global-risk`),
 };
 
 export type DecisionHorizon = "24h" | "7d" | "30d";
@@ -176,8 +178,24 @@ export interface FutureEventRead {
   sort_time: string;
 }
 
+export type FutureScenarioId = "base_case" | "bullish_case" | "bearish_case";
+
+export interface FutureScenarioCalibration {
+  model_name: string;
+  model_version: string;
+  target_definition: string;
+  target_horizon: string;
+  calibration_method: string;
+  out_of_sample_tested: boolean;
+  out_of_sample_sample_size: number;
+  evaluation_metric: string;
+  evaluation_score: number;
+  evaluated_at: string;
+  evidence_ids: string[];
+}
+
 export interface FutureScenarioRead {
-  id: string;
+  id: FutureScenarioId;
   probability: number | null;
   probability_source: string | null;
   probability_observed_at: string | null;
@@ -186,6 +204,40 @@ export interface FutureScenarioRead {
   expected_movement: string;
   confidence: number;
   invalidation_conditions: string[];
+  hypothesis: string;
+  horizon: DecisionHorizon;
+  affected_assets: string[];
+  confirmed_evidence: string[];
+  evidence_ids: string[];
+  conditions: string[];
+  confirmation_signals: string[];
+  uncertainties: string[];
+  prudence_note: string;
+  calibrated: boolean;
+  calibration_metadata: FutureScenarioCalibration | null;
+}
+
+const PUBLIC_FUTURE_SCENARIOS: FutureScenarioId[] = [
+  "base_case",
+  "bullish_case",
+  "bearish_case",
+];
+
+/** Keep the public scenario contract ordered and discard unsupported cases. */
+export function publicFutureScenarios(
+  scenarios: readonly FutureScenarioRead[],
+): FutureScenarioRead[] {
+  return PUBLIC_FUTURE_SCENARIOS.flatMap((id) => {
+    const scenario = scenarios.find((candidate) => candidate.id === id);
+    return scenario ? [scenario] : [];
+  });
+}
+
+/** Numeric probabilities are publishable only under the calibrated contract. */
+export function calibratedScenarioProbability(scenario: FutureScenarioRead): number | null {
+  return scenario.calibrated && scenario.calibration_metadata?.out_of_sample_tested === true
+    ? scenario.probability
+    : null;
 }
 
 export interface FutureDecision {
@@ -247,6 +299,62 @@ export interface FutureTimeline {
   as_of: string;
   days: number;
   events: FutureEventRead[];
+}
+
+export type GlobalRiskHorizon = "1-7d" | "8-30d" | "31-90d";
+export type GlobalRiskLevel =
+  | "LOW"
+  | "MODERATE"
+  | "HIGH"
+  | "CRITICAL"
+  | "INDETERMINATE";
+
+export interface GlobalRiskCoverageRead {
+  status: "COMPLETE" | "SUFFICIENT" | "INSUFFICIENT";
+  available_families: string[];
+  available_family_count: number;
+  usable_families: string[];
+  usable_family_count: number;
+  unavailable_families: string[];
+  total_families: 5;
+  authorized_event_count: number;
+  limitations: string[];
+}
+
+export interface GlobalRiskHorizonRead {
+  risk_level: GlobalRiskLevel;
+  horizon: GlobalRiskHorizon;
+  assessment_time: string;
+  data_coverage: GlobalRiskCoverageRead;
+  main_drivers: string[];
+  counter_signals: string[];
+  change_since_previous: "INCREASED" | "DECREASED" | "UNCHANGED" | "NOT_AVAILABLE";
+  evidence_ids: string[];
+  invalidation_conditions: string[];
+}
+
+export interface GlobalRiskRead {
+  asset: string;
+  analysis_id: string;
+  assessment_time: string;
+  risk_horizons: GlobalRiskHorizonRead[];
+  methodology: string;
+}
+
+const GLOBAL_RISK_HORIZONS: readonly GlobalRiskHorizon[] = [
+  "1-7d",
+  "8-30d",
+  "31-90d",
+];
+
+/** Keep only the three contractual windows and always render them in order. */
+export function orderedGlobalRiskHorizons(
+  horizons: readonly GlobalRiskHorizonRead[],
+): GlobalRiskHorizonRead[] {
+  return GLOBAL_RISK_HORIZONS.flatMap((horizon) => {
+    const reading = horizons.find((candidate) => candidate.horizon === horizon);
+    return reading ? [reading] : [];
+  });
 }
 
 export interface AuditData {
@@ -616,13 +724,20 @@ export interface Contradiction {
 export interface Scenario {
   name: string;
   label: string;
-  probability: number;
+  probability: number | null;
   calibrated: boolean;
+  calibration_metadata?: Record<string, unknown> | null;
   narrative: string;
+  horizon?: string;
+  affected_assets?: string[];
+  confirmed_evidence?: string[];
   conditions: string[];
+  confirmation_signals?: string[];
   key_levels: Record<string, number>;
   catalysts: string[];
   invalidation: string;
+  uncertainties?: string[];
+  prudence_note?: string;
 }
 
 export interface Synthesis {
@@ -725,9 +840,20 @@ export interface Alert {
   kind: string;
   importance: string;
   asset: string | null;
+  asset_id: string | null;
   title: string;
   detail: string;
   triggered_at: string;
+  evidence_ids: string[];
+  acknowledged: boolean;
+  notification_id: string;
+  trigger_id: string | null;
+  analysis_id: string | null;
+  created_at: string;
+  delivered_at: string | null;
+  delivery_status: "STORED" | "DELIVERED" | "FAILED" | "UNKNOWN" | string;
+  reason: string;
+  source_snapshot: Record<string, unknown>;
 }
 
 export interface GlobalMarket {

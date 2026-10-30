@@ -26,7 +26,6 @@ log = get_logger("history.backfill")
 
 BINANCE_SPOT = "https://api.binance.com"
 BINANCE_FUTURES = "https://fapi.binance.com"
-YAHOO = "https://query1.finance.yahoo.com"
 
 _INTERVAL = {
     Timeframe.M15: "15m", Timeframe.H1: "1h", Timeframe.H4: "4h",
@@ -137,6 +136,12 @@ async def refresh_recent_ohlcv(
         }
 
     candles.sort(key=lambda candle: candle.timestamp)
+    observed_at = datetime.now(UTC)
+    closed_candles = [
+        candle
+        for candle in candles
+        if store.candle_is_closed(candle.timestamp, timeframe, as_of=observed_at)
+    ]
     written = store.save_candles(asset, timeframe, candles, source=source)
     coverage = store.candle_coverage(asset, timeframe)
     store.record_backfill(
@@ -150,6 +155,7 @@ async def refresh_recent_ohlcv(
         complete=False,
         note=(
             f"recent refresh: {len(candles)} rows, {written} new"
+            f", {len(candles) - len(closed_candles)} still forming"
             + (f", {parse_errors} invalid ignored" if parse_errors else "")
         ),
     )
@@ -159,8 +165,19 @@ async def refresh_recent_ohlcv(
         "error": None,
         "source": source,
         "fetched": len(candles),
+        "fetched_closed": len(closed_candles),
+        "fetched_incomplete": len(candles) - len(closed_candles),
         "new_rows": written,
-        "last_candle_time": candles[-1].timestamp,
+        # Backwards-compatible analytical field: never label a forming bar as
+        # the last candle.  The raw stored open is exposed separately for
+        # operational diagnostics and can be updated by the next refresh.
+        "last_candle_time": (
+            closed_candles[-1].timestamp if closed_candles else None
+        ),
+        "latest_stored_candle_time": candles[-1].timestamp,
+        "latest_stored_candle_closed": store.candle_is_closed(
+            candles[-1].timestamp, timeframe, as_of=observed_at
+        ),
     }
 
 
@@ -351,57 +368,45 @@ async def backfill_open_interest(asset: Asset) -> dict[str, Any]:
     return {"asset": asset.value, "metric": "oi.value", "new_rows": written, **coverage}
 
 
-# Yahoo symbol -> our metric name. These are the macro series the analysis uses.
-_YAHOO_SERIES = {
-    "^GSPC": "macro.sp500", "^IXIC": "macro.nasdaq", "^DJI": "macro.dow",
-    "DX-Y.NYB": "macro.dxy", "^VIX": "macro.vix", "CL=F": "macro.oil_wti",
-    "GC=F": "macro.gold", "^TNX": "macro.us10y_yahoo", "^FVX": "macro.us5y_yahoo",
-    "^IRX": "macro.us13w_yahoo",
-}
-
-
 async def backfill_macro(years: int = 8) -> list[dict[str, Any]]:
-    """Daily macro history from Yahoo Finance (no key required)."""
-    http = get_http()
+    """Daily licensed inter-market history through the configured registry.
+
+    The provider owns symbol validation and null handling.  If no licensed
+    source is configured, the backfill returns an explicit error and leaves
+    existing history untouched.
+    """
+
+    from ..providers.base import FetchRequest
+    from ..providers.registry import get_registry
+
+    requested_rows = max(30, min(years * 366, 5000))
+    result = await get_registry().fetch(
+        FetchRequest(capability="macro.indices", limit=requested_rows)
+    )
+    if not result.ok:
+        return [{
+            "metric": "macro.indices",
+            "rows": 0,
+            "source": result.provider,
+            "error": result.user_message[:160],
+        }]
+
+    by_metric: dict[str, list[Any]] = {}
+    for observation in result.observations:
+        if observation.numeric_value is not None:
+            by_metric.setdefault(observation.metric, []).append(observation)
+
     out: list[dict[str, Any]] = []
-
-    for symbol, metric in _YAHOO_SERIES.items():
-        res = await http.get_json(
-            f"{YAHOO}/v8/finance/chart/{symbol}",
-            provider="yahoo_backfill",
-            params={"interval": "1d", "range": f"{years}y"},
-            cache_ttl=0, rate_limit_per_min=30, retries=2,
-        )
-        if not res.ok:
-            out.append({"metric": metric, "rows": 0, "error": res.message[:80]})
-            continue
-        try:
-            block = ((res.data or {}).get("chart", {}).get("result") or [{}])[0]
-            stamps = block.get("timestamp") or []
-            closes = (block.get("indicators", {}).get("quote") or [{}])[0].get("close") or []
-        except (KeyError, IndexError, TypeError):
-            out.append({"metric": metric, "rows": 0, "error": "unparsable response"})
-            continue
-
-        points = []
-        for ts_raw, close in zip(stamps, closes, strict=False):
-            # Yahoo returns null on market holidays - skip, never carry forward.
-            if close is None:
-                continue
-            try:
-                points.append((datetime.fromtimestamp(int(ts_raw), tz=UTC), float(close)))
-            except (TypeError, ValueError, OSError):
-                continue
-
-        written = store.save_macro(metric, points, source="yahoo_finance")
+    for metric, observations in sorted(by_metric.items()):
+        written = store.save_macro_observations(observations)
         cov = store.macro_coverage().get(metric, {})
         store.record_backfill(
             dataset="macro", asset=None, timeframe=None,
             earliest=cov.get("start"), latest=cov.get("end"),
-            rows=cov.get("rows", 0), source="yahoo_finance",
+            rows=cov.get("rows", 0), source=result.provider,
             note=f"{metric}: {written} new rows",
         )
-        out.append({"metric": metric, "new_rows": written, **cov})
+        out.append({"metric": metric, "new_rows": written, "source": result.provider, **cov})
 
     return out
 
@@ -419,13 +424,24 @@ async def backfill_fred(years: int = 12) -> list[dict[str, Any]]:
             "error": "UNAVAILABLE - FRED_API_KEY not set (free: https://fredaccount.stlouisfed.org/apikeys)",
         }]
 
-    from ..providers.macro.fred import SERIES
+    from ..providers.macro.fred import SERIES, THIRD_PARTY_SERIES
 
     http = get_http()
     start = (datetime.now(UTC) - timedelta(days=365 * years)).strftime("%Y-%m-%d")
     out: list[dict[str, Any]] = []
 
     for series_id, (metric, _unit, _label) in SERIES.items():
+        if (
+            series_id in THIRD_PARTY_SERIES
+            and not settings.fred_third_party_redistribution_authorized
+        ):
+            out.append({
+                "metric": metric,
+                "series_id": series_id,
+                "rows": 0,
+                "error": "UNAVAILABLE - source-tier redistribution rights not confirmed",
+            })
+            continue
         res = await http.get_json(
             "https://api.stlouisfed.org/fred/series/observations",
             provider="fred_backfill",
@@ -439,19 +455,43 @@ async def backfill_fred(years: int = 12) -> list[dict[str, Any]]:
             out.append({"metric": metric, "rows": 0, "error": res.message[:80]})
             continue
 
-        points = []
+        records: list[dict[str, Any]] = []
         for row in (res.data or {}).get("observations", []):
             raw = row.get("value")
             if raw in (None, ".", ""):
                 continue          # FRED marks missing observations with "."
             try:
-                points.append(
-                    (datetime.strptime(row["date"], "%Y-%m-%d").replace(tzinfo=UTC), float(raw))
-                )
+                stamp = datetime.strptime(row["date"], "%Y-%m-%d").replace(tzinfo=UTC)
+                from ..core.pointintime import estimated_release_time
+
+                available = estimated_release_time(metric, stamp) or (stamp + timedelta(days=1))
+                records.append({
+                    "metric": metric,
+                    "timestamp": stamp,
+                    "value": float(raw),
+                    "source": "FRED (St. Louis Fed)",
+                    "provider": "fred_backfill",
+                    "unit": _unit,
+                    "source_url": f"https://fred.stlouisfed.org/series/{series_id}",
+                    "series_id": series_id,
+                    "license_status": (
+                        "OPERATOR_CONFIRMED"
+                        if series_id in THIRD_PARTY_SERIES
+                        else "FRED_TERMS"
+                    ),
+                    "release_time": available,
+                    "availability": "RECONSTRUCTED_PIT",
+                    "meta": {
+                        "series_id": series_id,
+                        "publication_time": None,
+                        "available_at": available.isoformat(),
+                        "availability_basis": "conservative_series_lag",
+                    },
+                })
             except (KeyError, ValueError, TypeError):
                 continue
 
-        written = store.save_macro(metric, points, source="fred")
+        written = store.save_macro_records(records)
         cov = store.macro_coverage().get(metric, {})
         store.record_backfill(
             dataset="macro_fred", asset=None, timeframe=None,

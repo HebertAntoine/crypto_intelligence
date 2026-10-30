@@ -177,6 +177,15 @@ def test_an_auth_failure_opens_the_circuit_at_once() -> None:
     assert health_of(policy_for("ohlcv"), item, NOW) is SourceHealth.AUTH_ERROR
 
 
+def test_a_final_rate_limit_opens_the_circuit_at_once() -> None:
+    """After bounded HTTP retries, 429 means stop until the cooldown."""
+
+    item = state()
+    record_failure(item, NOW, error_kind="HTTP_429")
+    assert item.circuit == "OPEN"
+    assert health_of(policy_for("ohlcv"), item, NOW) is SourceHealth.RATE_LIMITED
+
+
 # --- section 14: source health is not data freshness ------------------------
 
 

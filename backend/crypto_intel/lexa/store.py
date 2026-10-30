@@ -228,6 +228,10 @@ class LexaNotificationRow(LexaBase):
     kind: Mapped[str] = mapped_column(String(32))
     message: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    delivery_status: Mapped[str] = mapped_column(String(24), default="PENDING")
+    reason: Mapped[str] = mapped_column(Text, default="")
+    source_snapshot: Mapped[dict] = mapped_column(JSON, default=dict)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
@@ -314,9 +318,19 @@ def _factory() -> sessionmaker[Session]:
 
 
 @contextmanager
-def lexa_session() -> Iterator[Session]:
+def lexa_session(*, immediate: bool = False) -> Iterator[Session]:
+    """Open a Lexa transaction.
+
+    ``immediate`` acquires SQLite's write reservation before the first read.
+    It is intentionally opt-in: notification deduplication needs the check and
+    insert to be one atomic operation, while ordinary read paths should not
+    serialize one another.
+    """
+
     session = _factory()()
     try:
+        if immediate:
+            session.connection().exec_driver_sql("BEGIN IMMEDIATE")
         yield session
         session.commit()
     except Exception:

@@ -444,8 +444,11 @@ def record_success(
 def record_failure(state: SourceState, now: datetime, *, error_kind: str) -> None:
     state.consecutive_failures += 1
     state.last_error_kind = error_kind
-    # An auth failure is not a flaky network: one is enough to stop asking.
-    threshold = 1 if error_kind.upper() == "AUTH" else CIRCUIT_FAILURE_THRESHOLD
+    # Auth cannot heal through retry, and a final 429 is an explicit provider
+    # instruction to stop.  The HTTP client has already applied its bounded
+    # backoff before this runtime state is recorded, so both open immediately.
+    immediate = {"AUTH", "HTTP_429", "RATE_LIMITED"}
+    threshold = 1 if error_kind.upper() in immediate else CIRCUIT_FAILURE_THRESHOLD
     if state.circuit == "HALF_OPEN" or state.consecutive_failures >= threshold:
         state.circuit = "OPEN"
         state.opened_at = now

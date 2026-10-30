@@ -60,10 +60,10 @@ class DailyReportEngine:
         edge = self._edge(asset, sections)
         self._crowding(asset, sections, as_of)
         self._volatility(asset, sections, as_of)
-        self._liquidity(sections)
-        self._cross_asset(asset, sections)
-        self._etf(asset, sections)
-        self._macro(sections)
+        self._liquidity(sections, as_of)
+        self._cross_asset(asset, sections, as_of)
+        self._etf(asset, sections, as_of)
+        self._macro(sections, as_of)
         self._network(asset, sections)
         self._catalysts(sections)
         self._analogs(asset, sections)
@@ -253,12 +253,12 @@ class DailyReportEngine:
             section.reason = str(exc)[:120]
         sections.append(section)
 
-    def _liquidity(self, sections: list[Section]) -> None:
+    def _liquidity(self, sections: list[Section], as_of: datetime | None) -> None:
         section = Section("LIQUIDITY")
         try:
             from .cross_asset import LiquidityRegimeEngine
 
-            liquidity = LiquidityRegimeEngine().assess()
+            liquidity = LiquidityRegimeEngine().assess(as_of)
             section.lines = [liquidity.regime.value]
             for name, value in liquidity.components.items():
                 section.lines.append(f"{name}: {value['change_3m_pct']:+.2f}% ({value['direction']})")
@@ -269,19 +269,27 @@ class DailyReportEngine:
             section.reason = str(exc)[:120]
         sections.append(section)
 
-    def _cross_asset(self, asset: Asset, sections: list[Section]) -> None:
+    def _cross_asset(
+        self,
+        asset: Asset,
+        sections: list[Section],
+        as_of: datetime | None,
+    ) -> None:
         section = Section("CROSS-ASSET")
         try:
             from .cross_asset import CrossAssetAnalyzer, CryptoBreadthEngine
 
-            cross = CrossAssetAnalyzer().assess(asset)
+            cross = CrossAssetAnalyzer().assess(asset, as_of)
             measured = [c for c in cross.correlations if c.correlation is not None]
-            for reading in sorted(measured, key=lambda c: -abs(c.correlation))[:4]:
+            for reading in sorted(
+                measured,
+                key=lambda c: -abs(c.correlation or 0.0),
+            )[:4]:
                 section.lines.append(
                     f"{reading.label}: correlation {reading.correlation:+.2f}, "
                     f"beta {reading.beta:+.2f}"
                 )
-            breadth = CryptoBreadthEngine().assess()
+            breadth = CryptoBreadthEngine().assess(as_of)
             section.lines.append(
                 f"breadth {breadth.state} ({breadth.score}/100) — three assets only"
             )
@@ -290,7 +298,12 @@ class DailyReportEngine:
             section.reason = str(exc)[:120]
         sections.append(section)
 
-    def _etf(self, asset: Asset, sections: list[Section]) -> None:
+    def _etf(
+        self,
+        asset: Asset,
+        sections: list[Section],
+        as_of: datetime | None,
+    ) -> None:
         section = Section("ETF")
         if asset is Asset.SOL:
             section.available = False
@@ -298,12 +311,13 @@ class DailyReportEngine:
             sections.append(section)
             return
         try:
+            from ..core.source_rights import observation_is_admissible
             from ..db import repo
 
-            observation = repo.latest_observation(asset, "etf.flow")
-            if observation is None:
+            observation = repo.latest_observation(asset, "etf.flow", as_of=as_of)
+            if observation is None or not observation_is_admissible(observation):
                 section.available = False
-                section.reason = "no ETF flow stored"
+                section.reason = "no ETF flow admissible under the active source-rights policy"
             else:
                 section.lines = [
                     f"latest net flow {observation.value:+.1f}M USD",
@@ -316,17 +330,17 @@ class DailyReportEngine:
             section.reason = str(exc)[:120]
         sections.append(section)
 
-    def _macro(self, sections: list[Section]) -> None:
+    def _macro(self, sections: list[Section], as_of: datetime | None) -> None:
         section = Section("MACRO")
         try:
-            from ..history import store
+            from .cross_asset import _admissible_macro
 
             lines = []
             for metric, label in (
                 ("macro.dxy", "US dollar"), ("macro.vix", "VIX"),
                 ("macro.us10y_yahoo", "10Y yield"), ("macro.nasdaq", "Nasdaq"),
             ):
-                series = store.load_macro(metric)
+                series = _admissible_macro(metric, as_of)
                 if len(series) >= 21:
                     change = (series.iloc[-1] / series.iloc[-21] - 1) * 100
                     lines.append(f"{label}: {change:+.2f}% over 20 sessions")

@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../widgets/color_emoji.dart';
 import '../widgets/mobile_kit.dart';
 import 'lexa_client.dart';
+import 'lexa_notifications_screen.dart';
 import 'lexa_ui.dart';
 
 class LexaHistoryScreen extends StatefulWidget {
@@ -60,10 +61,13 @@ class _LexaHistoryScreenState extends State<LexaHistoryScreen> {
         children: [
           const Text('🎬 Historique',
               style: TextStyle(
-                  color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900)),
           const SizedBox(height: 10),
           Text('Lecture impossible : $message',
-              style: const TextStyle(color: lexaMuted, fontSize: 13.5, height: 1.4)),
+              style: const TextStyle(
+                  color: lexaMuted, fontSize: 13.5, height: 1.4)),
           const SizedBox(height: 14),
           FilledButton(onPressed: _reload, child: const Text('Réessayer')),
         ],
@@ -100,10 +104,26 @@ class _LexaHistoryScreenState extends State<LexaHistoryScreen> {
         key: const ValueKey('lexa-history'),
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 150),
         children: [
-          const Text('🎬 Historique',
-              key: ValueKey('lexa-history-title'),
-              style: TextStyle(
-                  color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900)),
+          Row(children: [
+            const Expanded(
+              child: Text('🎬 Historique',
+                  key: ValueKey('lexa-history-title'),
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900)),
+            ),
+            IconButton(
+              key: const ValueKey('lexa-notifications-button'),
+              tooltip: 'État des alertes Lexa',
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                settings: const RouteSettings(name: '/lexa/notifications'),
+                builder: (_) => LexaNotificationsScreen(client: widget.client),
+              )),
+              icon: const Icon(Icons.notifications_outlined, color: lexaBlue),
+            ),
+          ]),
           Text(
               '${data['analyses_count'] ?? 0} analyses · '
               '${data['days_count'] ?? 0} journées · '
@@ -182,11 +202,15 @@ class _LexaHistoryScreenState extends State<LexaHistoryScreen> {
           Row(children: [
             Text('${analysis['asset']}',
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 16, fontWeight: FontWeight.w900)),
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900)),
             const SizedBox(width: 8),
             Text('${analysis['stance_fr'] ?? ''}',
                 style: const TextStyle(
-                    color: lexaBlue, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    color: lexaBlue,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700)),
             const Spacer(),
             if ('${analysis['price_at_video_fr'] ?? ''}' != '—')
               Text('vidéo : ${analysis['price_at_video_fr']}',
@@ -233,7 +257,9 @@ class _LexaHistoryScreenState extends State<LexaHistoryScreen> {
                     : '${level['value_fr']} – $high',
                 textAlign: TextAlign.right,
                 style: const TextStyle(
-                    color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700)),
           ),
           if (allocation is num) ...[
             const SizedBox(width: 6),

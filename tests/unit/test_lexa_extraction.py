@@ -10,6 +10,7 @@ The model is replaced by a scripted one so each rule is pinned:
   - the extraction prompt carries no reference value
 """
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -230,10 +231,55 @@ def test_a_run_writes_its_files_and_nothing_to_the_database(tmp_path):
         path, FIXTURE.read_text(), title="Test", published_at=None, source="fixture",
         llm=scripted({"ADA": ADA}), prices=lambda *_: None)
     assert payload["schema_version"] == "lexa-extraction/1"
+    assert "fact_checks" in payload
     assert {p.name for p in path.iterdir()} == {"transcript.txt", "extraction.json",
                                                 "report.md", "validation.md"}
     assert not (tmp_path / "lexa" / "lexa.db").exists()
     assert oct((path / "report.md").stat().st_mode)[-3:] == "600"
+
+
+def test_general_transcript_claims_enter_fact_check_without_promoting_levels():
+    result = _run()
+    transcript = """
+    [00:10] Le Nasdaq a perdu 10 % ce mois-ci.
+    [00:20] Si Bitcoin casse son support, il pourrait chuter de 30 %.
+    [00:30] La zone d'achat indiquée est 62 000 dollars.
+    """
+
+    checks = test_run._verify_extracted_claims(result, None, transcript)
+
+    assert len(checks) == 2
+    assert {item["verification_status"] for item in checks} == {"AMBIGUOUS", "FORECAST"}
+    assert all("62 000" not in item["original_text"] for item in checks)
+
+
+def test_historical_current_wording_is_checked_at_the_video_date():
+    result = _run()
+    published = datetime(2026, 9, 20, 20, tzinfo=UTC)
+
+    checks = test_run._verify_extracted_claims(
+        result,
+        published,
+        "[00:10] Le Bitcoin gagne 5 % aujourd'hui.",
+    )
+
+    bitcoin = next(item for item in checks if "Bitcoin" in item["original_text"])
+    assert datetime.fromisoformat(
+        bitcoin["source_timestamp"].replace("Z", "+00:00")
+    ) == published
+    assert bitcoin["verification_status"] != "OUTDATED"
+
+
+def test_video_wide_market_checks_are_kept_with_each_imported_asset():
+    checks = [
+        {"claim_id": "market", "asset_context": "MARCHÉ"},
+        {"claim_id": "btc", "asset_context": "BTC"},
+        {"claim_id": "eth", "asset_context": "ETH"},
+    ]
+
+    selected = test_run._fact_checks_for_asset(checks, "BTC")
+
+    assert [item["claim_id"] for item in selected] == ["market", "btc"]
 
 
 def test_an_unreadable_transcript_is_refused():

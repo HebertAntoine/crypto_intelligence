@@ -151,7 +151,8 @@ class FutureFactorRead {
     this.availability = 'AVAILABLE',
   });
 
-  factory FutureFactorRead.fromJson(Map<String, dynamic> json) => FutureFactorRead(
+  factory FutureFactorRead.fromJson(Map<String, dynamic> json) =>
+      FutureFactorRead(
         key: json['key']?.toString() ?? '',
         label: json['label']?.toString() ?? '',
         direction: json['direction']?.toString() ?? 'UNKNOWN',
@@ -160,7 +161,8 @@ class FutureFactorRead {
         confidence: _number(json['confidence']) ?? 0,
         freshness: json['freshness']?.toString() ?? 'UNAVAILABLE',
         rationale: json['rationale']?.toString() ?? '',
-        impactOnDirection: json['impact_on_direction']?.toString() ?? 'MEASURED',
+        impactOnDirection:
+            json['impact_on_direction']?.toString() ?? 'MEASURED',
         causalChain: (json['causal_chain'] as List? ?? const [])
             .map((value) => value.toString())
             .toList(),
@@ -212,7 +214,8 @@ class FutureSynthesisRead {
     this.alternativeScenario,
   });
 
-  static List<T> _list<T>(dynamic raw, T Function(Map<String, dynamic>) build) =>
+  static List<T> _list<T>(
+          dynamic raw, T Function(Map<String, dynamic>) build) =>
       (raw as List? ?? const [])
           .whereType<Map>()
           .map((value) => build(Map<String, dynamic>.from(value)))
@@ -227,11 +230,11 @@ class FutureSynthesisRead {
         whyNow: _list(json['why_now'], FutureEvidenceRead.fromJson),
         counterEvidence:
             _list(json['counter_evidence'], FutureEvidenceRead.fromJson),
-        confirmationConditions:
-            _list(json['confirmation_conditions'], FutureConditionRead.fromJson),
+        confirmationConditions: _list(
+            json['confirmation_conditions'], FutureConditionRead.fromJson),
         confirmationMet: json['confirmation_met']?.toString() ?? '',
-        invalidationConditions:
-            _list(json['invalidation_conditions'], FutureConditionRead.fromJson),
+        invalidationConditions: _list(
+            json['invalidation_conditions'], FutureConditionRead.fromJson),
         mainScenario: json['main_scenario'] is Map
             ? FutureScenarioBriefRead.fromJson(
                 Map<String, dynamic>.from(json['main_scenario'] as Map))
@@ -422,6 +425,53 @@ class FutureEventRead {
   }
 }
 
+class FutureScenarioCalibrationRead {
+  final String modelName;
+  final String modelVersion;
+  final String targetDefinition;
+  final String targetHorizon;
+  final String calibrationMethod;
+  final bool outOfSampleTested;
+  final int outOfSampleSampleSize;
+  final String evaluationMetric;
+  final double evaluationScore;
+  final DateTime? evaluatedAt;
+  final List<String> evidenceIds;
+
+  const FutureScenarioCalibrationRead({
+    required this.modelName,
+    required this.modelVersion,
+    required this.targetDefinition,
+    required this.targetHorizon,
+    required this.calibrationMethod,
+    required this.outOfSampleTested,
+    required this.outOfSampleSampleSize,
+    required this.evaluationMetric,
+    required this.evaluationScore,
+    required this.evidenceIds,
+    this.evaluatedAt,
+  });
+
+  factory FutureScenarioCalibrationRead.fromJson(Map<String, dynamic> json) =>
+      FutureScenarioCalibrationRead(
+        modelName: json['model_name']?.toString() ?? '',
+        modelVersion: json['model_version']?.toString() ?? '',
+        targetDefinition: json['target_definition']?.toString() ?? '',
+        targetHorizon: json['target_horizon']?.toString() ?? '',
+        calibrationMethod: json['calibration_method']?.toString() ?? '',
+        outOfSampleTested: json['out_of_sample_tested'] == true,
+        outOfSampleSampleSize:
+            (_number(json['out_of_sample_sample_size']) ?? 0).round(),
+        evaluationMetric: json['evaluation_metric']?.toString() ?? '',
+        evaluationScore: _number(json['evaluation_score']) ?? 0,
+        evaluatedAt: DateTime.tryParse(json['evaluated_at']?.toString() ?? '')
+            ?.toLocal(),
+        evidenceIds: (json['evidence_ids'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+      );
+}
+
 class FutureScenarioRead {
   final String id;
   final double? probability;
@@ -430,6 +480,19 @@ class FutureScenarioRead {
   final String movement;
   final double confidence;
   final List<String> eventChain;
+  final String hypothesis;
+  final String horizon;
+  final List<String> affectedAssets;
+  final List<String> confirmedEvidence;
+  final List<String> evidenceIds;
+  final List<String> conditions;
+  final List<String> confirmationSignals;
+  final List<String> invalidationConditions;
+  final List<String> uncertainties;
+  final String prudenceNote;
+  final bool calibrated;
+  final DateTime? probabilityObservedAt;
+  final FutureScenarioCalibrationRead? calibrationMetadata;
 
   const FutureScenarioRead({
     required this.id,
@@ -437,9 +500,28 @@ class FutureScenarioRead {
     required this.movement,
     required this.confidence,
     required this.eventChain,
+    this.hypothesis = '',
+    this.horizon = '',
+    this.affectedAssets = const [],
+    this.confirmedEvidence = const [],
+    this.evidenceIds = const [],
+    this.conditions = const [],
+    this.confirmationSignals = const [],
+    this.invalidationConditions = const [],
+    this.uncertainties = const [],
+    this.prudenceNote = '',
+    this.calibrated = false,
+    this.probabilityObservedAt,
+    this.calibrationMetadata,
     this.probability,
     this.probabilitySource,
   });
+
+  /// A number without the complete out-of-sample calibration audit is absent.
+  double? get calibratedProbability =>
+      calibrated && calibrationMetadata?.outOfSampleTested == true
+          ? probability
+          : null;
 
   factory FutureScenarioRead.fromJson(Map<String, dynamic> json) =>
       FutureScenarioRead(
@@ -452,7 +534,58 @@ class FutureScenarioRead {
         eventChain: (json['event_chain'] as List? ?? const [])
             .map((value) => value.toString())
             .toList(),
+        hypothesis: json['hypothesis']?.toString() ?? '',
+        horizon: json['horizon']?.toString() ?? '',
+        affectedAssets: (json['affected_assets'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        confirmedEvidence: (json['confirmed_evidence'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        evidenceIds: (json['evidence_ids'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        conditions: (json['conditions'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        confirmationSignals: (json['confirmation_signals'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        invalidationConditions:
+            (json['invalidation_conditions'] as List? ?? const [])
+                .map((value) => value.toString())
+                .toList(),
+        uncertainties: (json['uncertainties'] as List? ?? const [])
+            .map((value) => value.toString())
+            .toList(),
+        prudenceNote: json['prudence_note']?.toString() ?? '',
+        calibrated: json['calibrated'] == true,
+        probabilityObservedAt: DateTime.tryParse(
+          json['probability_observed_at']?.toString() ?? '',
+        )?.toLocal(),
+        calibrationMetadata: json['calibration_metadata'] is Map
+            ? FutureScenarioCalibrationRead.fromJson(
+                Map<String, dynamic>.from(json['calibration_metadata'] as Map),
+              )
+            : null,
       );
+}
+
+/// Preserve the only three public scenarios, in their contractual order.
+List<FutureScenarioRead> orderedPublicFutureScenarios(
+  Iterable<FutureScenarioRead> scenarios,
+) {
+  const ids = ['base_case', 'bullish_case', 'bearish_case'];
+  final ordered = <FutureScenarioRead>[];
+  for (final id in ids) {
+    for (final scenario in scenarios) {
+      if (scenario.id == id) {
+        ordered.add(scenario);
+        break;
+      }
+    }
+  }
+  return ordered;
 }
 
 class FutureDecisionRead {
@@ -539,7 +672,8 @@ class FutureDecisionRead {
       if (item['status']?.toString() != 'AVAILABLE') continue;
       final outcome = item['expected_outcome'];
       final label = outcome is Map ? outcome['outcome']?.toString() : null;
-      final probability = outcome is Map ? _number(outcome['probability']) : null;
+      final probability =
+          outcome is Map ? _number(outcome['probability']) : null;
       if (label == null || label.isEmpty) continue;
       if (probability == null) return label;
       return '$label (${(probability * 100).round()} % implicite)';
@@ -588,10 +722,10 @@ class FutureDecisionRead {
           ? FutureHierarchyRead.fromJson(
               Map<String, dynamic>.from(json['hierarchy'] as Map))
           : null,
-      noMeasurableEdge: ((json['consistency'] as Map?)?['issues'] as List? ??
-              const [])
-          .whereType<Map>()
-          .any((issue) => issue['code'] == 'NO_MEASURABLE_EDGE'),
+      noMeasurableEdge:
+          ((json['consistency'] as Map?)?['issues'] as List? ?? const [])
+              .whereType<Map>()
+              .any((issue) => issue['code'] == 'NO_MEASURABLE_EDGE'),
       coverage: familyBlock['coverage']?.toString() ?? '0/5 disponibles',
       reasons: (json['reasons'] as List? ?? const [])
           .whereType<Map>()
@@ -611,11 +745,10 @@ class FutureDecisionRead {
           .map((value) =>
               FutureFamilyRead.fromJson(Map<String, dynamic>.from(value)))
           .toList(),
-      scenarios: (json['scenarios'] as List? ?? const [])
-          .whereType<Map>()
-          .map((value) =>
-              FutureScenarioRead.fromJson(Map<String, dynamic>.from(value)))
-          .toList(),
+      scenarios: orderedPublicFutureScenarios(
+        (json['scenarios'] as List? ?? const []).whereType<Map>().map((value) =>
+            FutureScenarioRead.fromJson(Map<String, dynamic>.from(value))),
+      ),
       nextEvent: next is Map
           ? FutureEventRead.fromJson(Map<String, dynamic>.from(next))
           : null,
@@ -640,6 +773,134 @@ class FutureTimelineRead {
       );
 }
 
+/// One fail-closed diagnosis over the exact 1-7d, 8-30d and 31-90d windows.
+/// No probability field exists by design: these are risk states, not return
+/// predictions.
+class GlobalRiskRead {
+  final String asset;
+  final String analysisId;
+  final DateTime? assessmentTime;
+  final List<GlobalRiskHorizonRead> horizons;
+  final String methodology;
+
+  const GlobalRiskRead({
+    required this.asset,
+    required this.analysisId,
+    required this.assessmentTime,
+    required this.horizons,
+    required this.methodology,
+  });
+
+  factory GlobalRiskRead.fromJson(Map<String, dynamic> json) {
+    final parsed = (json['risk_horizons'] as List? ?? const [])
+        .whereType<Map>()
+        .map((value) => GlobalRiskHorizonRead.fromJson(
+              Map<String, dynamic>.from(value),
+            ));
+    return GlobalRiskRead(
+      asset: json['asset']?.toString() ?? '',
+      analysisId: json['analysis_id']?.toString() ?? '',
+      assessmentTime: DateTime.tryParse(
+        json['assessment_time']?.toString() ?? '',
+      )?.toLocal(),
+      horizons: orderedGlobalRiskHorizons(parsed),
+      methodology: json['methodology']?.toString() ?? '',
+    );
+  }
+}
+
+class GlobalRiskHorizonRead {
+  final String level;
+  final String horizon;
+  final DateTime? assessmentTime;
+  final GlobalRiskCoverageRead coverage;
+  final List<String> mainDrivers;
+  final List<String> counterSignals;
+  final String changeSincePrevious;
+  final List<String> evidenceIds;
+  final List<String> invalidationConditions;
+
+  const GlobalRiskHorizonRead({
+    required this.level,
+    required this.horizon,
+    required this.assessmentTime,
+    required this.coverage,
+    required this.mainDrivers,
+    required this.counterSignals,
+    required this.changeSincePrevious,
+    required this.evidenceIds,
+    required this.invalidationConditions,
+  });
+
+  factory GlobalRiskHorizonRead.fromJson(Map<String, dynamic> json) =>
+      GlobalRiskHorizonRead(
+        level: json['risk_level']?.toString() ?? 'INDETERMINATE',
+        horizon: json['horizon']?.toString() ?? '',
+        assessmentTime: DateTime.tryParse(
+          json['assessment_time']?.toString() ?? '',
+        )?.toLocal(),
+        coverage: GlobalRiskCoverageRead.fromJson(
+          Map<String, dynamic>.from(
+            json['data_coverage'] as Map? ?? const {},
+          ),
+        ),
+        mainDrivers: _strings(json['main_drivers']),
+        counterSignals: _strings(json['counter_signals']),
+        changeSincePrevious:
+            json['change_since_previous']?.toString() ?? 'NOT_AVAILABLE',
+        evidenceIds: _strings(json['evidence_ids']),
+        invalidationConditions: _strings(json['invalidation_conditions']),
+      );
+}
+
+class GlobalRiskCoverageRead {
+  final String status;
+  final List<String> availableFamilies;
+  final List<String> usableFamilies;
+  final List<String> unavailableFamilies;
+  final int totalFamilies;
+  final int authorizedEventCount;
+  final List<String> limitations;
+
+  const GlobalRiskCoverageRead({
+    required this.status,
+    required this.availableFamilies,
+    required this.usableFamilies,
+    required this.unavailableFamilies,
+    required this.totalFamilies,
+    required this.authorizedEventCount,
+    required this.limitations,
+  });
+
+  factory GlobalRiskCoverageRead.fromJson(Map<String, dynamic> json) =>
+      GlobalRiskCoverageRead(
+        status: json['status']?.toString() ?? 'INSUFFICIENT',
+        availableFamilies: _strings(json['available_families']),
+        usableFamilies: _strings(json['usable_families']),
+        unavailableFamilies: _strings(json['unavailable_families']),
+        totalFamilies: (json['total_families'] as num?)?.toInt() ?? 5,
+        authorizedEventCount:
+            (json['authorized_event_count'] as num?)?.toInt() ?? 0,
+        limitations: _strings(json['limitations']),
+      );
+}
+
+/// Reject unsupported windows and preserve the exact public order.
+List<GlobalRiskHorizonRead> orderedGlobalRiskHorizons(
+  Iterable<GlobalRiskHorizonRead> horizons,
+) {
+  const expected = ['1-7d', '8-30d', '31-90d'];
+  final ordered = <GlobalRiskHorizonRead>[];
+  for (final horizon in expected) {
+    for (final reading in horizons) {
+      if (reading.horizon == horizon) {
+        ordered.add(reading);
+        break;
+      }
+    }
+  }
+  return ordered;
+}
 
 /// One ranked driver: an event or a measured factor.
 class FutureDriverRead {
@@ -748,7 +1009,8 @@ class FutureHierarchyRead {
   factory FutureHierarchyRead.fromJson(Map<String, dynamic> json) {
     List<FutureDriverRead> drivers(Object? raw) => (raw as List? ?? const [])
         .whereType<Map>()
-        .map((item) => FutureDriverRead.fromJson(Map<String, dynamic>.from(item)))
+        .map((item) =>
+            FutureDriverRead.fromJson(Map<String, dynamic>.from(item)))
         .toList();
     final whale = json['whale_status'] is Map
         ? Map<String, dynamic>.from(json['whale_status'] as Map)
@@ -777,7 +1039,6 @@ class FutureHierarchyRead {
     );
   }
 }
-
 
 List<String> _strings(Object? raw) =>
     (raw as List? ?? const []).map((item) => item.toString()).toList();
@@ -855,7 +1116,8 @@ class AnalysisMetricRead {
         status: json['status']?.toString() ?? 'UNAVAILABLE',
         displayValue: json['display_value']?.toString() ?? '—',
         deltaLabel: json['delta_label']?.toString() ?? '',
-        timestamp: DateTime.tryParse(json['timestamp']?.toString() ?? '')?.toLocal(),
+        timestamp:
+            DateTime.tryParse(json['timestamp']?.toString() ?? '')?.toLocal(),
         source: json['source']?.toString() ?? '',
         sourceTier: json['source_tier']?.toString() ?? '',
         state: json['state']?.toString() ?? 'UNKNOWN',
@@ -864,9 +1126,11 @@ class AnalysisMetricRead {
         whyShort: json['why_short']?.toString() ?? '',
         priority: (_number(json['priority']) ?? 2).round(),
         periodLabel: json['period_label']?.toString() ?? '',
-        publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '')?.toLocal(),
+        publishedAt: DateTime.tryParse(json['published_at']?.toString() ?? '')
+            ?.toLocal(),
         publicationEstimated: json['publication_estimated'] == true,
-        fetchedAt: DateTime.tryParse(json['fetched_at']?.toString() ?? '')?.toLocal(),
+        fetchedAt:
+            DateTime.tryParse(json['fetched_at']?.toString() ?? '')?.toLocal(),
         rawValue: json['raw_value']?.toString() ?? '',
         importance: json['importance']?.toString() ?? 'MEDIUM',
       );
@@ -890,7 +1154,8 @@ class AnalysisRowRead {
     this.detail = '',
   });
 
-  factory AnalysisRowRead.fromJson(Map<String, dynamic> json) => AnalysisRowRead(
+  factory AnalysisRowRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisRowRead(
         label: json['label']?.toString() ?? '',
         value: json['value']?.toString() ?? '—',
         tone: json['tone']?.toString() ?? 'WHITE',
@@ -921,7 +1186,8 @@ class AnalysisSectionRead {
     required this.secondary,
   });
 
-  factory AnalysisSectionRead.fromJson(Map<String, dynamic> json) => AnalysisSectionRead(
+  factory AnalysisSectionRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisSectionRead(
         emoji: json['emoji']?.toString() ?? '',
         title: json['title']?.toString() ?? '',
         verdict: json['verdict']?.toString() ?? '',
@@ -962,7 +1228,8 @@ class AnalysisFamilyViewRead {
       AnalysisFamilyViewRead(
         sections: (json['sections'] as List? ?? const [])
             .whereType<Map>()
-            .map((s) => AnalysisSectionRead.fromJson(Map<String, dynamic>.from(s)))
+            .map((s) =>
+                AnalysisSectionRead.fromJson(Map<String, dynamic>.from(s)))
             .toList(),
         lecture: _strings(json['lecture']),
         changes: _strings(json['changes']),
@@ -981,7 +1248,8 @@ class AnalysisBadgeRead {
   final String label;
   final String tone;
 
-  const AnalysisBadgeRead({this.emoji = '', this.label = '', this.tone = 'WHITE'});
+  const AnalysisBadgeRead(
+      {this.emoji = '', this.label = '', this.tone = 'WHITE'});
 
   bool get isEmpty => label.isEmpty;
 
@@ -1009,7 +1277,8 @@ class AnalysisReasonRead {
     required this.tone,
   });
 
-  factory AnalysisReasonRead.fromJson(Map<String, dynamic> json) => AnalysisReasonRead(
+  factory AnalysisReasonRead.fromJson(Map<String, dynamic> json) =>
+      AnalysisReasonRead(
         emoji: json['emoji']?.toString() ?? '•',
         title: json['title']?.toString() ?? '',
         detail: json['detail']?.toString() ?? '',
@@ -1079,7 +1348,8 @@ class AnalysisSummaryRead {
     this.displayFamilies = const [],
   });
 
-  bool get isEmpty => sentence.isEmpty && reasons.isEmpty && homeFamilies.isEmpty;
+  bool get isEmpty =>
+      sentence.isEmpty && reasons.isEmpty && homeFamilies.isEmpty;
   bool get hasValidationWarning => validationStatus == 'NO_EDGE';
 
   factory AnalysisSummaryRead.fromJson(Object? raw) {
@@ -1098,7 +1368,8 @@ class AnalysisSummaryRead {
           .toList(),
       homeFamilies: (json['home_families'] as List? ?? const [])
           .whereType<Map>()
-          .map((f) => AnalysisHomeFamilyRead.fromJson(Map<String, dynamic>.from(f)))
+          .map((f) =>
+              AnalysisHomeFamilyRead.fromJson(Map<String, dynamic>.from(f)))
           .toList(),
       validationStatus: validation['status']?.toString() ?? '',
       validationMessage: validation['message']?.toString() ?? '',
@@ -1153,7 +1424,8 @@ class AnalysisFamilyRead {
 
   /// The grouped layout computed by the backend; empty on older snapshots.
   AnalysisFamilyViewRead get view => extra['view'] is Map
-      ? AnalysisFamilyViewRead.fromJson(Map<String, dynamic>.from(extra['view'] as Map))
+      ? AnalysisFamilyViewRead.fromJson(
+          Map<String, dynamic>.from(extra['view'] as Map))
       : const AnalysisFamilyViewRead();
 
   AnalysisMetricRead? metric(String? key) {
@@ -1195,7 +1467,8 @@ class AnalysisFamilyRead {
         importantValues: _strings(json['important_values']),
         metrics: (json['metrics'] as List? ?? const [])
             .whereType<Map>()
-            .map((m) => AnalysisMetricRead.fromJson(Map<String, dynamic>.from(m)))
+            .map((m) =>
+                AnalysisMetricRead.fromJson(Map<String, dynamic>.from(m)))
             .toList(),
         unavailableReason: json['unavailable_reason']?.toString() ?? '',
         extra: _map(json['extra']),
@@ -1311,7 +1584,10 @@ class FutureAnalysisRead {
         ? summary.displayFamilies
         : familyOrder.where((k) => k != 'liquidity').toList();
     final byKey = {for (final f in families) f.family: f};
-    return [for (final key in order) if (byKey[key] != null) byKey[key]!];
+    return [
+      for (final key in order)
+        if (byKey[key] != null) byKey[key]!
+    ];
   }
 
   factory FutureAnalysisRead.fromJson(Map<String, dynamic> json) {
@@ -1323,7 +1599,8 @@ class FutureAnalysisRead {
       confidence: (_number(json['confidence']) ?? 0).round(),
       confidenceMeaning: json['confidence_meaning']?.toString() ?? '',
       dataQuality: (_number(json['data_quality']) ?? 0).round(),
-      newestData: DateTime.tryParse(json['newest_data']?.toString() ?? '')?.toLocal(),
+      newestData:
+          DateTime.tryParse(json['newest_data']?.toString() ?? '')?.toLocal(),
       headline: json['headline']?.toString() ?? '',
       subtitle: json['subtitle']?.toString() ?? '',
       reasons: _strings(json['reasons']),
@@ -1336,7 +1613,8 @@ class FutureAnalysisRead {
       blockingGate: json['blocking_gate']?.toString(),
       homeFactors: (json['home_factors'] as List? ?? const [])
           .whereType<Map>()
-          .map((f) => AnalysisHomeFactorRead.fromJson(Map<String, dynamic>.from(f)))
+          .map((f) =>
+              AnalysisHomeFactorRead.fromJson(Map<String, dynamic>.from(f)))
           .toList(),
       families: [
         for (final key in familyOrder)

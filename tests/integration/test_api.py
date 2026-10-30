@@ -138,6 +138,30 @@ class TestGlobalAndAux:
         assert isinstance(client.get("/api/reports").json(), list)
 
 
+class TestClaimVerification:
+    def test_forecast_is_exposed_as_scenario_not_fact(self, client):
+        response = client.post(
+            "/api/market-intelligence/claims/verify",
+            json={
+                "text": "Si le support casse, Bitcoin pourrait chuter de 30 %.",
+                "source_timestamp": "2026-10-26T12:00:00Z",
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["verification_status"] == "FORECAST"
+        assert payload["calculated_value"] is None
+
+    def test_source_timestamp_is_required(self, client):
+        response = client.post(
+            "/api/market-intelligence/claims/verify",
+            json={"text": "Bitcoin a perdu 10 %."},
+        )
+
+        assert response.status_code == 422
+
+
 class TestExplainability:
     def test_why_returns_full_provenance(self, client):
         """Clicking a conclusion must reveal source, value and timestamp."""

@@ -31,8 +31,14 @@ from crypto_intel.engines.market_radar import AttentionLevel, EventDirection
 NOW = datetime(2026, 10, 7, 17, 30, tzinfo=UTC)
 
 
-def point(stamp, value):
-    return Ns(timestamp=stamp, value=value, available_at=stamp, source="test", meta={})
+def point(stamp, value, *, meta=None, source="test"):
+    return Ns(
+        timestamp=stamp,
+        value=value,
+        available_at=stamp,
+        source=source,
+        meta=meta or {},
+    )
 
 
 def series(metric_values, *, days=400, move_days=25):
@@ -129,10 +135,35 @@ def test_an_easing_fed_inside_credit_stress_is_not_read_as_positive():
 
 
 def test_oil_only_counts_when_the_move_is_large_enough_to_be_macro():
-    small = series({"macro.oil_wti": (80.0, 83.0)})
+    # Give the empirical percentile an actual history to compare with.  A
+    # perfectly flat synthetic past followed by one ramp makes a +3.75 % and
+    # a +18.75 % ramp occupy the same rank, which cannot calibrate amplitude.
+    history = []
+    for i in range(400):
+        age = 399 - i
+        value = 80.0 + ((i % 45) - 22) * 0.22
+        history.append(point(NOW - timedelta(days=age), value))
+
+    small_points = list(history)
+    small_base = small_points[-31].value
+    for offset in range(30):
+        share = (offset + 1) / 30
+        small_points[-30 + offset] = point(
+            small_points[-30 + offset].timestamp,
+            small_base + (83.0 - small_base) * share,
+        )
+    small = {"macro.oil_wti": small_points}
     assert read_oil(ctx(small), BY_KEY["oil"]).direction is EventDirection.NEUTRAL
 
-    shock = series({"macro.oil_wti": (80.0, 95.0)})
+    shock_points = list(history)
+    shock_base = shock_points[-31].value
+    for offset in range(30):
+        share = (offset + 1) / 30
+        shock_points[-30 + offset] = point(
+            shock_points[-30 + offset].timestamp,
+            shock_base + (95.0 - shock_base) * share,
+        )
+    shock = {"macro.oil_wti": shock_points}
     reading = read_oil(ctx(shock), BY_KEY["oil"])
     assert reading.direction is EventDirection.UNFAVORABLE
     # Through inflation expectations, never as a direct crypto signal.
@@ -157,6 +188,113 @@ def test_a_driver_without_a_source_is_declared_never_neutral():
 def test_an_unavailable_driver_never_reaches_the_top():
     radar = build(View({"macro.real10y": [point(NOW, 2.5)]}), now=NOW)
     assert all(d["available"] for d in radar["top"])
+
+
+def test_signal_payload_exposes_the_complete_catalogue_contract():
+    radar = build(View({"macro.real10y": [point(NOW, 2.5)]}), now=NOW)
+    signal = next(item for item in radar["drivers"] if item["key"] == "yields")
+
+    required = {
+        "signal_id", "name", "category", "geographic_scope", "associated_assets",
+        "current_value", "previous_value", "delta", "reference_window",
+        "historical_percentile", "release_frequency", "last_observation_at",
+        "last_publication_at", "next_event_at", "source", "data_quality",
+        "attention", "direction", "relevance_score", "explanation",
+        "attention_level", "invalidation_conditions", "source_url",
+        "primary_metric", "historical_series",
+    }
+    assert required <= signal.keys()
+    assert {item["signal_id"] for item in radar["drivers"]} == {
+        f"S{number:02d}" for number in range(1, 16)
+    }
+
+
+def test_signal_contract_exposes_previous_value_delta_and_reference_history():
+    points = [
+        point(
+            NOW - timedelta(days=1),
+            2.4,
+            meta={
+                "publication_time": (NOW - timedelta(days=1)).isoformat(),
+                "source_url": "https://home.treasury.gov/resource-center/data-chart-center",
+            },
+            source="U.S. Treasury",
+        ),
+        point(
+            NOW,
+            2.6,
+            meta={
+                "publication_time": NOW.isoformat(),
+                "source_url": "https://home.treasury.gov/resource-center/data-chart-center",
+            },
+            source="U.S. Treasury",
+        ),
+    ]
+
+    radar = build(View({"macro.real10y": points}), now=NOW)
+    signal = next(item for item in radar["drivers"] if item["key"] == "yields")
+
+    assert signal["primary_metric"] == "macro.real10y"
+    assert signal["current_value"] == 2.6
+    assert signal["previous_value"] == 2.4
+    assert abs(signal["delta"] - 0.2) < 1e-9
+    assert len(signal["historical_series"]) == 2
+    assert signal["source_url"].startswith("https://home.treasury.gov/")
+    assert signal["attention_level"] == signal["attention"]
+
+
+def test_freshness_uses_publication_not_observation_time():
+    recent_observation_old_publication = point(
+        NOW,
+        2.6,
+        meta={"publication_time": (NOW - timedelta(days=10)).isoformat()},
+    )
+    radar = build(View({"macro.real10y": [recent_observation_old_publication]}), now=NOW)
+    signal = next(item for item in radar["drivers"] if item["key"] == "yields")
+
+    assert signal["last_observation_at"] == NOW.isoformat()
+    assert signal["last_publication_at"] == (NOW - timedelta(days=10)).isoformat()
+    assert signal["data_quality"] == "STALE"
+    assert all("publication récente" not in reason for reason in signal["importance_reasons"])
+
+
+def test_missing_publication_time_is_not_labelled_valid():
+    radar = build(View({"macro.real10y": [point(NOW, 2.6)]}), now=NOW)
+    signal = next(item for item in radar["drivers"] if item["key"] == "yields")
+
+    assert signal["last_publication_at"] is None
+    assert signal["data_quality"] == "UNVERIFIED"
+    assert any("publication non vérifiée" in reason for reason in signal["importance_reasons"])
+
+
+def test_a_changed_diagnosis_affects_the_next_cycle_ranking_explanation():
+    first = build(View({}), now=NOW)
+    second = build(
+        View({"macro.real10y": [point(NOW, 3.0)]}),
+        now=NOW,
+        previous=first,
+    )
+    signal = next(item for item in second["drivers"] if item["key"] == "yields")
+
+    assert any("cycle précédent" in reason for reason in signal["importance_reasons"])
+
+
+def test_correlated_stress_signals_do_not_occupy_independent_top_slots():
+    data = series({
+        "macro.vix": (14.0, 38.0),
+        "macro.hy_spread": (3.0, 7.0),
+        "macro.nfci": (-0.5, 1.5),
+        "macro.stlfsi4": (-1.0, 2.0),
+        "macro.real10y": (2.0, 3.0),
+        "macro.dxy": (98.0, 105.0),
+        "macro.oil_wti": (75.0, 100.0),
+        "cb.ecb.deposit_rate": (3.0, 3.0),
+        "cb.boj.call_rate": (0.1, 0.5),
+    })
+
+    radar = build(View(data), now=NOW)
+    stress_keys = {"credit", "financial_stress", "volatility"}
+    assert len(stress_keys & {item["key"] for item in radar["top"]}) == 1
 
 
 # --- a value is published, not refreshed --------------------------------------------------------

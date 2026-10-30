@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+
 from crypto_intel.core.enums import Asset, Direction, Freshness, Reliability
+from crypto_intel.core.models import Observation, Provenance
 from crypto_intel.engines.derivatives import DerivativesAnalyzer
 from crypto_intel.engines.etf_flows import ETFFlowAnalyzer
 from crypto_intel.engines.liquidity import DefiAnalyzer, StablecoinLiquidityAnalyzer
@@ -44,6 +47,23 @@ class TestEmptyInputsNeverFabricate:
         r = MacroAnalyzer().analyze([])
         assert r.available is False
         assert r.metrics == {}
+
+    def test_macro_ignores_a_value_before_provider_availability(self):
+        now = datetime(2026, 10, 26, 20, tzinfo=UTC)
+        observation = Observation(
+            metric="macro.sp500",
+            value=5800.0,
+            unit="index",
+            timestamp=now,
+            provenance=Provenance(source="Twelve Data", provider="twelve_data"),
+            freshness=Freshness.TODAY,
+            meta={"available_at": (now + timedelta(hours=8)).isoformat()},
+        )
+
+        result = MacroAnalyzer().analyze([observation], now=now)
+
+        assert result.available is False
+        assert result.metrics == {}
 
     def test_news(self):
         r = NewsEngine().analyze([])

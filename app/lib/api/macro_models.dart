@@ -34,12 +34,45 @@ class MacroValue {
   }
 }
 
+class MacroHistoryPoint {
+  final DateTime observationTime;
+  final DateTime? publicationTime;
+  final double value;
+  final String source;
+  final String sourceUrl;
+
+  const MacroHistoryPoint({
+    required this.observationTime,
+    required this.value,
+    this.publicationTime,
+    this.source = '',
+    this.sourceUrl = '',
+  });
+
+  static MacroHistoryPoint? fromJson(Object? raw) {
+    final j = _m(raw);
+    final observation =
+        DateTime.tryParse(j['observation_time']?.toString() ?? '')?.toLocal();
+    final value = (j['value'] as num?)?.toDouble();
+    if (observation == null || value == null) return null;
+    return MacroHistoryPoint(
+      observationTime: observation,
+      publicationTime:
+          DateTime.tryParse(j['publication_time']?.toString() ?? '')?.toLocal(),
+      value: value,
+      source: j['source']?.toString() ?? '',
+      sourceUrl: j['source_url']?.toString() ?? '',
+    );
+  }
+}
+
 /// One driver as it currently reads.
 ///
 /// `attention` and `direction` are two separate scales and must stay that
 /// way: a central bank decision due tomorrow is CRITICAL and UNKNOWN at the
 /// same time, and that is the honest reading.
 class MacroDriver {
+  final String signalId;
   final String key;
   final String emoji;
   final String name;
@@ -52,13 +85,24 @@ class MacroDriver {
   final String channel;
   final String watching;
   final List<MacroValue> values;
+  final String geographicScope;
+  final List<String> associatedAssets;
+  final String releaseFrequency;
   final DateTime? lastRelease;
+  final DateTime? lastObservationAt;
+  final DateTime? lastPublicationAt;
   final DateTime? nextRelease;
   final String nextReleaseLabel;
   final bool available;
   final String unavailableReason;
+  final double? historicalPercentile;
+  final String dataQuality;
+  final List<String> invalidationConditions;
+  final String sourceUrl;
+  final List<MacroHistoryPoint> historicalSeries;
 
   const MacroDriver({
+    this.signalId = '',
     this.key = '',
     this.emoji = '📊',
     this.name = '',
@@ -71,22 +115,40 @@ class MacroDriver {
     this.channel = '',
     this.watching = '',
     this.values = const [],
+    this.geographicScope = '',
+    this.associatedAssets = const [],
+    this.releaseFrequency = '',
     this.lastRelease,
+    this.lastObservationAt,
+    this.lastPublicationAt,
     this.nextRelease,
     this.nextReleaseLabel = '',
     this.available = true,
     this.unavailableReason = '',
+    this.historicalPercentile,
+    this.dataQuality = 'UNKNOWN',
+    this.invalidationConditions = const [],
+    this.sourceUrl = '',
+    this.historicalSeries = const [],
   });
 
   factory MacroDriver.fromJson(Object? raw) {
     final j = _m(raw);
+    final observation = DateTime.tryParse(
+            j['last_observation_at']?.toString() ??
+                j['last_release']?.toString() ??
+                '')
+        ?.toLocal();
     return MacroDriver(
+      signalId: j['signal_id']?.toString() ?? '',
       key: j['key']?.toString() ?? '',
       emoji: j['emoji']?.toString() ?? '📊',
       name: j['name']?.toString() ?? '',
       state: j['state']?.toString() ?? '',
       direction: j['direction']?.toString() ?? 'UNKNOWN',
-      attention: j['attention']?.toString() ?? 'LOW',
+      attention: j['attention']?.toString() ??
+          j['attention_level']?.toString() ??
+          'LOW',
       importance: (j['importance'] as num?)?.round() ?? 0,
       importanceReasons: [
         for (final r in (j['importance_reasons'] as List? ?? const []))
@@ -96,13 +158,39 @@ class MacroDriver {
       channel: j['channel']?.toString() ?? '',
       watching: j['watching']?.toString() ?? '',
       values: [
-        for (final v in (j['values'] as List? ?? const [])) MacroValue.fromJson(v)
+        for (final v in (j['values'] as List? ?? const []))
+          MacroValue.fromJson(v)
       ],
-      lastRelease: DateTime.tryParse(j['last_release']?.toString() ?? '')?.toLocal(),
-      nextRelease: DateTime.tryParse(j['next_release']?.toString() ?? '')?.toLocal(),
+      geographicScope: j['geographic_scope']?.toString() ?? '',
+      associatedAssets: [
+        for (final asset in (j['associated_assets'] as List? ?? const []))
+          asset.toString()
+      ],
+      releaseFrequency: j['release_frequency']?.toString() ?? '',
+      lastRelease: observation,
+      lastObservationAt: observation,
+      lastPublicationAt:
+          DateTime.tryParse(j['last_publication_at']?.toString() ?? '')
+              ?.toLocal(),
+      nextRelease: DateTime.tryParse(j['next_event_at']?.toString() ??
+              j['next_release']?.toString() ??
+              '')
+          ?.toLocal(),
       nextReleaseLabel: j['next_release_label']?.toString() ?? '',
       available: j['available'] != false,
       unavailableReason: j['unavailable_reason']?.toString() ?? '',
+      historicalPercentile: (j['historical_percentile'] as num?)?.toDouble(),
+      dataQuality: j['data_quality']?.toString() ?? 'UNKNOWN',
+      invalidationConditions: [
+        for (final condition
+            in (j['invalidation_conditions'] as List? ?? const []))
+          condition.toString()
+      ],
+      sourceUrl: j['source_url']?.toString() ?? '',
+      historicalSeries: [
+        for (final raw in (j['historical_series'] as List? ?? const []))
+          if (MacroHistoryPoint.fromJson(raw) case final point?) point,
+      ],
     );
   }
 
@@ -187,7 +275,8 @@ class MacroRadarRead {
     final j = _m(raw);
     return MacroRadarRead(
       asOf: DateTime.tryParse(j['as_of']?.toString() ?? '')?.toLocal(),
-      nextCheck: DateTime.tryParse(j['next_check']?.toString() ?? '')?.toLocal(),
+      nextCheck:
+          DateTime.tryParse(j['next_check']?.toString() ?? '')?.toLocal(),
       top: [
         for (final d in (j['top'] as List? ?? const [])) MacroDriver.fromJson(d)
       ],

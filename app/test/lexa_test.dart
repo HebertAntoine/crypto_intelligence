@@ -10,6 +10,7 @@ import 'package:crypto_intelligence_app/chart/candle_chart.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_chart.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_history_screen.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_listen_screen.dart';
+import 'package:crypto_intelligence_app/lexa/lexa_notifications_screen.dart';
 import 'package:crypto_intelligence_app/lexa/recorder/recorder.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_models.dart';
 import 'package:crypto_intelligence_app/lexa/lexa_plan_page.dart';
@@ -180,10 +181,10 @@ void main() {
     expect(find.text('3 analyses · 2 journées · 3 cryptos'), findsOneWidget);
 
     // La journée la plus récente ouvre la page, les cryptos sont dedans.
-    final recent = tester.getTopLeft(
-        find.byKey(const ValueKey('lexa-day-2026-10-07'))).dy;
-    final older = tester.getTopLeft(
-        find.byKey(const ValueKey('lexa-day-2026-10-06'))).dy;
+    final recent =
+        tester.getTopLeft(find.byKey(const ValueKey('lexa-day-2026-10-07'))).dy;
+    final older =
+        tester.getTopLeft(find.byKey(const ValueKey('lexa-day-2026-10-06'))).dy;
     expect(recent, lessThan(older));
     expect(find.text('MERCREDI 7 OCTOBRE'), findsOneWidget);
     expect(find.text('2 analyses'), findsOneWidget);
@@ -218,6 +219,39 @@ void main() {
     expect(find.textContaining('Plan à revalider'), findsOneWidget);
     // Et une valeur déduite du contexte n'est pas présentée comme annoncée.
     expect(find.text('déduit'), findsOneWidget);
+  });
+
+  testWidgets('les alertes affichent leur état de remise traçable',
+      (tester) async {
+    _tall(tester);
+    final client = _backend({
+      '/notifications': {
+        'unread': 1,
+        'notifications': [
+          {
+            'notification_id': 7,
+            'trigger_id': 'touch:BTC:entry:60000',
+            'asset_id': 'BTC',
+            'kind': 'TOUCHED',
+            'message': 'BTC vient de toucher son niveau surveillé.',
+            'created_at': '2026-10-26T12:00:00Z',
+            'delivered_at': '2026-10-26T12:00:01Z',
+            'delivery_status': 'DELIVERED',
+            'reason': 'Persistée dans la boîte de réception interne Lexa.',
+            'read': false,
+          }
+        ],
+      },
+      '/notifications/read': {'unread': 0},
+    });
+    await tester
+        .pumpWidget(MaterialApp(home: LexaNotificationsScreen(client: client)));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('lexa-notifications')), findsOneWidget);
+    expect(find.text('Remise dans l’app'), findsOneWidget);
+    expect(find.textContaining('touch:BTC:entry:60000'), findsOneWidget);
+    expect(find.textContaining('Persistée'), findsOneWidget);
   });
 
   test('the client surfaces the backend refusal in French', () async {

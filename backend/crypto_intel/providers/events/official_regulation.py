@@ -409,13 +409,22 @@ class OfficialRegulatoryFeedProvider(BaseProvider):
 
     async def fetch(self, request: FetchRequest) -> FetchResult:
         feeds = providers_config().get("feeds", {}).get("regulation", []) or []
+        settings = get_settings()
         items: list[dict[str, Any]] = []
         failures: list[str] = []
         for feed in feeds:
             url = str(feed.get("url") or "")
             if not url:
                 continue
-            headers = {"User-Agent": get_settings().sec_user_agent} if "sec.gov" in url else None
+            headers = None
+            if "sec.gov" in url:
+                if not settings.sec_user_agent_configured:
+                    failures.append(
+                        f"{feed.get('name', url)}: NOT_CONFIGURED "
+                        "(SEC_USER_AGENT with real contact email required)"
+                    )
+                    continue
+                headers = {"User-Agent": settings.sec_user_agent.strip()}
             result = await get_http().get_text(
                 url,
                 provider=self.name,

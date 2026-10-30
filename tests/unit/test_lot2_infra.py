@@ -237,11 +237,22 @@ class TestMigrations:
         assert second == [], "a second run must apply nothing"
 
     def test_alert_columns_exist(self):
-        from crypto_intel.db.migrations import existing_columns
+        from crypto_intel.db.migrations import existing_columns, existing_indexes
 
         columns = existing_columns("alerts")
-        assert "dedup_key" in columns
-        assert "reason" in columns
+        assert {
+            "dedup_key",
+            "reason",
+            "notification_id",
+            "trigger_id",
+            "asset_id",
+            "analysis_id",
+            "created_at",
+            "delivered_at",
+            "delivery_status",
+            "source_snapshot",
+        } <= columns
+        assert "ux_alert_notification_id" in existing_indexes("alerts")
 
 
 class TestSchedulerState:

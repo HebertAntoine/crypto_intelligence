@@ -24,10 +24,14 @@ from typing import Any
 from ...core.enums import Asset, DataQuality, FetchStatus, ProviderCategory
 from ...core.freshness import compute_freshness
 from ...core.models import Observation
-from ..base import BaseProvider, FetchRequest, FetchResult
+from ..base import BaseProvider, FetchRequest, FetchResult, ProviderStatus
 from ..http import get_http
+from .coingecko import (
+    coingecko_provenance,
+    coingecko_request_config,
+    coingecko_rights_status,
+)
 
-CG = "https://api.coingecko.com/api/v3"
 #: Excluded from every count: they do not express a market opinion.
 EXCLUDED_CATEGORIES = ("stablecoins", "wrapped-tokens", "liquid-staked-sol")
 #: The published "altcoin season" method looks at the top 100 over 90 days.
@@ -83,34 +87,42 @@ class MarketBreadthProvider(BaseProvider):
     source_url = "https://www.coingecko.com"
     base_confidence = 85.0
 
+    async def available(self) -> ProviderStatus:
+        return coingecko_rights_status(self.name)
+
     def _observation(self, metric: str, value: float, unit: str, label: str,
                      now: datetime, extra: dict[str, Any] | None = None) -> Observation:
+        base_url, _headers = coingecko_request_config()
+        endpoint = f"{base_url}/coins/markets"
         return Observation(
             asset=Asset.GLOBAL,
             metric=metric,
             value=value,
             unit=unit,
             timestamp=now,
-            provenance=self.provenance(f"{CG}/coins/markets"),
+            provenance=coingecko_provenance(self.name, endpoint),
             freshness=compute_freshness(now, "market"),
             confidence=self.base_confidence,
             quality=DataQuality.MEASURED,
             meta={
                 "label": label,
                 "source_tier": "AGGREGATOR",
-                "endpoint": f"{CG}/coins/markets",
+                "endpoint": endpoint,
                 "computed_by": "crypto_intel.providers.market.breadth",
+                "license_status": "OPERATOR_CONFIRMED",
                 **(extra or {}),
             },
         )
 
     async def _excluded_ids(self) -> set[str]:
         http = get_http()
+        base_url, headers = coingecko_request_config()
         excluded: set[str] = set()
         for category in EXCLUDED_CATEGORIES:
             res = await http.get_json(
-                f"{CG}/coins/markets", provider=self.name,
+                f"{base_url}/coins/markets", provider=self.name,
                 params={"vs_currency": "usd", "category": category, "per_page": 100, "page": 1},
+                headers=headers,
                 cache_ttl=86_400, rate_limit_per_min=8, retries=1,
             )
             if res.ok and isinstance(res.data, list):
@@ -118,19 +130,24 @@ class MarketBreadthProvider(BaseProvider):
         return excluded
 
     async def fetch(self, request: FetchRequest) -> FetchResult:
+        status = await self.available()
+        if not status.available:
+            return FetchResult.failure(FetchStatus.NOT_CONFIGURED, self.name, status.reason)
         http = get_http()
+        base_url, headers = coingecko_request_config()
         res = await http.get_json(
-            f"{CG}/coins/markets", provider=self.name,
+            f"{base_url}/coins/markets", provider=self.name,
             params={
                 "vs_currency": "usd", "order": "market_cap_desc",
                 "per_page": 150, "page": 1,
                 "price_change_percentage": "24h,7d,30d,90d",
             },
+            headers=headers,
             cache_ttl=1800, rate_limit_per_min=8, retries=2,
         )
         if not res.ok or not isinstance(res.data, list):
             return FetchResult.failure(res.status, self.name, res.message)
-        rows = res.data
+        rows: list[dict[str, Any]] = [row for row in res.data if isinstance(row, dict)]
         excluded = await self._excluded_ids()
         breadth = compute_breadth(rows, excluded)
         if breadth.get("sample_size", 0) < 20:

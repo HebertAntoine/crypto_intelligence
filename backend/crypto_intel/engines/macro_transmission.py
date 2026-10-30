@@ -19,6 +19,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
+from ..core.source_rights import observation_is_admissible
 from .factor_semantics import (
     Availability,
     FactorAssessment,
@@ -212,7 +213,7 @@ def credit_assessment(
 
     available = hy_spread_pct is not None
     availability = availability_for(freshness, measured=available)
-    if not available:
+    if hy_spread_pct is None:
         return MacroReading(
             FactorAssessment(
                 key="credit",
@@ -552,14 +553,9 @@ _METRIC_IG = "macro.ig_spread"
 
 
 def _is_production(observation: Any) -> bool:
-    """Reuse the project's own production-label rule, row by row."""
+    """Apply production and current source-rights rules, row by row."""
 
-    from ..core.data_integrity import is_production_label
-
-    provenance = getattr(observation, "provenance", None)
-    return is_production_label(
-        getattr(provenance, "source", "")
-    ) and is_production_label(getattr(provenance, "provider", ""))
+    return observation_is_admissible(observation)
 
 
 def _series(observations: list[Any], names: str | tuple[str, ...]) -> list[Any]:
@@ -637,9 +633,11 @@ def readings_from_observations(
     oil_provider, oil_url = (
         _provider_of(oil_latest, "FRED") if oil_latest else ("", None)
     )
+    brent_latest = _latest(brent_series)
+    wti_latest = _latest(wti_series)
     oil = oil_assessment(
-        brent=float(_latest(brent_series).value) if brent_series else None,
-        wti=float(_latest(wti_series).value) if wti_series else None,
+        brent=float(brent_latest.value) if brent_latest is not None else None,
+        wti=float(wti_latest.value) if wti_latest is not None else None,
         change_7d_pct=_change_pct(oil_series, 7, now=reference),
         change_30d_pct=_change_pct(oil_series, 30, now=reference),
         freshness=_freshness_of(oil_latest) if oil_latest else "UNAVAILABLE",

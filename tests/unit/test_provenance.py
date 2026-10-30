@@ -13,6 +13,7 @@ from crypto_intel.core.models import (
     Hypothesis,
     Interpretation,
     Observation,
+    ProbabilityCalibrationMetadata,
     Provenance,
     ScoreCard,
 )
@@ -87,13 +88,38 @@ class TestEpistemicLevels:
         assert i.kind is EvidenceKind.INTERPRETATION
         assert i.evidence_ids == ["cmp_1"]
 
-    def test_uncalibrated_probability_is_labelled(self):
+    def test_uncalibrated_numeric_probability_is_rejected(self):
         """Never present an uncalibrated estimate as a statistic."""
-        h = Hypothesis(statement="Could support price", probability=55.0, calibrated=False)
-        assert "probabilite analytique indicative" in h.probability_label
+        with pytest.raises(ValidationError, match="requires calibrated=true"):
+            Hypothesis(
+                statement="Could support price",
+                probability=55.0,
+                calibrated=False,
+            )
 
-    def test_calibrated_probability_says_so(self):
-        h = Hypothesis(statement="x", probability=55.0, calibrated=True)
+    def test_calibrated_probability_requires_documented_oos_evaluation(self):
+        with pytest.raises(ValidationError, match="require calibration_metadata"):
+            Hypothesis(statement="x", probability=55.0, calibrated=True)
+
+        metadata = ProbabilityCalibrationMetadata(
+            model_name="hypothesis_logit",
+            model_version="1.0",
+            target_definition="BTC closes above the observed resistance",
+            target_horizon="8-30 days",
+            calibration_method="isotonic regression",
+            out_of_sample_tested=True,
+            out_of_sample_sample_size=180,
+            evaluation_metric="Brier score",
+            evaluation_score=0.18,
+            evaluated_at=datetime(2026, 9, 1, tzinfo=UTC),
+            evidence_ids=["eval_hypothesis_logit_2026q3"],
+        )
+        h = Hypothesis(
+            statement="x",
+            probability=55.0,
+            calibrated=True,
+            calibration_metadata=metadata,
+        )
         assert "calibr" in h.probability_label.lower()
 
     def test_probability_may_be_absent(self):

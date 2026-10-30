@@ -8,13 +8,14 @@ missing slot, never a neutral vote.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any, ClassVar
 
 from ..core.enums import Asset
+from ..core.models import ProbabilityCalibrationMetadata
 from ..future_events.models import (
     DecisionHorizon,
     DirectionalBias,
@@ -246,6 +247,15 @@ class EventRiskAssessment:
         }
 
 
+@dataclass(slots=True)
+class EventRiskWindowAssessment:
+    """Event-risk result for an explicit, non-overlapping future window."""
+
+    level: EventRiskLevel
+    materiality: float
+    contributions: list[EventRiskContribution] = field(default_factory=list)
+
+
 _EVENT_RISK_HORIZONS = {
     DecisionHorizon.H24: timedelta(hours=24),
     DecisionHorizon.D7: timedelta(days=7),
@@ -315,21 +325,19 @@ def _event_uncertainty(event: FutureEvent, *, as_of: datetime) -> float:
 class EventRiskEngine:
     """Measure event risk over 24h/7d/30d independently of the 48h gate."""
 
-    def assess(
-        self,
+    @staticmethod
+    def _aggregate(
         events: Iterable[FutureEvent],
         *,
-        horizon: DecisionHorizon,
-        as_of: datetime | None = None,
-    ) -> EventRiskAssessment:
-        now = as_of or datetime.now(UTC)
-        now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
+        as_of: datetime,
+        proximity_for: Callable[[FutureEvent], float],
+    ) -> EventRiskWindowAssessment:
         contributions: list[EventRiskContribution] = []
         for event in events:
-            proximity = event_proximity(event, horizon, as_of=now)
+            proximity = proximity_for(event)
             if proximity <= 0:
                 continue
-            uncertainty = _event_uncertainty(event, as_of=now)
+            uncertainty = _event_uncertainty(event, as_of=as_of)
             severity = (
                 0.50 * _IMPORTANCE_RISK[event.importance]
                 + 0.35 * _MOVEMENT_RISK[event.magnitude_effect]
@@ -370,12 +378,74 @@ class EventRiskEngine:
         else:
             level = EventRiskLevel.LOW
         contributions.sort(key=lambda item: item.contribution, reverse=True)
-        return EventRiskAssessment(
-            horizon=horizon,
+        return EventRiskWindowAssessment(
             level=level,
             materiality=materiality,
             contributions=contributions,
         )
+
+    def assess(
+        self,
+        events: Iterable[FutureEvent],
+        *,
+        horizon: DecisionHorizon,
+        as_of: datetime | None = None,
+    ) -> EventRiskAssessment:
+        now = as_of or datetime.now(UTC)
+        now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
+        result = self._aggregate(
+            events,
+            as_of=now,
+            proximity_for=lambda event: event_proximity(event, horizon, as_of=now),
+        )
+        return EventRiskAssessment(
+            horizon=horizon,
+            level=result.level,
+            materiality=result.materiality,
+            contributions=result.contributions,
+        )
+
+    def assess_future_window(
+        self,
+        events: Iterable[FutureEvent],
+        *,
+        starts_after: timedelta,
+        ends_at: timedelta,
+        as_of: datetime | None = None,
+    ) -> EventRiskWindowAssessment:
+        """Measure risk in one exact future interval without relabelling 30d.
+
+        ``starts_after`` is exclusive and ``ends_at`` inclusive. Unscheduled
+        active shocks can only enter the first window, where their recency is
+        measured from the source publication or detection time.
+        """
+
+        if starts_after < timedelta(0) or ends_at <= starts_after:
+            raise ValueError("future risk window must satisfy 0 <= start < end")
+        now = as_of or datetime.now(UTC)
+        now = now.replace(tzinfo=UTC) if now.tzinfo is None else now.astimezone(UTC)
+        width = ends_at - starts_after
+
+        def proximity_for(event: FutureEvent) -> float:
+            if event.scheduled_at is not None:
+                distance = event.scheduled_at - now
+                if distance <= starts_after or distance > ends_at:
+                    return 0.0
+                position = distance - starts_after
+            else:
+                if starts_after > timedelta(0):
+                    return 0.0
+                origin = event.source_published_at or event.detected_at
+                age = now - origin
+                if age < timedelta(0) or age > ends_at:
+                    return 0.0
+                position = age
+            return max(
+                0.0,
+                min(1.0, 1.0 - position.total_seconds() / width.total_seconds()),
+            )
+
+        return self._aggregate(events, as_of=now, proximity_for=proximity_for)
 
 
 def _family_flip_condition(item: FamilyAssessment) -> str | None:
@@ -565,6 +635,19 @@ class FutureScenario:
     expected_movement: ExpectedMovement
     confidence: float
     invalidation_conditions: list[str]
+    hypothesis: str = ""
+    horizon: str = "UNSPECIFIED"
+    affected_assets: list[str] = field(default_factory=list)
+    confirmed_evidence: list[str] = field(default_factory=list)
+    evidence_ids: list[str] = field(default_factory=list)
+    conditions: list[str] = field(default_factory=list)
+    confirmation_signals: list[str] = field(default_factory=list)
+    uncertainties: list[str] = field(default_factory=list)
+    prudence_note: str = (
+        "Scénario conditionnel, ni prévision certaine ni ordre automatique."
+    )
+    calibrated: bool = False
+    calibration_metadata: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -577,6 +660,17 @@ class FutureScenario:
             "expected_movement": self.expected_movement.value,
             "confidence": round(max(0.0, min(1.0, self.confidence)), 3),
             "invalidation_conditions": self.invalidation_conditions,
+            "hypothesis": self.hypothesis,
+            "horizon": self.horizon,
+            "affected_assets": self.affected_assets,
+            "confirmed_evidence": self.confirmed_evidence,
+            "evidence_ids": self.evidence_ids,
+            "conditions": self.conditions,
+            "confirmation_signals": self.confirmation_signals,
+            "uncertainties": self.uncertainties,
+            "prudence_note": self.prudence_note,
+            "calibrated": self.calibrated,
+            "calibration_metadata": self.calibration_metadata,
         }
 
 
@@ -611,8 +705,73 @@ def _dominant_family(families: FiveFamilySnapshot) -> FamilyAssessment | None:
     return peers[0]
 
 
+_PUBLIC_SCENARIO_KINDS = (
+    ScenarioKind.BASE_CASE,
+    ScenarioKind.BULLISH_CASE,
+    ScenarioKind.BEARISH_CASE,
+)
+
+
+def _unique_text(items: Iterable[str], *, limit: int = 8) -> list[str]:
+    return list(dict.fromkeys(item.strip() for item in items if item and item.strip()))[:limit]
+
+
+def _family_evidence(
+    families: FiveFamilySnapshot,
+    *,
+    direction: str | None = None,
+) -> tuple[list[str], list[str]]:
+    statements: list[str] = []
+    evidence_ids: list[str] = []
+    for item in families.assessments.values():
+        if not item.available:
+            continue
+        if direction == "bull" and not _is_bullish(item.directional_bias):
+            continue
+        if direction == "bear" and not _is_bearish(item.directional_bias):
+            continue
+        label = FAMILY_LABELS[item.family]
+        if item.summary:
+            statements.append(f"{label}: {item.summary}")
+        statements.extend(f"{label}: {reason}" for reason in item.reasons if reason)
+        for source in item.sources:
+            identifiers = source.get("evidence_ids") or [
+                source.get("reference"),
+                source.get("id"),
+            ]
+            evidence_ids.extend(str(value) for value in identifiers if value)
+    return _unique_text(statements), _unique_text(evidence_ids, limit=20)
+
+
+def _directional_conditions(
+    families: FiveFamilySnapshot,
+    *,
+    favorable: bool,
+) -> tuple[list[str], list[str]]:
+    conditions: list[str] = []
+    confirmations: list[str] = []
+    for item in families.assessments.values():
+        if not item.available:
+            continue
+        aligned = _is_bullish(item.directional_bias) if favorable else _is_bearish(
+            item.directional_bias
+        )
+        opposed = _is_bearish(item.directional_bias) if favorable else _is_bullish(
+            item.directional_bias
+        )
+        label = FAMILY_LABELS[item.family]
+        if aligned and item.summary:
+            confirmations.append(f"{label}: {item.summary}")
+            conditions.append(f"Maintien de la lecture {label}: {item.summary}")
+        elif opposed:
+            flip = _family_flip_condition(item)
+            if flip:
+                conditions.append(flip)
+    return _unique_text(conditions), _unique_text(confirmations)
+
+
 class FutureScenarioEngine:
-    """Build four named scenarios without manufacturing probabilities."""
+    """Build the three public conditional scenarios from available evidence."""
 
     def build(
         self,
@@ -622,6 +781,7 @@ class FutureScenarioEngine:
         horizon: DecisionHorizon = DecisionHorizon.D7,
         as_of: datetime | None = None,
         scenario_probabilities: dict[ScenarioKind, dict[str, Any]] | None = None,
+        asset: Asset | None = None,
     ) -> list[FutureScenario]:
         now = as_of or datetime.now(UTC)
         horizon_delta = {
@@ -660,67 +820,169 @@ class FutureScenarioEngine:
             sum(item.confidence for item in available) / len(available) if available else 0.0
         )
 
-        specs: dict[
-            ScenarioKind,
-            tuple[DirectionalBias, ExpectedMovement, list[str], list[str]],
-        ] = {
-            ScenarioKind.BASE_CASE: (
-                base_direction,
-                movement,
-                chain,
-                ["Un catalyseur prioritaire change de sens ou d'amplitude."],
-            ),
-            ScenarioKind.BULLISH_CASE: (
-                DirectionalBias.BULLISH,
-                movement,
-                ["Catalyseurs sourcés résolus favorablement", "Confirmation par les flux"],
-                ["Flux institutionnels se retournent durablement à la baisse."],
-            ),
-            ScenarioKind.BEARISH_CASE: (
-                DirectionalBias.BEARISH,
-                movement,
-                ["Catalyseurs sourcés résolus défavorablement", "Pression confirmée par les flux"],
-                ["Le risque événementiel se dissipe et les flux redeviennent positifs."],
-            ),
-            ScenarioKind.TAIL_RISK_CASE: (
-                DirectionalBias.NEUTRAL,
-                ExpectedMovement.EXTREME,
-                ["Choc systémique non directionnel non inclus dans le scénario de base"],
-                ["Absence de choc systémique pendant l'horizon."],
-            ),
+        all_evidence, all_evidence_ids = _family_evidence(families)
+        bull_evidence, bull_evidence_ids = _family_evidence(families, direction="bull")
+        bear_evidence, bear_evidence_ids = _family_evidence(families, direction="bear")
+        bull_conditions, bull_confirmations = _directional_conditions(
+            families, favorable=True
+        )
+        bear_conditions, bear_confirmations = _directional_conditions(
+            families, favorable=False
+        )
+        unresolved_events = [
+            f"Issue encore inconnue: {event.title} ({event.source})." for event in upcoming[:3]
+        ]
+        event_bull_conditions = [
+            f"{event.title}: issue favorable confirmée par {event.source}."
+            for event in upcoming[:3]
+        ]
+        event_bear_conditions = [
+            f"{event.title}: issue défavorable confirmée par {event.source}."
+            for event in upcoming[:3]
+        ]
+        missing = [
+            f"{FAMILY_LABELS[item.family]} indisponible: {item.unavailable_reason}"
+            for item in families.assessments.values()
+            if not item.available
+        ]
+        neutral = [
+            f"{FAMILY_LABELS[item.family]} sans direction défendable."
+            for item in families.assessments.values()
+            if item.available and item.directional_bias is DirectionalBias.NEUTRAL
+        ]
+        common_uncertainties = _unique_text([*missing, *neutral, *unresolved_events])
+        central_conditions = _unique_text(
+            f"Persistance de la lecture sourcée: {statement}" for statement in all_evidence
+        )
+        central_confirmations = all_evidence[:5]
+        central_invalidations = _unique_text(
+            condition
+            for item in families.assessments.values()
+            if (condition := _family_flip_condition(item)) is not None
+        )
+        specs: dict[ScenarioKind, dict[str, Any]] = {
+            ScenarioKind.BASE_CASE: {
+                "direction": base_direction,
+                "movement": movement,
+                "hypothesis": (
+                    "Le scénario intermédiaire prolonge uniquement les lectures actuellement "
+                    "mesurées, sans supposer l'issue des événements non résolus."
+                ),
+                "event_chain": chain,
+                "evidence": all_evidence,
+                "evidence_ids": all_evidence_ids,
+                "conditions": central_conditions,
+                "confirmations": central_confirmations,
+                "invalidations": central_invalidations,
+                "uncertainties": common_uncertainties,
+            },
+            ScenarioKind.BULLISH_CASE: {
+                "direction": DirectionalBias.BULLISH,
+                "movement": movement,
+                "hypothesis": (
+                    "Une évolution favorable devient plausible uniquement si les conditions "
+                    "sourcées ci-dessous sont observées."
+                ),
+                "event_chain": _unique_text([*bull_conditions, *event_bull_conditions]),
+                "evidence": bull_evidence,
+                "evidence_ids": bull_evidence_ids,
+                "conditions": _unique_text([*bull_conditions, *event_bull_conditions]),
+                "confirmations": _unique_text(
+                    [*bull_confirmations, *bull_conditions, *event_bull_conditions]
+                ),
+                "invalidations": _unique_text(
+                    [*bear_confirmations, *bear_conditions, *event_bear_conditions]
+                ),
+                "uncertainties": _unique_text(
+                    [
+                        *common_uncertainties,
+                        *([] if bull_conditions or event_bull_conditions else [
+                            "Aucune condition favorable sourcée n'est disponible."
+                        ]),
+                    ]
+                ),
+            },
+            ScenarioKind.BEARISH_CASE: {
+                "direction": DirectionalBias.BEARISH,
+                "movement": movement,
+                "hypothesis": (
+                    "Une évolution défavorable devient plausible uniquement si les conditions "
+                    "sourcées ci-dessous sont observées."
+                ),
+                "event_chain": _unique_text([*bear_conditions, *event_bear_conditions]),
+                "evidence": bear_evidence,
+                "evidence_ids": bear_evidence_ids,
+                "conditions": _unique_text([*bear_conditions, *event_bear_conditions]),
+                "confirmations": _unique_text(
+                    [*bear_confirmations, *bear_conditions, *event_bear_conditions]
+                ),
+                "invalidations": _unique_text(
+                    [*bull_confirmations, *bull_conditions, *event_bull_conditions]
+                ),
+                "uncertainties": _unique_text(
+                    [
+                        *common_uncertainties,
+                        *([] if bear_conditions or event_bear_conditions else [
+                            "Aucune condition défavorable sourcée n'est disponible."
+                        ]),
+                    ]
+                ),
+            },
         }
         if scenario_probabilities:
-            if set(scenario_probabilities) != set(ScenarioKind):
-                raise ValueError("scenario probabilities must cover all four scenarios")
+            if set(scenario_probabilities) != set(_PUBLIC_SCENARIO_KINDS):
+                raise ValueError("scenario probabilities must cover all three public scenarios")
             probability_sum = sum(
                 float(item["probability"]) for item in scenario_probabilities.values()
             )
             if not 0.98 <= probability_sum <= 1.02:
                 raise ValueError("scenario probabilities must sum to one")
         output: list[FutureScenario] = []
-        for kind in ScenarioKind:
+        for kind in _PUBLIC_SCENARIO_KINDS:
             probability = None
             source = None
             observed_at = None
+            calibrated = False
+            calibration_metadata = None
             raw_probability = (scenario_probabilities or {}).get(kind)
             if raw_probability:
+                if raw_probability.get("calibrated") is not True:
+                    raise ValueError("scenario probability requires calibrated=true")
+                raw_metadata = raw_probability.get("calibration_metadata")
+                if not isinstance(raw_metadata, dict):
+                    raise ValueError("scenario probability requires calibration_metadata")
+                metadata = ProbabilityCalibrationMetadata.model_validate(raw_metadata)
+                if not metadata.out_of_sample_tested:
+                    raise ValueError("scenario calibration must be tested out of sample")
                 probability = float(raw_probability["probability"])
                 source = str(raw_probability["source"])
                 observed_at = str(raw_probability["observed_at"])
                 if not 0.0 <= probability <= 1.0 or not source or not observed_at:
                     raise ValueError("scenario probability requires value, source and observed_at")
-            direction, amplitude, event_chain, invalidations = specs[kind]
+                calibrated = True
+                calibration_metadata = metadata.model_dump(mode="json")
+            spec = specs[kind]
             output.append(
                 FutureScenario(
                     kind=kind,
                     probability=probability,
                     probability_source=source,
                     probability_observed_at=observed_at,
-                    event_chain=event_chain,
-                    directional_bias=direction,
-                    expected_movement=amplitude,
+                    event_chain=spec["event_chain"],
+                    directional_bias=spec["direction"],
+                    expected_movement=spec["movement"],
                     confidence=confidence if kind is ScenarioKind.BASE_CASE else confidence * 0.75,
-                    invalidation_conditions=invalidations,
+                    invalidation_conditions=spec["invalidations"],
+                    hypothesis=spec["hypothesis"],
+                    horizon=horizon.value,
+                    affected_assets=[asset.value] if asset else [],
+                    confirmed_evidence=spec["evidence"],
+                    evidence_ids=spec["evidence_ids"],
+                    conditions=spec["conditions"],
+                    confirmation_signals=spec["confirmations"],
+                    uncertainties=spec["uncertainties"],
+                    calibrated=calibrated,
+                    calibration_metadata=calibration_metadata,
                 )
             )
         return output
@@ -878,7 +1140,13 @@ class FutureDecisionEngine:
         causal_graph = MarketCausalGraph(causal_factors)
         convergence = SignalConvergenceEngine().analyze(causal_factors, causal_graph)
         contradiction = ContradictionResolver().resolve(causal_factors, causal_graph)
-        scenarios = FutureScenarioEngine().build(event_list, families, horizon=horizon, as_of=now)
+        scenarios = FutureScenarioEngine().build(
+            event_list,
+            families,
+            horizon=horizon,
+            as_of=now,
+            asset=asset,
+        )
         dominant = _dominant_family(families)
         direction = (
             dominant.directional_bias if dominant else DirectionalBias.NEUTRAL

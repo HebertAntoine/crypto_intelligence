@@ -44,14 +44,47 @@ FOLLOWED = {"ACTIVE", "WATCHING", "TRIGGERED"}
 
 class NotificationSink(Protocol):
     def send(self, asset: str, kind: str, message: str, key: str,
-             analysis_id: int | None) -> None: ...
+             analysis_id: int | None, *, now: datetime,
+             source_snapshot: dict[str, Any]) -> bool: ...
 
 
 class InAppSink:
-    def send(self, asset: str, kind: str, message: str, key: str, analysis_id: int | None) -> None:
-        with lexa_session() as s:
-            s.add(LexaNotificationRow(dedup_key=key, asset=asset, kind=kind, message=message,
-                                      analysis_id=analysis_id))
+    def send(self, asset: str, kind: str, message: str, key: str,
+             analysis_id: int | None, *, now: datetime,
+             source_snapshot: dict[str, Any]) -> bool:
+        """Atomically reserve and persist one in-app delivery.
+
+        A deferred SQLite transaction permits two workers to both observe that
+        a key is absent. ``BEGIN IMMEDIATE`` serializes that small check/insert
+        window, so the second worker sees the first worker's committed row.
+        """
+
+        delivered_at = datetime.now(UTC)
+        with lexa_session(immediate=True) as s:
+            if _fired_within(s, key, COOLDOWN[kind], now):
+                return False
+            delivered_today = s.execute(
+                select(func.count()).select_from(LexaNotificationRow).where(
+                    LexaNotificationRow.asset == asset,
+                    LexaNotificationRow.created_at >= now - timedelta(days=1),
+                )
+            ).scalar_one()
+            if delivered_today >= MAX_PER_ASSET_PER_DAY:
+                log.info("lexa_notification_capped", asset=asset, kind=kind)
+                return False
+            s.add(LexaNotificationRow(
+                dedup_key=key,
+                asset=asset,
+                kind=kind,
+                message=message,
+                analysis_id=analysis_id,
+                created_at=now,
+                delivered_at=delivered_at,
+                delivery_status="DELIVERED",
+                reason="Persistée dans la boîte de réception interne Lexa.",
+                source_snapshot=source_snapshot,
+            ))
+        return True
 
 
 SINKS: list[NotificationSink] = [InAppSink()]
@@ -123,24 +156,82 @@ def _fired_within(s, key: str, minutes: int, now: datetime) -> bool:
     return now - last < timedelta(minutes=minutes)
 
 
+def _source_snapshot(plan: dict[str, Any], kind: str, key: str,
+                     now: datetime) -> dict[str, Any]:
+    """Capture only the market facts that were available for this trigger."""
+
+    price = plan.get("price") or {}
+    snapshot: dict[str, Any] = {
+        "trigger_id": key,
+        "kind": kind,
+        "asset_id": plan["asset"],
+        "analysis_id": plan.get("analysis_id"),
+        "evaluated_at": now.isoformat(),
+        "current_price": price.get("value"),
+        "price_source": price.get("source"),
+    }
+    parts = key.split(":")
+    level = next(
+        (lv for lv in plan.get("levels", []) if f"{lv.get('value'):g}" in parts),
+        None,
+    )
+    if level is None and kind == "INVALIDATED":
+        level = next(
+            (lv for lv in plan.get("levels", []) if lv.get("kind") == "INVALIDATION"),
+            None,
+        )
+    if level is None:
+        return snapshot
+
+    snapshot.update({
+        "level_id": level.get("id"),
+        "level_kind": level.get("kind"),
+        "level_label": level.get("label"),
+        "level_value": level.get("value"),
+        "level_high": level.get("value_high"),
+        "level_unit": level.get("unit"),
+        "distance_pct": level.get("distance_pct"),
+        "first_touched_at": level.get("first_touched_at"),
+        "reached_now": level.get("reached_now"),
+    })
+    event_field = {
+        "CLOSE_SOON": "next_close_at",
+        "CLOSED_BEYOND": "closed_beyond_at",
+        "CONFIRMED": "confirmed_at",
+        "CONFIRMATION_MISSING": "failed_at",
+    }.get(kind)
+    for condition in level.get("conditions") or []:
+        evaluation = condition.get("evaluation") or {}
+        if event_field is not None and not evaluation.get(event_field):
+            continue
+        snapshot["condition"] = {
+            "type": condition.get("type"),
+            "timeframe": condition.get("timeframe"),
+            "operator": condition.get("operator"),
+            "required_closes": condition.get("required_closes"),
+            "evaluation_status": evaluation.get("status"),
+            "event_at": evaluation.get(event_field) if event_field else None,
+            "next_close_at": evaluation.get("next_close_at"),
+        }
+        break
+    return snapshot
+
+
 def dispatch(plan: dict[str, Any], now: datetime) -> list[str]:
     """Send what is new for one plan. Returns the messages sent."""
 
     sent: list[str] = []
     todo = sorted(candidates(plan, now), key=lambda c: PRIORITY.index(c[0]))
-    with lexa_session() as s:
-        today = s.execute(select(func.count()).select_from(LexaNotificationRow).where(
-            LexaNotificationRow.asset == plan["asset"],
-            LexaNotificationRow.created_at >= now - timedelta(days=1))).scalar_one()
-        fresh = [c for c in todo if not _fired_within(s, c[1], COOLDOWN[c[0]], now)]
-    for kind, key, message in fresh:
-        if today >= MAX_PER_ASSET_PER_DAY:
-            log.info("lexa_notification_capped", asset=plan["asset"], kind=kind)
-            break
+    for kind, key, message in todo:
+        delivered = False
+        snapshot = _source_snapshot(plan, kind, key, now)
         for sink in SINKS:
-            sink.send(plan["asset"], kind, message, key, plan["analysis_id"])
-        today += 1
-        sent.append(message)
+            delivered = sink.send(
+                plan["asset"], kind, message, key, plan["analysis_id"],
+                now=now, source_snapshot=snapshot,
+            ) or delivered
+        if delivered:
+            sent.append(message)
     return sent
 
 
@@ -163,11 +254,29 @@ def listing(limit: int = 100) -> list[dict[str, Any]]:
     with lexa_session() as s:
         rows = s.execute(select(LexaNotificationRow).order_by(
             LexaNotificationRow.created_at.desc()).limit(limit)).scalars().all()
-        return [{"id": r.id, "asset": r.asset, "kind": r.kind, "message": r.message,
-                 "analysis_id": r.analysis_id,
-                 "created_at": (r.created_at if r.created_at.tzinfo else
-                                r.created_at.replace(tzinfo=UTC)).isoformat(),
-                 "read": r.read_at is not None} for r in rows]
+        return [{
+            "id": r.id,
+            "notification_id": r.id,
+            "trigger_id": r.dedup_key,
+            "asset": r.asset,
+            "asset_id": r.asset,
+            "kind": r.kind,
+            "message": r.message,
+            "analysis_id": r.analysis_id,
+            "created_at": (
+                r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=UTC)
+            ).isoformat(),
+            "delivered_at": (
+                (r.delivered_at if r.delivered_at.tzinfo else r.delivered_at.replace(tzinfo=UTC))
+                .isoformat()
+                if r.delivered_at is not None
+                else None
+            ),
+            "delivery_status": r.delivery_status or "UNKNOWN",
+            "reason": r.reason or "",
+            "source_snapshot": r.source_snapshot or {},
+            "read": r.read_at is not None,
+        } for r in rows]
 
 
 def unread_count() -> int:

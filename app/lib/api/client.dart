@@ -275,6 +275,11 @@ class ApiClient {
             as Map<String, dynamic>,
       );
 
+  Future<GlobalRiskRead> globalRisk(String asset) async =>
+      GlobalRiskRead.fromJson(
+        await _get('/future/$asset/global-risk') as Map<String, dynamic>,
+      );
+
   Future<StructureRead> structure(String asset,
           {String timeframe = '4h'}) async =>
       StructureRead.fromJson(

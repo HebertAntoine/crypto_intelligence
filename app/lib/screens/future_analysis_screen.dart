@@ -78,6 +78,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
       safe(widget.client.impliedVolatility(_asset)),
       safe(widget.client.marketState(_asset)),
       safe(widget.client.macroDrivers()),
+      safe(widget.client.globalRisk(_asset)),
     ]);
     return _FutureBundle(
       decision: responses[0] as FutureDecisionRead,
@@ -87,6 +88,7 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
       impliedVolatility: responses[4] as ImpliedVolatilityRead?,
       marketState: responses[5] as MarketStateRead?,
       macro: responses[6] as MacroRadarRead?,
+      globalRisk: responses[7] as GlobalRiskRead?,
     );
   }
 
@@ -444,14 +446,18 @@ class _FutureAnalysisScreenState extends State<FutureAnalysisScreen> {
                   const SizedBox(height: 14),
                   _ChangeAndRiskSection(decision: decision),
                 ],
+                if (bundle.globalRisk != null) ...[
+                  const SizedBox(height: 14),
+                  _GlobalRiskCard(read: bundle.globalRisk!),
+                ],
                 const SizedBox(height: 14),
                 _UpcomingEventsCard(
                   events: bundle.timeline?.events ?? const [],
                   // An event already listed among the main factors is not
                   // repeated in the calendar as a second, thinner copy.
                   skipIds: {
-                    for (final item
-                        in decision.hierarchy?.homeFactors ?? const <FutureDriverRead>[])
+                    for (final item in decision.hierarchy?.homeFactors ??
+                        const <FutureDriverRead>[])
                       item.id,
                   },
                   alreadyShown: decision.hierarchy != null
@@ -1074,7 +1080,8 @@ class _DecisionCard extends StatelessWidget {
                                                 : 'NEUTRAL')
                                 : decision.hierarchy?.reading;
                             final signals = reading == null
-                                ? _signalsLabel(_decisionFactors(decision, bundle))
+                                ? _signalsLabel(
+                                    _decisionFactors(decision, bundle))
                                 : switch (reading) {
                                     'POSITIVE' => 'Favorables',
                                     'NEGATIVE' => 'Défavorables',
@@ -1340,7 +1347,8 @@ class _MainFactorsCard extends StatelessWidget {
   final FutureHierarchyRead hierarchy;
   final VoidCallback onSeeAnalysis;
 
-  const _MainFactorsCard({required this.hierarchy, required this.onSeeAnalysis});
+  const _MainFactorsCard(
+      {required this.hierarchy, required this.onSeeAnalysis});
 
   @override
   Widget build(BuildContext context) {
@@ -1595,7 +1603,8 @@ class _AnalysisExplanationCard extends StatelessWidget {
   final FutureDecisionRead decision;
   final FutureAnalysisRead analysis;
 
-  const _AnalysisExplanationCard({required this.decision, required this.analysis});
+  const _AnalysisExplanationCard(
+      {required this.decision, required this.analysis});
 
   @override
   Widget build(BuildContext context) {
@@ -1623,7 +1632,10 @@ class _AnalysisExplanationCard extends StatelessWidget {
             },
           ),
           const SizedBox(height: 10),
-          for (final line in ['$lead ${analysis.headline}', ...analysis.reasons.take(4)]) ...[
+          for (final line in [
+            '$lead ${analysis.headline}',
+            ...analysis.reasons.take(4)
+          ]) ...[
             Text(
               line,
               style: const TextStyle(
@@ -1791,7 +1803,9 @@ class _WhyMarketCard extends StatelessWidget {
             for (final line in state.lines)
               InkWell(
                 key: ValueKey('why-line-${line.family}'),
-                onTap: line.route.isEmpty ? null : () => _open(context, line.route),
+                onTap: line.route.isEmpty
+                    ? null
+                    : () => _open(context, line.route),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(
@@ -1799,7 +1813,8 @@ class _WhyMarketCard extends StatelessWidget {
                     children: [
                       SizedBox(
                         width: 28,
-                        child: Text(line.emoji, style: const TextStyle(fontSize: 18)),
+                        child: Text(line.emoji,
+                            style: const TextStyle(fontSize: 18)),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
@@ -1819,7 +1834,9 @@ class _WhyMarketCard extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                  color: mobileMuted, fontSize: 12.5, height: 1.3),
+                                  color: mobileMuted,
+                                  fontSize: 12.5,
+                                  height: 1.3),
                             ),
                           ],
                         ),
@@ -1875,7 +1892,8 @@ class _AnalysisFactorsCard extends StatelessWidget {
                   asset: asset,
                   horizon: analysis.horizon,
                   essentials:
-                      analysis.summary.reading.families[family.family] ?? const [],
+                      analysis.summary.reading.families[family.family] ??
+                          const [],
                 ),
         ),
       );
@@ -1953,7 +1971,8 @@ class _AnalysisFactorsCard extends StatelessWidget {
               key: const ValueKey('whale-status'),
               emoji: '🐋',
               title: 'Baleines & on-chain',
-              status: onchain.usable ? onchain.stateLabel : 'Donnée indisponible',
+              status:
+                  onchain.usable ? onchain.stateLabel : 'Donnée indisponible',
               tone: onchain.usable ? 'YELLOW' : 'WHITE',
             ),
           ],
@@ -3527,6 +3546,174 @@ class _MarketContextCard extends StatelessWidget {
       );
 }
 
+class _GlobalRiskCard extends StatelessWidget {
+  final GlobalRiskRead read;
+
+  const _GlobalRiskCard({required this.read});
+
+  @override
+  Widget build(BuildContext context) => GlassPanel(
+        key: const ValueKey('global-risk-card'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.shield_outlined, color: Color(0xFFFFB34F)),
+                SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'RISQUE GLOBAL',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'Trois fenêtres indépendantes · aucune probabilité de rendement',
+              style: TextStyle(color: mobileMuted, fontSize: 11),
+            ),
+            const SizedBox(height: 14),
+            for (var index = 0; index < read.horizons.length; index++) ...[
+              if (index > 0) const SizedBox(height: 9),
+              _GlobalRiskWindowTile(risk: read.horizons[index]),
+            ],
+            if (read.horizons.length != 3) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Contrat incomplet : ${read.horizons.length}/3 horizon(s) reçu(s).',
+                style: const TextStyle(
+                  color: Color(0xFFFFB34F),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+            if (read.methodology.isNotEmpty) ...[
+              const SizedBox(height: 11),
+              Text(
+                read.methodology,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10.5,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+}
+
+class _GlobalRiskWindowTile extends StatelessWidget {
+  final GlobalRiskHorizonRead risk;
+
+  const _GlobalRiskWindowTile({required this.risk});
+
+  Color get _tone => switch (risk.level) {
+        'LOW' => const Color(0xFF55DD8B),
+        'MODERATE' => const Color(0xFFFFC55C),
+        'HIGH' => const Color(0xFFFF8A55),
+        'CRITICAL' => const Color(0xFFFF6676),
+        _ => mobileMuted,
+      };
+
+  String get _levelLabel => switch (risk.level) {
+        'LOW' => 'FAIBLE',
+        'MODERATE' => 'MODÉRÉ',
+        'HIGH' => 'ÉLEVÉ',
+        'CRITICAL' => 'CRITIQUE',
+        _ => 'INDÉTERMINÉ',
+      };
+
+  String get _horizonLabel => switch (risk.horizon) {
+        '1-7d' => '1 à 7 jours',
+        '8-30d' => '8 à 30 jours',
+        '31-90d' => '31 à 90 jours',
+        _ => risk.horizon,
+      };
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: ValueKey('global-risk-${risk.horizon}'),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF081727),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: _tone.withValues(alpha: .65)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _horizonLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                Text(
+                  _levelLabel,
+                  style: TextStyle(
+                    color: _tone,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${risk.coverage.usableFamilies.length}/${risk.coverage.totalFamilies} '
+              'familles utilisables · ${risk.coverage.authorizedEventCount} événement(s)',
+              style: const TextStyle(color: mobileMuted, fontSize: 10.5),
+            ),
+            if (risk.mainDrivers.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              for (final driver in risk.mainDrivers.take(2))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '• $driver',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+            ] else ...[
+              const SizedBox(height: 7),
+              const Text(
+                'Aucun facteur dominant sourcé dans cette fenêtre.',
+                style: TextStyle(color: mobileMuted, fontSize: 11),
+              ),
+            ],
+            if (risk.coverage.limitations.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              Text(
+                'Limite : ${risk.coverage.limitations.join(' ')}',
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+}
+
 class _Families extends StatelessWidget {
   final FutureDecisionRead decision;
 
@@ -3605,7 +3792,7 @@ class _Scenarios extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = scenarios.take(4).toList();
+    final visible = orderedPublicFutureScenarios(scenarios);
     return GlassPanel(
       borderColor: const Color(0xFF245E90),
       child: Column(
@@ -3630,7 +3817,7 @@ class _Scenarios extends StatelessWidget {
                 key: const ValueKey('scenarios-see-details'),
                 onPressed: () => _showScenarioDetails(
                   context,
-                  scenarios,
+                  visible,
                   horizon,
                 ),
                 style: TextButton.styleFrom(
@@ -3672,7 +3859,8 @@ class _Scenarios extends StatelessWidget {
               );
             },
           ),
-          if (visible.any((scenario) => scenario.probability == null)) ...[
+          if (visible
+              .any((scenario) => scenario.calibratedProbability == null)) ...[
             const SizedBox(height: 10),
             const Text(
               'Les pourcentages de probabilité ne sont pas affichés quand '
@@ -3701,9 +3889,10 @@ class _ScenarioTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tone = _scenarioColor(scenario);
-    final headline = scenario.probability == null
+    final publishedProbability = scenario.calibratedProbability;
+    final headline = publishedProbability == null
         ? 'Confiance ${(scenario.confidence * 100).round()} %'
-        : '${(scenario.probability! * 100).round()} %';
+        : '${(publishedProbability * 100).round()} %';
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -3829,9 +4018,40 @@ class _ScenarioDetailCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tone = _scenarioColor(scenario);
-    final probability = scenario.probability == null
-        ? 'Non défendable — confiance ${(scenario.confidence * 100).round()} %'
-        : '${(scenario.probability! * 100).round()} %';
+    final publishedProbability = scenario.calibratedProbability;
+    final calibration = scenario.calibrationMetadata;
+    final probability = publishedProbability == null
+        ? 'Non quantifiée — aucun modèle calibré'
+        : '${(publishedProbability * 100).round()} % · modèle calibré';
+
+    Widget evidenceSection(String title, List<String> items) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 9),
+            Text(
+              title,
+              style: const TextStyle(
+                color: mobileMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            for (final item in items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: SelectableText(
+                  '• ${_cleanExplanation(item)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12.5,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+          ],
+        );
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -3851,7 +4071,24 @@ class _ScenarioDetailCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
+          if (scenario.hypothesis.isNotEmpty)
+            _DetailLine(label: 'Hypothèse', value: scenario.hypothesis),
+          if (scenario.horizon.isNotEmpty)
+            _DetailLine(
+              label: 'Horizon',
+              value: _horizonLongLabel(scenario.horizon),
+            ),
+          if (scenario.affectedAssets.isNotEmpty)
+            _DetailLine(
+              label: 'Actifs',
+              value: scenario.affectedAssets.join(', '),
+            ),
           _DetailLine(label: 'Probabilité', value: probability),
+          _DetailLine(
+            label: 'Confiance',
+            value:
+                '${(scenario.confidence * 100).round()} % · solidité des données',
+          ),
           _DetailLine(
             label: 'Direction',
             value: _directionLabel(scenario.direction),
@@ -3860,9 +4097,59 @@ class _ScenarioDetailCard extends StatelessWidget {
             label: 'Mouvement',
             value: _movementLabel(scenario.movement),
           ),
-          if (scenario.probabilitySource case final source?)
-            _DetailLine(label: 'Méthode', value: source),
+          if (publishedProbability != null &&
+              scenario.probabilitySource != null)
+            _DetailLine(
+              label: 'Méthode',
+              value: scenario.probabilitySource!,
+            ),
+          if (publishedProbability != null &&
+              scenario.probabilityObservedAt != null)
+            _DetailLine(
+              label: 'Probabilité observée',
+              value: _dateCompact(scenario.probabilityObservedAt),
+            ),
+          if (publishedProbability != null && calibration != null) ...[
+            _DetailLine(
+              label: 'Calibration',
+              value: '${calibration.modelName} v${calibration.modelVersion} · '
+                  '${calibration.calibrationMethod}',
+            ),
+            _DetailLine(
+              label: 'Cible',
+              value: '${calibration.targetDefinition} · '
+                  '${calibration.targetHorizon}',
+            ),
+            _DetailLine(
+              label: 'Hors échantillon',
+              value: 'n=${calibration.outOfSampleSampleSize} · '
+                  '${calibration.evaluationMetric} '
+                  '${calibration.evaluationScore} · '
+                  '${_dateCompact(calibration.evaluatedAt)}',
+            ),
+            if (calibration.evidenceIds.isNotEmpty)
+              evidenceSection(
+                'Preuves de calibration',
+                calibration.evidenceIds,
+              ),
+          ],
+          if (scenario.confirmedEvidence.isNotEmpty)
+            evidenceSection(
+                'Données déjà confirmées', scenario.confirmedEvidence),
+          if (scenario.conditions.isNotEmpty)
+            evidenceSection('Conditions observables', scenario.conditions),
+          if (scenario.confirmationSignals.isNotEmpty)
+            evidenceSection(
+                'Signaux de confirmation', scenario.confirmationSignals),
+          if (scenario.invalidationConditions.isNotEmpty)
+            evidenceSection(
+              'Signaux d’invalidation',
+              scenario.invalidationConditions,
+            ),
+          if (scenario.uncertainties.isNotEmpty)
+            evidenceSection('Incertitudes', scenario.uncertainties),
           if (scenario.eventChain.isNotEmpty) ...[
+            const SizedBox(height: 9),
             const Text(
               'Chaîne d’événements',
               style: TextStyle(
@@ -3885,6 +4172,18 @@ class _ScenarioDetailCard extends StatelessWidget {
                 ),
               ),
           ],
+          if (scenario.prudenceNote.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              scenario.prudenceNote,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 11,
+                height: 1.35,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -3902,6 +4201,7 @@ class _FutureBundle {
   /// The macro radar is the same for the three assets: the macro environment
   /// does not change with the ticker.
   final MacroRadarRead? macro;
+  final GlobalRiskRead? globalRisk;
 
   const _FutureBundle({
     required this.decision,
@@ -3911,6 +4211,7 @@ class _FutureBundle {
     required this.impliedVolatility,
     this.marketState,
     this.macro,
+    this.globalRisk,
   });
 }
 
@@ -4010,9 +4311,8 @@ String _eventTitleFr(String title) {
   if (value.contains('treasury auction')) {
     // "1-Year 10-Month Note" is one maturity with two parts; reading only the
     // first produced "(1 ans)".
-    final parts = RegExp(r'(\d+)[- ](week|year|month)')
-        .allMatches(value)
-        .map((match) {
+    final parts =
+        RegExp(r'(\d+)[- ](week|year|month)').allMatches(value).map((match) {
       final count = int.parse(match.group(1)!);
       final unit = switch (match.group(2)) {
         'week' => count > 1 ? 'semaines' : 'semaine',
@@ -4053,8 +4353,6 @@ String _frenchifyEventNames(String text) {
   return result;
 }
 
-
-
 /// UNKNOWN is kept distinct from NEUTRAL all the way to the badge.
 String? _normalisedDirection(String direction) => switch (direction) {
       'POSITIVE' => 'BULLISH',
@@ -4070,7 +4368,6 @@ String _impactLabelFr(String impact) => switch (impact) {
       'LOW' => 'FAIBLE',
       _ => 'MODÉRÉ',
     };
-
 
 String _importanceImpact(String importance) =>
     switch (importance.toUpperCase()) {
@@ -4175,7 +4472,8 @@ const _guidanceByKey = <String, _TopicGuidance>{
 String _readingTitle(FutureFactorRead reading) {
   final negative = reading.direction == 'NEGATIVE';
   return switch (reading.key) {
-    'flows' => negative ? 'Sorties nettes des ETF' : 'Entrées nettes sur les ETF',
+    'flows' =>
+      negative ? 'Sorties nettes des ETF' : 'Entrées nettes sur les ETF',
     'spot' => negative
         ? 'Pression vendeuse au comptant'
         : 'Pression acheteuse au comptant',
@@ -4199,12 +4497,16 @@ String _readingTitle(FutureFactorRead reading) {
 String _readingInvalidation(String key) => switch (key) {
       'flows' =>
         'Un retour durable des flux dans le sens inverse sur plusieurs séances.',
-      'spot' => 'Un rééquilibrage durable entre acheteurs et vendeurs au comptant.',
-      'positioning' || 'derivatives' =>
+      'spot' =>
+        'Un rééquilibrage durable entre acheteurs et vendeurs au comptant.',
+      'positioning' ||
+      'derivatives' =>
         'Une reprise durable des positions à levier accompagnée d’une reprise du prix.',
       'funding' => 'Un retour du coût du levier vers sa zone habituelle.',
-      'technical' => 'Une invalidation de la structure sur l’échelle de référence.',
-      'volatility' || 'implied_volatility' =>
+      'technical' =>
+        'Une invalidation de la structure sur l’échelle de référence.',
+      'volatility' ||
+      'implied_volatility' =>
         'Une sortie de compression, qui donnerait enfin une direction.',
       'energy' => 'Une stabilisation durable du prix du pétrole.',
       'rates' => 'Une détente durable des rendements.',
@@ -4227,8 +4529,6 @@ String _readingConsequence(
     _ => 'Pas d’effet directionnel mesuré sur $horizon.',
   };
 }
-
-
 
 _TopicGuidance _topicGuidance(String title) {
   final value = title.toLowerCase();
@@ -4380,7 +4680,6 @@ List<FutureEventRead> _rankedCatalysts(
   return inWindow;
 }
 
-
 /// Build three to five concrete causes: dated catalysts and measured signals.
 /// How many factors the home page carries before "voir l'analyse complète".
 const _homeFactorLimit = 4;
@@ -4526,8 +4825,6 @@ double _contribution(_DecisionFactor factor, FutureDecisionRead decision) {
   score *= 0.45 + 0.55 * factor.confidence.clamp(0.0, 1.0);
   return score.clamp(0.0, 1.0);
 }
-
-
 
 /// Short date badge: "16 sept.".
 String _dateShort(DateTime? value) {
@@ -4711,7 +5008,9 @@ String _homeTitle(_DecisionFactor factor) {
       final flows = _twoWindowFlows.firstMatch(factor.description);
       final weakening =
           flows != null && flows.group(2) == '+' && flows.group(4) == '-';
-      if (up) return weakening ? 'ETF encore favorables' : 'Entrées sur les ETF';
+      if (up) {
+        return weakening ? 'ETF encore favorables' : 'Entrées sur les ETF';
+      }
       if (down) return 'Sorties sur les ETF';
     case 'technical':
       if (up) return 'Tendance courte haussière';
@@ -4761,9 +5060,7 @@ String _shortCondition(String raw, {required bool toBuy}) {
     return toBuy ? 'Flux acheteurs durables' : 'Retour des sorties nettes';
   }
   if (family.startsWith('positionnement')) {
-    return toBuy
-        ? 'Reprise saine des positions acheteuses'
-        : 'Excès de levier';
+    return toBuy ? 'Reprise saine des positions acheteuses' : 'Excès de levier';
   }
   if (family.startsWith('technique')) {
     return toBuy
@@ -4774,8 +5071,18 @@ String _shortCondition(String raw, {required bool toBuy}) {
 }
 
 const _monthsShort = [
-  'JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUIN',
-  'JUIL', 'AOÛT', 'SEP', 'OCT', 'NOV', 'DÉC',
+  'JAN',
+  'FÉV',
+  'MAR',
+  'AVR',
+  'MAI',
+  'JUIN',
+  'JUIL',
+  'AOÛT',
+  'SEP',
+  'OCT',
+  'NOV',
+  'DÉC',
 ];
 
 /// One line under an upcoming date: what kind of attention it deserves.
@@ -4918,8 +5225,6 @@ String _verdictSentence(
   }
 }
 
-
-
 String _assetName(String asset) => switch (asset) {
       'BTC' => 'Bitcoin',
       'ETH' => 'Ethereum',
@@ -4960,9 +5265,9 @@ String _directionLabel(String? value) => switch (value) {
     };
 
 String _scenarioLabel(String value) => switch (value) {
-      'base_case' => 'Scénario central',
-      'bullish_case' => 'Scénario haussier',
-      'bearish_case' => 'Scénario baissier',
+      'base_case' => 'Scénario intermédiaire',
+      'bullish_case' => 'Scénario favorable',
+      'bearish_case' => 'Scénario défavorable',
       'tail_risk_case' => 'Risque extrême',
       _ => value,
     };
@@ -4988,7 +5293,6 @@ String _movementLabel(String value) => switch (value.toUpperCase()) {
       'LOW' => 'FAIBLE',
       _ => _plainLabel(value).toUpperCase(),
     };
-
 
 /// Amplitude of the move. It says how much, never which way.
 /// Impact is the direction a factor pushes, not how large the move may be.
@@ -5027,7 +5331,6 @@ Color _impactColor(String? value) => switch (value?.toUpperCase()) {
       'LOW' => mobileBlue,
       _ => const Color(0xFF94A8C2),
     };
-
 
 /// One recognisable picture per subject, so a row can be scanned before it
 /// is read.
@@ -5205,7 +5508,6 @@ String _countdown(int? seconds) {
   return hours < 48 ? 'dans $hours h' : 'dans ${hours ~/ 24} j';
 }
 
-
 extension on _AnalysisFactorsCard {
   Widget _familyRow(BuildContext context, AnalysisHomeFamilyRead family,
       int index, Map<String, AnalysisFamilyRead> byKey) {
@@ -5217,10 +5519,12 @@ extension on _AnalysisFactorsCard {
     };
     final cards = analysis.summary.reading.families[family.family] ??
         const <ReadingCard>[];
-    final lead = cards.where((card) => !argued.contains(card.title)).firstOrNull;
+    final lead =
+        cards.where((card) => !argued.contains(card.title)).firstOrNull;
     return _StatusRow(
-      key: ValueKey(
-          family.family == 'onchain' ? 'whale-status' : 'main-factor-${index + 1}'),
+      key: ValueKey(family.family == 'onchain'
+          ? 'whale-status'
+          : 'main-factor-${index + 1}'),
       emoji: family.emoji,
       title: family.name,
       status: lead?.title ?? family.status,

@@ -284,6 +284,19 @@
 .scenario-grid { display: grid; grid-template-columns: repeat(4, minmax(180px, 1fr)); gap: 8px; }
 .scenario-card { background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 4px; padding: 12px; }
 .scenario-card p { min-height: 54px; }
+.global-risk-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+}
+.global-risk-card {
+  background: var(--bg-panel-2); border: 1px solid var(--border);
+  border-left-width: 3px; border-radius: 4px; padding: 12px;
+}
+.global-risk-low { border-left-color: var(--bull); }
+.global-risk-moderate { border-left-color: var(--warn); }
+.global-risk-high, .global-risk-critical { border-left-color: var(--bear); }
+.global-risk-indeterminate { border-left-color: var(--unavailable); }
+.global-risk-card .finding-list { margin: 10px 0; }
+.global-risk-methodology { margin-top: 10px; }
 
 /* Wide content scrolls inside its own box; the page itself never does. */
 .table-scroll { overflow-x: auto; }
@@ -315,6 +328,7 @@
   .decision-metrics { grid-template-columns: repeat(2, 1fr); }
   .family-grid { grid-template-columns: repeat(2, 1fr); }
   .scenario-grid { grid-template-columns: repeat(2, 1fr); }
+  .global-risk-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 640px) {
@@ -335,5 +349,5 @@
   .future-selector { align-items: flex-start; flex-direction: column; }
   .timeline-event { grid-template-columns: 1fr auto; }
   .timeline-event time { grid-column: 1 / -1; }
-  .family-grid, .scenario-grid { grid-template-columns: 1fr; }
+  .family-grid, .scenario-grid, .global-risk-grid { grid-template-columns: 1fr; }
 }

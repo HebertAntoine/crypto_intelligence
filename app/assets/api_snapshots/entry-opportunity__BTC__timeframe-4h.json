@@ -1,53 +1,53 @@
 {
-  "analysis_id": "an_3725572bf97d927c",
-  "analysis_time": "2026-10-07T18:49:16.127168+00:00",
+  "analysis_id": "an_b7f366051aa07668",
+  "analysis_time": "2026-10-30T10:48:55.453944+00:00",
   "asset": "BTC",
   "disclaimer": "EntryOpportunity describes how the current configuration compares to normal conditions. It is not a claim that this is a good price, and it is not a recommendation to act. Read it alongside the measured edge, which is shown separately and is usually NO_MEASURABLE_EDGE.",
   "factors": [
     {
-      "contribution": 35.0,
-      "detail": "En 4h, le prix est sur le bas de son range (qualit\u00e9 de zone 72/100)",
+      "contribution": -30.0,
+      "detail": "Structure 1d baissi\u00e8re (LH LH LL LL)",
+      "is_measured_edge": false,
+      "name": "higher timeframe structure",
+      "source": "structure"
+    },
+    {
+      "contribution": -20.0,
+      "detail": "En 4h, le prix est sous son range (qualit\u00e9 de zone 70/100)",
       "is_measured_edge": false,
       "name": "structural location",
       "source": "structure"
     },
     {
       "contribution": 8.0,
-      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.2e centile : les mouvements sont petits, dans les deux sens",
+      "detail": "Funding dans sa normale, au 31e centile de son historique",
       "is_measured_edge": false,
-      "name": "volatility compressed",
-      "source": "volatility"
-    },
-    {
-      "contribution": 4.0,
-      "detail": "Funding sous sa m\u00e9diane, au 9e centile",
-      "is_measured_edge": false,
-      "name": "funding leaning",
+      "name": "funding normalised",
       "source": "derivatives"
     },
     {
-      "contribution": 0.0,
-      "detail": "Structure 1d en range (HH LH LL HL)",
+      "contribution": 8.0,
+      "detail": "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.2e centile : les mouvements sont petits, dans les deux sens",
       "is_measured_edge": false,
-      "name": "higher timeframe structure",
-      "source": "structure"
+      "name": "volatility compressed",
+      "source": "volatility"
     }
   ],
   "from_analysis": true,
-  "invalidation": "Une cl\u00f4ture 4h sous 82990.74 casserait la zone basse du range et invaliderait cette lecture.",
+  "invalidation": "Une cl\u00f4ture 4h de retour au-dessus de 79800.00 signifierait que la cassure par le bas a \u00e9chou\u00e9 et que le prix a r\u00e9int\u00e9gr\u00e9 le range.",
   "measured_edge_note": "3 candidate relationships were tested for BTC and none survived correction for multiple testing, the minimum effective sample, the effect-size floor and the stability check. There is no demonstrated ability to predict fo",
   "measured_edge_state": "NO_MEASURABLE_EDGE",
   "missing": [],
-  "price_at_analysis": 83328.01,
-  "run_id": "run_20261007T184601Z_light",
-  "score": 11.8,
-  "state": "FAVORABLE",
-  "statement": "BTC 4h configuration is FAVORABLE (+12). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
+  "price_at_analysis": 78185.38,
+  "run_id": "run_20261030T104601Z_light",
+  "score": -8.5,
+  "state": "NEUTRAL",
+  "statement": "BTC 4h configuration is NEUTRAL (-8). Measured edge: NO_MEASURABLE_EDGE. The configuration resembles setups traders describe as favourable, but no relationship of this kind has been shown to predict returns, so this is a description rather than evidence.",
   "timeframe": "4h",
   "why_now": [
-    "En 4h, le prix est sur le bas de son range (qualit\u00e9 de zone 72/100)",
-    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 10.2e centile : les mouvements sont petits, dans les deux sens",
-    "Funding sous sa m\u00e9diane, au 9e centile",
-    "Structure 1d en range (HH LH LL HL)"
+    "Structure 1d baissi\u00e8re (LH LH LL LL)",
+    "En 4h, le prix est sous son range (qualit\u00e9 de zone 70/100)",
+    "Funding dans sa normale, au 31e centile de son historique",
+    "Volatilit\u00e9 r\u00e9alis\u00e9e faible, au 12.2e centile : les mouvements sont petits, dans les deux sens"
   ]
 }

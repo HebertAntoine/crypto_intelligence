@@ -95,6 +95,9 @@ class MacroAnalyzer:
         unavailable_reason: str | None = None,
     ) -> MacroAnalysis:
         now = now or datetime.now(UTC)
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=UTC)
+        observations = [item for item in observations if self._known_at(item, now)]
         calendar = self.load_calendar(now)
         upcoming = [e for e in calendar if not e.is_past][:8]
         imminent = next(
@@ -105,16 +108,18 @@ class MacroAnalyzer:
         )
 
         if unavailable_reason or not observations:
-            findings = []
+            unavailable_findings: list[str] = []
             if imminent:
-                findings.append(
+                unavailable_findings.append(
                     f"{imminent.name} is due in {imminent.hours_until:.1f}h "
                     f"({imminent.importance}) - expect elevated volatility around the release"
                 )
             return MacroAnalysis(
                 available=False,
                 unavailable_reason=unavailable_reason or "UNAVAILABLE - no macro data",
-                upcoming_events=upcoming, imminent_event=imminent, findings=findings,
+                upcoming_events=upcoming,
+                imminent_event=imminent,
+                findings=unavailable_findings,
                 missing=["macro series (set FRED_API_KEY) and/or indices"],
             )
 
@@ -256,3 +261,28 @@ class MacroAnalyzer:
             evidence_ids=[lst[-1].id for lst in series.values()],
             findings=findings, missing=missing,
         )
+
+    @staticmethod
+    def _known_at(observation: Observation, now: datetime) -> bool:
+        """Reject values whose provider-declared availability is still future.
+
+        The point-in-time radar already applies this rule in storage.  The
+        main report also consumes freshly returned provider objects, so it
+        needs the same boundary before grouping or scoring them.
+        """
+
+        raw = observation.meta.get("available_at")
+        if raw is None:
+            return True
+        if isinstance(raw, datetime):
+            available = raw
+        elif isinstance(raw, str):
+            try:
+                available = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                return False
+        else:
+            return False
+        if available.tzinfo is None:
+            available = available.replace(tzinfo=UTC)
+        return available.astimezone(UTC) <= now.astimezone(UTC)

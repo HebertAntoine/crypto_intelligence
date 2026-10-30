@@ -824,6 +824,7 @@ async def knowledge_documents() -> dict[str, Any]:
 @router.get("/scheduler/status")
 async def scheduler_status() -> dict[str, Any]:
     state = scheduler_state()
+    from ..pipeline.three_hour_cycle import latest_cycle_report
     from ..settings import get_settings
 
     return {
@@ -831,5 +832,8 @@ async def scheduler_status() -> dict[str, Any]:
         "started_at": state.get("started_at"),
         "runs": state.get("runs", {}),
         "last_error": state.get("last_error"),
+        # Durable, per-step state survives a process restart; ``runs`` above
+        # deliberately remains the lightweight in-memory health view.
+        "three_hour_cycle": latest_cycle_report(),
         "snapshots": snapshots.snapshot_stats(),
     }

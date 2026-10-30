@@ -43,7 +43,9 @@ capabilities:
   # public de la Fed de Saint-Louis, sans clé (robots.txt l'autorise).
   macro.credit:                [fred_public_csv]
   onchain.btc_cycle:           [mempool_space_chain]  # halving et rythme des blocs
-  macro.indices:       [yahoo_finance, stooq]
+  # Contracted provider only. Yahoo/Stooq remain as legacy adapters but are
+  # deliberately absent from the production chain.
+  macro.indices:       [twelve_data]
   # Each official calendar has its own capability so one successful source
   # cannot mask another source's outage.
   # Propositions protocolaires, lues dans les dépôts officiels.
@@ -129,8 +131,10 @@ providers:
     cache_ttl: {default: 300}
     rate_limit_per_min: 30
   coingecko:
-    base_url: https://api.coingecko.com/api/v3
-    cache_ttl: {default: 600}       # API gratuite tres limitee -> cache long
+    # Runtime gate also requires COINGECKO_API_KEY and confirmation that the
+    # required public attribution is actually configured in deployed clients.
+    base_url: https://pro-api.coingecko.com/api/v3
+    cache_ttl: {default: 600}
     rate_limit_per_min: 8
   binance_futures:
     base_url: https://fapi.binance.com
@@ -164,6 +168,14 @@ providers:
     base_url: https://api.stlouisfed.org/fred
     cache_ttl: {default: 3600}
     requires_key: FRED_API_KEY
+  sec_edgar:
+    # The adapter also validates that this value contains a real contact email.
+    requires_contact: SEC_USER_AGENT
+  twelve_data:
+    base_url: https://api.twelvedata.com
+    cache_ttl: {default: 3600}
+    rate_limit_per_min: 8
+    requires_key: TWELVE_DATA_API_KEY
   yahoo_finance:
     base_url: https://query1.finance.yahoo.com
     cache_ttl: {default: 1800}

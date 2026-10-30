@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { api, type AssetDetail } from "../lib/api";
+import { api, type AssetDetail, type Scenario } from "../lib/api";
 import {
   ErrorBox, FreshnessBadge, LegalStatusPill, Loading, ScoreBar, Unavailable,
   Value, WhyButton, fmtNumber, fmtSigned, signClass,
@@ -97,6 +97,7 @@ export default function AssetPage() {
 function Overview({ data }: { data: AssetDetail }) {
   const c = data.conviction;
   const syn = data.synthesis;
+  const scenarios = publicAssetScenarios(data.scenarios);
 
   return (
     <>
@@ -202,24 +203,63 @@ function Overview({ data }: { data: AssetDetail }) {
 
       <div className="panel section">
         <div className="panel-title">Scenarios</div>
-        {data.scenarios.map((s) => (
+        {scenarios.length !== 3 && (
+          <div className="unavailable">
+            Contrat de scénarios incomplet : {scenarios.length}/3 scénario(s) public(s) reçu(s).
+          </div>
+        )}
+        {scenarios.map((s) => (
           <div key={s.name} style={{ marginBottom: 14 }}>
             <div className="row" style={{ justifyContent: "space-between" }}>
               <strong style={{ textTransform: "uppercase", fontSize: 12 }}>{s.name}</strong>
               <span className="mono">
-                {s.probability.toFixed(0)}%
-                <span className="tiny faint"> (indicative analytical probability)</span>
+                {s.probability == null
+                  ? "Probabilité non chiffrée"
+                  : s.calibrated
+                    ? `${s.probability.toFixed(0)}% (calibrée)`
+                    : "Probabilité non publiée"}
               </span>
             </div>
             <div className="small dim" style={{ margin: "4px 0" }}>{s.label}</div>
+            <div className="tiny faint">
+              Horizon: {s.horizon || "non spécifié"}
+              {(s.affected_assets?.length ?? 0) > 0 &&
+                ` · Actifs: ${s.affected_assets!.join(", ")}`}
+            </div>
             <div className="small">{s.narrative}</div>
+            {(s.confirmed_evidence?.length ?? 0) > 0 && (
+              <>
+                <div className="tiny dim" style={{ marginTop: 6 }}>Éléments déjà confirmés</div>
+                <ul className="finding-list neutral">
+                  {s.confirmed_evidence!.slice(0, 4).map((item, i) => (
+                    <li key={i} className="small">{item}</li>
+                  ))}
+                </ul>
+              </>
+            )}
             {s.conditions.length > 0 && (
-              <ul className="finding-list neutral" style={{ marginTop: 6 }}>
-                {s.conditions.slice(0, 3).map((cond, i) => <li key={i} className="small">{cond}</li>)}
-              </ul>
+              <>
+                <div className="tiny dim" style={{ marginTop: 6 }}>Conditions nécessaires</div>
+                <ul className="finding-list neutral">
+                  {s.conditions.slice(0, 4).map((cond, i) => <li key={i} className="small">{cond}</li>)}
+                </ul>
+              </>
+            )}
+            {(s.confirmation_signals?.length ?? 0) > 0 && (
+              <div className="tiny faint" style={{ marginTop: 4 }}>
+                Confirmation: {s.confirmation_signals!.slice(0, 3).join(" · ")}
+              </div>
             )}
             {s.invalidation && (
               <div className="tiny faint" style={{ marginTop: 4 }}>Invalidation: {s.invalidation}</div>
+            )}
+            {(s.uncertainties?.length ?? 0) > 0 && (
+              <div className="tiny faint" style={{ marginTop: 4 }}>
+                Incertitudes: {s.uncertainties!.slice(0, 3).join(" · ")}
+              </div>
+            )}
+            {s.prudence_note && (
+              <div className="small dim" style={{ marginTop: 6 }}>Prudence: {s.prudence_note}</div>
             )}
           </div>
         ))}
@@ -264,6 +304,13 @@ function Overview({ data }: { data: AssetDetail }) {
       </div>
     </>
   );
+}
+
+function publicAssetScenarios(scenarios: readonly Scenario[]): Scenario[] {
+  return (["central", "bull", "bear"] as const).flatMap((name) => {
+    const scenario = scenarios.find((candidate) => candidate.name === name);
+    return scenario ? [scenario] : [];
+  });
 }
 
 /* --------------------------------------------------------------- Technical */

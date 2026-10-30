@@ -7,13 +7,15 @@ scripted hour by hour so every close is known exactly.
 The ten mandatory cases of the brief are marked [1] … [10].
 """
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from threading import Barrier
 
 import pytest
 
 from crypto_intel.lexa import notifier, plans, service
 from crypto_intel.lexa.closes import CloseCondition, evaluate
-from crypto_intel.lexa.market import Bar, bar_start, next_close, paris
+from crypto_intel.lexa.market import PARIS, Bar, bar_start, next_close, paris
 from crypto_intel.lexa.repository import (
     AssetInput,
     ConditionInput,
@@ -182,6 +184,23 @@ def test_close_times_are_binance_s_in_paris_time():
     assert next_close(datetime(2026, 9, 23, 9, tzinfo=UTC), "1W") == datetime(2026, 9, 28, tzinfo=UTC)
 
 
+def test_utc_to_paris_conversion_handles_both_dst_transitions():
+    """T24: UTC instants remain exact through both Europe/Paris clock changes."""
+
+    before_spring = datetime(2026, 3, 29, 0, 30, tzinfo=UTC)
+    after_spring = datetime(2026, 3, 29, 1, 30, tzinfo=UTC)
+    assert paris(before_spring) == "29 mars — 01:30 heure de Paris"
+    assert paris(after_spring) == "29 mars — 03:30 heure de Paris"
+
+    first_autumn_0230 = datetime(2026, 10, 25, 0, 30, tzinfo=UTC).astimezone(PARIS)
+    second_autumn_0230 = datetime(2026, 10, 25, 1, 30, tzinfo=UTC).astimezone(PARIS)
+    assert first_autumn_0230.strftime("%H:%M") == "02:30"
+    assert second_autumn_0230.strftime("%H:%M") == "02:30"
+    assert first_autumn_0230.utcoffset() == timedelta(hours=2)
+    assert second_autumn_0230.utcoffset() == timedelta(hours=1)
+    assert (first_autumn_0230.fold, second_autumn_0230.fold) == (0, 1)
+
+
 def test_a_confirmation_without_stated_condition_is_only_touched():
     aid = add(AssetInput(asset="XRP", levels=[LevelInput("CONFIRMATION", 2.444175),
                                                LevelInput("BUY_ZONE", 2.15696)]))
@@ -347,6 +366,43 @@ def test_5_two_videos_on_the_same_level_notify_once():
     sent_second = notifier.dispatch(plan(second, market), now)
     assert not any("approche de 2,15696 $" in m for m in sent_second)
     assert notifier.dispatch(plan(second, market), now) == []  # nothing new, nothing sent
+
+    receipt = notifier.listing()[0]
+    assert receipt["notification_id"] == receipt["id"]
+    assert receipt["trigger_id"].startswith("approach:XRP:")
+    assert receipt["asset_id"] == "XRP"
+    assert receipt["delivery_status"] == "DELIVERED"
+    assert receipt["delivered_at"] is not None
+    assert receipt["reason"]
+    assert receipt["source_snapshot"]["trigger_id"] == receipt["trigger_id"]
+    assert receipt["source_snapshot"]["current_price"] == pytest.approx(2.1845)
+    assert receipt["source_snapshot"]["level_value"] == pytest.approx(2.15696)
+    # The plan contract signs the distance from the current price to the
+    # level: a level below spot is therefore negative.
+    assert receipt["source_snapshot"]["distance_pct"] == pytest.approx(-1.26, abs=0.01)
+    assert "Binance spot" in receipt["source_snapshot"]["price_source"]
+    assert "XRPUSDT" in receipt["source_snapshot"]["price_source"]
+
+
+def test_notification_deduplication_is_atomic_between_workers():
+    aid = add(xrp_levels())
+    now = PUBLISHED + timedelta(days=2)
+    hours = int((now - (PUBLISHED - timedelta(hours=8))).total_seconds() // 3600)
+    market = FakeMarket(flat(2.346, hours - 3) + flat(2.1845, 3), now)
+    current_plan = plan(aid, market)
+    ready = Barrier(2)
+
+    def fire() -> list[str]:
+        ready.wait()
+        return notifier.dispatch(current_plan, now)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _index: fire(), range(2)))
+
+    assert sum(bool(messages) for messages in results) == 1
+    receipts = notifier.listing()
+    assert len(receipts) == 1
+    assert receipts[0]["trigger_id"].startswith("approach:XRP:")
 
 
 # --- [6] Lexa vs our engine ---------------------------------------------------------------

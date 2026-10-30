@@ -1,36 +1,34 @@
 {
   "btc_dominance": {
-    "as_of": "2026-10-07T18:47:37.809912+00:00",
-    "available": true,
-    "btc_dominance_pct": 58.832014843039595,
-    "freshness": "LIVE",
-    "note": "Point-in-time dominance history is not stored, so this value cannot be used in a backtest."
+    "available": false,
+    "reason": "BTC dominance requires the market cap of every cryptoasset. It is fetched live from CoinGecko during a pipeline run and is not stored historically, so no value is available here and none is estimated.",
+    "status": "UNAVAILABLE"
   },
   "ratios": [
     {
-      "change_30d_pct": -2.45,
-      "interpretation": "ETH/BTC is flat (-2.5% over 30 days), at the 27th percentile of its history. A falling ratio means ETH is outperforming BTC, which is a statement about relative strength only - both can be falling in absolute terms.",
+      "change_30d_pct": -9.75,
+      "interpretation": "ETH/BTC is falling (-9.8% over 30 days), at the 21th percentile of its history. A falling ratio means ETH is outperforming BTC, which is a statement about relative strength only - both can be falling in absolute terms.",
       "name": "ETH/BTC",
-      "percentile": 27.0,
-      "trend": "FLAT",
-      "value": 0.030704
+      "percentile": 21.1,
+      "trend": "FALLING",
+      "value": 0.028889
     },
     {
-      "change_30d_pct": 6.36,
-      "interpretation": "SOL/BTC is rising (+6.4% over 30 days), at the 45th percentile of its history. A rising ratio means SOL is outperforming BTC, which is a statement about relative strength only - both can be falling in absolute terms.",
+      "change_30d_pct": -13.89,
+      "interpretation": "SOL/BTC is falling (-13.9% over 30 days), at the 38th percentile of its history. A falling ratio means SOL is outperforming BTC, which is a statement about relative strength only - both can be falling in absolute terms.",
       "name": "SOL/BTC",
-      "percentile": 45.3,
-      "trend": "RISING",
-      "value": 0.001395
+      "percentile": 38.5,
+      "trend": "FALLING",
+      "value": 0.001226
     },
     {
-      "change_30d_pct": 9.03,
-      "interpretation": "SOL/ETH is rising (+9.0% over 30 days), at the 72th percentile of its history. A rising ratio means SOL is outperforming ETH, which is a statement about relative strength only - both can be falling in absolute terms.",
+      "change_30d_pct": -4.6,
+      "interpretation": "SOL/ETH is flat (-4.6% over 30 days), at the 62th percentile of its history. A falling ratio means SOL is outperforming ETH, which is a statement about relative strength only - both can be falling in absolute terms.",
       "name": "SOL/ETH",
-      "percentile": 71.7,
-      "trend": "RISING",
-      "value": 0.045448
+      "percentile": 61.7,
+      "trend": "FLAT",
+      "value": 0.042448
     }
   ],
-  "run_id": "run_20261007T184601Z_light"
+  "run_id": "run_20261030T104601Z_light"
 }

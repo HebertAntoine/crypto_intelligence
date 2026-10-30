@@ -34,8 +34,12 @@ from enum import StrEnum
 from typing import Any
 
 from ..core import labels_fr
-from ..core.data_integrity import is_production_label
 from ..core.enums import Asset, Timeframe
+from ..core.source_rights import (
+    observation_is_admissible,
+    record_is_admissible,
+    rights_policy_fingerprint,
+)
 from ..core.usability import (
     DataCoverage,
     FamilyState,
@@ -79,6 +83,7 @@ def data_fingerprint(asset: Asset) -> dict[str, Any]:
         "series": store.series_fingerprint(asset),
         "observations": repo.observation_fingerprint(asset),
         "future_events": repo.future_event_fingerprint(),
+        "source_rights": rights_policy_fingerprint(),
     }
 
 
@@ -222,7 +227,32 @@ def family_states(asset: Asset, now: datetime | None = None) -> dict[str, Family
         "price", "observations:price.", "ticker spot persisté"
     )
     states["etf"] = from_observations("etf", "etf_flows", "Farside Investors, flux par émetteur")
-    states["macro"] = from_observations("macro", "observations:macro.", "séries macro FRED/Stooq")
+    macro_observations = _without_synthetic(
+        repo.observations_since(
+            None,
+            "macro.",
+            reference - timedelta(days=180),
+            limit=5000,
+        )
+    )
+    macro_latest = max(
+        (item.timestamp for item in macro_observations),
+        default=None,
+    )
+    states["macro"] = FamilyState(
+        family="macro",
+        available=bool(macro_observations),
+        valid=bool(macro_observations),
+        freshness=freshness_for("macro", macro_latest, reference),
+        observed_at=macro_latest,
+        source="séries macro dont les droits sont actuellement autorisés",
+        points=len(macro_observations),
+        reason=(
+            "aucune observation macro admissible sous la politique de droits active"
+            if not macro_observations
+            else ""
+        ),
+    )
     states["onchain"] = from_observations(
         "onchain", "observations:onchain.", "fournisseurs on-chain"
     )
@@ -246,12 +276,31 @@ def family_states(asset: Asset, now: datetime | None = None) -> dict[str, Family
     # Cross-asset correlation reads index candles from the macro store; without
     # them the correlation is not stale, it does not exist.
     macro_series = store.macro_coverage()
-    proxies = [
-        entry
-        for name, entry in macro_series.items()
-        if any(token in name.lower() for token in ("nasdaq", "spx", "dxy", "ndx"))
+    proxies: list[dict[str, Any]] = []
+    for name in macro_series:
+        if not any(token in name.lower() for token in ("nasdaq", "spx", "dxy", "ndx")):
+            continue
+        records = [
+            record
+            for record in store.load_macro_records(name)
+            if record_is_admissible(name, record)
+        ]
+        if records:
+            record_times = [
+                timestamp
+                for record in records
+                if isinstance((timestamp := record.get("timestamp")), datetime)
+            ]
+            proxies.append(
+                {
+                    "rows": len(records),
+                    "end": max(record_times, default=None),
+                }
+            )
+    proxy_ends = [
+        end for entry in proxies if isinstance((end := entry.get("end")), datetime)
     ]
-    latest = max((entry.get("end") for entry in proxies if entry.get("end")), default=None)
+    latest = max(proxy_ends, default=None)
     states["cross_asset"] = FamilyState(
         family="cross_asset",
         available=bool(proxies),
@@ -448,21 +497,22 @@ def breakout_sentence(breakout: Any) -> str:
 
 
 def _is_synthetic(observation: Any) -> bool:
-    """Whether one observation is explicitly development-only evidence.
+    """Whether an observation is unusable as current production evidence.
 
     The database holds observations recorded with the fixtures' source,
     ingested while MOCK_MODE was on.  Filtering the whole result set when one
     such row was present also discarded every real DefiLlama/Yahoo/on-chain
     observation beside it.  Classification is therefore row-local.
     """
-    provenance = getattr(observation, "provenance", None)
-    source = getattr(provenance, "source", "") or ""
-    provider = getattr(provenance, "provider", "") or ""
-    return not is_production_label(source) or not is_production_label(provider)
+    return not observation_is_admissible(observation)
 
 
 def _without_synthetic(observations: list[Any]) -> list[Any]:
-    """Keep real rows even when legacy fixture rows share the same metric."""
+    """Keep only rows admissible under production and current rights policy.
+
+    The historical name is retained for callers that used this helper before
+    source-rights checks were centralised.
+    """
     return [observation for observation in observations if not _is_synthetic(observation)]
 
 
@@ -713,7 +763,7 @@ def evidence_context(asset: Asset, now: datetime) -> dict[str, Any]:
             )
         )
 
-    cross_asset = CrossAssetAnalyzer().assess(asset)
+    cross_asset = CrossAssetAnalyzer().assess(asset, as_of=now)
     if (
         cross_asset.risk_proxy_correlation is not None
         and abs(cross_asset.risk_proxy_correlation) >= 0.4

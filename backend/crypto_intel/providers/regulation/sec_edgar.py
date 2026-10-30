@@ -41,7 +41,7 @@ from ...future_events.models import (
     FutureEventStatus,
 )
 from ...settings import get_settings
-from ..base import BaseProvider, FetchRequest, FetchResult
+from ..base import BaseProvider, FetchRequest, FetchResult, ProviderStatus
 from ..http import get_http
 
 EDGAR_SEARCH = "https://efts.sec.gov/LATEST/search-index"
@@ -214,12 +214,26 @@ class SecEdgarFilingsProvider(BaseProvider):
     source_url = "https://www.sec.gov/edgar/search/"
     base_confidence = 95.0
 
+    async def available(self) -> ProviderStatus:
+        settings = get_settings()
+        if not settings.sec_user_agent_configured:
+            return ProviderStatus(
+                name=self.name,
+                available=False,
+                reason=(
+                    "UNAVAILABLE - SEC_USER_AGENT must identify the application with a real "
+                    "contact email"
+                ),
+                configured=False,
+            )
+        return ProviderStatus(name=self.name, available=True)
+
     def _headers(self) -> dict[str, str] | None:
-        agent = get_settings().sec_user_agent.strip()
+        settings = get_settings()
         # SEC policy: an automated caller declares a contact address.
-        if "@" not in agent:
+        if not settings.sec_user_agent_configured:
             return None
-        return {"User-Agent": agent, "Accept": "application/json"}
+        return {"User-Agent": settings.sec_user_agent.strip(), "Accept": "application/json"}
 
     async def fetch(self, request: FetchRequest) -> FetchResult:
         headers = self._headers()

@@ -152,10 +152,17 @@ def save_observations(observations: list[Observation]) -> int:
     return saved
 
 
-def latest_observation(asset: Asset | None, metric: str) -> Observation | None:
+def latest_observation(
+    asset: Asset | None,
+    metric: str,
+    *,
+    as_of: datetime | None = None,
+) -> Observation | None:
     with session_scope() as s:
         stmt = select(ObservationRow).where(ObservationRow.metric == metric)
         stmt = stmt.where(ObservationRow.asset == (asset.value if asset else None))
+        if as_of is not None:
+            stmt = stmt.where(ObservationRow.timestamp <= _coerce_dt(as_of))
         stmt = stmt.order_by(ObservationRow.timestamp.desc()).limit(1)
         row = s.execute(stmt).scalar_one_or_none()
         return row_to_observation(row) if row else None
@@ -446,25 +453,132 @@ def has_outcome(report_id: str, horizon: str) -> bool:
 # --- alerts ---------------------------------------------------------------
 
 
+def _alert_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    enum_value = getattr(value, "value", value)
+    text_value = str(enum_value).strip()
+    return text_value or None
+
+
+def _alert_receipt_identity(
+    alert: dict[str, Any], triggered_at: datetime
+) -> tuple[str, str]:
+    """Return stable trigger and notification identifiers for one event.
+
+    ``trigger_id`` identifies the condition (and therefore follows the legacy
+    cooldown key). ``notification_id`` identifies this exact occurrence, so a
+    retry of the same payload is idempotent while a later post-cooldown event
+    receives a distinct receipt.
+    """
+
+    asset_id = _alert_text(alert.get("asset_id") or alert.get("asset")) or "GLOBAL"
+    trigger_id = _alert_text(alert.get("trigger_id") or alert.get("dedup_key"))
+    if trigger_id is None:
+        trigger_seed = "|".join(
+            (
+                _alert_text(alert.get("kind")) or "ALERT",
+                asset_id,
+                _alert_text(alert.get("title")) or "",
+                _alert_text(alert.get("reason")) or "",
+            )
+        )
+        trigger_id = "trigger_" + hashlib.sha256(trigger_seed.encode()).hexdigest()[:24]
+
+    event_time = triggered_at.astimezone(UTC).isoformat(timespec="microseconds")
+    notification_seed = "|".join(
+        (trigger_id, event_time, _alert_text(alert.get("kind")) or "ALERT", asset_id)
+    )
+    notification_id = "ntf_" + hashlib.sha256(notification_seed.encode()).hexdigest()[:32]
+    return trigger_id, notification_id
+
+
 def save_alerts(alerts: list[dict[str, Any]]) -> int:
+    """Atomically persist in-app alerts and their delivery receipts.
+
+    The cooldown is checked again under SQLite's immediate write transaction;
+    the earlier engine-side check remains a cheap fast path. ``STORED`` is the
+    only status written because database acceptance *is* delivery for the
+    in-app inbox. The function returns only after commit and never reports an
+    optimistic ``SENT`` state.
+    """
+
     if not alerts:
         return 0
-    with session_scope() as s:
+    stored = 0
+    with session_scope(immediate=True) as s:
         for a in alerts:
+            triggered_at = _coerce_dt(a.get("triggered_at")) or datetime.now(UTC)
+            trigger_id, notification_id = _alert_receipt_identity(a, triggered_at)
+            dedup_key = _alert_text(a.get("dedup_key")) or trigger_id
+            cooldown_minutes = max(0, int(a.get("cooldown_minutes") or 0))
+
+            # Exact retries are idempotent even when no cooldown was supplied.
+            already_stored = s.execute(
+                select(AlertRow.id).where(AlertRow.notification_id == notification_id)
+            ).first()
+            if already_stored is not None:
+                continue
+
+            if cooldown_minutes:
+                last = s.execute(
+                    select(AlertRow.triggered_at)
+                    .where(AlertRow.dedup_key == dedup_key)
+                    .order_by(AlertRow.triggered_at.desc())
+                    .limit(1)
+                ).scalar_one_or_none()
+                last = _as_utc(last)
+                if last is not None and triggered_at - last < timedelta(
+                    minutes=cooldown_minutes
+                ):
+                    continue
+
+            accepted_at = datetime.now(UTC)
+            asset_id = _alert_text(a.get("asset_id") or a.get("asset"))
+            analysis_id = _alert_text(a.get("analysis_id"))
+            evidence_ids = list(a.get("evidence_ids") or [])
+            reason = _alert_text(a.get("reason")) or ""
+            supplied_snapshot = a.get("source_snapshot")
+            source_snapshot = (
+                dict(supplied_snapshot) if isinstance(supplied_snapshot, dict) else {}
+            )
+            # Canonical receipt coordinates cannot be spoofed by a caller's
+            # optional snapshot fields.
+            source_snapshot.update(
+                {
+                    "notification_id": notification_id,
+                    "trigger_id": trigger_id,
+                    "asset_id": asset_id,
+                    "analysis_id": analysis_id,
+                    "kind": a["kind"],
+                    "triggered_at": triggered_at.isoformat(),
+                    "evidence_ids": evidence_ids,
+                    "reason": reason,
+                }
+            )
             s.add(
                 AlertRow(
                     kind=a["kind"],
                     importance=a["importance"],
-                    asset=a.get("asset"),
+                    asset=asset_id,
                     title=a["title"],
                     detail=a.get("detail", ""),
-                    triggered_at=_coerce_dt(a.get("triggered_at")) or datetime.now(UTC),
-                    evidence_ids=a.get("evidence_ids") or None,
-                    dedup_key=a.get("dedup_key"),
-                    reason=a.get("reason", ""),
+                    triggered_at=triggered_at,
+                    evidence_ids=evidence_ids or None,
+                    dedup_key=dedup_key,
+                    reason=reason,
+                    notification_id=notification_id,
+                    trigger_id=trigger_id,
+                    asset_id=asset_id,
+                    analysis_id=analysis_id,
+                    created_at=accepted_at,
+                    delivered_at=accepted_at,
+                    delivery_status="STORED",
+                    source_snapshot=source_snapshot,
                 )
             )
-    return len(alerts)
+            stored += 1
+    return stored
 
 
 def recent_alerts(limit: int = 50, asset: Asset | None = None) -> list[dict[str, Any]]:
@@ -481,6 +595,20 @@ def recent_alerts(limit: int = 50, asset: Asset | None = None) -> list[dict[str,
                 "title": r.title,
                 "detail": r.detail,
                 "triggered_at": _as_utc(r.triggered_at),
+                "evidence_ids": r.evidence_ids or [],
+                "acknowledged": r.acknowledged,
+                # Legacy rows predate receipts. Their primary key remains a
+                # stable notification coordinate, while nullable facts stay
+                # explicitly unknown rather than being invented.
+                "notification_id": r.notification_id or f"legacy-alert-{r.id}",
+                "trigger_id": r.trigger_id or r.dedup_key,
+                "asset_id": r.asset_id or r.asset,
+                "analysis_id": r.analysis_id,
+                "created_at": _as_utc(r.created_at) or _as_utc(r.triggered_at),
+                "delivered_at": _as_utc(r.delivered_at),
+                "delivery_status": r.delivery_status or "UNKNOWN",
+                "reason": r.reason,
+                "source_snapshot": r.source_snapshot or {},
             }
             for r in s.execute(stmt).scalars().all()
         ]

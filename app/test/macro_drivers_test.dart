@@ -110,7 +110,8 @@ void main() {
     expect(find.text('Pourquoi le marché bouge ?'), findsOneWidget);
 
     for (final driver in radar.top) {
-      expect(find.byKey(ValueKey('macro-driver-${driver.key}')), findsOneWidget);
+      expect(
+          find.byKey(ValueKey('macro-driver-${driver.key}')), findsOneWidget);
     }
     expect(find.byKey(const ValueKey('macro-see-all')), findsOneWidget);
     expect(find.text('Voir les 15 moteurs ›'), findsOneWidget);
@@ -144,7 +145,8 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
 
-    expect(find.byKey(ValueKey('macro-driver-page-${first.key}')), findsOneWidget);
+    expect(
+        find.byKey(ValueKey('macro-driver-page-${first.key}')), findsOneWidget);
     expect(find.byKey(const ValueKey('macro-driver-summary')), findsOneWidget);
     expect(find.text('POURQUOI CELA COMPTE'), findsOneWidget);
     if (first.values.isNotEmpty) {
@@ -178,9 +180,51 @@ void main() {
   test('chaque direction a un mot et une couleur, y compris l\'inconnu', () {
     const unknown = MacroDriver(direction: 'UNKNOWN');
     expect(unknown.directionLabel.$2, 'Sens inconnu');
-    expect(const MacroDriver(direction: 'FAVORABLE').directionLabel.$2, 'Soutien');
-    expect(const MacroDriver(direction: 'UNFAVORABLE').directionLabel.$2, 'Pression');
+    expect(
+        const MacroDriver(direction: 'FAVORABLE').directionLabel.$2, 'Soutien');
+    expect(const MacroDriver(direction: 'UNFAVORABLE').directionLabel.$2,
+        'Pression');
     expect(const MacroDriver(direction: 'MIXED').directionLabel.$2, 'Partagé');
     expect(directionColor('UNKNOWN'), isNot(directionColor('FAVORABLE')));
+  });
+
+  test('le contrat distingue observation, publication et exécution', () {
+    final driver = MacroDriver.fromJson({
+      'signal_id': 'S12',
+      'key': 'volatility',
+      'last_observation_at': '2026-10-23T00:00:00Z',
+      'last_publication_at': '2026-10-23T21:15:00Z',
+      'next_event_at': '2026-10-27T13:30:00Z',
+      'release_frequency': 'DAILY',
+      'data_quality': 'VALID',
+      'historical_percentile': .91,
+      'source_url': 'https://www.cboe.com/tradable_products/vix/',
+      'historical_series': [
+        {
+          'observation_time': '2026-10-22T00:00:00Z',
+          'publication_time': '2026-10-22T21:15:00Z',
+          'value': 19.2,
+          'source': 'Cboe',
+        },
+        {
+          'observation_time': '2026-10-23T00:00:00Z',
+          'publication_time': '2026-10-23T21:15:00Z',
+          'value': 21.4,
+          'source': 'Cboe',
+        },
+      ],
+      'invalidation_conditions': ['Retour durable vers la médiane'],
+    });
+
+    expect(driver.signalId, 'S12');
+    expect(driver.lastObservationAt, isNotNull);
+    expect(driver.lastPublicationAt, isNotNull);
+    expect(driver.lastObservationAt, isNot(driver.lastPublicationAt));
+    expect(driver.nextRelease, isNotNull);
+    expect(driver.historicalPercentile, .91);
+    expect(driver.invalidationConditions, isNotEmpty);
+    expect(driver.sourceUrl, startsWith('https://www.cboe.com/'));
+    expect(driver.historicalSeries, hasLength(2));
+    expect(driver.historicalSeries.last.value, 21.4);
   });
 }

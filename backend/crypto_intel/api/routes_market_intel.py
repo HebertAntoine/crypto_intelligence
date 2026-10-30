@@ -10,9 +10,11 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 from ..core.enums import Asset
 from ..engines.asset_catalysts import catalysts_for
+from ..engines.claim_evidence import verify_claim_against_store
 from ..engines.decision_families import build_families
 from ..engines.institutional_demand import read_demand
 from ..engines.market_breadth import read_breadth
@@ -22,6 +24,12 @@ from ..engines.protocol_economics import read_economics
 from ..future_events.models import DecisionHorizon
 
 router = APIRouter(tags=["market intelligence"])
+
+
+class VerifyClaimBody(BaseModel):
+    text: str = Field(min_length=1, max_length=4000)
+    source_timestamp: datetime
+    as_of: datetime | None = None
 
 
 def _asset(symbol: str) -> Asset:
@@ -106,3 +114,15 @@ def get_institutions(symbol: str) -> dict[str, Any]:
 @router.get("/catalysts/{symbol}")
 def get_catalysts(symbol: str) -> dict[str, Any]:
     return catalysts(symbol)
+
+
+@router.post("/market-intelligence/claims/verify")
+def verify_claim(body: VerifyClaimBody) -> dict[str, Any]:
+    """Recalculate one external claim from evidence known when it was made."""
+
+    result = verify_claim_against_store(
+        body.text,
+        source_timestamp=body.source_timestamp,
+        as_of=body.as_of,
+    )
+    return result.model_dump(mode="json")
